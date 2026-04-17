@@ -2,5 +2,5 @@
   <Configurations>
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="CG2_DirectXGame/CG2_DirectXGame.vcxproj" />
+  <Project Path="CG2_DirectXGame/CG2_DirectXGame.vcxproj" Id="357c3ecd-702d-4361-abf4-a4026e7014c1" />
 </Solution>
