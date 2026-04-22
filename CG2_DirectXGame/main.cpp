@@ -116,7 +116,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		}
 	}
 
-
+	// ログのディレクトリを用意
+	std::filesystem::create_directory("logs");
 	// 現在時刻を取得（UTC時刻）
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	// ログファイルの名前にコンマ何秒はいらないので、削って秒にする
