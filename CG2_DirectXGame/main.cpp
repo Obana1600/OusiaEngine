@@ -814,6 +814,45 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 単位行列を書き込んでおく
 	*wvpData = MathUtility::MakeIdentity4x4();
 
+
+	// Sprite用の頂点リソースを作る
+	ID3D12Resource *vertexResourceSprite = CreateBufferResource(device, sizeof(VertexData) * 6);
+	// 頂点バッファビューを作成する
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
+	// リソースの先頭のアドレスから使う
+	vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress();
+	// 使用するリソースのサイズは頂点6つ分のサイズ
+	vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+	// 1頂点当たりのサイズ
+	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
+
+	// 頂点データを作成
+	VertexData *vertexDataSprite = nullptr;
+	vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void **>(&vertexDataSprite));
+	// 1枚目の三角形
+	vertexDataSprite[0].position = { 0.0f, 360.0f, 0.0f, 1.0f }; // 左下
+	vertexDataSprite[0].texcoord = { 0.0f, 1.0f };
+	vertexDataSprite[1].position = { 0.0f, 0.0f, 0.0f, 1.0f }; // 左上
+	vertexDataSprite[1].texcoord = { 0.0f, 0.0f };
+	vertexDataSprite[2].position = { 640.0f, 360.0f, 0.0f, 1.0f }; // 右下
+	vertexDataSprite[2].texcoord = { 1.0f, 1.0f };
+	// 2枚目の三角形
+	vertexDataSprite[3].position = { 0.0f, 0.0f, 0.0f, 1.0f }; // 左上
+	vertexDataSprite[3].texcoord = { 0.0f, 0.0f };
+	vertexDataSprite[4].position = { 640.0f, 0.0f, 0.0f, 1.0f }; // 右下
+	vertexDataSprite[4].texcoord = { 1.0f, 0.0f };
+	vertexDataSprite[5].position = { 640.0f, 360.0f, 0.0f, 1.0f }; // 右下
+	vertexDataSprite[5].texcoord = { 1.0f, 1.0f };
+
+	// Sprite用のTransformationMatrix用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
+	ID3D12Resource *wvpResourceSprite = CreateBufferResource(device, sizeof(Matrix4x4));
+	// データを書き込む
+	Matrix4x4 *wvpDataSprite = nullptr;
+	// 書き込むためのアドレスを取得
+	wvpResourceSprite->Map(0, nullptr, reinterpret_cast<void **>(&wvpDataSprite));
+	// 単位行列を書き込んでおく
+	*wvpDataSprite = MathUtility::MakeIdentity4x4();
+
 	// ============================================================================== 頂点データの作成
 
 
@@ -866,6 +905,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// Transform変数を作る
 	Transform transform{ { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
+	Transform transformSprite{ { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
 
 	Transform cameraTransform{ { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -5.0f } };
 
@@ -929,10 +969,17 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			Matrix4x4 projectionMatrix = MathUtility::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
 			Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply(worldMatrix, MathUtility::Multiply(viewMatrix, projectionMatrix));
 
+			Matrix4x4 worldMatrixSprite = MathUtility::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
+			Matrix4x4 viewMatrixSprite = MathUtility::MakeIdentity4x4();
+			Matrix4x4 projectionMatrixSprite = MathUtility::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
+			Matrix4x4 worldViewProjectionMatrixSprite = MathUtility::Multiply(worldMatrixSprite, MathUtility::Multiply(viewMatrixSprite, projectionMatrixSprite));
+
 			*wvpData = worldViewProjectionMatrix;
+			*wvpDataSprite = worldViewProjectionMatrixSprite;
 
 #ifdef USE_IMGUI // imguiの更新
 			ImGui::Begin("Debug");
+			ImGui::DragFloat3("translate sprite", &transformSprite.translate.x, 0.1f);
 			ImGui::ColorPicker4("color", reinterpret_cast<float *>(materialData));
 			ImGui::End();
 #endif
@@ -1002,6 +1049,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			// ------------------------------------------------------------------------- 三角形の描画
 
 
+			// スプライトの描画 ----------------------------------------------------------------------
+
+			// Spriteの描画。変更が必要なものだけ変更する
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); // VBVを変更
+			// TransformationMatrixCBufferの場所を設定
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResourceSprite->GetGPUVirtualAddress());
+			// 描画！（DrawCall/ドローコール）
+			commandList->DrawInstanced(6, 1, 0, 0);
+
+			// ---------------------------------------------------------------------- スプライトの描画
+
+
 #ifdef USE_IMGUI
 			// 実際のcommandListのImGuiの描画コマンドリストを積む
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
@@ -1066,7 +1125,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	intermediateResource->Release();
 	textureResource->Release();
+	wvpResourceSprite->Release();
 	wvpResource->Release();
+	vertexResourceSprite->Release();
 	vertexResource->Release();
 	materialResource->Release();
 	graphicsPipelineState->Release();
