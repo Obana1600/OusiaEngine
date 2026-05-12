@@ -7,7 +7,7 @@ struct Vector2 {
 	float x;
 	float y;
 
-	// デフォルトコンストラクタ「
+	// デフォルトコンストラクタ
 	Vector2()
 		: x(0.0f), y(0.0f) {
 	}
@@ -20,58 +20,31 @@ struct Vector2 {
 
 	// 演算子オーバーロード --------------------------------------------------
 
-	Vector2 operator+(const Vector2 &other) const {
-		return Vector2(x + other.x, y + other.y);
-	}
+	Vector2 &operator+=(const Vector2 &other);
 
-	Vector2 operator-(const Vector2 &other) const {
-		return Vector2(x - other.x, y - other.y);
-	}
+	Vector2 &operator-=(const Vector2 &other);
 
-	Vector2 operator*(float scalar) const {
-		return Vector2(x * scalar, y * scalar);
-	}
+	Vector2 &operator*=(float scalar);
 
-	Vector2 operator/(float scalar) const {
-		return Vector2(x / scalar, y / scalar);
-	}
+	Vector2 &operator/=(float scalar);
 
-	Vector2 &operator+=(const Vector2 &other) {
-		x += other.x;
-		y += other.y;
-		return *this;
-	}
+	Vector2 operator+() const;
 
-	Vector2 &operator-=(const Vector2 &other) {
-		x -= other.x;
-		y -= other.y;
-		return *this;
-	}
-
-	Vector2 &operator*=(float scalar) {
-		x *= scalar;
-		y *= scalar;
-		return *this;
-	}
-
-	Vector2 &operator/=(float scalar) {
-		x /= scalar;
-		y /= scalar;
-		return *this;
-	}
-
-	Vector2 operator-() const {
-		return Vector2(-x, -y);
-	}
+	Vector2 operator-() const;
 
 	// -------------------------------------------------------------------
 
 }; // Vector2
 
+Vector2 operator+(const Vector2 &v1, const Vector2 &v2);
 
-inline Vector2 operator*(float scalar, const Vector2 &v) {
-	return v * scalar;
-}
+Vector2 operator-(const Vector2 &v1, const Vector2 &v2);
+
+Vector2 operator*(const Vector2 &v, float scalar);
+
+Vector2 operator*(float scalar, const Vector2 &v);
+
+Vector2 operator/(const Vector2 &v, float scalar);
 
 
 
@@ -97,92 +70,73 @@ struct Vector3 {
 
 	// 演算子オーバーロード --------------------------------------------------
 
-	Vector3 operator+(const Vector3 &other) const {
-		return Vector3(x + other.x, y + other.y, z + other.z);
-	}
+	Vector3 &operator+=(const Vector3 &other);
 
-	Vector3 operator-(const Vector3 &other) const {
-		return Vector3(x - other.x, y - other.y, z - other.z);
-	}
+	Vector3 &operator-=(const Vector3 &other);
 
-	Vector3 operator*(float scalar) const {
-		return Vector3(x * scalar, y * scalar, z * scalar);
-	}
+	Vector3 &operator*=(float scalar);
 
-	Vector3 operator/(float scalar) const {
-		return Vector3(x / scalar, y / scalar, z / scalar);
-	}
+	Vector3 &operator/=(float scalar);
 
-	Vector3 &operator+=(const Vector3 &other) {
-		x += other.x;
-		y += other.y;
-		z += other.z;
-		return *this;
-	}
+	Vector3 operator+() const;
 
-	Vector3 &operator-=(const Vector3 &other) {
-		x -= other.x;
-		y -= other.y;
-		z -= other.z;
-		return *this;
-	}
-
-	Vector3 &operator*=(float scalar) {
-		x *= scalar;
-		y *= scalar;
-		z *= scalar;
-		return *this;
-	}
-
-	Vector3 &operator/=(float scalar) {
-		x /= scalar;
-		y /= scalar;
-		z /= scalar;
-		return *this;
-	}
-
-	Vector3 operator-() const {
-		return Vector3(-x, -y, -z);
-	}
+	Vector3 operator-() const;
 
 	// -------------------------------------------------------------------
 
 }; // Vector3
 
+Vector3 operator+(const Vector3 &v1, const Vector3 &v2);
 
-inline Vector3 operator*(float scalar, const Vector3 &v) {
-	return v * scalar;
-}
+Vector3 operator-(const Vector3 &v1, const Vector3 &v2);
+
+Vector3 operator*(const Vector3 &v, float scalar);
+
+Vector3 operator*(float scalar, const Vector3 &v);
+
+Vector3 operator/(const Vector3 &v, float scalar);
 
 
 
 struct Vector4 {
-
 	float x;
 	float y;
 	float z;
 	float w;
-
 };
-
 
 
 namespace MathUtility {
 
-	// 加算
-	Vector3 Add(const Vector3 &v1, const Vector3 &v2);
-	// 減算
-	Vector3 Subtract(const Vector3 &v1, const Vector3 &v2);
-	// スカラー倍
-	Vector3 Multiply(float scalar, const Vector3 &v);
-	Vector3 Multiply(const Vector3 &v, float scalar);
-	// 内積
-	float Dot(const Vector3 &v1, const Vector3 &v2);
-	// 外積
-	Vector3 Cross(const Vector3 &v1, const Vector3 &v2);
-	// 長さ（ノルム）
-	float Length(const Vector3 &v);
-	// 正規化
-	Vector3 Normalize(const Vector3 &v);
+	// Vector2 -----------------------------------------------------------
+
+	float Dot(const Vector2 &v1, const Vector2 &v2);
+
+	float Cross(const Vector2 &v1, const Vector2 &v2);
+
+	float Length(const Vector2 &v); // 長さ（ノルム）
+
+	Vector2 Normalize(const Vector2 &v); // 正規化
+
+	// -------------------------------------------------------------------
+
+
+	// Vector3 -----------------------------------------------------------
+	
+	float Dot(const Vector3 &v1, const Vector3 &v2); // 内積
+	
+	Vector3 Cross(const Vector3 &v1, const Vector3 &v2); // 外積
+	
+	float Length(const Vector3 &v); // 長さ（ノルム）
+
+	float LengthSq(const Vector3 &v); // 長さ（ノルム）の2乗
+	
+	Vector3 Normalize(const Vector3 &v); // 正規化
+	
+	Vector3 Lerp(const Vector3 &v1, const Vector3 &v2, float t); // 線形補間
+	
+	Vector3 Bezier(const Vector3 &controlPoint0, const Vector3 &controlPoint1, const Vector3 &controlPoint2, float t); // ベジエ
+
+	// -------------------------------------------------------------------
 
 } // MathUtility

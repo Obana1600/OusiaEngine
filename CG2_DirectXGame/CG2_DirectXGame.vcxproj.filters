@@ -31,9 +31,6 @@
     <ClCompile Include="Vector.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Transform.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="externals\imgui\imgui.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -95,6 +92,15 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="VertexData.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformationMatrix.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionLight.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
