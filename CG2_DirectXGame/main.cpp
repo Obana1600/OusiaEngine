@@ -897,6 +897,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 色を白に設定する
 	materialData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	materialData->enableLighting = true;
+	materialData->uvTransform = MathUtility::MakeIdentity4x4();
 
 	// WVPのリソースを作る。Matrix4x4、1つ分のサイズを用意する
 	ID3D12Resource *wvpResource = CreateBufferResource(device, sizeof(TransformationMatrix));
@@ -976,6 +977,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 色を白に設定する。SpriteはLightingしないのでfalseを設定する
 	materialDataSprite->color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	materialDataSprite->enableLighting = false;
+	materialDataSprite->uvTransform = MathUtility::MakeIdentity4x4();
 
 
 	// 平行光源用のリソースを作る
@@ -1114,7 +1116,40 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			// 更新 ================================================================================
 
-			transform.rotate.y += 0.03f;
+#ifdef USE_IMGUI // imguiの更新
+			ImGui::Begin("Debug");
+
+			ImGui::Separator(); // camera
+			ImGui::DragFloat3("camera translate", &cameraTransform.translate.x, 0.01f);
+			ImGui::DragFloat3("camera rotate", &cameraTransform.rotate.x, 0.01f);
+
+			ImGui::Separator(); // sphere
+			ImGui::DragFloat3("sphere rotate", &transform.rotate.x, 0.01f);
+			ImGui::ColorEdit4("sphere color", &materialData->color.x);
+			ImGui::Checkbox("sphere enableLighting", reinterpret_cast<bool *>(&materialData->enableLighting));
+			ImGui::Checkbox("sphere useMonsterBall", &useMonsterBall);
+
+			ImGui::Separator(); // sprite
+			ImGui::DragFloat3("sprite translate", &transformSprite.translate.x, 0.1f);
+			ImGui::ColorEdit4("sprite color", &materialDataSprite->color.x);
+			{
+				static Transform uvTransform{ .scale{ 1.0f, 1.0f, 1.0f }, .rotate{}, .translate{} };
+				ImGui::DragFloat2("uv translate", &uvTransform.translate.x, 0.001f);
+				ImGui::DragFloat2("uv scale", &uvTransform.scale.x, 0.001f);
+				ImGui::DragFloat("uv rotate", &uvTransform.rotate.z, 0.001f); // 2dなのでz軸回転
+				materialDataSprite->uvTransform = MathUtility::MakeAffineMatrix(uvTransform.scale, uvTransform.rotate, uvTransform.translate);
+			}
+
+			ImGui::Separator(); // directionLight
+			ImGui::ColorEdit4("directionLight color", &directionLightData->color.x);
+			if (ImGui::DragFloat3("directionLight direction", &directionLightData->direction.x, 0.01f)) {
+				directionLightData->direction = MathUtility::Normalize(directionLightData->direction);
+			}
+			ImGui::DragFloat("directionLight intensity", &directionLightData->intensity, 0.001f, 0.0f, 1.0f);
+
+			ImGui::Separator();
+			ImGui::End();
+#endif
 
 			wvpData->World = MathUtility::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = MathUtility::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
@@ -1129,22 +1164,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			wvpData->WVP = worldViewProjectionMatrix;
 			wvpDataSprite->WVP = worldViewProjectionMatrixSprite;
-
-#ifdef USE_IMGUI // imguiの更新
-			ImGui::Begin("Debug");
-			ImGui::DragFloat3("camera translate", &cameraTransform.translate.x, 0.01f);
-			ImGui::DragFloat3("camera rotate", &cameraTransform.rotate.x, 0.01f);
-			ImGui::Separator();
-			ImGui::ColorEdit4("directionLight color", reinterpret_cast<float *>(&directionLightData->color));
-			if (ImGui::DragFloat3("directionLight direction", &directionLightData->direction.x, 0.01f)) {
-				directionLightData->direction = MathUtility::Normalize(directionLightData->direction);
-			}
-			ImGui::DragFloat("directionLight intensity", &directionLightData->intensity, 0.001f, 0.0f, 1.0f);
-			ImGui::Separator();
-			ImGui::DragFloat3("translate sprite", &transformSprite.translate.x, 0.1f);
-			ImGui::ColorPicker4("color", reinterpret_cast<float *>(materialData));
-			ImGui::End();
-#endif
 
 			// ================================================================================ 更新
 
@@ -1299,12 +1318,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	directionLightResource->Release();
 	materialResourceSprite->Release();
 	wvpResourceSprite->Release();
-	wvpResource->Release();
 	indexResourceSprite->Release();
 	vertexResourceSprite->Release();
+	materialResource->Release();
+	wvpResource->Release();
 	indexResource->Release();
 	vertexResource->Release();
-	materialResource->Release();
 	graphicsPipelineState->Release();
 	signatureBlob->Release();
 	if (errorBlob) {
