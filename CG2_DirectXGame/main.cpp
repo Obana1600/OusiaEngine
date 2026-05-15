@@ -24,6 +24,7 @@
 #include "DirectionLight.h"
 #include "ModelData.h"
 #include "D3DResourceLeakChecker.h"
+#include <xaudio2.h>
 
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
@@ -36,6 +37,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "Dbghelp.lib")
 #pragma comment(lib, "dxcompiler.lib")
+#pragma comment(lib, "xaudio2.lib")
 
 using Microsoft::WRL::ComPtr;
 
@@ -355,6 +357,116 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const ComPtr<ID3D12Descriptor
 	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
 	handleGPU.ptr += (descriptorSize * index);
 	return handleGPU;
+}
+
+
+struct ChunkHeader { // チャンクヘッダ
+	char id[4]; // チャンク毎のID
+	int32_t size; // チャンクサイズ
+};
+
+struct RiffHeader { // RIFFヘッダチャンク
+	ChunkHeader chunk; // "RIFF"
+	char type[4]; // "WAVE"
+};
+
+struct FormatChunk { // FMTチャンク
+	ChunkHeader chunk; // "fmt"
+	WAVEFORMATEX fmt; // 波形フォーマット
+};
+
+struct SoundData { // 音声データ
+	WAVEFORMATEX wfex; // 波形フォーマット
+	BYTE *pBuffer; // バッファの先頭アドレス
+	unsigned int bufferSize; // バッファのサイズ
+};
+
+SoundData SoundLoadWave(const char *filename) {
+	// ファイル入力ストリームのインスタンス
+	std::ifstream file{};
+	// .wavファイルをバイナリモードで開く
+	file.open(filename, std::ios_base::binary);
+	// ファイルオープン失敗を検出する
+	assert(file.is_open());
+
+	// RIFFヘッダーの読み込み
+	RiffHeader riff{};
+	file.read((char *)&riff, sizeof(riff));
+	// ファイルがRIFFかチェック
+	if (strncmp(riff.chunk.id, "RIFF", 4) != 0) {
+		assert(false);
+	}
+	// タイプがWAVEかチェック
+	if (strncmp(riff.type, "WAVE", 4) != 0) {
+		assert(false);
+	}
+
+	// Formatチャンクの読み込み
+	FormatChunk format{};
+	// チャンクヘッダーの確認
+	file.read((char *)&format, sizeof(ChunkHeader));
+	if (strncmp(format.chunk.id, "fmt ", 4) != 0) {
+		assert(false);
+	}
+	// チャンク本体の読み込み
+	assert(format.chunk.size <= sizeof(format.fmt));
+	file.read((char *)&format.fmt, format.chunk.size);
+
+	// Dataチャンクの読み込み
+	ChunkHeader data{};
+	file.read((char *)&data, sizeof(data));
+	// JUNKチャンクを検出した場合
+	if (strncmp(data.id, "JUNK", 4) == 0) {
+		// 読み取り位置をJUNKチャンクの終わりまで進める
+		file.seekg(data.size, std::ios_base::cur);
+		// 再読み込み
+		file.read((char *)&data, sizeof(data));
+	}
+
+	if (strncmp(data.id, "data", 4) != 0) {
+		assert(false);
+	}
+	// Dataチャンクのデータ部（波形データ）の読み込み
+	char *pBuffer = new char[data.size];
+	file.read(pBuffer, data.size);
+	// Waveファイルを閉じる
+	file.close();
+
+	// returnするための音声データ
+	SoundData soundData{};
+	soundData.wfex = format.fmt;
+	soundData.pBuffer = reinterpret_cast<BYTE *>(pBuffer);
+	soundData.bufferSize = data.size;
+
+	return soundData;
+}
+
+void SoundUnload(SoundData *soundData) {
+	// バッファのメモリを解放
+	delete[] soundData->pBuffer;
+
+	soundData->pBuffer = 0;
+	soundData->bufferSize = 0;
+	soundData->wfex = {};
+}
+
+void SoundPlayWave(IXAudio2 *xAudio2, const SoundData &soundData) {
+	// 波形フォーマットを元にSourceVoiceの生成
+	static IXAudio2SourceVoice *pSourceVoice = nullptr;
+	HRESULT hr = xAudio2->CreateSourceVoice(&pSourceVoice, &soundData.wfex);
+	assert(SUCCEEDED(hr));
+
+	// 再生する波形データの設定
+	XAUDIO2_BUFFER buf{};
+	buf.pAudioData = soundData.pBuffer;
+	buf.AudioBytes = soundData.bufferSize;
+	buf.Flags = XAUDIO2_END_OF_STREAM;
+
+	// 波形データの再生
+	hr = pSourceVoice->SubmitSourceBuffer(&buf);
+	assert(SUCCEEDED(hr));
+	hr = pSourceVoice->Start();
+	assert(SUCCEEDED(hr));
 }
 
 
@@ -937,6 +1049,21 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ========================================================================== ViewportとScissor
 
 
+	// xaudio2 ====================================================================================
+
+	ComPtr<IXAudio2> xAudio2{};
+	IXAudio2MasteringVoice *masterVoice = nullptr;
+
+	// XAudioのエンジンのインスタンスを生成
+	hr = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+	assert(SUCCEEDED(hr));
+	// マスターボイスを生成
+	hr = xAudio2->CreateMasteringVoice(&masterVoice);
+	assert(SUCCEEDED(hr));
+
+	// ==================================================================================== xaudio2
+
+
 	// ImGuiの初期化 ================================================================================
 
 #ifdef USE_IMGUI
@@ -1008,6 +1135,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
 	// SRVの生成
 	device->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
+
+	// 音声読み込み
+	SoundData soundData1 = SoundLoadWave("resources/Alarm01.wav");
+	SoundPlayWave(xAudio2.Get(), soundData1);
 
 	// =================================================================================== variable
 
@@ -1231,6 +1362,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// オブジェクトの解放 =============================================================================
 
+	xAudio2.Reset();
+	SoundUnload(&soundData1);
 	CloseHandle(fenceEvent);
 	CloseWindow(hwnd);
 
