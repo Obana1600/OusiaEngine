@@ -25,6 +25,8 @@
 #include "ModelData.h"
 #include "D3DResourceLeakChecker.h"
 #include <xaudio2.h>
+#define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
+#include <dinput.h>
 
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
@@ -38,6 +40,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #pragma comment(lib, "Dbghelp.lib")
 #pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "xaudio2.lib")
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 
 using Microsoft::WRL::ComPtr;
 
@@ -1064,6 +1068,31 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ==================================================================================== xaudio2
 
 
+	// DirectInputの初期化 ==========================================================================
+
+	// DirectInputの初期化
+	ComPtr<IDirectInput8> directInput{};
+	hr = DirectInput8Create(
+		wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+		reinterpret_cast<void **>(directInput.ReleaseAndGetAddressOf()), nullptr);
+	assert(SUCCEEDED(hr));
+
+	// キーボードデバイスの生成
+	ComPtr<IDirectInputDevice8> keyboard{};
+	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(hr));
+
+	// 入力データ形式のセット
+	hr = keyboard->SetDataFormat(&c_dfDIKeyboard);
+	assert(SUCCEEDED(hr));
+
+	// 排他制御レベルのセット
+	hr = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(hr));
+
+	// ========================================================================== DirectInputの初期化
+
+
 	// ImGuiの初期化 ================================================================================
 
 #ifdef USE_IMGUI
@@ -1087,6 +1116,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 
 	// variable ===================================================================================
+
+	uint8_t keys[256]{}, preKeys[256]{};
 
 	// Transform変数を作る
 	Transform transform{ { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
@@ -1154,6 +1185,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			DispatchMessage(&msg);
 		} else {
 
+			// Input更新 ===========================================================================
+
+			// キーボード情報の取得開始
+			keyboard->Acquire();
+
+			// 全キーの入力状態を取得する
+			std::memcpy(preKeys, keys, sizeof(keys));
+			keyboard->GetDeviceState(sizeof(keys), keys);
+
+			// =========================================================================== Input更新
+
+
 			// imguiの更新の開始 ====================================================================
 
 #ifdef USE_IMGUI
@@ -1215,6 +1258,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			wvpData->WVP = worldViewProjectionMatrix;
 			wvpDataSprite->WVP = worldViewProjectionMatrixSprite;
+
+			if (keys[DIK_0] && !preKeys[DIK_0]) {
+				OutputDebugStringA("Hit 0\n");
+			}
 
 			// ================================================================================ 更新
 
