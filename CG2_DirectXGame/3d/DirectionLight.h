@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Vector.h"
+#include "math/Vector4.h"
+#include "math/Vector3.h"
 
 
 struct DirectionLight {
