@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{F81E18AD-4F37-A68A-B739-061A6EE3D824}</ProjectGuid>
+    <ProjectGuid>{357C3ECD-702D-4361-ABF4-A4026E7014C1}</ProjectGuid>
     <RootNamespace>CG2DirectXGame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
