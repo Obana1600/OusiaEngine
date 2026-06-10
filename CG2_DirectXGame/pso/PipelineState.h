@@ -31,6 +31,10 @@ public: // メンバ関数
 		return m_isValid;
 	}
 
+	ID3D12PipelineState *Get() const {
+		return m_pipelineState.Get();
+	}
+
 
 private: // メンバ変数
 

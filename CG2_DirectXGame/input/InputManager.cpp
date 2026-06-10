@@ -114,9 +114,9 @@ bool InputManager::TriggerMouse(MouseButton buttonNumber) const {
 
 InputManager::MouseMove InputManager::GetMouseMove() const {
 	return MouseMove{
-		m_mouse.lX - m_mousePre.lX,
-		m_mouse.lY - m_mousePre.lY,
-		m_mouse.lZ - m_mousePre.lZ
+		m_mouse.lX,
+		m_mouse.lY,
+		m_mouse.lZ
 	};
 }
 

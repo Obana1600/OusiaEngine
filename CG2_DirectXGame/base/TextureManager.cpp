@@ -214,7 +214,7 @@ uint32_t TextureManager::LoadInternal(const std::string &fileName) {
 	m_useTable[slot] = true;
 
 	// テクスチャ読み込み
-	DirectX::ScratchImage mipImages = LoadTexture(fileName);
+	DirectX::ScratchImage mipImages = LoadTexture(m_directoryPath + fileName);
 	const DirectX::TexMetadata &metadata = mipImages.GetMetadata();
 
 	// リソース作成

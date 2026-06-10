@@ -69,8 +69,10 @@ void ImGuiManager::End() {
 
 
 void ImGuiManager::Draw() {
-	// 実際のcommandListのImGuiの描画コマンドリストを積む
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_dxCommon->GetCommandListForRender());
+	ID3D12GraphicsCommandList *commandList = m_dxCommon->GetCommandListForRender();
+	ID3D12DescriptorHeap *heaps[] = { m_srvHeap.Get() };
+	commandList->SetDescriptorHeaps(1, heaps);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 }
 
 // ==================================================================================== public func

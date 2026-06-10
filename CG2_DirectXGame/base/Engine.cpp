@@ -1,4 +1,6 @@
 #include "Engine.h"
+#include "TextureManager.h"
+#include "input/InputManager.h"
 
 void Engine::Initialize(const std::wstring &title, bool enableDebugLayer) {
 
@@ -20,15 +22,8 @@ void Engine::Initialize(const std::wstring &title, bool enableDebugLayer) {
     // imgui
     ImGuiManager::GetInstance()->Initialize();
 
-    // PSO
-    PipelineState pipelineState{};
-    RootSignature rootSignature = RootSignature(DirectXCommon::GetInstance()->GetDevice());
-
-    pipelineState.SetRootSignature(rootSignature.Get());
-    pipelineState.SetInputLayout(VertexData::InputLayout);
-    pipelineState.SetVS(L"Object3d.VS.hlsl", L"vs_6_0");
-    pipelineState.SetPS(L"Object3d.PS.hlsl", L"ps_6_0");
-    pipelineState.Create(DirectXCommon::GetInstance()->GetDevice());
+    // texmgr
+    TextureManager::GetInstance()->Initialize();
 }
 
 
@@ -56,8 +51,10 @@ bool Engine::Update() {
     }
 
     if (msg.message == WM_QUIT) {
-        return true;  // ループ脱出
+        return true;
     }
 
-    return false;  // ループ継続
+    InputManager::GetInstance()->Update();
+
+    return false;
 }

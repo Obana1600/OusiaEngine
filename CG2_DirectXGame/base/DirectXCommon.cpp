@@ -192,6 +192,27 @@ void DirectXCommon::PostDraw() {
 	assert(SUCCEEDED(hr));
 }
 
+
+void DirectXCommon::ExecuteTransferCommands() {
+	HRESULT hr = m_commandListForTransfer->Close();
+	assert(SUCCEEDED(hr));
+
+	ID3D12CommandList *commandLists[] = { m_commandListForTransfer.Get() };
+	m_commandQueue->ExecuteCommandLists(1, commandLists);
+
+	m_fenceVal++;
+	m_commandQueue->Signal(m_fence.Get(), m_fenceVal);
+	if (m_fence->GetCompletedValue() < m_fenceVal) {
+		m_fence->SetEventOnCompletion(m_fenceVal, m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	hr = m_commandAllocatorForTransfer->Reset();
+	assert(SUCCEEDED(hr));
+	hr = m_commandListForTransfer->Reset(m_commandAllocatorForTransfer.Get(), nullptr);
+	assert(SUCCEEDED(hr));
+}
+
 // ==================================================================================== public func
 
 

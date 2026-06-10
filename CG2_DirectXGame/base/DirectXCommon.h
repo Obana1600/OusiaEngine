@@ -43,6 +43,8 @@ public: // メンバ関数
 		return m_commandListForRender.Get();
 	}
 
+	void ExecuteTransferCommands();
+
 	size_t GetBackBufferCount() const {
 		return m_backBuffers.size();
 	}

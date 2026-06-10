@@ -14,7 +14,7 @@
 
 namespace Engine {
 
-	void Initialize(const std::wstring &title = L"LE2X_99_カマタ_タロウ", bool enableDebugLayer = false);
+	void Initialize(const std::wstring &title = L"DirectXGame", bool enableDebugLayer = false);
 
 	void Finalize();
 

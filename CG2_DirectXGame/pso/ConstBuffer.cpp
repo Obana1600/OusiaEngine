@@ -10,11 +10,11 @@ ConstBuffer::ConstBuffer(const Microsoft::WRL::ComPtr<ID3D12Device> &device, siz
 
 	m_resource = CreateBufferResource(device, sizeAligned);
 
+	HRESULT hr = m_resource->Map(0, nullptr, &m_mappedData);
+	assert(SUCCEEDED(hr));
+
 	if (data) {
-		void *mappedData = nullptr;
-		HRESULT hr = m_resource->Map(0, nullptr, &mappedData);
-		assert(SUCCEEDED(hr));
-		std::memcpy(mappedData, data, size);
+		std::memcpy(m_mappedData, data, size);
 	}
 
 	m_desc.BufferLocation = m_resource->GetGPUVirtualAddress();

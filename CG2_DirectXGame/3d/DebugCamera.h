@@ -2,6 +2,7 @@
 
 #include "math/Matrix4x4.h"
 #include "math/Vector3.h"
+#include <math/MathUtility.h>
 
 
 class DebugCamera {
@@ -28,10 +29,17 @@ public: // public関数
 private: // private変数
 
 	Vector3 m_pivot = { 0.0f, 0.0f, 0.0f };
-	Vector3 m_rotation = { 0.0f, 0.0f, 0.0f };
-	Vector3 m_translation = { 0.0f, 0.0f, -50.0f };
+	Matrix4x4 m_matRot = MathUtility::MakeIdentity4x4();
+	float m_distance = 5.0f;
 
 	Matrix4x4 m_viewProjectionMatrix{};
 	Matrix4x4 m_viewportMatrix{};
+
+
+private:
+
+	void UpdateTransform();
+
+	void UpdateMatrix();
 
 };
