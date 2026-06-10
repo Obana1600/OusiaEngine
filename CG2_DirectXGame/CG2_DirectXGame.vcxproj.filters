@@ -13,13 +13,229 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{a9952492-e5f6-4392-8613-59f3b81729d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="2d">
+      <UniqueIdentifier>{786d9461-6a60-413f-9028-b3c7e52d4966}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math">
+      <UniqueIdentifier>{624ac296-ab8b-435e-b607-b80d3922e39c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input">
+      <UniqueIdentifier>{b4c03240-f90e-462c-be85-ec0241617e30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{7a3b24a4-1323-4f39-a4ff-410c32417389}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pso">
+      <UniqueIdentifier>{a0f2f161-8896-455f-9b72-0d52111eb9fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3d">
+      <UniqueIdentifier>{605945fb-b17d-4f51-a849-149a34ee83d3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
+    <None Include="Object3d.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="externals\imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_tables.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_widgets.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="math\MathUtility.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\Matrix4x4.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\Vector2.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\Vector3.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\Vector4.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="input\InputManager.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="base\DirectXCommon.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\Engine.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\StringUtility.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\TextureManager.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\WinApp.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="2d\ImGuiManager.cpp">
+      <Filter>2d</Filter>
+    </ClCompile>
+    <ClCompile Include="3d\DebugCamera.cpp">
+      <Filter>3d</Filter>
+    </ClCompile>
+    <ClCompile Include="pso\ConstBuffer.cpp">
+      <Filter>pso</Filter>
+    </ClCompile>
+    <ClCompile Include="pso\DXCompiler.cpp">
+      <Filter>pso</Filter>
+    </ClCompile>
+    <ClCompile Include="pso\IndexBuffer.cpp">
+      <Filter>pso</Filter>
+    </ClCompile>
+    <ClCompile Include="pso\PipelineState.cpp">
+      <Filter>pso</Filter>
+    </ClCompile>
+    <ClCompile Include="pso\RootSignature.cpp">
+      <Filter>pso</Filter>
+    </ClCompile>
+    <ClCompile Include="pso\VertexBuffer.cpp">
+      <Filter>pso</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScene.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Object3d.VS.hlsl" />
+    <FxCompile Include="Object3d.PS.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Transform.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imconfig.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui_impl_dx12.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui_impl_win32.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imgui_internal.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imstb_rectpack.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imstb_textedit.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\imgui\imstb_truetype.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexData.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformationMatrix.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="math\MathUtility.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\Matrix4x4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\Vector2.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\Vector3.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\Vector4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="input\InputManager.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="base\DirectXCommon.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\Engine.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\StringUtility.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\TextureManager.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\WinApp.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="2d\ImGuiManager.h">
+      <Filter>2d</Filter>
+    </ClInclude>
+    <ClInclude Include="3d\DebugCamera.h">
+      <Filter>3d</Filter>
+    </ClInclude>
+    <ClInclude Include="3d\DirectionLight.h">
+      <Filter>3d</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\ConstBuffer.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\CreateBufferResource.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\DXCompiler.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\IndexBuffer.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\PipelineState.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\RootSignature.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="pso\VertexBuffer.h">
+      <Filter>pso</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScene.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="3d\Material.h">
+      <Filter>3d</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="externals\imgui\LICENSE.txt">
+      <Filter>imgui</Filter>
+    </Text>
   </ItemGroup>
 </Project>
