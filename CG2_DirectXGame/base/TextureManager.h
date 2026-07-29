@@ -1,11 +1,11 @@
 #pragma once
 
 #include "externals/DirectXTex/d3dx12.h"
-#include <string>
-#include <wrl.h>
-#include <d3d12.h>
-#include <vector>
 #include <array>
+#include <d3d12.h>
+#include <string>
+#include <vector>
+#include <wrl.h>
 
 
 class TextureManager {
@@ -23,7 +23,7 @@ public: // 静的メンバ変数
 
 	static const size_t kNumDescriptors = 1024;
 
-	
+
 public: // 静的メンバ関数
 
 	static TextureManager *GetInstance();
@@ -37,23 +37,27 @@ public: // メンバ関数
 
 	void SetGraphicsRootDescriptorTable(ID3D12GraphicsCommandList *commandList, UINT rootParamIndex, uint32_t textureHandle);
 
+	D3D12_RESOURCE_DESC GetResourceDesc(uint32_t textureHandle) const {
+		return textures_[textureHandle].resource->GetDesc();
+	}
+
 
 private: // メンバ変数
 
-	ID3D12Device *m_device = nullptr;
 
-	UINT m_sDescriptorHandleIncrementSize = 0u;
+	UINT descriptorHandleIncrementSize_ = 0u;
 
-	std::string m_directoryPath{};
+	std::string directoryPath_{};
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvHeap{};
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_{};
 
-	std::array<Texture, kNumDescriptors> m_textures{};
-	std::vector<bool> m_useTable{};
+	std::array<Texture, kNumDescriptors> textures_{};
+	std::vector<bool> useTable_{};
 
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_intermediateResources{};
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResources_{};
 
-	ID3D12GraphicsCommandList *m_commandListForTransfer = nullptr;
+	ID3D12Device *device_ = nullptr;
+	ID3D12GraphicsCommandList *commandListForTransfer_ = nullptr;
 
 
 private: // メンバ関数
@@ -64,5 +68,4 @@ private: // メンバ関数
 	const TextureManager &operator=(const TextureManager &) = delete;
 
 	uint32_t LoadInternal(const std::string &filePath);
-
-}; 
+};

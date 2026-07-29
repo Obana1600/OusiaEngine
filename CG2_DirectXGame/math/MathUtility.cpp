@@ -1,6 +1,7 @@
 #include "MathUtility.h"
-#include <cmath>
+
 #include <cassert>
+#include <cmath>
 
 
 // helper func ====================================================================================
@@ -9,11 +10,8 @@ namespace {
 
 	// 3x3の行列式
 	float Determinant(float a00, float a01, float a02, float a10, float a11, float a12, float a20, float a21, float a22) {
-		return a00 * (a11 * a22 - a12 * a21)
-			- a10 * (a01 * a22 - a02 * a21)
-			+ a20 * (a01 * a12 - a02 * a11);
+		return a00 * (a11 * a22 - a12 * a21) - a10 * (a01 * a22 - a02 * a21) + a20 * (a01 * a12 - a02 * a11);
 	}
-
 
 	// 4x4の行列式
 	float Determinant(const Matrix4x4 &m) {
@@ -47,7 +45,6 @@ namespace {
 
 		return (m.m[0][0] * minor0) - (m.m[1][0] * minor1) + (m.m[2][0] * minor2) - (m.m[3][0] * minor3);
 	}
-
 
 	// 余因子行列
 	Matrix4x4 Cofactor(const Matrix4x4 &m) {
@@ -144,7 +141,7 @@ namespace {
 		return result;
 	}
 
-}
+} // namespace
 
 // ==================================================================================== helper func
 
@@ -186,9 +183,7 @@ namespace MathUtility {
 	// Vector3 ====================================================================================
 
 	float Dot(const Vector3 &v1, const Vector3 &v2) {
-		return v1.x * v2.x
-			+ v1.y * v2.y
-			+ v1.z * v2.z;
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
 
 
@@ -196,7 +191,8 @@ namespace MathUtility {
 		return Vector3(
 			v1.y * v2.z - v1.z * v2.y,
 			v1.z * v2.x - v1.x * v2.z,
-			v1.x * v2.y - v1.y * v2.x);
+			v1.x * v2.y - v1.y * v2.x
+		);
 	}
 
 
@@ -296,6 +292,11 @@ namespace MathUtility {
 	}
 
 
+	Matrix4x4 MakeRotateMatrix(const Vector3 &rotate) {
+		return MakeRotateXMatrix(rotate.x) * MakeRotateYMatrix(rotate.y) * MakeRotateZMatrix(rotate.z);
+	}
+
+
 	Matrix4x4 MakeRotateXMatrix(float radian) {
 		Matrix4x4 result = MakeIdentity4x4();
 
@@ -351,7 +352,7 @@ namespace MathUtility {
 
 
 	Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
-		Matrix4x4 result{};	// 透視投影行列は[3][3] = 0.0fのためゼロ初期化
+		Matrix4x4 result{}; // 透視投影行列は[3][3] = 0.0fのためゼロ初期化
 
 		float cot = 1.0f / std::tan(fovY / 2.0f);
 
@@ -394,4 +395,4 @@ namespace MathUtility {
 
 	// ================================================================================== Matrix4x4
 
-}
+} // namespace MathUtility

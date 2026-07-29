@@ -1,247 +1,280 @@
 #include "GameScene.h"
-#include "VertexData.h"
-#include "base/DirectXCommon.h"
+
+#include "3d/Model.h"
 #include "base/TextureManager.h"
-#include "TransformationMatrix.h"
-#include "3d/Material.h"
-#include "3d/DirectionLight.h"
-#include "math/MathUtility.h"
 #include "externals/imgui/imgui.h"
+#include "math/MathUtility.h"
 #include <cassert>
-#include <format>
+#include <numbers>
+
+using namespace MathUtility;
+
+
+namespace {
+
+	static const char *labels[] = {
+		"平面",
+		"スプライト",
+		"球",
+		"ティーポット",
+		"ウサギ",
+		"複数メッシュ",
+		"複数マテリアル",
+		"スザンヌ"
+	};
+
+	static const char *assets[] = {
+		"plane",
+		"sprite",
+		"sphere",
+		"teapot",
+		"bunny",
+		"multiMesh",
+		"multiMaterial",
+		"suzanne"
+	};
+
+	const char *ToLabel(ObjectType name) {
+		return labels[static_cast<int>(name)];
+	}
+
+	const char *ToAsset(ObjectType name) {
+		return assets[static_cast<int>(name)];
+	}
+
+} // namespace
 
 
 
 void GameScene::Initialize() {
+	camera_.Initialize();
 
-	// pso ---------------------------------------------------------------
+	uvCheckerHandle = TextureManager::Load("uvChecker.png");
 
-	m_pipelineState = std::make_unique<PipelineState>();
-	m_rootSignature = std::make_unique<RootSignature>(DirectXCommon::GetInstance()->GetDevice());
-
-	m_pipelineState->SetRootSignature(m_rootSignature->Get());
-	m_pipelineState->SetInputLayout(VertexData::InputLayout);
-	m_pipelineState->SetVS(L"Object3d.VS.hlsl", L"vs_6_0");
-	m_pipelineState->SetPS(L"Object3d.PS.hlsl", L"ps_6_0");
-	m_pipelineState->Create(DirectXCommon::GetInstance()->GetDevice());
-
-	// -------------------------------------------------------------------
-
-
-	// camera ------------------------------------------------------------
-
-	m_debugCamera = std::make_unique<DebugCamera>();
-	m_debugCamera->Initialize();
-
-	// -------------------------------------------------------------------
-
-
-	// buffer -------------------------------------------------------
-
-	ID3D12Device *device = DirectXCommon::GetInstance()->GetDevice();
-
-	// vertex
-	VertexData vertices[] = {
-		{ { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f } }, // 左下
-		{ { 0.0f, 0.5f, 0.0f, 1.0f }, { 0.5f, 0.0f }, { 0.0f, 0.0f, -1.0f } }, // 上
-		{ { 0.5f, -0.5f, 0.0f, 1.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f, -1.0f } }, // 右下
-	};
-	m_vertexBuffer = std::make_unique<VertexBuffer>(device, 3, sizeof(VertexData), vertices);
-	assert(m_vertexBuffer->IsValid());
-
-	// index
-	uint32_t indices[] = { 0, 1, 2 };
-	m_indexBuffer = std::make_unique<IndexBuffer>(device, 3, indices);
-	assert(m_indexBuffer->IsValid());
-
-	// directionLight
-	DirectionLight dirLightData = { { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 1.0f }, 1.0f };
-	m_dirLightBuffer = std::make_unique<ConstBuffer>(device, sizeof(DirectionLight), &dirLightData);
-	assert(m_dirLightBuffer->IsValid());
-
-	// -------------------------------------------------------------------
-
-
-	// texture -----------------------------------------------------------
-
-	m_texHandles[0] = TextureManager::Load("monsterBall.png");
-	m_texHandles[1] = TextureManager::Load("uvChecker.png");
-
-	// -------------------------------------------------------------------
-
-	CreateTriangle();
+	CreateObject(ObjectType::Plane);
+	auto it = objects_.begin();
+	it->second.worldTransform.rotation_.y = std::numbers::pi_v<float>;
 }
 
 
 void GameScene::Update() {
 
-	// imgui -------------------------------------------------------------
+	OnImGui();
 
-	ImGui::Begin("Settings");
+	camera_.Update();
 
-	if (ImGui::Button("Create")) {
-		CreateTriangle();
-	}
-
-	// obj
-	for (uint32_t i = 0; i < m_triangles.size(); i++) {
-		if (!ImGui::CollapsingHeader(std::format("Object {}", i).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-			continue;
-		}
-		ImGui::PushID(i);
-
-		ImGui::DragFloat3("Translate", &m_triangles[i].transform.translate.x, 0.01f);
-		ImGui::DragFloat3("Rotate", &m_triangles[i].transform.rotate.x, 0.01f);
-		ImGui::DragFloat3("Scale", &m_triangles[i].transform.scale.x, 0.01f);
-
-		if (ImGui::Button("Delete")) {
-			DeleteTriangle(i);
-			ImGui:: PopID();
-			i--;
-			continue;
-		}
-
-		// material ------------------------------------------------------
-
-		ImGui::Indent();
-		if (!ImGui::CollapsingHeader("Material")) {
-			ImGui::Unindent();
-			ImGui::PopID();
-			continue;
-		}
-
-		auto *materialData = m_triangles[i].materialBuffer->GetData<Material>();
-
-		ImGui::DragFloat2("UVTranslate", &m_triangles[i].uvTransform.translate.x, 0.001f);
-		ImGui::DragFloat("UVrotate", &m_triangles[i].uvTransform.rotate.z, 0.001f);
-		ImGui::DragFloat2("UVScale", &m_triangles[i].uvTransform.scale.x, 0.001f);
-		materialData->uvTransform = MathUtility::MakeAffineMatrix(m_triangles[i].uvTransform.scale, m_triangles[i].uvTransform.rotate, m_triangles[i].uvTransform.translate);
-		ImGui::ColorEdit4("color", &materialData->color.x);
-		ImGui::Combo("Lighting", &materialData->enableLighting, "None\0Apply\0");
-
-		if (ImGui::Combo("Texture", &m_triangles[i].texIndex, "monsterBall.png\0uvChecker.png\0")) {
-			m_triangles[i].texHandle = m_texHandles[m_triangles[i].texIndex];
-		}
-		ImGui::Unindent();
-
-		// ---------------------------------------------------------------
-
-		ImGui::PopID();
-	}
-
-	// light
-	ImGui::Separator();
-	if (ImGui::CollapsingHeader("Light")) {
-		ImGui::PushID("Light");
-
-		auto *lightData = m_dirLightBuffer->GetData<DirectionLight>();
-
-		ImGui::ColorEdit4("color", &lightData->color.x);
-		Vector3 dir = lightData->direction;
-		if (ImGui::DragFloat3("direction", &dir.x, 0.01f)) {
-			float len = MathUtility::Length(dir);
-			if (len != 0.0f) {
-				lightData->direction = MathUtility::Normalize(dir);
-			}
-		}
-		ImGui::DragFloat("intensity", &lightData->intensity, 0.001f, 0.0f, 1.0f);
-
-		ImGui::PopID();
-	}
-
-	ImGui::End();
-
-
-	ImGui::Begin("Camera Control");
-	ImGui::Text("Middle Drag        : Orbit rotation");
-	ImGui::Text("Middle Drag + Shift: XY-axes movement");
-	ImGui::Text("Scroll Wheel       : Z-axis movement");
-	ImGui::Text("R                  : Reset transform");
-	ImGui::End();
-
-	// -------------------------------------------------------------------
-
-
-	m_debugCamera->Update();
-
-	for (auto &tri : m_triangles) {
-		auto *wvpData = tri.wvpBuffer->GetData<TransformationMatrix>();
-
-		wvpData->World = MathUtility::MakeAffineMatrix(tri.transform.scale, tri.transform.rotate, tri.transform.translate);
-		wvpData->WVP = wvpData->World * m_debugCamera->GetViewProjectionMatrix();
+	for (auto &[name, obj] : objects_) {
+		obj.worldTransform.Update();
 	}
 }
 
 
 void GameScene::Draw() const {
-	DirectXCommon *dxCommon = DirectXCommon::GetInstance();
-	ID3D12GraphicsCommandList *commandList = dxCommon->GetCommandListForRender();
+	Model::PreDraw();
 
-	assert(commandList);
-	assert(m_pipelineState->IsValid());
-	assert(m_rootSignature->IsValid());
-	assert(m_vertexBuffer->IsValid());
-	assert(m_indexBuffer->IsValid());
-
-	// ルートシグネチャとパイプラインステートを設定
-	commandList->SetGraphicsRootSignature(m_rootSignature->Get());
-	commandList->SetPipelineState(m_pipelineState->Get());
-
-	// 頂点バッファを設定
-	D3D12_VERTEX_BUFFER_VIEW vbv = m_vertexBuffer->View();
-	commandList->IASetVertexBuffers(0, 1, &vbv);
-
-	// インデックスバッファを設定
-	D3D12_INDEX_BUFFER_VIEW ibv = m_indexBuffer->View();
-	commandList->IASetIndexBuffer(&ibv);
-
-	// プリミティブトポロジーを設定
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// 平行光源の設定
-	commandList->SetGraphicsRootConstantBufferView(3, m_dirLightBuffer->GetAddress());
-
-	// 三角形の描画
-	for (const auto &tri : m_triangles) {
-		commandList->SetGraphicsRootConstantBufferView(0, tri.materialBuffer->GetAddress());
-		commandList->SetGraphicsRootConstantBufferView(1, tri.wvpBuffer->GetAddress());
-
-		TextureManager::GetInstance()->SetGraphicsRootDescriptorTable(commandList, 2, tri.texHandle);
-
-		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+	for (auto &[name, obj] : objects_) {
+		obj.model->Draw(obj.worldTransform, camera_.GetCamera());
 	}
+
+	Model::PostDraw();
+
+
+	Sprite::PreDraw();
+
+	for (auto &sprite : sprites_) {
+		sprite->Draw();
+	}
+
+	Sprite::PostDraw();
 }
 
 
-void GameScene::CreateTriangle() {
-	ID3D12Device *device = DirectXCommon::GetInstance()->GetDevice();
+void GameScene::OnImGui() {
+	ImGui::Begin("設定");
 
-	assert(device);
-	assert(m_vertexBuffer->IsValid());
-	assert(m_indexBuffer->IsValid());
+	// オブジェクト生成 ------------------------------------------------------------------------------
 
-	TriangleObj triangle{};
+	static int currentName = 0;
+	ImGui::Combo("モデル", &currentName, labels, IM_ARRAYSIZE(labels));
 
-	// wvp
-	triangle.wvpBuffer = std::make_unique<ConstBuffer>(device, sizeof(TransformationMatrix));
-	assert(triangle.wvpBuffer->IsValid());
+	if (ImGui::Button("生成")) {
+		CreateObject(static_cast<ObjectType>(currentName));
+	}
 
-	// material
-	Material materialData{};
-	materialData.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	materialData.uvTransform = MathUtility::MakeIdentity4x4();
-	triangle.materialBuffer = std::make_unique<ConstBuffer>(device, sizeof(Material), &materialData);
-	assert(triangle.materialBuffer->IsValid());
+	// --------------------------------------------------------------------------------------------
 
-	// texture
-	triangle.texIndex = 1;
-	triangle.texHandle = m_texHandles[triangle.texIndex];
 
-	// create
-	m_triangles.push_back(std::move(triangle));
+	if (!objects_.empty()) {
+		ImGui::Separator();
+	}
+
+
+	// model -----------------------------------------------------------------------------------
+
+	std::string deleteName;
+	for (auto &[name, obj] : objects_) {
+		if (!ImGui::CollapsingHeader(name.c_str())) {
+			continue;
+		}
+		ImGui::PushID(name.c_str());
+
+		// transform
+		ImGui::DragFloat3("座標", &obj.worldTransform.translation_.x, 0.01f);
+		ImGui::DragFloat3("回転", &obj.worldTransform.rotation_.x, 0.01f);
+		ImGui::DragFloat3("スケール", &obj.worldTransform.scale_.x, 0.01f);
+
+		if (ImGui::Button("削除")) {
+			deleteName = name;
+		}
+
+		ImGui::Indent();
+
+		// material
+		for (auto &[mtlName, mtl] : obj.model->GetMaterials()) {
+			if (!ImGui::CollapsingHeader(mtlName.c_str())) {
+				continue;
+			}
+			ImGui::PushID(mtlName.c_str());
+
+			// uvTransform
+			ImGui::DragFloat2("UV座標", &mtl->uvOffset_.x, 0.01f);
+			ImGui::DragFloat("UV回転", &mtl->uvRotate_, 0.01f);
+			ImGui::DragFloat2("UVスケール", &mtl->uvScale_.x, 0.01f);
+
+			// color
+			ImGui::ColorEdit3("色", &mtl->color_.x);
+			ImGui::DragFloat("不透明度", &mtl->alpha_, 0.001f, 0.0f, 1.0f);
+
+			int lightMode = mtl->lightMode_;
+			if (ImGui::Combo("ライティング方式", &lightMode, "なし\0Lambert\0HalfLambert\0")) {
+				mtl->lightMode_ = lightMode;
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::Unindent();
+
+		ImGui::PopID();
+	}
+
+	// delete
+	if (!deleteName.empty()) {
+		objects_.erase(deleteName);
+		objCounter_--;
+	}
+
+	// --------------------------------------------------------------------------------------------
+
+
+	if (!sprites_.empty()) {
+		ImGui::Separator();
+	}
+
+
+	// sprite -------------------------------------------------------------------------------------
+
+	int deleteIndex = -1;
+	for (int i = 0; i < static_cast<int>(sprites_.size()); i++) {
+		auto key = "スプライト" + std::to_string(i);
+		if (!ImGui::CollapsingHeader(key.c_str())) {
+			continue;
+		}
+		ImGui::PushID(key.c_str());
+
+		// transform
+		auto translation = sprites_[i]->GetTranslation();
+		if (ImGui::DragFloat2("座標", &translation.x, 0.01f)) {
+			sprites_[i]->SetTranslation(translation);
+		}
+		auto rotation = sprites_[i]->GetRotation();
+		if (ImGui::DragFloat3("回転", &rotation.x, 0.01f)) {
+			sprites_[i]->SetRotation(rotation);
+		}
+		auto scale = sprites_[i]->GetScale();
+		if (ImGui::DragFloat2("スケール", &scale.x, 0.01f)) {
+			sprites_[i]->SetScale(scale);
+		}
+
+		if (ImGui::Button("削除")) {
+			deleteIndex = i;
+		}
+
+		// material
+		ImGui::Indent();
+		if (ImGui::CollapsingHeader("Material: uvChecker.png")) {
+			// uvTransform
+			auto uvTranslation = sprites_[i]->GetUVTranslation();
+			if (ImGui::DragFloat2("UV座標", &uvTranslation.x, 0.01f)) {
+				sprites_[i]->SetUVTranslation(uvTranslation);
+			}
+			auto uvRotation = sprites_[i]->GetUVRotation();
+			if (ImGui::DragFloat("UV回転", &uvRotation, 0.01f)) {
+				sprites_[i]->SetUVRotation(uvRotation);
+			}
+			auto uvScale = sprites_[i]->GetUVScale();
+			if (ImGui::DragFloat2("UVスケール", &uvScale.x, 0.01f)) {
+				sprites_[i]->SetUVScale(uvScale);
+			}
+
+			// color
+			auto color = sprites_[i]->GetColor();
+			if (ImGui::ColorEdit4("色", &color.x)) {
+				sprites_[i]->SetColor(color);
+			}
+		}
+		ImGui::Unindent();
+
+		ImGui::PopID();
+	}
+
+	// delete
+	if (deleteIndex >= 0) {
+		sprites_.erase(sprites_.begin() + deleteIndex);
+	}
+
+	// --------------------------------------------------------------------------------------------
+
+
+	ImGui::Separator();
+
+
+	// light --------------------------------------------------------------------------------------
+
+	if (ImGui::CollapsingHeader("平行光源")) {
+		auto &light = ModelCommon::GetInstance()->GetDirectionLight();
+
+		ImGui::ColorEdit4("色", &light.color_.x);
+
+		static auto &direction = light.direction_;
+		ImGui::SliderFloat3("方向", &direction.x, -1.0f, 1.0f);
+		if (ImGui::IsItemDeactivatedAfterEdit()) {
+			direction = Normalize(direction);
+			light.direction_ = direction;
+		}
+
+		ImGui::DragFloat("輝度", &light.intensity_, 0.01f);
+	}
+
+	// --------------------------------------------------------------------------------------------
+
+	ImGui::End();
 }
 
 
-void GameScene::DeleteTriangle(int index) {
-	m_triangles.erase(m_triangles.begin() + index);
+void GameScene::CreateObject(ObjectType type) {
+	if (type == ObjectType::Sprite) {
+		sprites_.push_back(std::unique_ptr<Sprite>(Sprite::Create(uvCheckerHandle, {0.0f, 0.0f})));
+		return;
+	}
+
+	auto *modelName = ToAsset(type);
+	std::string key = ToLabel(type) + std::to_string(objCounter_);
+
+	// 空きスロットを作ってから差し込む
+	auto [it, ok] = objects_.try_emplace(key);
+	it->second.model = std::unique_ptr<Model>(Model::CreateFromObj(modelName));
+	it->second.worldTransform.Initialize();
+
+	objCounter_++;
 }

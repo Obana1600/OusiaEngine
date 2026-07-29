@@ -1,16 +1,28 @@
 #pragma once
 
-#include "Transform.h"
-#include "pso/PipelineState.h"
-#include "pso/RootSignature.h"
-#include "pso/VertexBuffer.h"
-#include "pso/IndexBuffer.h"
-#include "pso/ConstBuffer.h"
+#include "2d/Sprite.h"
+#include "3d/Camera.h"
 #include "3d/DebugCamera.h"
+#include "3d/WorldTransform.h"
 #include <cstdint>
-#include <d3d12.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
+
+class Model;
+
+
+enum class ObjectType {
+	Plane,
+	Sprite,
+	Sphere,
+	UtahTeapot,
+	StanfordBunny,
+	MultiMesh,
+	MultiMaterial,
+	Suzanne
+};
 
 
 class GameScene {
@@ -25,39 +37,25 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	// pso
-	std::unique_ptr<PipelineState> m_pipelineState;
-	std::unique_ptr<RootSignature> m_rootSignature;
-
 	// camera
-	std::unique_ptr<DebugCamera> m_debugCamera;
+	DebugCamera camera_{};
 
-	// directionLight
-	std::unique_ptr<ConstBuffer> m_dirLightBuffer;
-
-	// texture
-	static inline const int kNumTexture = 2;
-	uint32_t m_texHandles[kNumTexture] = { 0 };
-
-	// 三角形
-	struct TriangleObj {
-		std::unique_ptr<ConstBuffer> wvpBuffer;
-		std::unique_ptr<ConstBuffer> materialBuffer;
-		Transform transform = { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
-		Transform uvTransform = { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
-		uint32_t texHandle = 0;
-		int texIndex = 0;
+	// model
+	struct Object3D {
+		std::unique_ptr<Model> model;
+		WorldTransform worldTransform;
 	};
+	std::unordered_map<std::string, Object3D> objects_;
+	uint32_t objCounter_ = 0;
 
-	std::vector<TriangleObj> m_triangles;
-	std::unique_ptr<VertexBuffer> m_vertexBuffer;
-	std::unique_ptr<IndexBuffer> m_indexBuffer;
+	// sprite
+	std::vector<std::unique_ptr<Sprite>> sprites_;
+	uint32_t uvCheckerHandle = 0;
 
 
 private: // メンバ関数
 
-	void CreateTriangle();
+	void OnImGui();
 
-	void DeleteTriangle(int index);
-
+	void CreateObject(ObjectType type);
 };

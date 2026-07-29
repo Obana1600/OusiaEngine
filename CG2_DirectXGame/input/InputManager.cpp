@@ -9,34 +9,35 @@
 // public func ====================================================================================
 
 InputManager *InputManager::GetInstance() {
-    static InputManager instance;
-    return &instance;
+	static InputManager instance;
+	return &instance;
 }
 
 
 void InputManager::Initialize() {
 	// hwndの受け取り
-	m_hwnd = WinApp::GetInstance()->GetHwnd();
+	hwnd_ = WinApp::GetInstance()->GetHwnd();
 
 	// DirectInputの初期化
 	HRESULT hr = DirectInput8Create(
 		WinApp::GetInstance()->GetHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8,
-		reinterpret_cast<void **>(m_directInput.ReleaseAndGetAddressOf()), nullptr);
+		reinterpret_cast<void **>(directInput_.ReleaseAndGetAddressOf()), nullptr
+	);
 	assert(SUCCEEDED(hr));
 
 
 	// keuboard ----------------------------------------------------------
 
 	// デバイスの生成
-	hr = m_directInput->CreateDevice(GUID_SysKeyboard, m_devKeyboard.GetAddressOf(), NULL);
+	hr = directInput_->CreateDevice(GUID_SysKeyboard, devKeyboard_.GetAddressOf(), NULL);
 	assert(SUCCEEDED(hr));
 
 	// 入力データ形式のセット
-	hr = m_devKeyboard->SetDataFormat(&c_dfDIKeyboard);
+	hr = devKeyboard_->SetDataFormat(&c_dfDIKeyboard);
 	assert(SUCCEEDED(hr));
 
 	// 排他制御レベルのセット
-	hr = m_devKeyboard->SetCooperativeLevel(m_hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	hr = devKeyboard_->SetCooperativeLevel(hwnd_, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
 
 	// -------------------------------------------------------------------
@@ -45,15 +46,15 @@ void InputManager::Initialize() {
 	// mouse -------------------------------------------------------------
 
 	// マウスの生成
-	hr = m_directInput->CreateDevice(GUID_SysMouse, m_devMouse.GetAddressOf(), NULL);
+	hr = directInput_->CreateDevice(GUID_SysMouse, devMouse_.GetAddressOf(), NULL);
 	assert(SUCCEEDED(hr));
 
 	// 入力データ形式のセット
-	hr = m_devMouse->SetDataFormat(&c_dfDIMouse2);
+	hr = devMouse_->SetDataFormat(&c_dfDIMouse2);
 	assert(SUCCEEDED(hr));
 
 	// 排他制御レベルのセット
-	hr = m_devMouse->SetCooperativeLevel(m_hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	hr = devMouse_->SetCooperativeLevel(hwnd_, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 	assert(SUCCEEDED(hr));
 
 	// -------------------------------------------------------------------
@@ -64,11 +65,11 @@ void InputManager::Update() {
 	// keyboard ----------------------------------------------------------
 
 	// 情報の取得開始
-	m_devKeyboard->Acquire();
+	devKeyboard_->Acquire();
 
 	// 入力状態を取得
-	m_keyPre = m_key;
-	m_devKeyboard->GetDeviceState(sizeof(m_key), m_key.data());
+	keyPre_ = key_;
+	devKeyboard_->GetDeviceState(sizeof(key_), key_.data());
 
 	// -------------------------------------------------------------------
 
@@ -76,53 +77,51 @@ void InputManager::Update() {
 	// mouse -------------------------------------------------------------
 
 	// 情報の取得開始
-	m_devMouse->Acquire();
+	devMouse_->Acquire();
 
 	// 入力状態を取得
-	m_mousePre = m_mouse;
-	m_devMouse->GetDeviceState(sizeof(m_mouse), &m_mouse);
+	mousePre_ = mouse_;
+	devMouse_->GetDeviceState(sizeof(mouse_), &mouse_);
 
 	POINT point{};
 	GetCursorPos(&point);
-	ScreenToClient(m_hwnd, &point);
-	m_mousePosition = { static_cast<float>(point.x), static_cast<float>(point.y) };
+	ScreenToClient(hwnd_, &point);
+	mousePosition_ = {static_cast<float>(point.x), static_cast<float>(point.y)};
 
 	// -------------------------------------------------------------------
 }
 
 
 bool InputManager::PushKey(BYTE keyNumber) const {
-	return m_key[keyNumber] != 0;
+	return key_[keyNumber] != 0;
 }
 
 
 bool InputManager::TriggerKey(BYTE keyNumber) const {
-	return m_key[keyNumber] != 0
-		&& m_keyPre[keyNumber] == 0;
+	return key_[keyNumber] != 0 && keyPre_[keyNumber] == 0;
 }
 
 bool InputManager::PressMouse(MouseButton buttonNumber) const {
-	return m_mouse.rgbButtons[buttonNumber] != 0;
+	return mouse_.rgbButtons[buttonNumber] != 0;
 }
 
 
 bool InputManager::TriggerMouse(MouseButton buttonNumber) const {
-	return m_mouse.rgbButtons[buttonNumber] != 0
-		&& m_mousePre.rgbButtons[buttonNumber] == 0;
+	return mouse_.rgbButtons[buttonNumber] != 0 && mousePre_.rgbButtons[buttonNumber] == 0;
 }
 
 
 InputManager::MouseMove InputManager::GetMouseMove() const {
 	return MouseMove{
-		m_mouse.lX,
-		m_mouse.lY,
-		m_mouse.lZ
+		mouse_.lX,
+		mouse_.lY,
+		mouse_.lZ
 	};
 }
 
 
 int32_t InputManager::GetWheel() const {
-	return static_cast<int32_t>(m_mouse.lZ);
+	return static_cast<int32_t>(mouse_.lZ);
 }
 
 // ==================================================================================== public func
@@ -132,12 +131,12 @@ int32_t InputManager::GetWheel() const {
 // private func ===================================================================================
 
 InputManager::~InputManager() {
-	if (m_devKeyboard) {
-		m_devKeyboard->Unacquire();
+	if (devKeyboard_) {
+		devKeyboard_->Unacquire();
 	}
 
-	if (m_devMouse) {
-		m_devMouse->Unacquire();
+	if (devMouse_) {
+		devMouse_->Unacquire();
 	}
 }
 

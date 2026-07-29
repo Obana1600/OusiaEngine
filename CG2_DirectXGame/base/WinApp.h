@@ -24,24 +24,25 @@ public: // メンバ関数
 		const std::wstring &title = L"DirectXGame",
 		UINT windowStyle = WS_OVERLAPPEDWINDOW,
 		int32_t clientWidth = kWindowWidth,
-		int32_t clientHeight = kWindowHeight);
+		int32_t clientHeight = kWindowHeight
+	);
 
 	void TerminateGameWindow();
 
 
 	HINSTANCE GetHInstance() const {
-		return m_wndClass.hInstance;
+		return wndClass_.hInstance;
 	}
 
 	HWND GetHwnd() const {
-		return m_hwnd;
+		return hwnd_;
 	}
 
 
 private: // メンバ変数
 
-	WNDCLASS m_wndClass{};
-	HWND m_hwnd{};
+	WNDCLASS wndClass_{};
+	HWND hwnd_{};
 
 
 private: // メンバ関数
@@ -51,4 +52,4 @@ private: // メンバ関数
 	WinApp(const WinApp &) = delete;
 	const WinApp &operator=(const WinApp &) = delete;
 
-}; // WinApp
+};

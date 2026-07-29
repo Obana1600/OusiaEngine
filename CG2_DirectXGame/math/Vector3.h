@@ -23,8 +23,11 @@ struct Vector3 {
 
 	Vector3 operator-() const;
 
-	// -------------------------------------------------------------------
+	float operator[](int index);
 
+	const float &operator[](int index) const;
+
+	// -------------------------------------------------------------------
 };
 
 Vector3 operator+(const Vector3 &v1, const Vector3 &v2);

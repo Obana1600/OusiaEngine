@@ -24,6 +24,10 @@ struct Vector4 {
 
 	Vector4 operator-() const;
 
+	float operator[](int index);
+
+	const float &operator[](int index) const;
+
 	// -------------------------------------------------------------------
 };
 

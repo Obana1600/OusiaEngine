@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Matrix4x4.h"
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
-#include "Matrix4x4.h"
 
 
 namespace MathUtility {
@@ -54,6 +54,8 @@ namespace MathUtility {
 	Matrix4x4 MakeTranslateMatrix(const Vector3 &translate); // 平行移動行列
 
 	Matrix4x4 MakeScaleMatrix(const Vector3 &scale); // 拡縮行列
+
+	Matrix4x4 MakeRotateMatrix(const Vector3 &rotate); // 回転行列
 
 	Matrix4x4 MakeRotateXMatrix(float radian); // x回転行列
 

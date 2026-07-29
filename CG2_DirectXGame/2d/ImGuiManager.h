@@ -1,9 +1,10 @@
 #pragma once
 
 #ifdef USE_IMGUI
-#include <wrl.h>
-#include <d3d12.h>
-#include "externals/imgui/imgui.h"
+	#include "externals/imgui/imgui.h"
+	#include "externals/imgui/imgui_stdlib.h"
+	#include <d3d12.h>
+	#include <wrl.h>
 #endif
 
 class DirectXCommon;
@@ -18,11 +19,9 @@ public: // 静的メンバ関数
 public: // メンバ関数
 
 	void Initialize();
-
 	void Finalize();
 
 	void Begin();
-
 	void End();
 
 	void Draw();
@@ -31,8 +30,8 @@ public: // メンバ関数
 private: // メンバ変数
 
 #ifdef USE_IMGUI
-	DirectXCommon *m_dxCommon = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvHeap{};
+	DirectXCommon *dxCommon_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_{};
 #endif
 
 
@@ -42,6 +41,4 @@ private: // メンバ関数
 	~ImGuiManager() = default;
 	ImGuiManager(const ImGuiManager &) = delete;
 	const ImGuiManager &operator=(const ImGuiManager &) = delete;
-
-}; // ImGuiManager
-
+};

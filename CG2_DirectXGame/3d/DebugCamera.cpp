@@ -1,15 +1,27 @@
 #include "DebugCamera.h"
-#include "math/MathUtility.h"
-#include "base/WinApp.h"
-#include <input/InputManager.h>
-#include <externals/imgui/imgui.h>
 
+#include "base/WinApp.h"
+#include "externals/imgui/imgui.h"
+#include "input/InputManager.h"
+#include "math/MathUtility.h"
+#include "math/Matrix4x4.h"
+#include <algorithm>
+#include <cmath>
 
 using namespace MathUtility;
 
+
+
 // public func ====================================================================================
 
-void DebugCamera::Initialize() {
+void DebugCamera::Initialize(
+	int windowWidth,
+	int windowHeight
+) {
+	input_ = InputManager::GetInstance();
+
+	camera_.Initialize();
+	camera_.aspectRatio_ = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
 }
 
 
@@ -29,60 +41,64 @@ void DebugCamera::UpdateTransform() {
 		return;
 	}
 
-	InputManager *input = InputManager::GetInstance();
-
 	// ホイールで前後移動
-	int32_t wheel = input->GetWheel();
+	int32_t wheel = input_->GetWheel();
 	if (wheel != 0) {
-		m_distance -= static_cast<float>(wheel) * 0.01f;
-		if (m_distance < 0.1f) {
-			m_distance = 0.1f;
+		distance_ *= std::pow(0.9f, static_cast<float>(wheel) / 120.0f);
+		if (distance_ < 0.1f) {
+			distance_ = 0.1f;
 		}
 	}
 
 	// ミドルボタン押下
-	if (input->PressMouse(InputManager::MIDDLE)) {
-		InputManager::MouseMove move = input->GetMouseMove();
+	if (input_->PressMouse(InputManager::MIDDLE)) {
+		auto move = input_->GetMouseMove();
 
-		if (input->PushKey(DIK_LSHIFT) || input->PushKey(DIK_RSHIFT)) {
+		if (input_->PushKey(DIK_LSHIFT) || input_->PushKey(DIK_RSHIFT)) {
 			// 上下左右移動
-			float panSpeed = 0.001f * m_distance;
-			Vector3 right = { m_matRot.m[0][0], m_matRot.m[0][1], m_matRot.m[0][2] };
-			Vector3 up = { m_matRot.m[1][0], m_matRot.m[1][1], m_matRot.m[1][2] };
+			float sy = std::sin(yaw_);
+			float cy = std::cos(yaw_);
+			float sp = std::sin(pitch_);
+			float cp = std::cos(pitch_);
 
-			m_pivot += -right * (static_cast<float>(move.x) * panSpeed) + up * (static_cast<float>(move.y) * panSpeed);
+			Vector3 right = {cy, 0.0f, -sy};
+			Vector3 up = {sp * sy, cp, sp * cy};
+
+			float panSpeed = 0.001f * distance_;
+			pivot_ += -right * (static_cast<float>(move.x) * panSpeed) + up * (static_cast<float>(move.y) * panSpeed);
+
 		} else {
 			// ピボット回転
-			float rotSpeed = 0.005f;
-			float deltaX = static_cast<float>(move.x) * rotSpeed;
-			float deltaY = static_cast<float>(move.y) * rotSpeed;
+			constexpr float rotSpeed = 0.005f;
+			yaw_ += static_cast<float>(move.x) * rotSpeed;
+			pitch_ += static_cast<float>(move.y) * rotSpeed;
 
-			Matrix4x4 matRotDelta = MakeRotateXMatrix(deltaY) * MakeRotateYMatrix(deltaX);
-			m_matRot *= matRotDelta;
+			constexpr float kPitchLimit = std::numbers::pi_v<float> / 2.0f - 0.01f;
+			pitch_ = std::clamp(pitch_, -kPitchLimit, kPitchLimit);
 		}
 	}
 
 	// rボタン
-	if (input->TriggerKey(DIK_R)) {
-		m_pivot = { 0.0f, 0.0f, 0.0f };
-		m_matRot = MathUtility::MakeIdentity4x4();
-		m_distance = 5.0f;
+	if (input_->TriggerKey(DIK_R)) {
+		pivot_ = {0.0f, 0.0f, 0.0f};
+		yaw_ = 0.0f;
+		pitch_ = 0.0f;
+		distance_ = 5.0f;
 	}
 }
 
 
 void DebugCamera::UpdateMatrix() {
-	Vector3 forward = { m_matRot.m[2][0], m_matRot.m[2][1], m_matRot.m[2][2] };
-	Vector3 cameraPos = m_pivot - forward * m_distance;
+	float sy = std::sin(yaw_);
+	float cy = std::cos(yaw_);
+	float sp = std::sin(pitch_);
+	float cp = std::cos(pitch_);
 
-	Matrix4x4 cameraMatrix = m_matRot * MakeTranslateMatrix(cameraPos);
-	Matrix4x4 viewMatrix = Inverse(cameraMatrix);
-	Matrix4x4 projectionMatrix =
-		MakePerspectiveFovMatrix(0.45f, float(WinApp::kWindowWidth) / float(WinApp::kWindowHeight), 0.1f, 1000.0f);
+	Vector3 forward = {cp * sy, -sp, cp * cy};
+	camera_.translation_ = pivot_ - forward * distance_;
+	camera_.rotation_ = {pitch_, yaw_, 0.0f};
 
-	m_viewProjectionMatrix = viewMatrix * projectionMatrix;
-	m_viewportMatrix = MakeViewportMatrix(0.0f, 0.0f, float(WinApp::kWindowWidth), float(WinApp::kWindowHeight), 0.0f, 1.0f);
+	camera_.Update();
 }
-
 
 // =================================================================================== private func

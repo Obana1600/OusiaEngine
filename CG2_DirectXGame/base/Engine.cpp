@@ -2,59 +2,69 @@
 #include "TextureManager.h"
 #include "input/InputManager.h"
 
+
 void Engine::Initialize(const std::wstring &title, bool enableDebugLayer) {
 
-    // COMの初期化
-    CoInitializeEx(0, COINIT_MULTITHREADED);
+	// COMの初期化
+	CoInitializeEx(0, COINIT_MULTITHREADED);
 
-    // ウィンドウ生成
-    WinApp::GetInstance()->CreateGameWindow(title);
+	// ウィンドウ生成
+	WinApp::GetInstance()->CreateGameWindow(title);
 
-    // DXCommon
-    DirectXCommon::GetInstance()->Initialize();
+	// DXCommon
+	DirectXCommon::GetInstance()->Initialize();
 
-    // DXCompiler
-    DXCompiler::GetInstance()->Initialize();
+	// DXCompiler
+	DXCompiler::GetInstance()->Initialize();
 
-    // input
-    InputManager::GetInstance()->Initialize();
+	// input
+	InputManager::GetInstance()->Initialize();
 
-    // imgui
-    ImGuiManager::GetInstance()->Initialize();
+	// imgui
+	ImGuiManager::GetInstance()->Initialize();
 
-    // texmgr
-    TextureManager::GetInstance()->Initialize();
+	// texmgr
+	TextureManager::GetInstance()->Initialize();
+
+	// sprite
+	Sprite::StaticInitialize(DirectXCommon::GetInstance()->GetDevice(), WinApp::kWindowWidth, WinApp::kWindowHeight);
+
+	// model
+	Model::StaticInitialize();
 }
 
 
 void Engine::Finalize() {
-    // imgui
-    ImGuiManager::GetInstance()->Finalize();
+	// imgui
+	ImGuiManager::GetInstance()->Finalize();
 
-    // dxcommon
-    DirectXCommon::GetInstance()->Finalize();
+	// model
+	Model::StaticFinalize();
 
-    // winapp
-    WinApp::GetInstance()->TerminateGameWindow();
+	// dxcommon
+	DirectXCommon::GetInstance()->Finalize();
 
-    // COMの終了処理
-    CoUninitialize();
+	// winapp
+	WinApp::GetInstance()->TerminateGameWindow();
+
+	// COMの終了処理
+	CoUninitialize();
 }
 
 
 bool Engine::Update() {
-    MSG msg{};
+	MSG msg{};
 
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 
-    if (msg.message == WM_QUIT) {
-        return true;
-    }
+	if (msg.message == WM_QUIT) {
+		return true;
+	}
 
-    InputManager::GetInstance()->Update();
+	InputManager::GetInstance()->Update();
 
-    return false;
+	return false;
 }

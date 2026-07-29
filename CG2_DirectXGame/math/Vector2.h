@@ -22,8 +22,11 @@ struct Vector2 {
 
 	Vector2 operator-() const;
 
-	// -------------------------------------------------------------------
+	float operator[](int index);
 
+	const float &operator[](int index) const;
+
+	// -------------------------------------------------------------------
 };
 
 Vector2 operator+(const Vector2 &v1, const Vector2 &v2);

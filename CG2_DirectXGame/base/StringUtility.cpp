@@ -1,4 +1,5 @@
 #include "StringUtility.h"
+
 #include <Windows.h>
 
 
@@ -11,7 +12,9 @@ std::wstring ConvertStringMultiByteToWide(const std::string &str) {
 	if (sizeNeeded == 0) {
 		return std::wstring();
 	}
+
 	std::wstring result(sizeNeeded, 0);
 	MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char *>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
+
 	return result;
 }

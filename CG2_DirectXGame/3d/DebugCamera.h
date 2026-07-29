@@ -1,45 +1,62 @@
 #pragma once
 
-#include "math/Matrix4x4.h"
+#include "Camera.h"
+#include "base/WinApp.h"
 #include "math/Vector3.h"
-#include <math/MathUtility.h>
+
+class InputManager;
 
 
 class DebugCamera {
 public: // public関数
 
-	void Initialize();
+	void Initialize(
+		int windowWidth = WinApp::kWindowWidth,
+		int windowHeight = WinApp::kWindowHeight
+	);
 
 	void Update();
 
 
-	// getter ------------------------------------------------------------
+	// accesser ------------------------------------------------------------
 
-	const Matrix4x4 &GetViewProjectionMatrix() const {
-		return m_viewProjectionMatrix;
+	const Camera &GetCamera() const {
+		return camera_;
 	}
 
-	const Matrix4x4 &GetViewportMatrix() const {
-		return m_viewportMatrix;
+	void SetFovAngleY(float value) {
+		camera_.fovAngleY_ = value;
+	}
+
+	void SetAspectRatio(float value) {
+		camera_.aspectRatio_ = value;
+	}
+
+	void SetNearZ(float value) {
+		camera_.nearZ_ = value;
+	}
+
+	void SetFarZ(float value) {
+		camera_.farZ_ = value;
 	}
 
 	// -------------------------------------------------------------------
 
 
-private: // private変数
+private: // メンバ変数
 
-	Vector3 m_pivot = { 0.0f, 0.0f, 0.0f };
-	Matrix4x4 m_matRot = MathUtility::MakeIdentity4x4();
-	float m_distance = 5.0f;
+	Camera camera_{};
 
-	Matrix4x4 m_viewProjectionMatrix{};
-	Matrix4x4 m_viewportMatrix{};
+	Vector3 pivot_ = {0.0f, 0.0f, 0.0f};
+	float yaw_ = 0.0f;
+	float pitch_ = 0.0f;
+	float distance_ = 5.0f;
+
+	InputManager *input_ = nullptr;
 
 
-private:
+private: // メンバ関数
 
 	void UpdateTransform();
-
 	void UpdateMatrix();
-
 };
