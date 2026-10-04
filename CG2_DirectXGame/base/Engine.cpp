@@ -1,33 +1,38 @@
 #include "Engine.h"
 #include "TextureManager.h"
-#include "input/InputManager.h"
+#include "Window.h"
+
+using namespace ou;
 
 
-void Engine::Initialize(const std::wstring &title, bool enableDebugLayer) {
+void Engine::Initialize(const EngineDesc &desc) {
 
 	// COMの初期化
 	CoInitializeEx(0, COINIT_MULTITHREADED);
 
 	// ウィンドウ生成
-	WinApp::GetInstance()->CreateGameWindow(title);
+	window_ = Window::Create(
+		{.title = desc.title,
+		 .width = desc.width,
+		 .height = desc.height});
 
 	// DXCommon
-	DirectXCommon::GetInstance()->Initialize();
+	DirectXCommon::GetInstance()->Initialize(window_.get());
 
 	// DXCompiler
 	DXCompiler::GetInstance()->Initialize();
 
 	// input
-	InputManager::GetInstance()->Initialize();
+	InputSystem::GetInstance()->Initialize(window_->Hwnd());
 
 	// imgui
-	ImGuiManager::GetInstance()->Initialize();
+	ImGuiManager::GetInstance()->Initialize(window_->Hwnd());
 
 	// texmgr
 	TextureManager::GetInstance()->Initialize();
 
 	// sprite
-	Sprite::StaticInitialize(DirectXCommon::GetInstance()->GetDevice(), WinApp::kWindowWidth, WinApp::kWindowHeight);
+	Sprite::StaticInitialize(DirectXCommon::GetInstance()->GetDevice(), window_->ClientWidth(), window_->ClientHeight());
 
 	// model
 	Model::StaticInitialize();
@@ -45,7 +50,7 @@ void Engine::Finalize() {
 	DirectXCommon::GetInstance()->Finalize();
 
 	// winapp
-	WinApp::GetInstance()->TerminateGameWindow();
+	window_.reset();
 
 	// COMの終了処理
 	CoUninitialize();
@@ -53,18 +58,9 @@ void Engine::Finalize() {
 
 
 bool Engine::Update() {
-	MSG msg{};
+	window_->PumpMessages();
 
-	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+	InputSystem::GetInstance()->Update();
 
-	if (msg.message == WM_QUIT) {
-		return true;
-	}
-
-	InputManager::GetInstance()->Update();
-
-	return false;
+	return window_->IsCloseRequested();
 }

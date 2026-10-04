@@ -1,11 +1,13 @@
 #pragma once
 
-#include "math/Matrix4x4.h"
-#include "math/Vector3.h"
+#include "Math/Matrix4x4.h"
+#include "Math/Vector3.h"
 #include <d3d12.h>
 #include <numbers>
 #include <wrl.h>
 
+
+namespace ou {
 
 class Camera {
 public: // メンバ変数
@@ -58,3 +60,5 @@ private: // メンバ関数
 	Camera(const Camera &) = delete;
 	Camera operator=(const Camera &) = delete;
 };
+
+} // namespace ou

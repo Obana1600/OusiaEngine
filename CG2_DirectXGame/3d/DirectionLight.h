@@ -1,10 +1,12 @@
 #pragma once
 
-#include "math/Vector3.h"
-#include "math/Vector4.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include <d3d12.h>
 #include <wrl.h>
 
+
+namespace ou {
 
 class DirectionLight {
 public: // メンバ変数
@@ -50,3 +52,5 @@ private: // メンバ関数
 	DirectionLight(const DirectionLight &) = delete;
 	DirectionLight operator=(const DirectionLight &) = delete;
 };
+
+} // namespace ou

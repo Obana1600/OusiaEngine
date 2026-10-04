@@ -1,24 +1,20 @@
 #include "DebugCamera.h"
 
-#include "base/WinApp.h"
+#include "base/Window.h"
 #include "externals/imgui/imgui.h"
-#include "input/InputManager.h"
-#include "math/MathUtility.h"
+#include "input/InputSystem.h"
 #include "math/Matrix4x4.h"
 #include <algorithm>
 #include <cmath>
 
-using namespace MathUtility;
+using namespace ou;
 
-
-
-// public func ====================================================================================
 
 void DebugCamera::Initialize(
 	int windowWidth,
 	int windowHeight
 ) {
-	input_ = InputManager::GetInstance();
+	input_ = InputSystem::GetInstance();
 
 	camera_.Initialize();
 	camera_.aspectRatio_ = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
@@ -30,11 +26,6 @@ void DebugCamera::Update() {
 	UpdateMatrix();
 }
 
-// ==================================================================================== public func
-
-
-
-// private func ===================================================================================
 
 void DebugCamera::UpdateTransform() {
 	if (ImGui::GetIO().WantCaptureMouse) {
@@ -51,7 +42,7 @@ void DebugCamera::UpdateTransform() {
 	}
 
 	// ミドルボタン押下
-	if (input_->PressMouse(InputManager::MIDDLE)) {
+	if (input_->PressMouse(InputSystem::MIDDLE)) {
 		auto move = input_->GetMouseMove();
 
 		if (input_->PushKey(DIK_LSHIFT) || input_->PushKey(DIK_RSHIFT)) {
@@ -100,5 +91,3 @@ void DebugCamera::UpdateMatrix() {
 
 	camera_.Update();
 }
-
-// =================================================================================== private func

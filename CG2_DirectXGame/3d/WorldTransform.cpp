@@ -2,9 +2,8 @@
 
 #include "base/CreateBufferResource.h"
 #include "base/DirectXCommon.h"
-#include "math/MathUtility.h"
 
-using namespace MathUtility;
+using namespace ou;
 
 
 void WorldTransform::Initialize() {
@@ -18,7 +17,7 @@ void WorldTransform::Initialize() {
 
 
 void WorldTransform::Update() {
-	matWorld_ = MakeAffineMatrix(scale_, rotation_, translation_);
+	matWorld_ = Matrix4x4::SRT(scale_, rotation_, translation_);
 
 	if (parent_) {
 		matWorld_ *= parent_->matWorld_;

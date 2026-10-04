@@ -1,25 +1,20 @@
 #include "ImGuiManager.h"
 
 #include "base/DirectXCommon.h"
-#include "base/WinApp.h"
+#include "base/Window.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
 
+using namespace ou;
 
-// static public func =============================================================================
 
 ImGuiManager *ImGuiManager::GetInstance() {
 	static ImGuiManager instance{};
 	return &instance;
 }
 
-// ============================================================================= static public func
 
-
-
-// public func ====================================================================================
-
-void ImGuiManager::Initialize() {
+void ImGuiManager::Initialize(HWND hwnd) {
 
 	dxCommon_ = DirectXCommon::GetInstance();
 
@@ -42,7 +37,7 @@ void ImGuiManager::Initialize() {
 		"C:/Windows/Fonts/meiryo.ttc", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese()
 	);
 
-	ImGui_ImplWin32_Init(WinApp::GetInstance()->GetHwnd());
+	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX12_Init(
 		dxCommon_->GetDevice(),
 		static_cast<int>(dxCommon_->GetBackBufferCount()),
@@ -84,5 +79,3 @@ void ImGuiManager::Draw() {
 	commandList->SetDescriptorHeaps(1, heaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 }
-
-// ==================================================================================== public func

@@ -1,13 +1,15 @@
 #pragma once
 
-#include "math/Matrix4x4.h"
-#include "math/Vector2.h"
-#include "math/Vector3.h"
-#include "math/Vector4.h"
+#include "Math/Matrix4x4.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include <d3d12.h>
 #include <string>
 #include <wrl.h>
 
+
+namespace ou {
 
 class Sprite {
 public: // インナークラス
@@ -30,8 +32,7 @@ public: // 静的メンバ関数
 		ID3D12Device *device,
 		int windowWidth,
 		int WidowHeight,
-		const std::wstring &directoryPath = L"resources/"
-	);
+		const std::wstring &directoryPath = L"resources/");
 
 	static void PreDraw(ID3D12GraphicsCommandList *commandList = nullptr);
 
@@ -43,8 +44,7 @@ public: // 静的メンバ関数
 		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f},
 		Vector2 anchorPoint = {0.0f, 0.0f},
 		bool isFlipX = false,
-		bool isFlipY = false
-	);
+		bool isFlipY = false);
 
 
 private: // 静的メンバ変数
@@ -196,8 +196,9 @@ private: // メンバ関数
 		const Vector4 &color,
 		const Vector2 &anchorPoint,
 		bool isFlipX,
-		bool isFlipY
-	);
+		bool isFlipY);
 
 	void TransferVertex();
 };
+
+} // namespace ou

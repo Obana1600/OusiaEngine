@@ -1,5 +1,6 @@
-#include "InputManager.h"
-#include "base/WinApp.h"
+#include "InputSystem.h"
+#include "base/Window.h"
+
 #include <cassert>
 
 #pragma comment(lib, "dinput8.lib")
@@ -8,19 +9,18 @@
 
 // public func ====================================================================================
 
-InputManager *InputManager::GetInstance() {
-	static InputManager instance;
+InputSystem *InputSystem::GetInstance() {
+	static InputSystem instance;
 	return &instance;
 }
 
 
-void InputManager::Initialize() {
-	// hwndの受け取り
-	hwnd_ = WinApp::GetInstance()->GetHwnd();
+void InputSystem::Initialize(HWND hwnd) {
+	hwnd_ = hwnd;
 
 	// DirectInputの初期化
 	HRESULT hr = DirectInput8Create(
-		WinApp::GetInstance()->GetHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8,
+		GetModuleHandleW(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8,
 		reinterpret_cast<void **>(directInput_.ReleaseAndGetAddressOf()), nullptr
 	);
 	assert(SUCCEEDED(hr));
@@ -37,7 +37,7 @@ void InputManager::Initialize() {
 	assert(SUCCEEDED(hr));
 
 	// 排他制御レベルのセット
-	hr = devKeyboard_->SetCooperativeLevel(hwnd_, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	hr = devKeyboard_->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
 
 	// -------------------------------------------------------------------
@@ -54,14 +54,14 @@ void InputManager::Initialize() {
 	assert(SUCCEEDED(hr));
 
 	// 排他制御レベルのセット
-	hr = devMouse_->SetCooperativeLevel(hwnd_, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	hr = devMouse_->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 	assert(SUCCEEDED(hr));
 
 	// -------------------------------------------------------------------
 }
 
 
-void InputManager::Update() {
+void InputSystem::Update() {
 	// keyboard ----------------------------------------------------------
 
 	// 情報の取得開始
@@ -92,26 +92,26 @@ void InputManager::Update() {
 }
 
 
-bool InputManager::PushKey(BYTE keyNumber) const {
+bool InputSystem::PushKey(BYTE keyNumber) const {
 	return key_[keyNumber] != 0;
 }
 
 
-bool InputManager::TriggerKey(BYTE keyNumber) const {
+bool InputSystem::TriggerKey(BYTE keyNumber) const {
 	return key_[keyNumber] != 0 && keyPre_[keyNumber] == 0;
 }
 
-bool InputManager::PressMouse(MouseButton buttonNumber) const {
+bool InputSystem::PressMouse(MouseButton buttonNumber) const {
 	return mouse_.rgbButtons[buttonNumber] != 0;
 }
 
 
-bool InputManager::TriggerMouse(MouseButton buttonNumber) const {
+bool InputSystem::TriggerMouse(MouseButton buttonNumber) const {
 	return mouse_.rgbButtons[buttonNumber] != 0 && mousePre_.rgbButtons[buttonNumber] == 0;
 }
 
 
-InputManager::MouseMove InputManager::GetMouseMove() const {
+InputSystem::MouseMove InputSystem::GetMouseMove() const {
 	return MouseMove{
 		mouse_.lX,
 		mouse_.lY,
@@ -120,7 +120,7 @@ InputManager::MouseMove InputManager::GetMouseMove() const {
 }
 
 
-int32_t InputManager::GetWheel() const {
+int32_t InputSystem::GetWheel() const {
 	return static_cast<int32_t>(mouse_.lZ);
 }
 
@@ -130,7 +130,7 @@ int32_t InputManager::GetWheel() const {
 
 // private func ===================================================================================
 
-InputManager::~InputManager() {
+InputSystem::~InputSystem() {
 	if (devKeyboard_) {
 		devKeyboard_->Unacquire();
 	}

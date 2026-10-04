@@ -1,19 +1,20 @@
 #pragma once
 
 #include "Camera.h"
-#include "base/WinApp.h"
-#include "math/Vector3.h"
+#include "Math/Vector3.h"
+#include "base/Window.h"
 
-class InputManager;
+class InputSystem;
 
+
+namespace ou {
 
 class DebugCamera {
 public: // public関数
 
 	void Initialize(
-		int windowWidth = WinApp::kWindowWidth,
-		int windowHeight = WinApp::kWindowHeight
-	);
+		int windowWidth = 1280,
+		int windowHeight = 720);
 
 	void Update();
 
@@ -52,7 +53,7 @@ private: // メンバ変数
 	float pitch_ = 0.0f;
 	float distance_ = 5.0f;
 
-	InputManager *input_ = nullptr;
+	InputSystem *input_ = nullptr;
 
 
 private: // メンバ関数
@@ -60,3 +61,5 @@ private: // メンバ関数
 	void UpdateTransform();
 	void UpdateMatrix();
 };
+
+} // namespace ou

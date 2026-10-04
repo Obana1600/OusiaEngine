@@ -1,29 +1,26 @@
 #include "Sprite.h"
-
 #include "base/CreateBufferResource.h"
 #include "base/DXCompiler.h"
 #include "base/DirectXCommon.h"
 #include "base/TextureManager.h"
-#include "math/MathUtility.h"
+
 #include <cassert>
 #include <utility>
 
-using namespace MathUtility;
+using namespace ou;
 
 
 void Sprite::StaticInitialize(
 	ID3D12Device *device,
 	int windowWidth,
 	int windowHeight,
-	const std::wstring &directoryPath
-) {
+	const std::wstring &directoryPath) {
 	sDevice_ = device;
 	sDescriptorHeapIncrementSize_ = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	// 正射影行列
-	sMatProjection_ = MathUtility::MakeOrthographicMatrix(
-		0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight), 0.0f, 100.0f
-	);
+	sMatProjection_ = Matrix4x4::Ortho(
+		static_cast<float>(windowWidth), static_cast<float>(windowHeight), 0.0f, 100.0f);
 
 
 	// ルートシグネチャ ------------------------------------------------------------------------------
@@ -179,8 +176,7 @@ Sprite *Sprite::Create(
 	Vector4 color,
 	Vector2 anchorPoint,
 	bool isFlipX,
-	bool isFlipY
-) {
+	bool isFlipY) {
 	Sprite *sprite = new Sprite(textureHandle, position, {0.0f, 0.0f}, color, anchorPoint, isFlipX, isFlipY);
 	sprite->Initialize();
 	return sprite;
@@ -296,19 +292,22 @@ Sprite::Sprite(
 	const Vector4 &color,
 	const Vector2 &anchorPoint,
 	bool isFlipX,
-	bool isFlipY
-)
-	: textureHandle_(textureHandle), translation_(position), size_(size), color_(color), anchorPoint_(anchorPoint), isFlipX_(isFlipX), isFlipY_(isFlipY) {
-}
+	bool isFlipY)
+	: textureHandle_(textureHandle),
+	  translation_(position),
+	  size_(size),
+	  color_(color),
+	  anchorPoint_(anchorPoint),
+	  isFlipX_(isFlipX),
+	  isFlipY_(isFlipY) {}
 
 
 void Sprite::TransferVertex() {
 	// ワールド行列
-	worldMatrix_ = MakeAffineMatrix(
+	worldMatrix_ = Matrix4x4::SRT(
 		{scale_.x, scale_.y, 1.0f},
 		rotation_,
-		{translation_.x, translation_.y, 0.0f}
-	);
+		{translation_.x, translation_.y, 0.0f});
 
 	// アンカーポイントによる4頂点の計算
 	float left = -size_.x * anchorPoint_.x;
@@ -338,9 +337,8 @@ void Sprite::TransferVertex() {
 
 	constData_->color = color_;
 	constData_->mat = worldMatrix_ * sMatProjection_;
-	constData_->uvTransform = MakeAffineMatrix(
+	constData_->uvTransform = Matrix4x4::SRT(
 		{uvScale_.x, uvScale_.y, 0.0f},
 		{0.0f, 0.0f, uvRotation_},
-		{uvTranslation_.x, uvTranslation_.y, 0.0f}
-	);
+		{uvTranslation_.x, uvTranslation_.y, 0.0f});
 }

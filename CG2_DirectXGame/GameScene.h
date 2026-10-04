@@ -4,6 +4,8 @@
 #include "3d/DebugCamera.h"
 
 
+namespace ou {
+
 class GameScene {
 public: // メンバ関数
 
@@ -24,3 +26,5 @@ private: // メンバ関数
 
 	void OnImGui();
 };
+
+} // namespace ou

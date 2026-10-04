@@ -1,12 +1,15 @@
-#include "base/Engine.h"
 #include "GameScene.h"
+#include "base/Engine.h"
 #include <Windows.h>
 
 
 // Windowsアプリでのエントリーポイント（main関数）
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
-	Engine::Initialize(L"LE2B_05_オバナ_サトル_CG2");
+	using namespace ou;
+
+	Engine *engine = new Engine();
+	engine->Initialize({.title = "LE2A_オバナ_サトル"});
 
 	DirectXCommon *dxCommon = DirectXCommon::GetInstance();
 	ImGuiManager *imguiMgr = ImGuiManager::GetInstance();
@@ -18,7 +21,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	dxCommon->ExecuteTransferCommands();
 
 	while (true) {
-		if (Engine::Update()) {
+		if (engine->Update()) {
 			break;
 		}
 
@@ -36,10 +39,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		imguiMgr->Draw();
 
 		dxCommon->PostDraw();
-
 	}
 
-	Engine::Finalize();
+	engine->Finalize();
 
 	return 0;
 }

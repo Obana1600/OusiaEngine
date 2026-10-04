@@ -51,22 +51,7 @@
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="math\MathUtility.cpp">
-      <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="math\Matrix4x4.cpp">
-      <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="math\Vector2.cpp">
-      <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="math\Vector3.cpp">
-      <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="math\Vector4.cpp">
-      <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="input\InputManager.cpp">
+    <ClCompile Include="input\InputSystem.cpp">
       <Filter>input</Filter>
     </ClCompile>
     <ClCompile Include="base\DirectXCommon.cpp">
@@ -81,7 +66,7 @@
     <ClCompile Include="base\TextureManager.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\WinApp.cpp">
+    <ClCompile Include="base\Window.cpp">
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="2d\ImGuiManager.cpp">
@@ -144,6 +129,27 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Math\Mathf.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Matrix4x4.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Quaternion.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector2.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector3.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector4.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Paths.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shader\Sprite.VS.hlsl">
@@ -160,22 +166,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="math\MathUtility.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\Matrix4x4.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\Vector2.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\Vector3.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\Vector4.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="input\InputManager.h">
+    <ClInclude Include="input\InputSystem.h">
       <Filter>input</Filter>
     </ClInclude>
     <ClInclude Include="base\DirectXCommon.h">
@@ -190,7 +181,7 @@
     <ClInclude Include="base\TextureManager.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\WinApp.h">
+    <ClInclude Include="base\Window.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="2d\ImGuiManager.h">
@@ -231,6 +222,27 @@
     </ClInclude>
     <ClInclude Include="2d\Sprite.h">
       <Filter>2d</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Mathf.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix4x4.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quaternion.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector2.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector3.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector4.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Paths.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

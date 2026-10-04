@@ -1,8 +1,10 @@
 #include "GameScene.h"
 
-#include "input/InputManager.h"
 #include "externals/imgui/imgui.h"
+#include "input/InputSystem.h"
 #include <cassert>
+
+using namespace ou;
 
 
 void GameScene::Initialize() {
@@ -22,9 +24,9 @@ void GameScene::Draw() const {
 void GameScene::OnImGui() {
 	ImGui::Begin("Inputの確認");
 
-	if (InputManager::GetInstance()->PushKey(DIK_SPACE)) {
+	if (InputSystem::GetInstance()->PushKey(DIK_SPACE)) {
 		ImGui::Text("Hit");
 	}
-	
+
 	ImGui::End();
 }

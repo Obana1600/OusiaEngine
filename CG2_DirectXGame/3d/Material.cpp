@@ -3,9 +3,8 @@
 #include "base/CreateBufferResource.h"
 #include "base/DirectXCommon.h"
 #include "base/TextureManager.h"
-#include "math/MathUtility.h"
 
-using namespace MathUtility;
+using namespace ou;
 
 
 std::unique_ptr<Material> Material::Create() {
@@ -31,7 +30,7 @@ void Material::LoadTexture(const std::string &directoryPath) {
 
 
 void Material::Update() {
-	constMap_->uvTransform = MakeAffineMatrix(
+	constMap_->uvTransform = Matrix4x4::SRT(
 		{uvScale_.x, uvScale_.y, 1.0f},
 		{0.0f, 0.0f, uvRotate_},
 		{uvOffset_.x, uvOffset_.y, 0.0f}

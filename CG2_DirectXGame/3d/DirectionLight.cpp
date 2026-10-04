@@ -3,6 +3,8 @@
 #include "base/CreateBufferResource.h"
 #include "base/DirectXCommon.h"
 
+using namespace ou;
+
 
 void DirectionLight::Initialize() {
 	size_t size = (sizeof(ConstBufferData) + 255) & ~255;

@@ -1,13 +1,15 @@
 #pragma once
 
-#include "math/Matrix4x4.h"
-#include "math/Vector2.h"
-#include "math/Vector3.h"
+#include "Math/Matrix4x4.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
 #include <d3d12.h>
 #include <memory>
 #include <string>
 #include <wrl.h>
 
+
+namespace ou {
 
 class Material {
 public: // インナークラス
@@ -85,3 +87,5 @@ private: // メンバ関数
 
 	void CreateConstBuffer();
 };
+
+} // namespace ou

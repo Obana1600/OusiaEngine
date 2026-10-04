@@ -12,9 +12,11 @@
 #include <vector>
 #include <wrl.h>
 
+
+namespace ou {
+
 class WorldTransform;
 class Camera;
-
 
 class ModelCommon {
 public: // 静的メンバ関数
@@ -124,3 +126,5 @@ private: // メンバ関数
 	void LoadMaterial(const std::string &directoryPath, const std::string &fileName);
 	void LoadTexture();
 };
+
+} // namespace ou

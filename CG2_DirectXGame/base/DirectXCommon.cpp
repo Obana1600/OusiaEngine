@@ -1,8 +1,9 @@
 #include "DirectXCommon.h"
 
-#include "WinApp.h"
+#include "Window.h"
 #include <cassert>
 
+using namespace ou;
 using namespace Microsoft::WRL;
 
 
@@ -10,58 +11,57 @@ using namespace Microsoft::WRL;
 
 namespace {
 
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
-		const ComPtr<ID3D12Device> &device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors
-	) {
-		// ディスクリプタヒープの生成
-		ComPtr<ID3D12DescriptorHeap> descriptorHeap{};
-		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
-		descriptorHeapDesc.Type = heapType;
-		descriptorHeapDesc.NumDescriptors = numDescriptors;
-		descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
-		// ディスクリプタヒープが作れなかったので起動できない
-		assert(SUCCEEDED(hr));
+ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
+	const ComPtr<ID3D12Device> &device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors) {
+	// ディスクリプタヒープの生成
+	ComPtr<ID3D12DescriptorHeap> descriptorHeap{};
+	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
+	descriptorHeapDesc.Type = heapType;
+	descriptorHeapDesc.NumDescriptors = numDescriptors;
+	descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
+	// ディスクリプタヒープが作れなかったので起動できない
+	assert(SUCCEEDED(hr));
 
-		return descriptorHeap;
-	}
+	return descriptorHeap;
+}
 
 
-	ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(const ComPtr<ID3D12Device> &device, int32_t width, int32_t height) {
-		// 生成するResourceの設定
-		D3D12_RESOURCE_DESC resourceDesc{};
-		resourceDesc.Width = width;									  // Textureの幅
-		resourceDesc.Height = height;								  // Textureの高さ
-		resourceDesc.MipLevels = 1;									  // mipmapの数
-		resourceDesc.DepthOrArraySize = 1;							  // 奥行き or 配列Textureの配列数
-		resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;		  // DepthStencilとして利用可能なフォーマット
-		resourceDesc.SampleDesc.Count = 1;							  // サンプリングカウント。1固定
-		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;  // 2次元
-		resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // DepthStencilとして使う通知
+ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(const ComPtr<ID3D12Device> &device, int32_t width, int32_t height) {
+	// 生成するResourceの設定
+	D3D12_RESOURCE_DESC resourceDesc{};
+	resourceDesc.Width = width;									  // Textureの幅
+	resourceDesc.Height = height;								  // Textureの高さ
+	resourceDesc.MipLevels = 1;									  // mipmapの数
+	resourceDesc.DepthOrArraySize = 1;							  // 奥行き or 配列Textureの配列数
+	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;		  // DepthStencilとして利用可能なフォーマット
+	resourceDesc.SampleDesc.Count = 1;							  // サンプリングカウント。1固定
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;  // 2次元
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // DepthStencilとして使う通知
 
-		// 利用するHeapの設定
-		D3D12_HEAP_PROPERTIES heapProperties{};
-		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
+	// 利用するHeapの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
 
-		// 深度値のクリア設定
-		D3D12_CLEAR_VALUE depthClearValue{};
-		depthClearValue.DepthStencil.Depth = 1.0f;				// 1.0f（最大値）でクリア
-		depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット。Resourceと合わせる
+	// 深度値のクリア設定
+	D3D12_CLEAR_VALUE depthClearValue{};
+	depthClearValue.DepthStencil.Depth = 1.0f;				// 1.0f（最大値）でクリア
+	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット。Resourceと合わせる
 
-		// Resourceの生成
-		ComPtr<ID3D12Resource> resource{};
-		HRESULT hr = device->CreateCommittedResource(
-			&heapProperties,				  // Heapの設定
-			D3D12_HEAP_FLAG_NONE,			  // Heapの特殊な設定。特になし
-			&resourceDesc,					  // Resourceの設定
-			D3D12_RESOURCE_STATE_DEPTH_WRITE, // 深度地を書き込む状態にしておく
-			&depthClearValue,				  // Clear最適値
-			IID_PPV_ARGS(&resource)			  // 作成するResourceポインタへのポインタ
-		);
-		assert(SUCCEEDED(hr));
+	// Resourceの生成
+	ComPtr<ID3D12Resource> resource{};
+	HRESULT hr = device->CreateCommittedResource(
+		&heapProperties,				  // Heapの設定
+		D3D12_HEAP_FLAG_NONE,			  // Heapの特殊な設定。特になし
+		&resourceDesc,					  // Resourceの設定
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, // 深度地を書き込む状態にしておく
+		&depthClearValue,				  // Clear最適値
+		IID_PPV_ARGS(&resource)			  // 作成するResourceポインタへのポインタ
+	);
+	assert(SUCCEEDED(hr));
 
-		return resource;
-	}
+	return resource;
+}
 
 } // namespace
 
@@ -82,9 +82,10 @@ DirectXCommon *DirectXCommon::GetInstance() {
 
 // public func ====================================================================================
 
-void DirectXCommon::Initialize(int32_t backBufferWidth, int32_t backBufferHeight, bool enableDebugLayer) {
-	backBufferWidth_ = backBufferWidth;
-	backBufferHeight_ = backBufferHeight;
+void DirectXCommon::Initialize(Window *window, bool enableDebugLayer) {
+	window_ = window;
+	backBufferWidth_ = window->ClientWidth();
+	backBufferHeight_ = window->ClientHeight();
 
 
 	// factory -----------------------------------------------------------
@@ -258,8 +259,7 @@ void DirectXCommon::InitializeDXGIDevice(bool enableDebugLayer) {
 
 	// 機能レベルとログ出力用の文字列
 	constexpr D3D_FEATURE_LEVEL featureLevels[] = {
-		D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
-	};
+		D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0};
 	// 高い順に生成できるか試していく
 	for (size_t i = 0; i < _countof(featureLevels); i++) {
 		hr = D3D12CreateDevice(useAdapter.Get(), featureLevels[i], IID_PPV_ARGS(&device_)); // 採用したアダプターでデバイスを生成
@@ -284,8 +284,7 @@ void DirectXCommon::InitializeDXGIDevice(bool enableDebugLayer) {
 			// 抑制するメッセージのID
 			D3D12_MESSAGE_ID denyIds[] = {
 				// Windows11でのDXGIデバッグレイヤーとDX12デバッグレイヤーの相互作用バグによるエラーメッセージ
-				D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
-			};
+				D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE};
 			// 抑制するレベル
 			D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 			D3D12_INFO_QUEUE_FILTER filter{};
@@ -315,8 +314,7 @@ void DirectXCommon::CreateSwapChain() {
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;	 // モニタに写したら、中身を破棄
 	// コマンドキュー、ウィンドウハンドル、設定を渡して生成する
 	HRESULT hr = dxgiFactory_->CreateSwapChainForHwnd(
-		commandQueue_.Get(), WinApp::GetInstance()->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1 **>(swapChain_.ReleaseAndGetAddressOf())
-	);
+		commandQueue_.Get(), window_->Hwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1 **>(swapChain_.ReleaseAndGetAddressOf()));
 	assert(SUCCEEDED(hr));
 }
 
@@ -345,13 +343,11 @@ void DirectXCommon::InitializeCommand() {
 	// commandList -------------------------------------------------------
 
 	hr = device_->CreateCommandList(
-		0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForTransfer_.Get(), nullptr, IID_PPV_ARGS(&commandListForTransfer_)
-	);
+		0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForTransfer_.Get(), nullptr, IID_PPV_ARGS(&commandListForTransfer_));
 	assert(SUCCEEDED(hr));
 
 	hr = device_->CreateCommandList(
-		0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForRender_.Get(), nullptr, IID_PPV_ARGS(&commandListForRender_)
-	);
+		0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForRender_.Get(), nullptr, IID_PPV_ARGS(&commandListForRender_));
 	assert(SUCCEEDED(hr));
 
 	// -------------------------------------------------------------------
@@ -417,8 +413,8 @@ void DirectXCommon::CreateFence() {
 
 void DirectXCommon::CreateViewport() {
 	// クライアント領域のサイズと一緒にして画面全体に表示
-	viewport_.Width = WinApp::kWindowWidth;
-	viewport_.Height = WinApp::kWindowHeight;
+	viewport_.Width = static_cast<float>(window_->ClientWidth());
+	viewport_.Height = static_cast<float>(window_->ClientHeight());
 	viewport_.TopLeftX = 0;
 	viewport_.TopLeftY = 0;
 	viewport_.MinDepth = 0.0f;
@@ -429,9 +425,9 @@ void DirectXCommon::CreateViewport() {
 void DirectXCommon::CreateScissor() {
 	// 基本的にビューポートと同じ矩形が構成されるようにする
 	scissorRect_.left = 0;
-	scissorRect_.right = WinApp::kWindowWidth;
+	scissorRect_.right = window_->ClientWidth();
 	scissorRect_.top = 0;
-	scissorRect_.bottom = WinApp::kWindowHeight;
+	scissorRect_.bottom = window_->ClientHeight();
 }
 
 // =================================================================================== private func

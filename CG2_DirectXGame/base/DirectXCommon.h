@@ -1,6 +1,5 @@
 #pragma once
 
-#include "WinApp.h"
 #include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -11,6 +10,10 @@
 #pragma comment(lib, "dxgi.lib")
 
 
+namespace ou {
+
+class Window;
+
 class DirectXCommon {
 public: // 静的メンバ関数
 
@@ -20,10 +23,8 @@ public: // 静的メンバ関数
 public: // メンバ関数
 
 	void Initialize(
-		int32_t backBufferWidth = WinApp::kWindowWidth,
-		int32_t backBufferHeight = WinApp::kWindowHeight,
-		bool enableDebugLayer = false
-	);
+		Window *window,
+		bool enableDebugLayer = false);
 
 	void Finalize();
 
@@ -52,7 +53,7 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	WinApp *winApp_ = nullptr;
+	Window *winApp_ = nullptr;
 
 	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
 	Microsoft::WRL::ComPtr<ID3D12Device> device_;
@@ -68,13 +69,16 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap_;
 	Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> resourceForTransfer_;
-	HANDLE fenceEvent_;
+	HANDLE fenceEvent_{};
 	UINT64 fenceVal_ = 0;
 	int32_t backBufferWidth_ = 0;
 	int32_t backBufferHeight_ = 0;
 
 	D3D12_VIEWPORT viewport_{};
 	D3D12_RECT scissorRect_{};
+
+	Window *window_ = nullptr;
+
 
 private: // メンバ関数
 
@@ -92,5 +96,6 @@ private: // メンバ関数
 	void CreateFence();
 	void CreateViewport();
 	void CreateScissor();
-
 };
+
+} // namespace ou

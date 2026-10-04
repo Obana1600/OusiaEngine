@@ -5,18 +5,41 @@
 #include "3d/Model.h"
 #include "DXCompiler.h"
 #include "DirectXCommon.h"
-#include "WinApp.h"
-#include "input/InputManager.h"
+#include "Window.h"
+#include "input/InputSystem.h"
+
 #include <WinUser.h>
+#include <memory>
 #include <string>
+#include <cstdint>
 
 
-namespace Engine {
+namespace ou {
 
-	void Initialize(const std::wstring &title = L"DirectXGame", bool enableDebugLayer = false);
+struct EngineDesc {
+	std::string title;
+	uint32_t width = 1280;
+	uint32_t height = 720;
+
+	bool enableDebugLayer = false;
+	bool enableGpuBasedValidation = false;
+	bool enableDred = false;
+};
+
+
+class Engine {
+public: // メンバ関数
+
+	void Initialize(const EngineDesc &desc);
 
 	void Finalize();
 
 	bool Update();
 
-} // namespace Engine
+
+private: // メンバ変数
+
+	std::unique_ptr<Window> window_;
+};
+
+} // namespace ou

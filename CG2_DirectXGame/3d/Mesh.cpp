@@ -5,6 +5,8 @@
 #include "base/DirectXCommon.h"
 #include <cassert>
 
+using namespace ou;
+
 
 void Mesh::AddVertex(const VertexInfo &vertex) {
 	vertices_.push_back(vertex);

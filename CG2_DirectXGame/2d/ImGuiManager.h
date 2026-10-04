@@ -1,14 +1,17 @@
 #pragma once
 
 #ifdef USE_IMGUI
-	#include "externals/imgui/imgui.h"
-	#include "externals/imgui/imgui_stdlib.h"
-	#include <d3d12.h>
-	#include <wrl.h>
+#include "externals/imgui/imgui.h"
+#include "externals/imgui/imgui_stdlib.h"
+#include <Windows.h>
+#include <d3d12.h>
+#include <wrl.h>
 #endif
 
-class DirectXCommon;
 
+namespace ou {
+
+class DirectXCommon;
 
 class ImGuiManager {
 public: // 静的メンバ関数
@@ -18,7 +21,7 @@ public: // 静的メンバ関数
 
 public: // メンバ関数
 
-	void Initialize();
+	void Initialize(HWND hwnd);
 	void Finalize();
 
 	void Begin();
@@ -42,3 +45,5 @@ private: // メンバ関数
 	ImGuiManager(const ImGuiManager &) = delete;
 	const ImGuiManager &operator=(const ImGuiManager &) = delete;
 };
+
+} // namespace ou

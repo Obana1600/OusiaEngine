@@ -1,10 +1,12 @@
 #pragma once
 
-#include "math/Matrix4x4.h"
-#include "math/Vector3.h"
+#include "Math/Matrix4x4.h"
+#include "Math/Vector3.h"
 #include <d3d12.h>
 #include <wrl.h>
 
+
+namespace ou {
 
 class WorldTransform {
 public: // メンバ変数
@@ -53,3 +55,5 @@ private: // メンバ関数
 	WorldTransform(const WorldTransform &) = delete;
 	WorldTransform operator=(const WorldTransform &) = delete;
 };
+
+} // namespace ou

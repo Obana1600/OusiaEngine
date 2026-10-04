@@ -1,14 +1,16 @@
 #pragma once
 
 #define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
-#include "math/Vector2.h"
+#include "Math/Vector2.h"
+
 #include <Windows.h>
 #include <array>
 #include <dinput.h>
 #include <wrl.h>
+#include <cstdint>
 
 
-class InputManager {
+class InputSystem {
 public: // インナークラス
 
 	enum MouseButton {
@@ -19,7 +21,7 @@ public: // インナークラス
 		BUTTON4, // 4
 		BUTTON5, // 5
 		BUTTON6, // 6
-		BUTTON7	 // 7
+		BUTTON7, // 7
 	};
 
 	struct MouseMove {
@@ -31,12 +33,12 @@ public: // インナークラス
 
 public: // 静的メンバ関数
 
-	static InputManager *GetInstance();
+	static InputSystem *GetInstance();
 
 
 public: // メンバ関数
 
-	void Initialize();
+	void Initialize(HWND hwnd);
 
 	void Update();
 
@@ -60,7 +62,7 @@ public: // メンバ関数
 		return mouse_;
 	}
 
-	const Vector2 &GetMousePosition() const {
+	const ou::Vector2 &GetMousePosition() const {
 		return mousePosition_;
 	}
 
@@ -70,19 +72,21 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<IDirectInput8> directInput_;
 	Microsoft::WRL::ComPtr<IDirectInputDevice8> devKeyboard_;
 	Microsoft::WRL::ComPtr<IDirectInputDevice8> devMouse_;
+
 	std::array<BYTE, 256> key_;
 	std::array<BYTE, 256> keyPre_;
+
 	DIMOUSESTATE2 mouse_{};
 	DIMOUSESTATE2 mousePre_{};
-	HWND hwnd_{};
-	Vector2 mousePosition_{};
+	ou::Vector2 mousePosition_{};
+
+	HWND hwnd_;
 
 
 private: // メンバ関数
 
-	InputManager() = default;
-	~InputManager();
-	InputManager(const InputManager &) = delete;
-	const InputManager &operator=(const InputManager &) = delete;
-
+	InputSystem() = default;
+	~InputSystem();
+	InputSystem(const InputSystem &) = delete;
+	const InputSystem &operator=(const InputSystem &) = delete;
 };

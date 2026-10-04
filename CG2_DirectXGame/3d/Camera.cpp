@@ -2,9 +2,8 @@
 
 #include "base/CreateBufferResource.h"
 #include "base/DirectXCommon.h"
-#include "math/MathUtility.h"
 
-using namespace MathUtility;
+using namespace ou;
 
 
 void Camera::Initialize() {
@@ -18,9 +17,9 @@ void Camera::Initialize() {
 
 
 void Camera::Update() {
-	auto cameraMatrix = MakeAffineMatrix({1.0f, 1.0f, 1.0f}, rotation_, translation_);
-	matView_ = Inverse(cameraMatrix);
-	matProjection_ = MakePerspectiveFovMatrix(fovAngleY_, aspectRatio_, nearZ_, farZ_);
+	auto cameraMatrix = Matrix4x4::SRT({1.0f, 1.0f, 1.0f}, rotation_, translation_);
+	matView_ = cameraMatrix.Inverse();
+	matProjection_ = Matrix4x4::Perspective(fovAngleY_, aspectRatio_, nearZ_, farZ_);
 
 	TransferMatrix();
 }

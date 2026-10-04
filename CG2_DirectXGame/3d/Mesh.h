@@ -1,7 +1,7 @@
 #pragma once
 
-#include "math/Vector2.h"
-#include "math/Vector3.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
 #include <Windows.h>
 #include <cstdint>
 #include <d3d12.h>
@@ -9,8 +9,10 @@
 #include <vector>
 #include <wrl.h>
 
-class Material;
 
+namespace ou {
+
+class Material;
 
 class Mesh {
 public: // インナークラス
@@ -81,3 +83,5 @@ private: // メンバ変数
 
 	Material *material_ = nullptr;
 };
+
+} // namespace ou

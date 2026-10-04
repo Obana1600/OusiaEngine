@@ -8,6 +8,8 @@
 #include <wrl.h>
 
 
+namespace ou {
+
 class TextureManager {
 public: // インナークラス
 
@@ -69,3 +71,5 @@ private: // メンバ関数
 
 	uint32_t LoadInternal(const std::string &filePath);
 };
+
+} // namespace ou
