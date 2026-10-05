@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "Core/Paths.h"
+#include "Core/Log.h"
 
 using namespace ou;
 
@@ -67,7 +68,7 @@ std::unique_ptr<Window> Window::Create(const WindowDesc &desc) {
 		w.get());
 
 	if (!w->hwnd_) {
-		// TODO: ログ出力
+		Log::Error("HWND が作成されませんでした。");
 		return nullptr;
 	}
 

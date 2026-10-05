@@ -17,7 +17,11 @@ void Engine::Initialize(const EngineDesc &desc) {
 		 .height = desc.height});
 
 	// DXCommon
-	DirectXCommon::GetInstance()->Initialize(window_.get());
+	DirectXCommon::GetInstance()->Initialize(
+		window_.get(),
+		{.enableDebugLayer = desc.enableDebugLayer,
+		 .enableGpuBasedValidation = desc.enableGpuBasedValidation,
+		 .enableDred = desc.enableDred});
 
 	// DXCompiler
 	DXCompiler::GetInstance()->Initialize();
@@ -51,7 +55,7 @@ void Engine::Finalize() {
 
 	// winapp
 	window_.reset();
-
+	
 	// COMの終了処理
 	CoUninitialize();
 }

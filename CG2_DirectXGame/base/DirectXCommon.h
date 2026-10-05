@@ -1,13 +1,14 @@
 #pragma once
 
+#include "Graphics/CommandQueue.h"
+#include "Graphics/D3D12Device.h"
+#include "Graphics/SwapChain.h"
+
 #include <cstdint>
 #include <d3d12.h>
-#include <dxgi1_6.h>
-#include <vector>
-#include <wrl.h>
-
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
+#include <memory>
+#include <wrl/client.h>
+#include <chrono>
 
 
 namespace ou {
@@ -22,9 +23,7 @@ public: // 静的メンバ関数
 
 public: // メンバ関数
 
-	void Initialize(
-		Window *window,
-		bool enableDebugLayer = false);
+	void Initialize(Window *window, const D3D12DeviceDesc &deviceDesc = {});
 
 	void Finalize();
 
@@ -35,7 +34,7 @@ public: // メンバ関数
 	void PostDraw();
 
 	ID3D12Device *GetDevice() const {
-		return device_.Get();
+		return device_->Device();
 	}
 
 	ID3D12GraphicsCommandList *GetCommandListForTransfer() const {
@@ -47,37 +46,30 @@ public: // メンバ関数
 	}
 
 	size_t GetBackBufferCount() const {
-		return backBuffers_.size();
+		return kFrameCount;
 	}
 
 
 private: // メンバ変数
 
-	Window *winApp_ = nullptr;
+	std::unique_ptr<D3D12Device> device_;
+	std::unique_ptr<CommandQueue> queue_;
+	std::unique_ptr<SwapChain> swapChain_;
 
-	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
-	Microsoft::WRL::ComPtr<ID3D12Device> device_;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandListForTransfer_;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandListForRender_;
+	// TODO: CommandContext に移す
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocatorForTransfer_;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocatorForRender_;
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_;
-	Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain_;
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> backBuffers_;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandListForTransfer_;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandListForRender_;
+
+	// TODO: DepthBuffer に移す
 	Microsoft::WRL::ComPtr<ID3D12Resource> depthBuffer_;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap_;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap_;
-	Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> resourceForTransfer_;
-	HANDLE fenceEvent_{};
-	UINT64 fenceVal_ = 0;
-	int32_t backBufferWidth_ = 0;
-	int32_t backBufferHeight_ = 0;
 
 	D3D12_VIEWPORT viewport_{};
 	D3D12_RECT scissorRect_{};
 
-	Window *window_ = nullptr;
+	std::chrono::steady_clock::time_point reference_;
 
 
 private: // メンバ関数
@@ -85,17 +77,17 @@ private: // メンバ関数
 	DirectXCommon() = default;
 	~DirectXCommon() = default;
 	DirectXCommon(const DirectXCommon &) = delete;
-	const DirectXCommon &operator=(const DirectXCommon &) = delete;
+	DirectXCommon &operator=(const DirectXCommon &) = delete;
 
-	void InitializeDXGIDevice(bool enableDebugLayer = false);
-	void InitializeCommand();
+	void CreateCommandLists();
+	void CreateDepthBuffer(uint32_t width, uint32_t height);
+	void SetUpViewportAndScissor(uint32_t width, uint32_t height);
 
-	void CreateSwapChain();
-	void CreateFinalRenderTargets();
-	void CreateDepthBuffer();
-	void CreateFence();
-	void CreateViewport();
-	void CreateScissor();
+	// コマンドリストを閉じて実行し、GPU の完了を待ってから次に積めるようにする
+	void ExecuteAndWait(ID3D12GraphicsCommandList *list, ID3D12CommandAllocator *allocator);
+
+	void InitializeFixFPS();
+	void UpdateFixFPS();
 };
 
 } // namespace ou

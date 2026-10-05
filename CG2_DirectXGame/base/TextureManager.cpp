@@ -2,8 +2,8 @@
 
 #include "CreateBufferResource.h"
 #include "DirectXCommon.h"
-#include "StringUtility.h"
 #include "Window.h"
+#include "Core/Paths.h"
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
 #include <cassert>
@@ -22,7 +22,7 @@ namespace {
 DirectX::ScratchImage LoadTexture(const std::string &filePath) {
 	// テクスチャファイルを読んでプログラムで扱えるようにする
 	DirectX::ScratchImage image{};
-	std::wstring filePathW = ConvertStringMultiByteToWide(filePath);
+	std::wstring filePathW = Utf8ToWide(filePath);
 	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
 	assert(SUCCEEDED(hr));
 
