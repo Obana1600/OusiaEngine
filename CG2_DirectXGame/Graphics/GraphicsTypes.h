@@ -2,13 +2,15 @@
 
 #include <cfloat>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
 
+// TODO: コメント書く
+// TODO: 列挙子、Desc、実体でファイルを分けたい
 
 // グラフィクスの列挙子
-// TODO: コメント書く
 namespace ou {
 
 enum QueueType {
@@ -214,7 +216,7 @@ enum class SamplerBorderColor : uint8_t {
 } // namespace ou
 
 
-// グラフィクスの Desc
+// グラフィクスの設定
 namespace ou {
 
 // 前方宣言
@@ -231,14 +233,14 @@ union ClearValue {
 
 // インプットエレメント
 struct InputLayout {
-	static constexpr uint32_t APPEND_ALIGNED_ELEMENAT = ~0u;
+	static constexpr uint32_t APPEND_ALIGNED_ELEMENT = ~0u;
 
 	struct Element {
 		std::string semanticName;
 		uint32_t semanticIndex = 0;
 		Format format = Format::UNKNOWN;
 		uint32_t inputSlot = 0;
-		uint32_t alignedByteOffset = APPEND_ALIGNED_ELEMENAT;
+		uint32_t alignedByteOffset = APPEND_ALIGNED_ELEMENT;
 		InputClassification inputSlotClass = InputClassification::PER_VERTEX_DATA;
 	};
 	std::vector<Element> elements;
@@ -255,7 +257,7 @@ struct RasterizerState {
 	bool depthClipEnable = false;
 	bool multisampleEnable = false;
 	bool antialiasedLineEnable = false;
-	bool conservativeRasterizeationEnable = false;
+	bool conservativeRasterizationEnable = false;
 };
 
 // 深度ステンシル
@@ -271,7 +273,7 @@ struct BlendState {
 	bool independentBlendEnable = false;
 
 	struct RenderTargetBlendState {
-		bool BlendEnable = false;
+		bool blendEnable = false;
 		Blend srcBlend = Blend::SRC_ALPHA;
 		Blend destBlend = Blend::INV_SRC_ALPHA;
 		BlendOp blendOp = BlendOp::ADD;
@@ -364,6 +366,255 @@ struct PipelineStateDesc {
 } // namespace ou
 
 
+// グラフィクスの実体
+namespace ou {
+
+// ビューポート
+struct Viewport {
+	float topLeftX = 0.0f;
+	float topLeftY = 0.0f;
+	float width = 0.0f;
+	float height = 0.0f;
+	float minDepth = 0.0f;
+	float maxDepth = 0.0f;
+};
+
+// シザー矩形
+struct Scissor {
+	int32_t left = 0;
+	int32_t top = 0;
+	int32_t right = 0;
+	int32_t bottom = 0;
+};
+
+// テクスチャの初期データ
+struct SubresourceData {
+	const void *dataPtr = nullptr;
+	uint32_t rowPitch = 0;
+	uint32_t slicePitch = 0;
+};
+
+
+// ----- リソース -----
+
+// デバイスが作るすべてのオブジェクトの基底
+struct GraphicsDeviceChild {
+	std::shared_ptr<void> internalState;
+
+	bool IsValid() const {
+		return internalState != nullptr;
+	}
+};
+
+// サンプラー
+struct Sampler: public GraphicsDeviceChild {
+	SamplerDesc desc;
+
+	const SamplerDesc &GetDesc() const {
+		return desc;
+	}
+};
+
+// シェーダー
+struct Shader: public GraphicsDeviceChild {
+	ShaderStage state = ShaderStage::Count;
+};
+
+// リソース
+struct GpuResource: public GraphicsDeviceChild {
+	enum class Type : uint8_t {
+		BUFFER,
+		TEXTURE,
+		UNKNOWN,
+	} type = Type::UNKNOWN;
+
+	bool IsBuffer() const {
+		return type == Type::BUFFER;
+	}
+	bool IsTexture() const {
+		return type == Type::TEXTURE;
+	}
+
+	void *mappedData = nullptr;
+	size_t mappedSize = 0;
+};
+
+// バッファー
+struct GpuBuffer: public GpuResource {
+	GpuBufferDesc desc;
+
+	const GpuBufferDesc &GetDesc() const {
+		return desc;
+	}
+};
+
+// テクスチャ
+struct Texture: public GpuResource {
+	TextureDesc desc;
+
+	const TextureDesc &GetDesc() const {
+		return desc;
+	}
+};
+
+// パイプライン
+struct PipelineState: public GraphicsDeviceChild {
+	PipelineStateDesc desc;
+
+	const PipelineStateDesc &GetDesc() const {
+		return desc;
+	}
+};
+
+// スワップチェーン
+struct SwapChain: public GraphicsDeviceChild {
+	SwapChainDesc desc;
+
+	const SwapChainDesc &GetDesc() const {
+		return desc;
+	}
+};
+
+
+// ----- コマンド -----
+
+// コマンドリストのハンドル
+struct CommandList {
+	void *internalState = nullptr;
+
+	constexpr bool IsValid() const {
+		return internalState != nullptr;
+	}
+};
+
+// リソースバリア
+struct GpuBarrier {
+	enum class Type : uint8_t {
+		MEMORY,
+		IMAGE,
+		BUFFER,
+	} type = Type::MEMORY;
+
+	struct Memory {
+		const GpuResource *resource;
+	};
+	struct Image {
+		const Texture *texture;
+		ResourceState layoutBefore;
+		ResourceState layoutAfter;
+		int mip;
+		int slice;
+	};
+	struct Buffer {
+		const GpuBuffer *buffer;
+		ResourceState stateBefore;
+		ResourceState stateAfter;
+	};
+	union {
+		Memory memory;
+		Image image;
+		Buffer buffer;
+	};
+
+	static GpuBarrier Memory(const GpuResource *resource = nullptr) {
+		GpuBarrier barrier;
+		barrier.type = Type::MEMORY;
+		barrier.memory.resource = resource;
+		return barrier;
+	}
+
+	static GpuBarrier Image(
+		const Texture *texture, ResourceState before, ResourceState after,
+		int mip = -1, int slice = -1) {
+		GpuBarrier barrier;
+		barrier.type = Type::IMAGE;
+		barrier.image.texture = texture;
+		barrier.image.layoutBefore = before;
+		barrier.image.layoutAfter = after;
+		barrier.image.mip = mip;
+		barrier.image.slice = slice;
+		return barrier;
+	}
+
+	static GpuBarrier Buffer(
+		const GpuBuffer *buffer, ResourceState before, ResourceState after) {
+		GpuBarrier barrier;
+		barrier.type = Type::BUFFER;
+		barrier.buffer.buffer = buffer;
+		barrier.buffer.layoutBefore = before;
+		barrier.buffer.layoutAfter = after;
+		return barrier;
+	}
+};
+
+// レンダーパス
+struct RenderPassImage {
+	enum class Type {
+		RENDERTARGET,
+		DEPTH_STENCIL,
+	} type = Type::RENDERTARGET;
+
+	enum class LoadOp : uint8_t {
+		LOAD,
+		CLEAR,
+		DONTCARE,
+	} loadOp = LoadOp::LOAD;
+
+	enum class StoreOp : uint8_t {
+		STORE,
+		DONTCARE,
+	} storeOp = StoreOp::STORE;
+
+	const Texture *texture = nullptr;
+	int subresource = -1;
+
+	ResourceState layoutBefore = ResourceState::UNDEFINED;
+	ResourceState layout = ResourceState::UNDEFINED;
+	ResourceState layoutAfter = ResourceState::UNDEFINED;
+
+	static RenderPassImage RenderTarget(
+		const Texture *texture,
+		LoadOp loadOp = LoadOp::LOAD,
+		StoreOp storeOp = StoreOp::STORE,
+		ResourceState before = ResourceState::SHADER_RESOURCE,
+		ResourceState after = ResourceState::SHADER_RESOURCE,
+		int subresource = -1) {
+		RenderPassImage image;
+		image.type = Type::RENDERTARGET;
+		image.texture = texture;
+		image.loadOp = loadOp;
+		image.storeOp = storeOp;
+		image.layoutBefore = before;
+		image.layoutAfter = after;
+		image.subresource = subresource;
+		return image;
+	}
+
+	static RenderPassImage DepthStencil(
+		const Texture *texture,
+		LoadOp loadOp = LoadOp::LOAD,
+		StoreOp storeOp = StoreOp::STORE,
+		ResourceState before = ResourceState::DEPTHSTENCIL,
+		ResourceState current = ResourceState::DEPTHSTENCIL,
+		ResourceState after = ResourceState::DEPTHSTENCIL,
+		int subresource = -1) {
+		RenderPassImage image;
+		image.type = Type::DEPTH_STENCIL;
+		image.texture = texture;
+		image.loadOp = loadOp;
+		image.storeOp = storeOp;
+		image.layoutBefore = before;
+		image.layout = current;
+		image.layoutAfter = after;
+		image.subresource = subresource;
+		return image;
+	}
+};
+
+} // namespace ou
+
+
+// 列挙子のビット演算を有効化する構造体
 template <typename E>
 struct EnableBitmaskOperators {
 	static constexpr bool enable = false;
@@ -376,7 +627,7 @@ constexpr std::enable_if_t<EnableBitmaskOperators<E>::enable, E> operator|(E a, 
 }
 
 template <typename E>
-constexpr std::enable_if_t<EnableBitmaskOperators<E>::enable, E &> operator|=(E a, E b) {
+constexpr std::enable_if_t<EnableBitmaskOperators<E>::enable, E &> operator|=(E &a, E b) {
 	a = a | b;
 	return a;
 }
@@ -399,6 +650,7 @@ constexpr std::enable_if_t<EnableBitmaskOperators<E>::enable, bool> HasFlag(E va
 }
 
 
+// ビット演算を有効化する列挙子 4選
 template <>
 struct EnableBitmaskOperators<ou::ColorWrite> {
 	static constexpr bool enable = true;
