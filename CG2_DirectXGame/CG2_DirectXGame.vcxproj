@@ -168,6 +168,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="base\Engine.cpp" />
     <ClCompile Include="base\TextureManager.cpp" />
     <ClCompile Include="base\Window.cpp" />
+    <ClCompile Include="Graphics\GpuResource.cpp" />
     <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp" />
     <ClCompile Include="Graphics\CommandAllocatorPool.cpp" />
     <ClCompile Include="Graphics\CommandContext.cpp" />
@@ -175,7 +176,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Core\Fatal.cpp" />
     <ClCompile Include="Core\Log.cpp" />
     <ClCompile Include="Core\Paths.cpp" />
-    <ClCompile Include="Graphics\GpuResource.cpp" />
     <ClCompile Include="Graphics\D3D12Device.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
     <ClCompile Include="externals\imgui\imgui_demo.cpp" />
@@ -274,6 +274,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="base\Engine.h" />
     <ClInclude Include="base\TextureManager.h" />
     <ClInclude Include="base\Window.h" />
+    <ClInclude Include="Graphics\GpuResource.h" />
     <ClInclude Include="Graphics\GraphicsDevice_DX12.h" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
@@ -284,7 +285,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Core\Fatal.h" />
     <ClInclude Include="Core\Log.h" />
     <ClInclude Include="Core\Paths.h" />
-    <ClInclude Include="Graphics\GpuResource.h" />
     <ClInclude Include="Graphics\D3D12Device.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="input\InputSystem.h" />

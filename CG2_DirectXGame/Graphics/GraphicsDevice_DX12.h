@@ -1,9 +1,14 @@
 #pragma once
 
 #include "Graphics/GraphicsDevice.h"
+#include "Graphics/GraphicsTypes.h"
 
 #include <d3d12.h>
+#include <deque>
 #include <dxgi1_6.h>
+#include <memory>
+#include <mutex>
+#include <vector>
 #include <wrl/client.h>
 
 
@@ -61,7 +66,72 @@ public: // メンバ関数
 	void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) override;
 
 
+public: // インナークラス
+
+	struct AllocationHandler {
+		std::mutex destroyLocker;
+		uint64_t frameCount = 0;
+
+		std::deque<std::pair<Microsoft::WRL::ComPtr<ID3D12Resource>, uint64_t>> destroyerResources;
+		std::deque<std::pair<Microsoft::WRL::ComPtr<ID3D12PipelineState>, uint64_t>> destroyerPipelines;
+
+		void Update(uint64_t currentFrameCount, uint32_t bufferCount);
+	};
+
+
+private: // インナークラス
+
+	struct CommandQueue {
+		D3D12_COMMAND_QUEUE_DESC desc{};
+		Microsoft::WRL::ComPtr<ID3D12CommandQueue> queue;
+
+		std::vector<ID3D12CommandList *> submitCmds;
+
+		void Submit();
+	};
+
+	struct CommandList_DX12 {
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocators[BUFFER_COUNT][QUEUE_COUNT];
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lists[QUEUE_COUNT];
+
+		uint32_t bufferIndex = 0;
+		QueueType queue = QUEUE_GRAPHICS;
+		uint32_t id = 0;
+
+		void Reset(uint32_t newBufferIndex);
+		ID3D12CommandAllocator *GetCommandAllocator() const;
+		ID3D12GraphicsCommandList *GetGraphicsCommandList() const;
+	};
+
+
 private: // メンバ変数
+
+	ValidationMode validationMode_ = ValidationMode::Disabled;
+
+	Microsoft::WRL::ComPtr<IDXGIFactory6> factory_;
+	Microsoft::WRL::ComPtr<IDXGIAdapter4> adapter_;
+	Microsoft::WRL::ComPtr<ID3D12Device> device_;
+
+	CommandQueue queues_[QUEUE_COUNT];
+
+	Microsoft::WRL::ComPtr<ID3D12Fence> frameFence_[BUFFER_COUNT][QUEUE_COUNT];
+
+	std::vector<std::unique_ptr<CommandList_DX12>> commandLists_;
+	uint32_t cmdCount_ = 0;
+	std::mutex cmdLocker_;
+
+	std::shared_ptr<AllocationHandler> allocationHandler_;
+
+	bool tearingSupported_ = false;
+
+	DWORD messageCallbackCookie_ = 0;
+
+
+private: // メンバ関数
+
+	CommandList_DX12 &GetCommandList(CommandList cmd) const;
+
+
 private: // コピー禁止
 
 	GraphicsDevice_DX12(const GraphicsDevice_DX12 &) = delete;

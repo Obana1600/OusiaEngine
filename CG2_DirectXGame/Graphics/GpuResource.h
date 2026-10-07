@@ -7,17 +7,17 @@
 
 namespace ou {
 
-class GpuResource {
+class GpuResourceOld {
 public: // メンバ関数
 
 	// コンストラクタ / デストラクタ
-	GpuResource() = default;
-	GpuResource(ID3D12Resource *resource, D3D12_RESOURCE_STATES currentState);
-	~GpuResource();
+	GpuResourceOld() = default;
+	GpuResourceOld(ID3D12Resource *resource, D3D12_RESOURCE_STATES currentState);
+	~GpuResourceOld();
 
 	// std::vector に入れるためにムーブは許可する
-	GpuResource(GpuResource &&) = default;
-	GpuResource &operator=(GpuResource &&) = default;
+	GpuResourceOld(GpuResourceOld &&) = default;
+	GpuResourceOld &operator=(GpuResourceOld &&) = default;
 
 	virtual void Destroy();
 
@@ -38,8 +38,8 @@ protected: // メンバ変数
 
 private: // コピー禁止
 
-	GpuResource(const GpuResource &) = delete;
-	GpuResource &operator=(const GpuResource &) = delete;
+	GpuResourceOld(const GpuResourceOld &) = delete;
+	GpuResourceOld &operator=(const GpuResourceOld &) = delete;
 };
 
 } // namespace ou

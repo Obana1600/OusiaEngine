@@ -8,7 +8,7 @@
 
 namespace ou {
 
-class GpuResource;
+class GpuResourceOld;
 class GraphicsContext;
 
 

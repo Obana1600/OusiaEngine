@@ -125,7 +125,7 @@ void ou::SwapChainOld::WaitForNextFrame() {
 }
 
 
-const GpuResource &ou::SwapChainOld::GetCurrentBackBuffer() const {
+const GpuResourceOld &ou::SwapChainOld::GetCurrentBackBuffer() const {
 	return backBuffers_[GetBackBufferIndex()];
 }
 

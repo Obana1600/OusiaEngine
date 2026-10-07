@@ -29,12 +29,12 @@ void ReportAssertFailure(const char *expression, const std::source_location &loc
 
 #else
 
-#define ASSERT(condition, ...)                                                                                        \
-	do {                                                                                                              \
-		if (!(condition)) [[unlikely]] {                                                                              \
-			::ou::Detail::ReportAssertFailure(#condition, std::source_location::current() __VA_OPT__(, __VA_ARGS__)); \
-			__debugbreak();                                                                                           \
-		}                                                                                                             \
+#define ASSERT(condition, ...)                                                                                \
+	do {                                                                                                      \
+		if (!(condition)) [[unlikely]] {                                                                      \
+			::ou::ReportAssertFailure(#condition, std::source_location::current() __VA_OPT__(, __VA_ARGS__)); \
+			__debugbreak();                                                                                   \
+		}                                                                                                     \
 	} while (false)
 
 #define VERIFY(condition, ...) ASSERT(condition __VA_OPT__(, __VA_ARGS__))

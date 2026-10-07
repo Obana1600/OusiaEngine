@@ -36,7 +36,7 @@ public: // メンバ関数
 	// 次のフレームが描画できるようになるまで待つ
 	void WaitForNextFrame();
 
-	const GpuResource &GetCurrentBackBuffer() const;
+	const GpuResourceOld &GetCurrentBackBuffer() const;
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRtv() const;
 	uint32_t GetBackBufferIndex() const;
 	uint32_t GetWidth() const;
@@ -48,7 +48,7 @@ private: // メンバ変数
 
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain_;
 
-	std::vector<GpuResource> backBuffers_;
+	std::vector<GpuResourceOld> backBuffers_;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap_; // TODO: アロケータを作る
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtvHandles_; // TODO: アロケータを作る
 

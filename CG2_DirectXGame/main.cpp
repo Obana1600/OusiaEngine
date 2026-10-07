@@ -1,6 +1,7 @@
 #include "GameScene.h"
 #include "base/Engine.h"
 #include <Windows.h>
+#include <Graphics/GraphicsDevice_DX12.h>
 
 
 // Windowsアプリでのエントリーポイント（main関数）
@@ -10,7 +11,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	Engine *engine = new Engine();
 	engine->Initialize({.title = "LE2A_オバナ_サトル"});
-
+	GraphicsDevice_DX12 testDevice(ValidationMode::Enabled);
+	for (int i = 0; i < 10; i++) {
+		testDevice.BeginCommandList();
+		testDevice.BeginCommandList(); // 2 本借りても大丈夫か
+		testDevice.SubmitCommandLists();
+	}
 	DirectXCommon *dxCommon = DirectXCommon::GetInstance();
 	ImGuiManager *imguiMgr = ImGuiManager::GetInstance();
 
