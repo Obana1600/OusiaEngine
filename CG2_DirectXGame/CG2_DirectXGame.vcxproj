@@ -168,6 +168,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="base\Engine.cpp" />
     <ClCompile Include="base\TextureManager.cpp" />
     <ClCompile Include="base\Window.cpp" />
+    <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp" />
     <ClCompile Include="Graphics\CommandAllocatorPool.cpp" />
     <ClCompile Include="Graphics\CommandContext.cpp" />
     <ClCompile Include="Core\CrashHandler.cpp" />
@@ -273,6 +274,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="base\Engine.h" />
     <ClInclude Include="base\TextureManager.h" />
     <ClInclude Include="base\Window.h" />
+    <ClInclude Include="Graphics\GraphicsDevice_DX12.h" />
+    <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
     <ClInclude Include="Graphics\CommandAllocatorPool.h" />
     <ClInclude Include="Graphics\CommandContext.h" />

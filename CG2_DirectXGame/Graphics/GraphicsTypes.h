@@ -13,6 +13,14 @@
 // グラフィクスの列挙子
 namespace ou {
 
+// デバッグレイヤーの強さ
+enum class ValidationMode : uint8_t {
+	Disabled, // 検証しない
+	Enabled,  // デバッグレイヤー
+	Gpu,	  // デバッグレイヤー + GPU ベース検証
+	Verbose,  // デバッグレイヤー + 情報メッセージの出力
+};
+
 enum QueueType {
 	QUEUE_GRAPHICS, // ダイレクトキュー
 	QUEUE_COMPUTE,	// コンピュートキュー
@@ -376,7 +384,7 @@ struct Viewport {
 	float width = 0.0f;
 	float height = 0.0f;
 	float minDepth = 0.0f;
-	float maxDepth = 0.0f;
+	float maxDepth = 1.0f;
 };
 
 // シザー矩形
@@ -417,7 +425,7 @@ struct Sampler: public GraphicsDeviceChild {
 
 // シェーダー
 struct Shader: public GraphicsDeviceChild {
-	ShaderStage state = ShaderStage::Count;
+	ShaderStage stage = ShaderStage::Count;
 };
 
 // リソース
@@ -507,8 +515,8 @@ struct GpuBarrier {
 	};
 	struct Buffer {
 		const GpuBuffer *buffer;
-		ResourceState stateBefore;
-		ResourceState stateAfter;
+		ResourceState layoutBefore;
+		ResourceState layoutAfter;
 	};
 	union {
 		Memory memory;
@@ -549,7 +557,7 @@ struct GpuBarrier {
 
 // レンダーパス
 struct RenderPassImage {
-	enum class Type {
+	enum class Type : uint8_t {
 		RENDERTARGET,
 		DEPTH_STENCIL,
 	} type = Type::RENDERTARGET;
@@ -585,6 +593,7 @@ struct RenderPassImage {
 		image.loadOp = loadOp;
 		image.storeOp = storeOp;
 		image.layoutBefore = before;
+		image.layout = ResourceState::RENDERTARGET;
 		image.layoutAfter = after;
 		image.subresource = subresource;
 		return image;
