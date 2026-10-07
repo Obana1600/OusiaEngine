@@ -372,3 +372,6 @@ Dumps/
 
 # imgui
 imgui.ini
+
+# markdown
+*.md

@@ -1,12 +1,11 @@
 #include "CommandQueue.h"
 #include "Core/Log.h"
-
+#include "Graphics/CommandAllocatorPool.h"
 
 using namespace ou;
 
 
-std::unique_ptr<CommandQueue> ou::CommandQueue::Create(
-	ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type) {
+std::unique_ptr<CommandQueue> ou::CommandQueue::Create(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type) {
 	std::unique_ptr<CommandQueue> q(new CommandQueue());
 
 	// キューの生成
@@ -33,6 +32,9 @@ std::unique_ptr<CommandQueue> ou::CommandQueue::Create(
 		Log::Error("イベントの作成に失敗しました。");
 		return nullptr;
 	}
+
+	// アロケータプールの作成
+	q->allocatorPool_ = std::make_unique<CommandAllocatorPool>(device, type);
 
 	return q;
 }
@@ -77,6 +79,16 @@ void ou::CommandQueue::WaitForFence(uint64_t fenceValue) {
 
 void ou::CommandQueue::Flush() {
 	WaitForFence(Signal());
+}
+
+
+ID3D12CommandAllocator *ou::CommandQueue::Request() {
+	return allocatorPool_->Request(fence_->GetCompletedValue());
+}
+
+
+void ou::CommandQueue::Discard(uint64_t fenceValue, ID3D12CommandAllocator *allocator) {
+	allocatorPool_->Discard(fenceValue, allocator);
 }
 
 

@@ -1,5 +1,7 @@
 #include "GpuResource.h"
 
+using namespace ou;
+
 
 GpuResource::GpuResource(ID3D12Resource *resource, D3D12_RESOURCE_STATES currentState)
 	: resource_(resource),

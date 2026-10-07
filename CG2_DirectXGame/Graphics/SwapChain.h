@@ -14,10 +14,10 @@
 
 namespace ou {
 
-class SwapChain {
+class SwapChainOld {
 public: // 静的ファクトリ
 
-	static std::unique_ptr<SwapChain> Create(
+	static std::unique_ptr<SwapChainOld> Create(
 		ID3D12Device *device, IDXGIFactory6 *factory, ID3D12CommandQueue *queue,
 		HWND hwnd, uint32_t width, uint32_t height);
 
@@ -25,7 +25,7 @@ public: // 静的ファクトリ
 public: // メンバ関数
 
 	// デストラクタ
-	~SwapChain();
+	~SwapChainOld();
 
 	// ウィンドウの大きさに合わせてバックバッファを作り直す
 	void Resize(uint32_t width, uint32_t height);
@@ -71,10 +71,10 @@ private: // メンバ関数
 
 private: // コンストラクタ
 
-	SwapChain(uint32_t width, uint32_t height);
+	SwapChainOld(uint32_t width, uint32_t height);
 
-	SwapChain(const SwapChain &) = delete;
-	SwapChain &operator=(const SwapChain &) = delete;
+	SwapChainOld(const SwapChainOld &) = delete;
+	SwapChainOld &operator=(const SwapChainOld &) = delete;
 };
 
 } // namespace ou

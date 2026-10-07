@@ -1200,7 +1200,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  Q: I integrated Dear ImGui in my engine and some elements are displaying outside their expected windows boundaries...
  >> See https://www.dearimgui.com/faq
 
- Q&A: Usage
+ Q&A: HeapType
  ----------
 
  Q: About the ID Stack system..

@@ -66,7 +66,7 @@ void DirectXCommon::Initialize(Window *window, const D3D12DeviceDesc &deviceDesc
 	queue_ = CommandQueue::Create(device_->Device(), D3D12_COMMAND_LIST_TYPE_DIRECT);
 	if (!queue_) { FatalError("CommandQueue の作成に失敗しました。"); }
 
-	swapChain_ = SwapChain::Create(
+	swapChain_ = SwapChainOld::Create(
 		device_->Device(), device_->Factory(), queue_->Queue(),
 		window->Hwnd(), width, height);
 	if (!swapChain_) { FatalError("SwapChain の作成に失敗しました。"); }
@@ -86,8 +86,8 @@ void DirectXCommon::Finalize() {
 	depthBuffer_.Reset();
 	commandListForRender_.Reset();
 	commandListForTransfer_.Reset();
-	commandAllocatorForRender_.Reset();
-	commandAllocatorForTransfer_.Reset();
+	commandAllocatorForRender_->Reset();
+	commandAllocatorForTransfer_->Reset();
 
 	swapChain_.reset();
 	queue_.reset();
@@ -133,12 +133,12 @@ void DirectXCommon::PostDraw() {
 	UpdateFixFPS();
 
 	CheckHResult(commandAllocatorForRender_->Reset(), "描画コマンドアロケータのリセット");
-	CheckHResult(commandListForRender_->Reset(commandAllocatorForRender_.Get(), nullptr), "描画コマンドリストのリセット");
+	CheckHResult(commandListForRender_->Reset(commandAllocatorForRender_, nullptr), "描画コマンドリストのリセット");
 }
 
 
 void DirectXCommon::ExecuteTransferCommands() {
-	ExecuteAndWait(commandListForTransfer_.Get(), commandAllocatorForTransfer_.Get());
+	ExecuteAndWait(commandListForTransfer_.Get(), commandAllocatorForTransfer_);
 }
 
 // ==================================================================================== public func
@@ -159,11 +159,11 @@ void DirectXCommon::CreateCommandLists() {
 
 	CheckHResult(
 		device->CreateCommandList(
-			0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForTransfer_.Get(), nullptr, IID_PPV_ARGS(&commandListForTransfer_)),
+			0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForTransfer_, nullptr, IID_PPV_ARGS(&commandListForTransfer_)),
 		"転送用コマンドリストの作成");
 	CheckHResult(
 		device->CreateCommandList(
-			0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForRender_.Get(), nullptr, IID_PPV_ARGS(&commandListForRender_)),
+			0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocatorForRender_, nullptr, IID_PPV_ARGS(&commandListForRender_)),
 		"描画用コマンドリストの作成");
 
 	commandListForTransfer_->SetName(L"Transfer CommandList");
@@ -228,10 +228,13 @@ void DirectXCommon::SetUpViewportAndScissor(uint32_t width, uint32_t height) {
 void DirectXCommon::ExecuteAndWait(ID3D12GraphicsCommandList *list, ID3D12CommandAllocator *allocator) {
 	CheckHResult(list->Close(), "コマンドリストのクローズ");
 	queue_->Execute(list);
-	queue_->Flush();
+	const uint64_t fenceValue = queue_->Signal();
 
-	CheckHResult(allocator->Reset(), "コマンドアロケータのリセット");
+	queue_->Discard(fenceValue, allocator);
+	allocator = queue_->Request();
 	CheckHResult(list->Reset(allocator, nullptr), "コマンドリストのリセット");
+
+	queue_->WaitForFence(fenceValue); // 今はまだ毎回待つ
 }
 
 

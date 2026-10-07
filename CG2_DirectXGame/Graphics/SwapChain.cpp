@@ -6,10 +6,10 @@ using namespace ou;
 using namespace Microsoft::WRL;
 
 
-std::unique_ptr<SwapChain> ou::SwapChain::Create(
+std::unique_ptr<SwapChainOld> ou::SwapChainOld::Create(
 	ID3D12Device *device, IDXGIFactory6 *factory, ID3D12CommandQueue *queue,
 	HWND hwnd, uint32_t width, uint32_t height) {
-	std::unique_ptr<SwapChain> sc(new SwapChain(width, height));
+	std::unique_ptr<SwapChainOld> sc(new SwapChainOld(width, height));
 	sc->device_ = device;
 
 	// 待機可能なスワップチェーンを作る
@@ -77,14 +77,14 @@ std::unique_ptr<SwapChain> ou::SwapChain::Create(
 }
 
 
-ou::SwapChain::~SwapChain() {
+ou::SwapChainOld::~SwapChainOld() {
 	if (frameLatencyWaitable_) {
 		CloseHandle(frameLatencyWaitable_);
 	}
 }
 
 
-void ou::SwapChain::Resize(uint32_t width, uint32_t height) {
+void ou::SwapChainOld::Resize(uint32_t width, uint32_t height) {
 	if (width == 0 || height == 0) { return; }
 	if (width == width_ && height == height_) { return; }
 
@@ -103,7 +103,7 @@ void ou::SwapChain::Resize(uint32_t width, uint32_t height) {
 }
 
 
-void ou::SwapChain::Present() {
+void ou::SwapChainOld::Present() {
 	const UINT syncInterval = vsync_ ? 1 : 0;
 	const UINT presentFlags = (!vsync_ && tearing_) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
@@ -114,7 +114,7 @@ void ou::SwapChain::Present() {
 }
 
 
-void ou::SwapChain::WaitForNextFrame() {
+void ou::SwapChainOld::WaitForNextFrame() {
 	if (!frameLatencyWaitable_) { return; }
 
 	// 1秒待つ
@@ -125,34 +125,34 @@ void ou::SwapChain::WaitForNextFrame() {
 }
 
 
-const GpuResource &ou::SwapChain::GetCurrentBackBuffer() const {
+const GpuResource &ou::SwapChainOld::GetCurrentBackBuffer() const {
 	return backBuffers_[GetBackBufferIndex()];
 }
 
 
-D3D12_CPU_DESCRIPTOR_HANDLE ou::SwapChain::GetCurrentRtv() const {
+D3D12_CPU_DESCRIPTOR_HANDLE ou::SwapChainOld::GetCurrentRtv() const {
 	return rtvHandles_[GetBackBufferIndex()];
 }
 
 
-uint32_t ou::SwapChain::GetBackBufferIndex() const {
+uint32_t ou::SwapChainOld::GetBackBufferIndex() const {
 	return swapChain_->GetCurrentBackBufferIndex();
 }
 
-uint32_t ou::SwapChain::GetWidth() const {
+uint32_t ou::SwapChainOld::GetWidth() const {
 	return width_;
 }
 
-uint32_t ou::SwapChain::GetHeight() const {
+uint32_t ou::SwapChainOld::GetHeight() const {
 	return height_;
 }
 
-void ou::SwapChain::SetVSync(bool enabled) {
+void ou::SwapChainOld::SetVSync(bool enabled) {
 	vsync_ = enabled;
 }
 
 
-bool ou::SwapChain::CreateBackBuffers() {
+bool ou::SwapChainOld::CreateBackBuffers() {
 	const auto rtvSize = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	auto handle = rtvHeap_->GetCPUDescriptorHandleForHeapStart();
 
@@ -181,12 +181,12 @@ bool ou::SwapChain::CreateBackBuffers() {
 }
 
 
-void ou::SwapChain::ReleaseBackBuffers() {
+void ou::SwapChainOld::ReleaseBackBuffers() {
 	backBuffers_.clear();
 	rtvHandles_.clear();
 }
 
 
-ou::SwapChain::SwapChain(uint32_t width, uint32_t height)
+ou::SwapChainOld::SwapChainOld(uint32_t width, uint32_t height)
 	: width_(width),
 	  height_(height) {}

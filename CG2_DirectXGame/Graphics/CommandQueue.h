@@ -9,6 +9,9 @@
 
 namespace ou {
 
+// 前方宣言
+class CommandAllocatorPool;
+
 class CommandQueue {
 public: // 静的ファクトリ
 
@@ -36,6 +39,12 @@ public: // メンバ関数
 	// 送った命令がすべて終わるまで待つ
 	void Flush();
 
+	// プールから再利用し、なければ新しく作る
+	ID3D12CommandAllocator *Request();
+
+	// fenceValue を通過したら再利用できるよう返却する
+	void Discard(uint64_t fenceValue, ID3D12CommandAllocator *allocator);
+
 	ID3D12CommandQueue *Queue() const;
 
 
@@ -44,8 +53,9 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> queue_;
 	Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
 	HANDLE fenceEvent_ = nullptr;
-
 	uint64_t nextFenceValue_ = 1;
+
+	std::unique_ptr<CommandAllocatorPool> allocatorPool_;
 
 
 private: // コンストラクタ

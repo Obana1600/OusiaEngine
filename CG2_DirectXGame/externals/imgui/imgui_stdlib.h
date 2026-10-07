@@ -7,7 +7,7 @@
 // Changelog:
 // - v0.10: Initial version. Added InputText() / InputTextMultiline() calls with std::string
 
-// Usage:
+// HeapType:
 // {
 //   #include "misc/cpp/imgui_stdlib.h"
 //   #include "misc/cpp/imgui_stdlib.cpp" // <-- If you want to include implementation without messing with your project/build.

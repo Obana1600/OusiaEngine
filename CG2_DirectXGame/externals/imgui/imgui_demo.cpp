@@ -9555,7 +9555,7 @@ static void ShowExampleAppImageViewer(bool* p_open)
 // [SECTION] Example App: Debug Log / ShowExampleAppLog()
 //-----------------------------------------------------------------------------
 
-// Usage:
+// HeapType:
 //  static ExampleAppLog my_log;
 //  my_log.AddLog("Hello %d world\n", 123);
 //  my_log.Draw("title");

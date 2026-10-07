@@ -5,6 +5,8 @@
 #include <wrl/client.h>
 
 
+namespace ou {
+
 class GpuResource {
 public: // メンバ関数
 
@@ -39,3 +41,5 @@ private: // コピー禁止
 	GpuResource(const GpuResource &) = delete;
 	GpuResource &operator=(const GpuResource &) = delete;
 };
+
+} // namespace ou

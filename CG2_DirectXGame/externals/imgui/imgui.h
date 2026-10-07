@@ -2887,7 +2887,7 @@ struct ImGuiPayload
 #endif
 
 // Helper: Execute a block of code at maximum once a frame. Convenient if you want to quickly create a UI within deep-nested code that runs multiple times every frame.
-// Usage: static ImGuiOnceUponAFrame oaf; if (oaf) ImGui::Text("This will be called only once per frame");
+// HeapType: static ImGuiOnceUponAFrame oaf; if (oaf) ImGui::Text("This will be called only once per frame");
 struct ImGuiOnceUponAFrame
 {
     ImGuiOnceUponAFrame() { RefFrame = -1; }
@@ -3012,7 +3012,7 @@ enum ImGuiListClipperFlags_
 // (Dear ImGui already clip items based on their bounds but: it needs to first layout the item to do so, and generally
 //  fetching/submitting your own data incurs additional cost. Coarse clipping using ImGuiListClipper allows you to easily
 //  scale using lists with tens of thousands of items without a problem)
-// Usage:
+// HeapType:
 //   ImGuiListClipper clipper;
 //   clipper.Begin(1000);         // We have 1000 elements, evenly spaced.
 //   while (clipper.Step())
@@ -3170,10 +3170,10 @@ struct ImColor
 // About ImGuiSelectionBasicStorage:
 // - This is an optional helper to store a selection state and apply selection requests.
 // - It is used by our demos and provided as a convenience to quickly implement multi-selection.
-// Usage:
+// HeapType:
 // - Identify submitted items with SetNextItemSelectionUserData(), most likely using an index into your current data-set.
 // - Store and maintain actual selection data using persistent object identifiers.
-// - Usage flow:
+// - HeapType flow:
 //     BEGIN - (1) Call BeginMultiSelect() and retrieve the ImGuiMultiSelectIO* result.
 //           - (2) Honor request list (SetAll/SetRange requests) by updating your selection data. Same code as Step 6.
 //           - (3) [If using clipper] You need to make sure RangeSrcItem is always submitted. Calculate its index and pass to clipper.IncludeItemByIndex(). If storing indices in ImGuiSelectionUserData, a simple clipper.IncludeItemByIndex(ms_io->RangeSrcItem) call will work.

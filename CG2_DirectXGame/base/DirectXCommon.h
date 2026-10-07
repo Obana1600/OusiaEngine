@@ -4,11 +4,11 @@
 #include "Graphics/D3D12Device.h"
 #include "Graphics/SwapChain.h"
 
+#include <chrono>
 #include <cstdint>
 #include <d3d12.h>
 #include <memory>
 #include <wrl/client.h>
-#include <chrono>
 
 
 namespace ou {
@@ -54,11 +54,11 @@ private: // メンバ変数
 
 	std::unique_ptr<D3D12Device> device_;
 	std::unique_ptr<CommandQueue> queue_;
-	std::unique_ptr<SwapChain> swapChain_;
+	std::unique_ptr<SwapChainOld> swapChain_;
 
 	// TODO: CommandContext に移す
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocatorForTransfer_;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocatorForRender_;
+	ID3D12CommandAllocator *commandAllocatorForTransfer_;
+	ID3D12CommandAllocator *commandAllocatorForRender_;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandListForTransfer_;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandListForRender_;
 
