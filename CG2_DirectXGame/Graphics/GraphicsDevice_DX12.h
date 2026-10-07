@@ -98,6 +98,9 @@ private: // インナークラス
 		QueueType queue = QUEUE_GRAPHICS;
 		uint32_t id = 0;
 
+		std::vector<const SwapChain *> swapChains;
+		std::vector<D3D12_RESOURCE_BARRIER> renderPassBarriersEnd;
+
 		void Reset(uint32_t newBufferIndex);
 		ID3D12CommandAllocator *GetCommandAllocator() const;
 		ID3D12GraphicsCommandList *GetGraphicsCommandList() const;

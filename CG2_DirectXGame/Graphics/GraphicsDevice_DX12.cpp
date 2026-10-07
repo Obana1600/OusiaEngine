@@ -5,6 +5,7 @@
 
 #include <format>
 #include <string>
+#include <utility>
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -331,12 +332,12 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 
 	if (desc->width == 0 || desc->height == 0) { return false; }
 
-	auto internalState = std::static_pointer_cast<SwapChain_DX12>(swapChain->internalState);
-	if (!internalState) {
-		internalState = std::make_shared<SwapChain_DX12>();
+	auto scDX12 = std::static_pointer_cast<SwapChain_DX12>(swapChain->internalState);
+	if (!scDX12) {
+		scDX12 = std::make_shared<SwapChain_DX12>();
 	}
-	internalState->allocationHandler = allocationHandler_;
-	swapChain->internalState = internalState;
+	scDX12->allocationHandler = allocationHandler_;
+	swapChain->internalState = scDX12;
 	swapChain->desc = *desc;
 
 	UINT flags = 0;
@@ -346,7 +347,7 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 	const auto bufferFormat = ConvertFormatNonSrgb(rtvFormat);
 
 	// 新しく作る
-	if (!internalState->swapChain) {
+	if (!scDX12->swapChain) {
 		DXGI_SWAP_CHAIN_DESC1 scDesc{};
 		scDesc.Width = desc->width;
 		scDesc.Height = desc->height;
@@ -374,7 +375,7 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 		// Alt+Enter でのフルスクリーン化を無効にする
 		factory_->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 
-		hr = swapChain1.As(&internalState->swapChain);
+		hr = swapChain1.As(&scDX12->swapChain);
 		if (FAILED(hr)) {
 			Log::Error("IDXGISwapChain4 の取得に失敗しました。");
 			return false;
@@ -383,10 +384,10 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 	} else {
 		// リサイズ
 		WaitForGpu();
-		internalState->backBuffers.clear();
-		internalState->backBufferRtvs.clear();
+		scDX12->backBuffers.clear();
+		scDX12->backBufferRtvs.clear();
 
-		hr = internalState->swapChain->ResizeBuffers(
+		hr = scDX12->swapChain->ResizeBuffers(
 			desc->bufferCount, desc->width, desc->height, bufferFormat, flags);
 		if (FAILED(hr)) {
 			Log::Error("スワップチェーンのリサイズに失敗しました。");
@@ -398,7 +399,7 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	heapDesc.NumDescriptors = desc->bufferCount;
-	hr = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&internalState->rtvHeap));
+	hr = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&scDX12->rtvHeap));
 	if (FAILED(hr)) {
 		Log::Error("RTV ヒープの作成に失敗しました。");
 		return false;
@@ -409,19 +410,19 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
 	const auto rtvSize = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	auto handle = internalState->rtvHeap->GetCPUDescriptorHandleForHeapStart();
+	auto handle = scDX12->rtvHeap->GetCPUDescriptorHandleForHeapStart();
 
-	internalState->backBuffers.resize(desc->bufferCount);
-	internalState->backBufferRtvs.resize(desc->bufferCount);
+	scDX12->backBuffers.resize(desc->bufferCount);
+	scDX12->backBufferRtvs.resize(desc->bufferCount);
 	for (uint32_t i = 0; i < desc->bufferCount; i++) {
-		hr = internalState->swapChain->GetBuffer(i, IID_PPV_ARGS(&internalState->backBuffers[i]));
+		hr = scDX12->swapChain->GetBuffer(i, IID_PPV_ARGS(&scDX12->backBuffers[i]));
 		if (FAILED(hr)) {
 			Log::Error("バックバッファの取得に失敗しました。");
 			return false;
 		}
 
-		device_->CreateRenderTargetView(internalState->backBuffers[i].Get(), &rtvDesc, handle);
-		internalState->backBufferRtvs[i] = handle;
+		device_->CreateRenderTargetView(scDX12->backBuffers[i].Get(), &rtvDesc, handle);
+		scDX12->backBufferRtvs[i] = handle;
 		handle.ptr += rtvSize;
 	}
 
@@ -534,6 +535,7 @@ void ou::GraphicsDevice_DX12::SubmitCommandLists() {
 	// ----- 現在フレームのリストを閉じて、キューに詰める -----
 	const auto cmdLast = cmdCount_;
 	cmdCount_ = 0;
+	std::vector<const SwapChain *> swapChainToPresent;
 
 	for (uint32_t i = 0; i < cmdLast; i++) {
 		auto &cmdDX12 = *commandLists_[i];
@@ -542,6 +544,12 @@ void ou::GraphicsDevice_DX12::SubmitCommandLists() {
 		CheckHResult(hr, "コマンドリストのクローズ");
 
 		queues_[cmdDX12.queue].submitCmds.push_back(cmdDX12.GetGraphicsCommandList());
+
+		for (const auto *sc : cmdDX12.swapChains) {
+			if (std::find(swapChainToPresent.begin(), swapChainToPresent.end(), sc) == swapChainToPresent.end()) {
+				swapChainToPresent.push_back(sc);
+			}
+		}
 	}
 
 	// ----- 実行する -----
@@ -552,6 +560,20 @@ void ou::GraphicsDevice_DX12::SubmitCommandLists() {
 		CheckHResult(hr, "フレームフェンスのシグナル");
 	}
 
+	// ----- Present する -----
+	for (const auto *sc : swapChainToPresent) {
+		auto *scDX12 = ToInternal(sc);
+
+		const auto vsync = sc->desc.vsync;
+		const UINT syncInterval = vsync ? 1 : 0;
+		const UINT presentFlags = (!vsync && tearingSupported_) ? DXGI_FEATURE_PRESENT_ALLOW_TEARING : 0;
+
+		hr = scDX12->swapChain->Present(syncInterval, presentFlags);
+		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET) {
+			FatalError(std::format("デバイスが失われました: {}", DescribeHResult(device_->GetDeviceRemovedReason())));
+		}
+	}
+
 	// フレームを進める
 	frameCount_++;
 
@@ -560,7 +582,7 @@ void ou::GraphicsDevice_DX12::SubmitCommandLists() {
 	for (int q = 0; q < QUEUE_COUNT; q++) {
 		auto *fence = frameFence_[bufferIndex][q].Get();
 
-		if (fence->GetCompletedValue() < 1) {
+		if (frameCount_ >= BUFFER_COUNT && fence->GetCompletedValue() < 1) {
 			hr = fence->SetEventOnCompletion(1, nullptr);
 			CheckHResult(hr, "フレームフェンスの待機");
 		}
@@ -591,8 +613,32 @@ void ou::GraphicsDevice_DX12::WaitForGpu() const {
 
 
 void ou::GraphicsDevice_DX12::RenderPassBegin(const SwapChain *swapChain, CommandList cmd) {
-	(void)swapChain;
-	(void)cmd;
+	auto &cmdDX12 = GetCommandList(cmd);
+	auto *list = cmdDX12.GetGraphicsCommandList();
+	auto *scDX12 = ToInternal(swapChain);
+
+	cmdDX12.swapChains.push_back(swapChain);
+
+	const auto backBufferIndex = scDX12->swapChain->GetCurrentBackBufferIndex();
+	auto *backBuffer = scDX12->backBuffers[backBufferIndex].Get();
+	const auto rtv = scDX12->backBufferRtvs[backBufferIndex];
+
+	// PRESENT -> RENDER_TARGET
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = backBuffer;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	list->ResourceBarrier(1, &barrier);
+
+	// TODO: CommandList4 なら BeginRenderPass でできる
+	list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+	list->ClearRenderTargetView(rtv, swapChain->desc.clearColor, 0, nullptr);
+
+	std::swap(barrier.Transition.StateBefore, barrier.Transition.StateAfter);
+	cmdDX12.renderPassBarriersEnd.push_back(barrier);
 }
 
 
@@ -604,6 +650,14 @@ void ou::GraphicsDevice_DX12::RenderPassBegin(const RenderPassImage *images, uin
 
 
 void ou::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
+	auto &cmdDX12 = GetCommandList(cmd);
+	auto &barriers = cmdDX12.renderPassBarriersEnd;
+
+	if (!barriers.empty()) {
+		cmdDX12.GetGraphicsCommandList()->ResourceBarrier(
+			static_cast<UINT>(barriers.size()), barriers.data());
+		barriers.clear();
+	}
 	(void)cmd;
 }
 
@@ -726,6 +780,8 @@ void ou::GraphicsDevice_DX12::CommandQueue::Submit() {
 
 void ou::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBufferIndex) {
 	bufferIndex = newBufferIndex;
+	swapChains.clear();
+	renderPassBarriersEnd.clear();
 }
 
 

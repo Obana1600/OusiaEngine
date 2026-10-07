@@ -1,53 +1,55 @@
-#include "GameScene.h"
-#include "base/Engine.h"
 #include <Windows.h>
+#include "base/Window.h"
+#include "Graphics/GraphicsDevice.h"
 #include <Graphics/GraphicsDevice_DX12.h>
 
 
 // Windowsアプリでのエントリーポイント（main関数）
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
-
 	using namespace ou;
 
-	Engine *engine = new Engine();
-	engine->Initialize({.title = "LE2A_オバナ_サトル"});
-	GraphicsDevice_DX12 testDevice(ValidationMode::Enabled);
-	for (int i = 0; i < 10; i++) {
-		testDevice.BeginCommandList();
-		testDevice.BeginCommandList(); // 2 本借りても大丈夫か
-		testDevice.SubmitCommandLists();
-	}
-	DirectXCommon *dxCommon = DirectXCommon::GetInstance();
-	ImGuiManager *imguiMgr = ImGuiManager::GetInstance();
+	auto window = Window::Create({.title = "GraphicsDevice テスト"});
 
-	// GameSceneの初期化
-	GameScene gameScene{};
-	gameScene.Initialize();
+	GraphicsDevice_DX12 device(ValidationMode::Enabled);
+	GetDevice() = &device;
 
-	dxCommon->ExecuteTransferCommands();
+	SwapChainDesc swapChainDesc;
+	swapChainDesc.width = window->ClientWidth();
+	swapChainDesc.height = window->ClientHeight();
+	swapChainDesc.bufferCount = 2;
+	swapChainDesc.format = Format::R8G8B8A8_UNORM_SRGB;
+	swapChainDesc.clearColor[0] = 0.1f;
+	swapChainDesc.clearColor[1] = 0.25f;
+	swapChainDesc.clearColor[2] = 0.5f;
+	swapChainDesc.clearColor[3] = 1.0f;
 
-	while (true) {
-		if (engine->Update()) {
-			break;
+	SwapChain swapChain;
+	device.CreateSwapChain(&swapChainDesc, window->Hwnd(), &swapChain);
+
+	while (!window->IsCloseRequested()) {
+		window->PumpMessages();
+
+		// 最小化中は描かない
+		if (window->IsMinimized()) {
+			Sleep(10);
+			continue;
 		}
 
-		imguiMgr->Begin();
+		// ウィンドウの大きさが変わったら、CreateSwapChain をもう一度呼んでリサイズする
+		if (window->ClientWidth() != swapChain.GetDesc().width ||
+			window->ClientHeight() != swapChain.GetDesc().height) {
+			SwapChainDesc desc = swapChain.GetDesc();
+			desc.width = window->ClientWidth();
+			desc.height = window->ClientHeight();
+			device.CreateSwapChain(&desc, window->Hwnd(), &swapChain);
+		}
 
-		gameScene.Update();
-
-		imguiMgr->End();
-
-
-		dxCommon->PreDraw();
-
-		gameScene.Draw();
-
-		imguiMgr->Draw();
-
-		dxCommon->PostDraw();
+		CommandList cmd = device.BeginCommandList();
+		device.RenderPassBegin(&swapChain, cmd);
+		device.RenderPassEnd(cmd);
+		device.SubmitCommandLists();
 	}
 
-	engine->Finalize();
-
+	GetDevice() = nullptr;
 	return 0;
 }
