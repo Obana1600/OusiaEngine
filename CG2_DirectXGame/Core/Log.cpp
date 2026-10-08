@@ -2,6 +2,7 @@
 #include "Core/BuildInfo.h"
 #include "Core/Paths.h"
 
+#include <Windows.h>
 #include <chrono>
 #include <memory>
 
@@ -17,6 +18,10 @@ std::shared_ptr<spdlog::logger> gLogger;
 
 auto gMinLevel = ou::LogLevel::Info;
 
+constexpr int kMaxLogFiles = 10;
+
+constexpr auto kDuplicateWindow = std::chrono::seconds(2);
+
 spdlog::level::level_enum ToSpdLogLevel(ou::LogLevel level) {
 	switch (level) {
 		case ou::LogLevel::Debug:
@@ -31,10 +36,19 @@ spdlog::level::level_enum ToSpdLogLevel(ou::LogLevel level) {
 	return spdlog::level::info;
 }
 
-
-constexpr int kMaxLogFiles = 10;
-
-constexpr auto kDuplicateWindow = std::chrono::seconds(2);
+std::wstring ToWString(ou::LogLevel level) {
+	switch (level) {
+		case ou::LogLevel::Debug:
+			return L"Debug";
+		case ou::LogLevel::Info:
+			return L"Info";
+		case ou::LogLevel::Warning:
+			return L"Warning";
+		case ou::LogLevel::Error:
+			return L"Error";
+	}
+	return L"";
+}
 
 std::wstring MakeLogFileName() {
 	const auto now = std::chrono::system_clock::now();
@@ -58,8 +72,9 @@ void ou::FlushLog() {
 
 void ou::Log::Write(LogLevel level, const std::source_location &location, std::string_view message) {
 	if (!gLogger) {
-		OutputDebugStringA(std::string(message).c_str());
-		OutputDebugStringA("\n");
+		auto wide = L"[" + ToWString(level) + L"] " + Utf8ToWide(message);
+		OutputDebugStringW(wide.c_str());
+		OutputDebugStringW(L"\n");
 		return;
 	}
 

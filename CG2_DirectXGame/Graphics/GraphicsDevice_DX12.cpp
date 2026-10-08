@@ -2,7 +2,9 @@
 #include "Core/Assert.h"
 #include "Core/Fatal.h"
 #include "Core/Log.h"
+#include "Core/Paths.h"
 
+#include <bit>
 #include <format>
 #include <string>
 #include <utility>
@@ -31,6 +33,15 @@ constexpr const wchar_t *kQueueNames[QUEUE_COUNT] = {
 	L"QUEUE_GRAPHICS",
 	L"QUEUE_COMPUTE",
 	L"QUEUE_COPY",
+};
+
+// バインドレスヒープに置ける SRV / UAV / CBV の数
+constexpr UINT BINDLESS_RESOURCE_CAPACITY = 100'000;
+
+// 固定ルートシグネチャのパラメータ番号
+enum RootParameterIndex : UINT {
+	ROOT_CBV_BEGIN = 0,
+	ROOT_PARAMETER_COUNT = ROOT_CBV_BEGIN + DESCRIPTORBINDER_CBV_COUNT,
 };
 
 // D3D12 のメッセージをログに流す
@@ -128,11 +139,93 @@ void SetUpInfoQueue(ID3D12Device *device, ValidationMode validationMode, DWORD *
 	}
 }
 
+void CheckRequiredFeatures(ID3D12Device *device) {
+	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel{D3D_SHADER_MODEL_6_6};
+	HRESULT hr = device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
+	if (FAILED(hr) || shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_6) {
+		FatalError("この GPU は Shader Model 6.6 に対応していません。");
+	}
+
+	D3D12_FEATURE_DATA_D3D12_OPTIONS options{};
+	hr = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+	if (FAILED(hr) || options.ResourceBindingTier < D3D12_RESOURCE_BINDING_TIER_3) {
+		FatalError("この GPU は Resource Binding Tier 3 に対応していません。");
+	}
+}
+
+D3D12_STATIC_SAMPLER_DESC MakeStaticSampler(
+	UINT shaderRegister, D3D12_FILTER filter, D3D12_TEXTURE_ADDRESS_MODE address) {
+	D3D12_STATIC_SAMPLER_DESC desc{};
+	desc.Filter = filter;
+	desc.AddressU = address;
+	desc.AddressV = address;
+	desc.AddressW = address;
+	desc.MipLODBias = 0.0f;
+	desc.MaxAnisotropy = 0;
+	desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	desc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	desc.MinLOD = 0;
+	desc.MaxLOD = D3D12_FLOAT32_MAX;
+	desc.ShaderRegister = shaderRegister;
+	desc.RegisterSpace = 0;
+	desc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	return desc;
+}
+
+ComPtr<ID3D12RootSignature> CreateGlobalRootSignature(ID3D12Device *device) {
+	// b0 ~ b3: ルート CBV
+	D3D12_ROOT_PARAMETER1 params[ROOT_PARAMETER_COUNT]{};
+	for (UINT i = 0; i < DESCRIPTORBINDER_CBV_COUNT; i++) {
+		auto &param = params[ROOT_CBV_BEGIN + i];
+		param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		param.Descriptor.ShaderRegister = i;
+		param.Descriptor.RegisterSpace = 0;
+		param.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+		param.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	}
+
+	// s0 ~ s3: サンプラー
+	const D3D12_STATIC_SAMPLER_DESC staticSamplers[] = {
+		MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
+		MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+		MakeStaticSampler(2, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
+		MakeStaticSampler(3, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+	};
+
+	// ルートシグネチャ
+	D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
+	desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	desc.Desc_1_1.NumParameters = ROOT_PARAMETER_COUNT;
+	desc.Desc_1_1.pParameters = params;
+	desc.Desc_1_1.NumStaticSamplers = _countof(staticSamplers);
+	desc.Desc_1_1.pStaticSamplers = staticSamplers;
+	desc.Desc_1_1.Flags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
+
+	ComPtr<ID3DBlob> blob;
+	ComPtr<ID3DBlob> error;
+	HRESULT hr = D3D12SerializeVersionedRootSignature(&desc, &blob, &error);
+	if (FAILED(hr)) {
+		if (error) {
+			Log::Error("{}", static_cast<const char *>(error->GetBufferPointer()));
+		}
+		FatalError("ルートシグネチャのシリアライズに失敗しました。");
+	}
+
+	ComPtr<ID3D12RootSignature> rootSignature;
+	hr = device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
+	CheckHResult(hr, "ルートシグネチャの作成");
+	rootSignature->SetName(L"Global RootSignature");
+
+	return rootSignature;
+}
+
 } // namespace
 
 
 
-namespace ou {
+namespace ou::Internal {
 
 // Format -> DXGI_FORMAT
 constexpr DXGI_FORMAT ConvertFormat(Format format) {
@@ -184,6 +277,44 @@ constexpr DXGI_FORMAT ConvertFormatNonSrgb(DXGI_FORMAT format) {
 	}
 }
 
+constexpr D3D12_FILL_MODE ConvertFillMode(FillMode value) {
+	switch (value) {
+		case FillMode::WIREFRAME:
+			return D3D12_FILL_MODE_WIREFRAME;
+		case FillMode::SOLID:
+			return D3D12_FILL_MODE_SOLID;
+	}
+	return D3D12_FILL_MODE_SOLID;
+}
+
+constexpr D3D12_CULL_MODE ConvertCullMode(CullMode value) {
+	switch (value) {
+		case CullMode::NONE:
+			return D3D12_CULL_MODE_NONE;
+		case CullMode::FRONT:
+			return D3D12_CULL_MODE_FRONT;
+		case CullMode::BACK:
+			return D3D12_CULL_MODE_BACK;
+	}
+	return D3D12_CULL_MODE_NONE;
+}
+
+constexpr D3D12_COMPARISON_FUNC ConvertComparisonFunc(ComparisonFunc value) {
+	switch (value) {
+		case ComparisonFunc::NEVER:
+			return D3D12_COMPARISON_FUNC_NEVER;
+
+	}
+}
+
+// value を alignment の倍数に切り上げる
+constexpr uint64_t AlignTo(uint64_t value, uint64_t alignment) {
+	return (value + alignment - 1) / alignment * alignment;
+}
+
+
+// スワップチェーン ==================================================================================
+
 struct SwapChain_DX12 {
 	std::shared_ptr<GraphicsDevice_DX12::AllocationHandler> allocationHandler;
 
@@ -211,7 +342,55 @@ SwapChain_DX12 *ToInternal(const SwapChain *param) {
 	return static_cast<SwapChain_DX12 *>(param->internalState.get());
 }
 
-} // namespace ou
+// ================================================================================================
+
+
+// リソース =========================================================================================
+
+struct Resource_DX12 {
+	std::shared_ptr<GraphicsDevice_DX12::AllocationHandler> allocationHandler;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = 0;
+
+	virtual ~Resource_DX12();
+};
+
+Resource_DX12::~Resource_DX12() {
+	if (!allocationHandler) { return; }
+
+	std::scoped_lock lock(allocationHandler->destroyLocker);
+	if (resource) {
+		allocationHandler->destroyerResources.push_back({resource, allocationHandler->frameCount});
+	}
+}
+
+Resource_DX12 *ToInternal(const GpuResource *param) {
+	return static_cast<Resource_DX12 *>(param->internalState.get());
+}
+
+// ================================================================================================
+
+
+// シェーダ =========================================================================================
+
+struct Shader_DX12 {
+	std::vector<uint8_t> shaderCode;
+
+	D3D12_SHADER_BYTECODE GetByteCode() const {
+		return {shaderCode.data(), shaderCode.size()};
+	}
+};
+
+Shader_DX12 *ToInternal(const Shader *param) {
+	return static_cast<Shader_DX12 *>(param->internalState.get());
+}
+
+// ================================================================================================
+
+} // namespace ou::Internal
+
+using namespace ou::Internal;
 
 
 
@@ -269,6 +448,8 @@ ou::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
 	CheckHResult(hr, "D3D12 デバイスの作成");
 	device_->SetName(L"GraphicsDevice_DX12");
 
+	CheckRequiredFeatures(device_.Get());
+
 	if (validationMode_ != ValidationMode::Disabled) {
 		SetUpInfoQueue(device_.Get(), validationMode_, &messageCallbackCookie_);
 	}
@@ -296,6 +477,21 @@ ou::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
 
 	// ----- 遅延破棄 -----
 	allocationHandler_ = std::make_shared<AllocationHandler>();
+
+	// ----- 初期データの転送 -----
+	copyAllocator_.Initialize(this);
+
+	// ----- ルートシグネチャ -----
+	rootSignature_ = CreateGlobalRootSignature(device_.Get());
+
+	// ----- バインドレスヒープ -----
+	D3D12_DESCRIPTOR_HEAP_DESC resHeapDesc{};
+	resHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	resHeapDesc.NumDescriptors = BINDLESS_RESOURCE_CAPACITY;
+	resHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	hr = device_->CreateDescriptorHeap(&resHeapDesc, IID_PPV_ARGS(&descriptorHeapRes_));
+	CheckHResult(hr, "バインドレスヒープの作成");
+	descriptorHeapRes_->SetName(L"BindlessResourceHeap");
 
 	Log::Info("GraphicsDevice_DX12 を作成しました。");
 }
@@ -431,10 +627,98 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 
 
 bool ou::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, const void *initialData, GpuBuffer *buffer) {
-	(void)desc;
-	(void)initialData;
-	(void)buffer;
-	return false;
+	HRESULT hr{};
+
+	auto is = std::make_shared<Resource_DX12>();
+	is->allocationHandler = allocationHandler_;
+	buffer->internalState = is;
+	buffer->type = GpuResource::Type::BUFFER;
+	buffer->mappedData = nullptr;
+	buffer->mappedSize = 0;
+	buffer->desc = *desc;
+
+	// 定数バッファを 256 バイトに切り上げる
+	auto alignedSize = desc->size;
+	if (HasFlag(desc->bindFlags, BindFlag::CONSTANT_BUFFER)) {
+		alignedSize = AlignTo(alignedSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+	}
+
+	// リソースの設定
+	D3D12_RESOURCE_DESC resDesc{};
+	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resDesc.Alignment = 0;
+	resDesc.Width = alignedSize;
+	resDesc.Height = 1;
+	resDesc.DepthOrArraySize = 1;
+	resDesc.MipLevels = 1;
+	resDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resDesc.SampleDesc = {1, 0};
+	resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	if (HasFlag(desc->bindFlags, BindFlag::UNORDERED_ACCESS)) {
+		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+
+	// ヒープの種類と初期化
+	D3D12_HEAP_PROPERTIES heapProps{};
+	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+	auto initialState = D3D12_RESOURCE_STATE_COMMON;
+
+	switch (desc->heapType) {
+		case HeapType::UPLOAD:
+			heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+			initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+			break;
+
+		case HeapType::READBACK:
+			heapProps.Type = D3D12_HEAP_TYPE_READBACK;
+			initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+			resDesc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+			break;
+
+		default:
+			break;
+	}
+
+	hr = device_->CreateCommittedResource(
+		&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, initialState, nullptr, IID_PPV_ARGS(&is->resource));
+	if (FAILED(hr)) {
+		Log::Error("バッファの作成に失敗しました。");
+		return false;
+	}
+
+	is->gpuAddress = is->resource->GetGPUVirtualAddress();
+
+	// マッピング
+	if (desc->heapType == HeapType::UPLOAD) {
+		D3D12_RANGE readRange{0, 0};
+		hr = is->resource->Map(0, &readRange, &buffer->mappedData);
+		CheckHResult(hr, "アップロードバッファの Map");
+		buffer->mappedSize = static_cast<size_t>(alignedSize);
+
+	} else if (desc->heapType == HeapType::READBACK) {
+		hr = is->resource->Map(0, nullptr, &buffer->mappedData);
+		CheckHResult(hr, "リードバックバッファの Map");
+		buffer->mappedSize = static_cast<size_t>(alignedSize);
+	}
+
+	// 初期データ
+	if (initialData) {
+		if (desc->heapType == HeapType::UPLOAD) {
+			std::memcpy(buffer->mappedData, initialData, desc->size);
+
+		} else if (desc->heapType == HeapType::DEFAULT) {
+			auto cmd = copyAllocator_.Allocate(desc->size);
+			std::memcpy(cmd.uploadBuffer.mappedData, initialData, desc->size);
+
+			cmd.list->CopyBufferRegion(
+				is->resource.Get(), 0, ToInternal(&cmd.uploadBuffer)->resource.Get(), 0, desc->size);
+
+			copyAllocator_.Submit(std::move(cmd));
+		}
+	}
+
+	return true;
 }
 
 
@@ -447,11 +731,21 @@ bool ou::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, const Subre
 
 
 bool ou::GraphicsDevice_DX12::CreateShader(ShaderStage stage, const void *shaderCode, size_t shaderCodeSize, Shader *shader) {
-	(void)stage;
-	(void)shaderCode;
-	(void)shaderCodeSize;
-	(void)shader;
-	return false;
+	if (!shaderCode || shaderCodeSize == 0) {
+		Log::Error("シェーダのバイトコードが空です。");
+		return false;
+	}
+
+	auto is = std::make_shared<Shader_DX12>();
+	shader->internalState = is;
+	shader->stage = stage;
+
+	is->shaderCode.resize(shaderCodeSize);
+	std::memcpy(is->shaderCode.data(), shaderCode, shaderCodeSize);
+
+	// TODO: CS に対応させる
+
+	return true;
 }
 
 
@@ -470,8 +764,12 @@ bool ou::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc,
 
 
 void ou::GraphicsDevice_DX12::SetName(GpuResource *resource, std::string_view name) const {
-	(void)resource;
-	(void)name;
+	if (!resource || !resource->IsValid()) { return; }
+
+	auto *is = ToInternal(resource);
+	if (is->resource) {
+		is->resource->SetName(Utf8ToWide(name).c_str());
+	}
 }
 
 
@@ -522,6 +820,15 @@ CommandList ou::GraphicsDevice_DX12::BeginCommandList(QueueType queue) {
 	CheckHResult(hr, "コマンドアロケータのリセット");
 	hr = cmdDX12.GetGraphicsCommandList()->Reset(cmdDX12.GetCommandAllocator(), nullptr);
 	CheckHResult(hr, "コマンドリストのリセット");
+
+	// バインドレスヒープとルートシグネチャをセットしておく
+	if (queue == QUEUE_GRAPHICS) {
+		auto *list = cmdDX12.GetGraphicsCommandList();
+
+		ID3D12DescriptorHeap *heaps[] = {descriptorHeapRes_.Get()};
+		list->SetDescriptorHeaps(_countof(heaps), heaps);
+		list->SetGraphicsRootSignature(rootSignature_.Get());
+	}
 
 	return cmd;
 }
@@ -806,4 +1113,81 @@ void ou::GraphicsDevice_DX12::AllocationHandler::Update(uint64_t currentFrameCou
 	};
 	release(destroyerResources);
 	release(destroyerPipelines);
+}
+
+
+void ou::GraphicsDevice_DX12::CopyAllocator::Initialize(GraphicsDevice_DX12 *owner) {
+	device = owner;
+}
+
+
+GraphicsDevice_DX12::CopyAllocator::CopyCMD ou::GraphicsDevice_DX12::CopyAllocator::Allocate(uint64_t stagingSize) {
+	HRESULT hr{};
+	CopyCMD cmd;
+
+	// プールから大きさが足りるものを探す
+	{
+		std::scoped_lock lock(locker);
+		for (size_t i = 0; i < freeList.size(); i++) {
+			if (freeList[i].uploadBuffer.desc.size >= stagingSize) {
+				cmd = std::move(freeList[i]);
+				freeList.erase(freeList.begin() + i);
+				break;
+			}
+		}
+	}
+
+	// なければ新規作成
+	if (!cmd.IsValid()) {
+		hr = device->device_->CreateCommandAllocator(
+			D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&cmd.allocator));
+		CheckHResult(hr, "コピー用アロケータの作成");
+
+		hr = device->device_->CreateCommandList(
+			0, D3D12_COMMAND_LIST_TYPE_COPY, cmd.allocator.Get(), nullptr, IID_PPV_ARGS(&cmd.list));
+		CheckHResult(hr, "コピー用コマンドリストの作成");
+		cmd.list->Close();
+
+		hr = device->device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&cmd.fence));
+		CheckHResult(hr, "コピー用フェンスの作成");
+
+		GpuBufferDesc uploadDesc{};
+		uploadDesc.size = std::bit_ceil(stagingSize);
+		uploadDesc.heapType = HeapType::UPLOAD;
+		if (!device->CreateBuffer(&uploadDesc, nullptr, &cmd.uploadBuffer)) {
+			FatalError("ステージングバッファの作成に失敗しました。");
+		}
+		device->SetName(&cmd.uploadBuffer, "CopyAllocator::uploadBuffer");
+	}
+
+	// 記録を始める
+	hr = cmd.allocator->Reset();
+	CheckHResult(hr, "コピー用アロケータのリセット");
+	hr = cmd.list->Reset(cmd.allocator.Get(), nullptr);
+	CheckHResult(hr, "コピー用コマンドリストのリセット");
+
+	return cmd;
+}
+
+
+void ou::GraphicsDevice_DX12::CopyAllocator::Submit(CopyCMD cmd) {
+	HRESULT hr = cmd.list->Close();
+	CheckHResult(hr, "コピー用コマンドリストのクローズ");
+
+	auto *queue = device->queues_[QUEUE_COPY].queue.Get();
+	ID3D12CommandList *lists[] = {cmd.list.Get()};
+	queue->ExecuteCommandLists(1, lists);
+
+	// コピーが終わるまで CPU で待つ
+	hr = queue->Signal(cmd.fence.Get(), 1);
+	CheckHResult(hr, "コピー用フェンスのシグナル");
+	if (cmd.fence->GetCompletedValue() < 1) {
+		hr = cmd.fence->SetEventOnCompletion(1, nullptr);
+		CheckHResult(hr, "コピー用フェンスの待機");
+	}
+	cmd.fence->Signal(0);
+
+	// 再利用できるように返す
+	std::scoped_lock lock(locker);
+	freeList.push_back(std::move(cmd));
 }

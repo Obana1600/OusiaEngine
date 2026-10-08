@@ -46,6 +46,7 @@
     <None Include="resources\shader\Model.hlsli">
       <Filter>shader</Filter>
     </None>
+    <None Include="resources\shader\Triangle.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -188,6 +189,8 @@
     <FxCompile Include="resources\shader\Model.PS.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shader\Triangle.VS.hlsl" />
+    <FxCompile Include="resources\shader\Triangle.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="input\InputSystem.h">

@@ -106,6 +106,28 @@ private: // インナークラス
 		ID3D12GraphicsCommandList *GetGraphicsCommandList() const;
 	};
 
+	struct CopyAllocator {
+		GraphicsDevice_DX12 *device = nullptr;
+		std::mutex locker;
+
+		struct CopyCMD {
+			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
+			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list;
+			Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+			GpuBuffer uploadBuffer;
+
+			bool IsValid() const {
+				return list != nullptr;
+			}
+		};
+
+		std::vector<CopyCMD> freeList;
+
+		void Initialize(GraphicsDevice_DX12 *owner);
+		CopyCMD Allocate(uint64_t stagingSize);
+		void Submit(CopyCMD cmd);
+	};
+
 
 private: // メンバ変数
 
@@ -124,6 +146,13 @@ private: // メンバ変数
 	std::mutex cmdLocker_;
 
 	std::shared_ptr<AllocationHandler> allocationHandler_;
+
+	CopyAllocator copyAllocator_;
+	
+	// 全 PSO で共有するルートシグネチャ
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+	// バインドレス用のヒープ
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeapRes_;
 
 	bool tearingSupported_ = false;
 

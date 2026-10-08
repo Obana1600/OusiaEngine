@@ -2,6 +2,7 @@
 #include "base/Window.h"
 #include "Graphics/GraphicsDevice.h"
 #include <Graphics/GraphicsDevice_DX12.h>
+#include "base/DXCompiler.h"
 
 
 // Windowsアプリでのエントリーポイント（main関数）
@@ -25,6 +26,31 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	SwapChain swapChain;
 	device.CreateSwapChain(&swapChainDesc, window->Hwnd(), &swapChain);
+
+	struct Vertex {
+		float x, y, z;
+	};
+	const Vertex vertices[] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
+
+	GpuBufferDesc bufferDesc;
+	bufferDesc.size = sizeof(vertices);
+	bufferDesc.heapType = HeapType::DEFAULT;
+	bufferDesc.bindFlags = BindFlag::VERTEX_BUFFER;
+
+	GpuBuffer testBuffer;
+	device.CreateBuffer(&bufferDesc, vertices, &testBuffer);
+	device.SetName(&testBuffer, "TestVertexBuffer");
+
+	DXCompiler::GetInstance()->Initialize();
+
+	Shader vs;
+	Shader ps;
+	{
+		auto vsBlob = DXCompiler::GetInstance()->CompileShader(L"Triangle.VS.hlsl", L"vs_6_6");
+		auto psBlob = DXCompiler::GetInstance()->CompileShader(L"Triangle.PS.hlsl", L"ps_6_6");
+		device.CreateShader(ShaderStage::VS, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &vs);
+		device.CreateShader(ShaderStage::PS, psBlob->GetBufferPointer(), psBlob->GetBufferSize(), &ps);
+	} // ここで Blob は捨ててよい
 
 	while (!window->IsCloseRequested()) {
 		window->PumpMessages();

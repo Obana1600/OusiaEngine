@@ -13,6 +13,10 @@
 // グラフィクスの列挙子
 namespace ou {
 
+// ルート CBV の数
+// TODO: 別のファイルに移したい
+inline constexpr uint32_t DESCRIPTORBINDER_CBV_COUNT = 4;
+
 // デバッグレイヤーの強さ
 enum class ValidationMode : uint8_t {
 	Disabled, // 検証しない
@@ -28,7 +32,6 @@ enum QueueType {
 
 	QUEUE_COUNT,
 };
-
 
 enum class ShaderStage : uint8_t {
 	MS,	 // メッシュシェーダ
@@ -369,6 +372,21 @@ struct PipelineStateDesc {
 	PrimitiveTopology pt = PrimitiveTopology::TRIANGLELIST;
 	uint32_t patchControlPoints = 3; // テッセレーションで使う
 	uint32_t sampleMask = 0xFFFFFFFF;
+};
+
+// PSO が書き込む先のフォーマット
+struct RenderPassInfo {
+	Format rtFormats[8] = {}; // RenderTarget の数は 8 が上限
+	uint32_t rtCount = 0;
+	Format dsFormat = Format::UNKNOWN;
+	uint32_t sampleCOunt = 1;
+
+	static constexpr RenderPassInfo From(const SwapChainDesc &desc) {
+		RenderPassInfo info;
+		info.rtFormats[0] = desc.format;
+		info.rtCount = 1;
+		return info;
+	}
 };
 
 } // namespace ou
