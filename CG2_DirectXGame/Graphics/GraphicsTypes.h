@@ -379,7 +379,7 @@ struct RenderPassInfo {
 	Format rtFormats[8] = {}; // RenderTarget の数は 8 が上限
 	uint32_t rtCount = 0;
 	Format dsFormat = Format::UNKNOWN;
-	uint32_t sampleCOunt = 1;
+	uint32_t sampleCount = 1;
 
 	static constexpr RenderPassInfo From(const SwapChainDesc &desc) {
 		RenderPassInfo info;

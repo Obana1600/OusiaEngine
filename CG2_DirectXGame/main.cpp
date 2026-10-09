@@ -1,8 +1,9 @@
-#include <Windows.h>
-#include "base/Window.h"
+#include "Core/Fatal.h"
 #include "Graphics/GraphicsDevice.h"
-#include <Graphics/GraphicsDevice_DX12.h>
+#include "Graphics/GraphicsDevice_DX12.h"
 #include "base/DXCompiler.h"
+#include "base/Window.h"
+#include <Windows.h>
 
 
 // Windowsアプリでのエントリーポイント（main関数）
@@ -27,20 +28,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	SwapChain swapChain;
 	device.CreateSwapChain(&swapChainDesc, window->Hwnd(), &swapChain);
 
-	struct Vertex {
-		float x, y, z;
-	};
-	const Vertex vertices[] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
-
-	GpuBufferDesc bufferDesc;
-	bufferDesc.size = sizeof(vertices);
-	bufferDesc.heapType = HeapType::DEFAULT;
-	bufferDesc.bindFlags = BindFlag::VERTEX_BUFFER;
-
-	GpuBuffer testBuffer;
-	device.CreateBuffer(&bufferDesc, vertices, &testBuffer);
-	device.SetName(&testBuffer, "TestVertexBuffer");
-
 	DXCompiler::GetInstance()->Initialize();
 
 	Shader vs;
@@ -51,6 +38,43 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		device.CreateShader(ShaderStage::VS, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &vs);
 		device.CreateShader(ShaderStage::PS, psBlob->GetBufferPointer(), psBlob->GetBufferSize(), &ps);
 	} // ここで Blob は捨ててよい
+
+	InputLayout inputLayout;
+	inputLayout.elements = {
+		{.semanticName = "POSITION", .format = Format::R32G32B32_FLOAT},
+		{.semanticName = "COLOR", .format = Format::R32G32B32A32_FLOAT},
+	};
+
+	PipelineStateDesc psoDesc;
+	psoDesc.vs = &vs;
+	psoDesc.ps = &ps;
+	psoDesc.il = &inputLayout;
+	psoDesc.pt = PrimitiveTopology::TRIANGLELIST;
+
+	PipelineState pso;
+	const RenderPassInfo renderPassInfo = RenderPassInfo::From(swapChain.GetDesc());
+	if (!device.CreatePipelineState(&psoDesc, &pso, &renderPassInfo)) {
+		FatalError("PSO の作成に失敗しました。");
+	}
+
+	struct Vertex {
+		float position[3];
+		float color[4];
+	};
+	Vertex vertices[] = {
+		{{0.0f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+	};
+
+	GpuBufferDesc vbDesc;
+	vbDesc.size = sizeof(vertices);
+	vbDesc.heapType = HeapType::DEFAULT;
+	vbDesc.bindFlags = BindFlag::VERTEX_BUFFER;
+
+	GpuBuffer vertexBuffer;
+	device.CreateBuffer(&vbDesc, vertices, &vertexBuffer);
+	device.SetName(&vertexBuffer, "TriangleVB");
 
 	while (!window->IsCloseRequested()) {
 		window->PumpMessages();
@@ -72,6 +96,27 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		CommandList cmd = device.BeginCommandList();
 		device.RenderPassBegin(&swapChain, cmd);
+		{
+			const SwapChainDesc &scDesc = swapChain.GetDesc();
+
+			Viewport viewport;
+			viewport.width = static_cast<float>(scDesc.width);
+			viewport.height = static_cast<float>(scDesc.height);
+			device.BindViewports(1, &viewport, cmd);
+
+			Scissor scissor;
+			scissor.right = static_cast<int32_t>(scDesc.width);
+			scissor.bottom = static_cast<int32_t>(scDesc.height);
+			device.BindScissorRects(1, &scissor, cmd);
+
+			device.BindPipelineState(&pso, cmd);
+
+			const GpuBuffer *vbs[] = {&vertexBuffer};
+			const uint32_t strides[] = {sizeof(Vertex)};
+			device.BindVertexBuffers(vbs, 0, 1, strides, nullptr, cmd);
+
+			device.Draw(3, 0, cmd);
+		}
 		device.RenderPassEnd(cmd);
 		device.SubmitCommandLists();
 	}

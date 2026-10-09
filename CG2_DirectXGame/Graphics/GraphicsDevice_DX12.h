@@ -29,7 +29,7 @@ public: // メンバ関数
 	bool CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) override;
 	bool CreateShader(ShaderStage stage, const void *shaderCode, size_t shaderCodeSize, Shader *shader) override;
 	bool CreateSampler(const SamplerDesc *desc, Sampler *sampler) override;
-	bool CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso) override;
+	bool CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) override;
 
 	void SetName(GpuResource *resource, std::string_view name) const override;
 
@@ -53,7 +53,7 @@ public: // メンバ関数
 	void BindScissorRects(uint32_t numScissors, const Scissor *scissors, CommandList cmd) override;
 	void BindPipelineState(const PipelineState *pso, CommandList cmd) override;
 	void BindVertexBuffers(const GpuBuffer *const *buffers, uint32_t slot, uint32_t count, const uint32_t *strides, const uint64_t *offsets, CommandList cmd) override;
-	void BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offsets, CommandList cmd) override;
+	void BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offset, CommandList cmd) override;
 	void BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset = 0) override;
 	void BindResource(const GpuResource *resource, uint32_t slot, CommandList cmd, int subresource = -1) override;
 	void BindSampler(const Sampler *sampler, uint32_t slot, CommandList cmd) override;
@@ -100,6 +100,8 @@ private: // インナークラス
 
 		std::vector<const SwapChain *> swapChains;
 		std::vector<D3D12_RESOURCE_BARRIER> renderPassBarriersEnd;
+
+		const PipelineState *activePso = nullptr;
 
 		void Reset(uint32_t newBufferIndex);
 		ID3D12CommandAllocator *GetCommandAllocator() const;

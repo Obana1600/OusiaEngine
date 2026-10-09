@@ -303,8 +303,113 @@ constexpr D3D12_COMPARISON_FUNC ConvertComparisonFunc(ComparisonFunc value) {
 	switch (value) {
 		case ComparisonFunc::NEVER:
 			return D3D12_COMPARISON_FUNC_NEVER;
-
+		case ComparisonFunc::LESS:
+			return D3D12_COMPARISON_FUNC_LESS;
+		case ComparisonFunc::EQUAL:
+			return D3D12_COMPARISON_FUNC_EQUAL;
+		case ComparisonFunc::LESS_EQUAL:
+			return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		case ComparisonFunc::GREATER:
+			return D3D12_COMPARISON_FUNC_GREATER;
+		case ComparisonFunc::NOT_EQUAL:
+			return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+		case ComparisonFunc::GREATER_EQUAL:
+			return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+		case ComparisonFunc::ALWAYS:
+			return D3D12_COMPARISON_FUNC_ALWAYS;
 	}
+	return D3D12_COMPARISON_FUNC_NEVER;
+}
+
+constexpr D3D12_BLEND ConvertBlend(Blend value) {
+	switch (value) {
+		case Blend::ZERO:
+			return D3D12_BLEND_ZERO;
+		case Blend::ONE:
+			return D3D12_BLEND_ONE;
+		case Blend::SRC_COLOR:
+			return D3D12_BLEND_SRC_COLOR;
+		case Blend::INV_SRC_COLOR:
+			return D3D12_BLEND_INV_SRC_COLOR;
+		case Blend::SRC_ALPHA:
+			return D3D12_BLEND_SRC_ALPHA;
+		case Blend::INV_SRC_ALPHA:
+			return D3D12_BLEND_INV_SRC_ALPHA;
+		case Blend::DEST_COLOR:
+			return D3D12_BLEND_DEST_COLOR;
+		case Blend::INV_DEST_COLOR:
+			return D3D12_BLEND_INV_DEST_COLOR;
+		case Blend::DEST_ALPHA:
+			return D3D12_BLEND_DEST_ALPHA;
+		case Blend::INV_DEST_ALPHA:
+			return D3D12_BLEND_INV_DEST_ALPHA;
+	}
+	return D3D12_BLEND_ZERO;
+}
+
+constexpr D3D12_BLEND_OP ConvertBlendOp(BlendOp value) {
+	switch (value) {
+		case BlendOp::ADD:
+			return D3D12_BLEND_OP_ADD;
+		case BlendOp::SUBTRACT:
+			return D3D12_BLEND_OP_SUBTRACT;
+		case BlendOp::REV_SUBTRACT:
+			return D3D12_BLEND_OP_REV_SUBTRACT;
+		case BlendOp::MIN:
+			return D3D12_BLEND_OP_MIN;
+		case BlendOp::MAX:
+			return D3D12_BLEND_OP_MAX;
+	}
+	return D3D12_BLEND_OP_ADD;
+}
+
+constexpr D3D12_INPUT_CLASSIFICATION ConvertInputClassification(InputClassification value) {
+	switch (value) {
+		case InputClassification::PER_VERTEX_DATA:
+			return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+		case InputClassification::PER_INSTANCE_DATA:
+			return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+	}
+	return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+}
+
+constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE ConvertTopologyType(PrimitiveTopology value) {
+	switch (value) {
+		case PrimitiveTopology::UNDEFINED:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+		case PrimitiveTopology::TRIANGLELIST:
+		case PrimitiveTopology::TRIANGLESTRIP:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		case PrimitiveTopology::POINTLIST:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+		case PrimitiveTopology::LINELIST:
+		case PrimitiveTopology::LINESTRIP:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		case PrimitiveTopology::PATCHLIST:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+	}
+	return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+}
+
+constexpr D3D_PRIMITIVE_TOPOLOGY ConvertTopology(PrimitiveTopology value, uint32_t patchControlPoints) {
+	switch (value) {
+		case PrimitiveTopology::TRIANGLELIST:
+			return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		case PrimitiveTopology::TRIANGLESTRIP:
+			return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+		case PrimitiveTopology::POINTLIST:
+			return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+		case PrimitiveTopology::LINELIST:
+			return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+		case PrimitiveTopology::LINESTRIP:
+			return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+		case PrimitiveTopology::PATCHLIST:
+			return static_cast<D3D_PRIMITIVE_TOPOLOGY>(
+				D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (patchControlPoints - 1));
+		default:
+			break;
+	}
+	return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 // value を alignment の倍数に切り上げる
@@ -384,6 +489,33 @@ struct Shader_DX12 {
 
 Shader_DX12 *ToInternal(const Shader *param) {
 	return static_cast<Shader_DX12 *>(param->internalState.get());
+}
+
+// ================================================================================================
+
+
+// パイプライン =====================================================================================
+
+struct PipelineState_DX12 {
+	std::shared_ptr<GraphicsDevice_DX12::AllocationHandler> allocationHandler;
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+	D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+	~PipelineState_DX12();
+};
+
+PipelineState_DX12::~PipelineState_DX12() {
+	if (!allocationHandler) { return; }
+
+	std::scoped_lock lock(allocationHandler->destroyLocker);
+	if (pipelineState) {
+		allocationHandler->destroyerPipelines.push_back({pipelineState, allocationHandler->frameCount});
+	}
+}
+
+PipelineState_DX12 *ToInternal(const PipelineState *param) {
+	return static_cast<PipelineState_DX12 *>(param->internalState.get());
 }
 
 // ================================================================================================
@@ -756,10 +888,117 @@ bool ou::GraphicsDevice_DX12::CreateSampler(const SamplerDesc *desc, Sampler *sa
 }
 
 
-bool ou::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso) {
-	(void)desc;
-	(void)pso;
-	return false;
+bool ou::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) {
+	if (!renderPassInfo) {
+		// TODO: 描画時の PSO ソートに対応させる
+		Log::Error("CreatePipelineState には RenderPassInfo が必要です。");
+		return false;
+	}
+	if (desc->ms || desc->as) {
+		// TODO: メッシュシェーダ PSO の対応
+		Log::Error("メッシュシェーダの PSO にはまだ対応していません。");
+		return false;
+	}
+
+	auto is = std::make_shared<PipelineState_DX12>();
+	is->allocationHandler = allocationHandler_;
+	pso->internalState = is;
+	pso->desc = *desc;
+
+	// PSO の設定
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+	psoDesc.pRootSignature = rootSignature_.Get();
+
+	// シェーダ
+	if (desc->vs) { psoDesc.VS = ToInternal(desc->vs)->GetByteCode(); }
+	if (desc->ps) { psoDesc.PS = ToInternal(desc->ps)->GetByteCode(); }
+	if (desc->hs) { psoDesc.HS = ToInternal(desc->hs)->GetByteCode(); }
+	if (desc->ds) { psoDesc.DS = ToInternal(desc->ds)->GetByteCode(); }
+	if (desc->gs) { psoDesc.GS = ToInternal(desc->gs)->GetByteCode(); }
+
+	// インプットレイアウト
+	std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+	if (desc->il) {
+		inputElements.reserve(desc->il->elements.size());
+		for (const auto &element : desc->il->elements) {
+			auto &e = inputElements.emplace_back();
+			e.SemanticName = element.semanticName.c_str();
+			e.SemanticIndex = element.semanticIndex;
+			e.Format = ConvertFormat(element.format);
+			e.InputSlot = element.inputSlot;
+			e.AlignedByteOffset = element.alignedByteOffset;
+			e.InputSlotClass = ConvertInputClassification(element.inputSlotClass);
+			e.InstanceDataStepRate = (element.inputSlotClass == InputClassification::PER_INSTANCE_DATA) ? 1 : 0;
+		}
+	}
+	psoDesc.InputLayout.pInputElementDescs = inputElements.data();
+	psoDesc.InputLayout.NumElements = static_cast<UINT>(inputElements.size());
+
+	// ラスタライザ
+	const auto rs = desc->rs ? *desc->rs : RasterizerState{};
+	psoDesc.RasterizerState.FillMode = ConvertFillMode(rs.fillMode);
+	psoDesc.RasterizerState.CullMode = ConvertCullMode(rs.cullMode);
+	psoDesc.RasterizerState.FrontCounterClockwise = rs.frontCounterClockwise;
+	psoDesc.RasterizerState.DepthBias = rs.depthBias;
+	psoDesc.RasterizerState.DepthBiasClamp = rs.depthBiasClamp;
+	psoDesc.RasterizerState.SlopeScaledDepthBias = rs.slopeScaledDepthBias;
+	psoDesc.RasterizerState.DepthClipEnable = rs.depthClipEnable;
+	psoDesc.RasterizerState.MultisampleEnable = rs.multisampleEnable;
+	psoDesc.RasterizerState.AntialiasedLineEnable = rs.antialiasedLineEnable;
+	psoDesc.RasterizerState.ConservativeRaster = rs.conservativeRasterizationEnable
+													 ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON
+													 : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	// 深度ステンシル
+	const auto dss = desc->dss ? *desc->dss : DepthStencilState{};
+	psoDesc.DepthStencilState.DepthEnable = dss.depthEnable;
+	psoDesc.DepthStencilState.DepthWriteMask = (dss.depthWriteMask == DepthWriteMask::ALL)
+												   ? D3D12_DEPTH_WRITE_MASK_ALL
+												   : D3D12_DEPTH_WRITE_MASK_ZERO;
+	psoDesc.DepthStencilState.DepthFunc = ConvertComparisonFunc(dss.comparisonFunc);
+	psoDesc.DepthStencilState.StencilEnable = FALSE; // TODO: ステンシルに対応させる
+
+	// ブレンド
+	const auto bs = desc->bs ? *desc->bs : BlendState{};
+	psoDesc.BlendState.AlphaToCoverageEnable = bs.alphaToCoverageEnable;
+	psoDesc.BlendState.IndependentBlendEnable = bs.independentBlendEnable;
+	for (int i = 0; i < 8; i++) {
+		const auto &src = bs.renderTarget[i];
+		auto &dst = psoDesc.BlendState.RenderTarget[i];
+		dst.BlendEnable = src.blendEnable;
+		dst.LogicOpEnable = FALSE;
+		dst.SrcBlend = ConvertBlend(src.srcBlend);
+		dst.SrcBlendAlpha = ConvertBlend(src.srcBlendAlpha);
+		dst.DestBlend = ConvertBlend(src.destBlend);
+		dst.DestBlendAlpha = ConvertBlend(src.destBlendAlpha);
+		dst.BlendOp = ConvertBlendOp(src.blendOp);
+		dst.BlendOpAlpha = ConvertBlendOp(src.blendOpAlpha);
+		dst.LogicOp = D3D12_LOGIC_OP_NOOP;
+		dst.RenderTargetWriteMask = static_cast<UINT8>(src.renderTargetWriteMask);
+	}
+	psoDesc.SampleMask = desc->sampleMask;
+
+	// トポロジ
+	psoDesc.PrimitiveTopologyType = ConvertTopologyType(desc->pt);
+	is->primitiveTopology = ConvertTopology(desc->pt, desc->patchControlPoints);
+
+	// 出力先
+	psoDesc.NumRenderTargets = renderPassInfo->rtCount;
+	for (uint32_t i = 0; i < renderPassInfo->rtCount; i++) {
+		psoDesc.RTVFormats[i] = ConvertFormat(renderPassInfo->rtFormats[i]);
+	}
+	psoDesc.DSVFormat = ConvertFormat(renderPassInfo->dsFormat);
+	psoDesc.SampleDesc.Count = renderPassInfo->sampleCount;
+	psoDesc.SampleDesc.Quality = 0;
+
+	// PSO の作成
+	HRESULT hr = device_->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&is->pipelineState));
+	if (FAILED(hr)) {
+		Log::Error("PipelineState の作成に失敗しました");
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -970,48 +1209,88 @@ void ou::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
 
 
 void ou::GraphicsDevice_DX12::BindViewports(uint32_t numViewports, const Viewport *viewports, CommandList cmd) {
-	(void)numViewports;
-	(void)viewports;
-	(void)cmd;
+	ASSERT(numViewports <= D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "D3D12 のビューポート上限を超過しています。");
+
+	D3D12_VIEWPORT d3dViewports[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+	for (uint32_t i = 0; i < numViewports; i++) {
+		d3dViewports[i].TopLeftX = viewports[i].topLeftX;
+		d3dViewports[i].TopLeftY = viewports[i].topLeftY;
+		d3dViewports[i].Width = viewports[i].width;
+		d3dViewports[i].Height = viewports[i].height;
+		d3dViewports[i].MinDepth = viewports[i].minDepth;
+		d3dViewports[i].MaxDepth = viewports[i].maxDepth;
+	}
+
+	GetCommandList(cmd).GetGraphicsCommandList()->RSSetViewports(numViewports, d3dViewports);
 }
 
 
 void ou::GraphicsDevice_DX12::BindScissorRects(uint32_t numScissors, const Scissor *scissors, CommandList cmd) {
-	(void)numScissors;
-	(void)scissors;
-	(void)cmd;
+	ASSERT(numScissors <= D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, " D3D12 のシザー矩形上限を超過しています: {}", numScissors);
+
+	D3D12_RECT d3dScissors[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+	for (uint32_t i = 0; i < numScissors; i++) {
+		d3dScissors[i].left = scissors[i].left;
+		d3dScissors[i].top = scissors[i].top;
+		d3dScissors[i].right = scissors[i].right;
+		d3dScissors[i].bottom = scissors[i].bottom;
+	}
+
+	GetCommandList(cmd).GetGraphicsCommandList()->RSSetScissorRects(numScissors, d3dScissors);
 }
 
 
 void ou::GraphicsDevice_DX12::BindPipelineState(const PipelineState *pso, CommandList cmd) {
-	(void)pso;
-	(void)cmd;
+	auto &cmdIs = GetCommandList(cmd);
+
+	// 同じ PSO なら積まない
+	if (cmdIs.activePso == pso) { return; }
+	cmdIs.activePso = pso;
+
+	auto *is = ToInternal(pso);
+	auto *list = cmdIs.GetGraphicsCommandList();
+	list->SetPipelineState(is->pipelineState.Get());
+	list->IASetPrimitiveTopology(is->primitiveTopology);
 }
 
 
 void ou::GraphicsDevice_DX12::BindVertexBuffers(const GpuBuffer *const *buffers, uint32_t slot, uint32_t count, const uint32_t *strides, const uint64_t *offsets, CommandList cmd) {
-	(void)buffers;
-	(void)slot;
-	(void)count;
-	(void)strides;
-	(void)offsets;
-	(void)cmd;
+	ASSERT(count <= D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT);
+
+	D3D12_VERTEX_BUFFER_VIEW views[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT]{};
+	for (uint32_t i = 0; i < count; i++) {
+		if (!buffers[i]) { continue; }
+
+		const auto offset = offsets ? offsets[i] : 0;
+		views[i].BufferLocation = ToInternal(buffers[i])->gpuAddress + offset;
+		views[i].SizeInBytes = static_cast<UINT>(buffers[i]->desc.size - offset);
+		views[i].StrideInBytes = strides[i];
+	}
+
+	GetCommandList(cmd).GetGraphicsCommandList()->IASetVertexBuffers(slot, count, views);
 }
 
 
-void ou::GraphicsDevice_DX12::BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offsets, CommandList cmd) {
-	(void)buffer;
-	(void)format;
-	(void)offsets;
-	(void)cmd;
+void ou::GraphicsDevice_DX12::BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offset, CommandList cmd) {
+	D3D12_INDEX_BUFFER_VIEW view{};
+
+	if (buffer) {
+		view.BufferLocation = ToInternal(buffer)->gpuAddress + offset;
+		view.SizeInBytes = static_cast<UINT>(buffer->desc.size - offset);
+		view.Format = (format == IndexBufferFormat::UINT16)
+						  ? DXGI_FORMAT_R16_UINT
+						  : DXGI_FORMAT_R32_UINT;
+	}
+
+	GetCommandList(cmd).GetGraphicsCommandList()->IASetIndexBuffer(&view);
 }
 
 
 void ou::GraphicsDevice_DX12::BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset) {
-	(void)buffer;
-	(void)slot;
-	(void)cmd;
-	(void)offset;
+	ASSERT(slot < DESCRIPTORBINDER_CBV_COUNT);
+
+	GetCommandList(cmd).GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(
+		ROOT_CBV_BEGIN + slot, ToInternal(buffer)->gpuAddress + offset);
 }
 
 
@@ -1031,36 +1310,26 @@ void ou::GraphicsDevice_DX12::BindSampler(const Sampler *sampler, uint32_t slot,
 
 
 void ou::GraphicsDevice_DX12::Draw(uint32_t vertexCount, uint32_t startVertexLocation, CommandList cmd) {
-	(void)vertexCount;
-	(void)startVertexLocation;
-	(void)cmd;
+	GetCommandList(cmd).GetGraphicsCommandList()->DrawInstanced(
+		vertexCount, 1, startVertexLocation, 0);
 }
 
 
 void ou::GraphicsDevice_DX12::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation, CommandList cmd) {
-	(void)indexCount;
-	(void)startIndexLocation;
-	(void)baseVertexLocation;
-	(void)cmd;
+	GetCommandList(cmd).GetGraphicsCommandList()->DrawIndexedInstanced(
+		indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 
 void ou::GraphicsDevice_DX12::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
-	(void)vertexCount;
-	(void)instanceCount;
-	(void)startInstanceLocation;
-	(void)startVertexLocation;
-	(void)cmd;
+	GetCommandList(cmd).GetGraphicsCommandList()->DrawInstanced(
+		vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 
 void ou::GraphicsDevice_DX12::DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
-	(void)indexCount;
-	(void)instanceCount;
-	(void)startIndexLocation;
-	(void)baseVertexLocation;
-	(void)startInstanceLocation;
-	(void)cmd;
+	GetCommandList(cmd).GetGraphicsCommandList()->DrawIndexedInstanced(
+		indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 
@@ -1089,6 +1358,7 @@ void ou::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBufferIndex) {
 	bufferIndex = newBufferIndex;
 	swapChains.clear();
 	renderPassBarriersEnd.clear();
+	activePso = nullptr;
 }
 
 

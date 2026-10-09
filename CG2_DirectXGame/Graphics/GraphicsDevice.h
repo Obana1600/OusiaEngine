@@ -28,7 +28,7 @@ public: // メンバ関数
 	virtual bool CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) = 0;
 	virtual bool CreateShader(ShaderStage stage, const void *shaderCode, size_t shaderCodeSize, Shader *shader) = 0;
 	virtual bool CreateSampler(const SamplerDesc *desc, Sampler *sampler) = 0;
-	virtual bool CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso) = 0;
+	virtual bool CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) = 0;
 
 	virtual void SetName(GpuResource *resource, std::string_view name) const = 0;
 
@@ -58,7 +58,7 @@ public: // メンバ関数
 	virtual void BindScissorRects(uint32_t numScissors, const Scissor *scissors, CommandList cmd) = 0;
 	virtual void BindPipelineState(const PipelineState *pso, CommandList cmd) = 0;
 	virtual void BindVertexBuffers(const GpuBuffer *const *buffers, uint32_t slot, uint32_t count, const uint32_t *strides, const uint64_t *offsets, CommandList cmd) = 0;
-	virtual void BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offsets, CommandList cmd) = 0;
+	virtual void BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offset, CommandList cmd) = 0;
 	virtual void BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset = 0) = 0;
 	virtual void BindResource(const GpuResource *resource, uint32_t slot, CommandList cmd, int subresource = -1) = 0;
 	virtual void BindSampler(const Sampler *sampler, uint32_t slot, CommandList cmd) = 0;
