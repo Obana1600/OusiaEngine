@@ -377,6 +377,7 @@ imgui.ini
 Generated/
 
 # markdown
+!README.md
 *.md
 
 # モデルの OBJ は追跡する
