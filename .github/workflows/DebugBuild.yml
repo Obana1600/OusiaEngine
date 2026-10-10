@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  SOLITION_FILE_PATH: OusiaEngine/OusiaEngine.slnx
+  SOLUTION_FILE_PATH: OusiaEngine/OusiaEngine.slnx
   CONFIGURATION: Debug
 
 jobs:
@@ -24,4 +24,4 @@ jobs:
 
       - name: Build
         run: |
-          msbuild ${{env.SOLITION_FILE_PATH}} /m /p:Configuration=${{env.CONFIGURATION}} /p:Platform=x64
+          msbuild ${{env.SOLUTION_FILE_PATH}} /m /p:Configuration=${{env.CONFIGURATION}} /p:Platform=x64
