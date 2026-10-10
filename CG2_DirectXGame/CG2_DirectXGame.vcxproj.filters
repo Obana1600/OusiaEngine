@@ -47,6 +47,8 @@
       <Filter>shader</Filter>
     </None>
     <None Include="resources\shader\Triangle.hlsli" />
+    <None Include="resources\shader\Blit.hlsli" />
+    <None Include="resources\shader\Textured.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -56,9 +58,6 @@
       <Filter>input</Filter>
     </ClCompile>
     <ClCompile Include="base\DirectXCommon.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
-    <ClCompile Include="base\Engine.cpp">
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="base\TextureManager.cpp">
@@ -175,6 +174,9 @@
     <ClCompile Include="Graphics\GpuResource.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shader\Sprite.VS.hlsl">
@@ -191,15 +193,16 @@
     </FxCompile>
     <FxCompile Include="resources\shader\Triangle.VS.hlsl" />
     <FxCompile Include="resources\shader\Triangle.PS.hlsl" />
+    <FxCompile Include="resources\shader\Blit.VS.hlsl" />
+    <FxCompile Include="resources\shader\Blit.PS.hlsl" />
+    <FxCompile Include="resources\shader\Textured.VS.hlsl" />
+    <FxCompile Include="resources\shader\Textured.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="input\InputSystem.h">
       <Filter>input</Filter>
     </ClInclude>
     <ClInclude Include="base\DirectXCommon.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="base\Engine.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\TextureManager.h">
@@ -308,6 +311,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GpuResource.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

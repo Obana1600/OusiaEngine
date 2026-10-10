@@ -224,6 +224,11 @@ enum class SamplerBorderColor : uint8_t {
 
 // TODO: Stencil 関係の enum
 
+// value を alignment の倍数に切り上げる
+constexpr uint64_t AlignTo(uint64_t value, uint64_t alignment) {
+	return (value + alignment - 1) / alignment * alignment;
+}
+
 } // namespace ou
 
 
@@ -374,21 +379,6 @@ struct PipelineStateDesc {
 	uint32_t sampleMask = 0xFFFFFFFF;
 };
 
-// PSO が書き込む先のフォーマット
-struct RenderPassInfo {
-	Format rtFormats[8] = {}; // RenderTarget の数は 8 が上限
-	uint32_t rtCount = 0;
-	Format dsFormat = Format::UNKNOWN;
-	uint32_t sampleCount = 1;
-
-	static constexpr RenderPassInfo From(const SwapChainDesc &desc) {
-		RenderPassInfo info;
-		info.rtFormats[0] = desc.format;
-		info.rtCount = 1;
-		return info;
-	}
-};
-
 } // namespace ou
 
 
@@ -480,6 +470,17 @@ struct Texture: public GpuResource {
 
 	const TextureDesc &GetDesc() const {
 		return desc;
+	}
+};
+
+// 1 フレームだけ使える UPLOAD メモリ
+struct GpuAllocation {
+	void *data = nullptr;
+	GpuBuffer buffer;
+	uint64_t offset = 0;
+
+	bool IsValid() const {
+		return (data != nullptr) && buffer.IsValid();
 	}
 };
 
@@ -635,6 +636,38 @@ struct RenderPassImage {
 		image.layoutAfter = after;
 		image.subresource = subresource;
 		return image;
+	}
+};
+
+// PSO が書き込む先のフォーマット
+struct RenderPassInfo {
+	Format rtFormats[8] = {}; // RenderTarget の数は 8 が上限
+	uint32_t rtCount = 0;
+	Format dsFormat = Format::UNKNOWN;
+	uint32_t sampleCount = 1;
+
+	static constexpr RenderPassInfo From(const SwapChainDesc &desc) {
+		RenderPassInfo info;
+		info.rtFormats[0] = desc.format;
+		info.rtCount = 1;
+		return info;
+	}
+
+	static constexpr RenderPassInfo From(const RenderPassImage *images, uint32_t imageCount) {
+		RenderPassInfo info;
+		for (uint32_t i = 0; i < imageCount; i++) {
+			const auto &image = images[i];
+			switch (image.type) {
+				case RenderPassImage::Type::RENDERTARGET:
+					info.rtFormats[info.rtCount++] = image.texture->desc.format;
+					break;
+				case RenderPassImage::Type::DEPTH_STENCIL:
+					info.dsFormat = image.texture->desc.format;
+					break;
+			}
+			info.sampleCount = image.texture->desc.sampleCount;
+		}
+		return info;
 	}
 };
 

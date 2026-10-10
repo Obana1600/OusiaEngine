@@ -33,6 +33,7 @@ public: // メンバ関数
 
 	void SetName(GpuResource *resource, std::string_view name) const override;
 
+	int GetDescriptorIndex(const GpuResource *resource, ViewType type, int subresource = -1) const override;
 
 	// ----- フレーム -----
 
@@ -68,14 +69,38 @@ public: // メンバ関数
 
 public: // インナークラス
 
+	struct DescriptorAllocator {
+		ID3D12Device *device = nullptr;
+		std::mutex locker;
+		D3D12_DESCRIPTOR_HEAP_DESC desc{};
+		uint32_t descriptorSize = 0;
+
+		std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> heaps;
+		std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> freeList;
+
+		void Initialize(ID3D12Device *d3dDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorHeapBlock);
+		D3D12_CPU_DESCRIPTOR_HANDLE Allocate();
+		void Free(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+
+	private:
+		void BlockAllocate();
+	};
+
 	struct AllocationHandler {
 		std::mutex destroyLocker;
 		uint64_t frameCount = 0;
 
+		DescriptorAllocator descriptorRtv;
+		DescriptorAllocator descriptorDsv;
+
 		std::deque<std::pair<Microsoft::WRL::ComPtr<ID3D12Resource>, uint64_t>> destroyerResources;
 		std::deque<std::pair<Microsoft::WRL::ComPtr<ID3D12PipelineState>, uint64_t>> destroyerPipelines;
 
+		std::vector<int> freeBindlessRes;
+		std::deque<std::pair<int, uint64_t>> destroyBindlessRes;
+
 		void Update(uint64_t currentFrameCount, uint32_t bufferCount);
+		int AllocateResourceIndex();
 	};
 
 
@@ -97,6 +122,8 @@ private: // インナークラス
 		uint32_t bufferIndex = 0;
 		QueueType queue = QUEUE_GRAPHICS;
 		uint32_t id = 0;
+
+		GpuLinearAllocator frameAllocators[BUFFER_COUNT];
 
 		std::vector<const SwapChain *> swapChains;
 		std::vector<D3D12_RESOURCE_BARRIER> renderPassBarriersEnd;
@@ -150,11 +177,17 @@ private: // メンバ変数
 	std::shared_ptr<AllocationHandler> allocationHandler_;
 
 	CopyAllocator copyAllocator_;
-	
+
 	// 全 PSO で共有するルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+
 	// バインドレス用のヒープ
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeapRes_;
+	uint32_t resDescriptorSize_ = 0;
+
+	// バリア
+	std::vector<D3D12_RESOURCE_BARRIER> initTransitions_;
+	std::mutex initTransitionLocker_;
 
 	bool tearingSupported_ = false;
 
@@ -164,6 +197,10 @@ private: // メンバ変数
 private: // メンバ関数
 
 	CommandList_DX12 &GetCommandList(CommandList cmd) const;
+
+		GpuLinearAllocator &GetFrameAllocator(CommandList cmd) override;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetBindlessCpuHandle(int index) const;
 
 
 private: // コピー禁止

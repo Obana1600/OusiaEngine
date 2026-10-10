@@ -412,9 +412,44 @@ constexpr D3D_PRIMITIVE_TOPOLOGY ConvertTopology(PrimitiveTopology value, uint32
 	return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
-// value を alignment の倍数に切り上げる
-constexpr uint64_t AlignTo(uint64_t value, uint64_t alignment) {
-	return (value + alignment - 1) / alignment * alignment;
+constexpr D3D12_RESOURCE_STATES ConvertResourceState(ResourceState value) {
+	auto result = D3D12_RESOURCE_STATE_COMMON;
+
+	if (HasFlag(value, ResourceState::SHADER_RESOURCE)) {
+		result |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	}
+	if (HasFlag(value, ResourceState::SHADER_RESOURCE_COMPUTE)) {
+		result |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	}
+	if (HasFlag(value, ResourceState::UNORDERED_ACCESS)) {
+		result |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	}
+	if (HasFlag(value, ResourceState::COPY_SRC)) {
+		result |= D3D12_RESOURCE_STATE_COPY_SOURCE;
+	}
+	if (HasFlag(value, ResourceState::COPY_DST)) {
+		result |= D3D12_RESOURCE_STATE_COPY_DEST;
+	}
+	if (HasFlag(value, ResourceState::RENDERTARGET)) {
+		result |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+	}
+	if (HasFlag(value, ResourceState::DEPTHSTENCIL)) {
+		result |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+	}
+	if (HasFlag(value, ResourceState::DEPTHSTENCIL_READONLY)) {
+		result |= D3D12_RESOURCE_STATE_DEPTH_READ;
+	}
+	if (HasFlag(value, ResourceState::VERTEX_BUFFER) || HasFlag(value, ResourceState::CONSTANT_BUFFER)) {
+		result |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	}
+	if (HasFlag(value, ResourceState::INDEX_BUFFER)) {
+		result |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+	}
+	if (HasFlag(value, ResourceState::INDIRECT_ARGUMENT)) {
+		result |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+	}
+
+	return result;
 }
 
 
@@ -424,10 +459,7 @@ struct SwapChain_DX12 {
 	std::shared_ptr<GraphicsDevice_DX12::AllocationHandler> allocationHandler;
 
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain;
-
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> backBuffers;
-
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> backBufferRtvs;
 
 	~SwapChain_DX12();
@@ -436,6 +468,12 @@ struct SwapChain_DX12 {
 SwapChain_DX12::~SwapChain_DX12() {
 	if (!allocationHandler) { return; }
 
+	// RTV はすぐ返してよい
+	for (const auto &rtv : backBufferRtvs) {
+		allocationHandler->descriptorRtv.Free(rtv);
+	}
+
+	// バックバッファは GPU が使い終わるまで解放を遅らせる
 	std::scoped_lock lock(allocationHandler->destroyLocker);
 	const auto frameCount = allocationHandler->frameCount;
 	for (auto &backBuffer : backBuffers) {
@@ -458,20 +496,52 @@ struct Resource_DX12 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = 0;
 
+	int srvIndex = -1;
+
 	virtual ~Resource_DX12();
 };
 
 Resource_DX12::~Resource_DX12() {
 	if (!allocationHandler) { return; }
 
+	// GPU が使い終わったら、リソースとバインドレス番号を手放す
 	std::scoped_lock lock(allocationHandler->destroyLocker);
+	const auto frameCount = allocationHandler->frameCount;
 	if (resource) {
-		allocationHandler->destroyerResources.push_back({resource, allocationHandler->frameCount});
+		allocationHandler->destroyerResources.push_back({resource, frameCount});
+	}
+	if (srvIndex >= 0) {
+		allocationHandler->destroyBindlessRes.push_back({srvIndex, frameCount});
 	}
 }
 
 Resource_DX12 *ToInternal(const GpuResource *param) {
 	return static_cast<Resource_DX12 *>(param->internalState.get());
+}
+
+// ================================================================================================
+
+
+// テクスチャ =======================================================================================
+
+struct Texture_DX12: public Resource_DX12 {
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv{};
+	D3D12_CPU_DESCRIPTOR_HANDLE dsv{};
+
+	~Texture_DX12();
+};
+
+
+Texture_DX12::~Texture_DX12() {
+	if (!allocationHandler) { return; }
+
+	// RTV / DSV はすぐ返してよい
+	if (rtv.ptr != 0) { allocationHandler->descriptorRtv.Free(rtv); }
+	if (dsv.ptr != 0) { allocationHandler->descriptorDsv.Free(dsv); }
+}
+
+Texture_DX12 *ToInternal(const Texture *param) {
+	return static_cast<Texture_DX12 *>(param->internalState.get());
 }
 
 // ================================================================================================
@@ -609,6 +679,8 @@ ou::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
 
 	// ----- 遅延破棄 -----
 	allocationHandler_ = std::make_shared<AllocationHandler>();
+	allocationHandler_->descriptorRtv.Initialize(device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 256);
+	allocationHandler_->descriptorDsv.Initialize(device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64);
 
 	// ----- 初期データの転送 -----
 	copyAllocator_.Initialize(this);
@@ -624,6 +696,14 @@ ou::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
 	hr = device_->CreateDescriptorHeap(&resHeapDesc, IID_PPV_ARGS(&descriptorHeapRes_));
 	CheckHResult(hr, "バインドレスヒープの作成");
 	descriptorHeapRes_->SetName(L"BindlessResourceHeap");
+
+	// バインドレス関連
+	resDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	allocationHandler_->freeBindlessRes.reserve(BINDLESS_RESOURCE_CAPACITY);
+	for (int i = static_cast<int>(BINDLESS_RESOURCE_CAPACITY) - 1; i >= 0; i--) {
+		allocationHandler_->freeBindlessRes.push_back(i);
+	}
 
 	Log::Info("GraphicsDevice_DX12 を作成しました。");
 }
@@ -660,12 +740,12 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 
 	if (desc->width == 0 || desc->height == 0) { return false; }
 
-	auto scDX12 = std::static_pointer_cast<SwapChain_DX12>(swapChain->internalState);
-	if (!scDX12) {
-		scDX12 = std::make_shared<SwapChain_DX12>();
+	auto is = std::static_pointer_cast<SwapChain_DX12>(swapChain->internalState);
+	if (!is) {
+		is = std::make_shared<SwapChain_DX12>();
 	}
-	scDX12->allocationHandler = allocationHandler_;
-	swapChain->internalState = scDX12;
+	is->allocationHandler = allocationHandler_;
+	swapChain->internalState = is;
 	swapChain->desc = *desc;
 
 	UINT flags = 0;
@@ -675,7 +755,7 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 	const auto bufferFormat = ConvertFormatNonSrgb(rtvFormat);
 
 	// 新しく作る
-	if (!scDX12->swapChain) {
+	if (!is->swapChain) {
 		DXGI_SWAP_CHAIN_DESC1 scDesc{};
 		scDesc.Width = desc->width;
 		scDesc.Height = desc->height;
@@ -703,7 +783,7 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 		// Alt+Enter でのフルスクリーン化を無効にする
 		factory_->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 
-		hr = swapChain1.As(&scDX12->swapChain);
+		hr = swapChain1.As(&is->swapChain);
 		if (FAILED(hr)) {
 			Log::Error("IDXGISwapChain4 の取得に失敗しました。");
 			return false;
@@ -712,10 +792,13 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 	} else {
 		// リサイズ
 		WaitForGpu();
-		scDX12->backBuffers.clear();
-		scDX12->backBufferRtvs.clear();
+		for (const auto &rtv : is->backBufferRtvs) {
+			allocationHandler_->descriptorRtv.Free(rtv);
+		}
+		is->backBuffers.clear();
+		is->backBufferRtvs.clear();
 
-		hr = scDX12->swapChain->ResizeBuffers(
+		hr = is->swapChain->ResizeBuffers(
 			desc->bufferCount, desc->width, desc->height, bufferFormat, flags);
 		if (FAILED(hr)) {
 			Log::Error("スワップチェーンのリサイズに失敗しました。");
@@ -723,35 +806,22 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 		}
 	}
 
-	// バックバッファの RTV を作成する
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	heapDesc.NumDescriptors = desc->bufferCount;
-	hr = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&scDX12->rtvHeap));
-	if (FAILED(hr)) {
-		Log::Error("RTV ヒープの作成に失敗しました。");
-		return false;
-	}
-
+	// バックバッファの RTV を借りてくる
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 	rtvDesc.Format = rtvFormat;
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-	const auto rtvSize = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	auto handle = scDX12->rtvHeap->GetCPUDescriptorHandleForHeapStart();
-
-	scDX12->backBuffers.resize(desc->bufferCount);
-	scDX12->backBufferRtvs.resize(desc->bufferCount);
+	is->backBuffers.resize(desc->bufferCount);
+	is->backBufferRtvs.resize(desc->bufferCount);
 	for (uint32_t i = 0; i < desc->bufferCount; i++) {
-		hr = scDX12->swapChain->GetBuffer(i, IID_PPV_ARGS(&scDX12->backBuffers[i]));
+		hr = is->swapChain->GetBuffer(i, IID_PPV_ARGS(&is->backBuffers[i]));
 		if (FAILED(hr)) {
 			Log::Error("バックバッファの取得に失敗しました。");
 			return false;
 		}
 
-		device_->CreateRenderTargetView(scDX12->backBuffers[i].Get(), &rtvDesc, handle);
-		scDX12->backBufferRtvs[i] = handle;
-		handle.ptr += rtvSize;
+		is->backBufferRtvs[i] = allocationHandler_->descriptorRtv.Allocate();
+		device_->CreateRenderTargetView(is->backBuffers[i].Get(), &rtvDesc, is->backBufferRtvs[i]);
 	}
 
 	return true;
@@ -855,10 +925,182 @@ bool ou::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, const void
 
 
 bool ou::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) {
-	(void)desc;
-	(void)initialData;
-	(void)texture;
-	return false;
+	HRESULT hr{};
+
+	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL) && HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE)) {
+		Log::Error("深度テクスチャの SRV にはまだ対応していません。");
+		return false;
+	}
+
+	auto is = std::make_shared<Texture_DX12>();
+	is->allocationHandler = allocationHandler_;
+	texture->internalState = is;
+	texture->type = GpuResource::Type::TEXTURE;
+	texture->mappedData = nullptr;
+	texture->mappedSize = 0;
+	texture->desc = *desc;
+
+	// リソースの設定
+	D3D12_RESOURCE_DESC resDesc{};
+	switch (desc->type) {
+		case TextureDesc::Type::TEXTURE_1D:
+			resDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+			break;
+		case TextureDesc::Type::TEXTURE_2D:
+			resDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			break;
+		case TextureDesc::Type::TEXTURE_3D:
+			resDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+			break;
+	}
+	resDesc.Alignment = 0;
+	resDesc.Width = desc->width;
+	resDesc.Height = desc->height;
+	resDesc.DepthOrArraySize = static_cast<UINT16>(
+		desc->type == TextureDesc::Type::TEXTURE_3D ? desc->depth : desc->arraySize);
+	resDesc.MipLevels = static_cast<UINT16>(desc->mipLevels);
+	resDesc.Format = ConvertFormat(desc->format);
+	resDesc.SampleDesc = {desc->sampleCount, 0};
+	resDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN; // GPU に任せる
+	resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	if (HasFlag(desc->bindFlags, BindFlag::RENDER_TARGET)) {
+		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	}
+	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL)) {
+		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+		if (!HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE)) {
+			resDesc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		}
+	}
+	if (HasFlag(desc->bindFlags, BindFlag::UNORDERED_ACCESS)) {
+		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+
+	// クリア値
+	D3D12_CLEAR_VALUE optimizedClear{};
+	optimizedClear.Format = resDesc.Format;
+	const D3D12_CLEAR_VALUE *pOptimizedClear = nullptr;
+	if (HasFlag(desc->bindFlags, BindFlag::RENDER_TARGET)) {
+		std::memcpy(optimizedClear.Color, desc->clear.color, sizeof(optimizedClear.Color));
+		pOptimizedClear = &optimizedClear;
+
+	} else if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL)) {
+		optimizedClear.DepthStencil.Depth = desc->clear.depthStencil.depth;
+		optimizedClear.DepthStencil.Stencil = static_cast<UINT8>(desc->clear.depthStencil.stencil);
+		pOptimizedClear = &optimizedClear;
+	}
+
+	// 初期状態
+	const auto layoutState = ConvertResourceState(desc->layout);
+	const auto initialState = initialData ? D3D12_RESOURCE_STATE_COMMON : layoutState;
+
+	// テクスチャの作成
+	D3D12_HEAP_PROPERTIES heapProps{};
+	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+	hr = device_->CreateCommittedResource(
+		&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, initialState, pOptimizedClear, IID_PPV_ARGS(&is->resource));
+	if (FAILED(hr)) {
+		Log::Error("テクスチャの作成に失敗しました。");
+		return false;
+	}
+
+	// 初期データの転送
+	if (initialData) {
+		const UINT numSubresources = (desc->type == TextureDesc::Type::TEXTURE_3D)
+										 ? desc->mipLevels
+										 : desc->mipLevels * desc->arraySize;
+
+		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> layouts(numSubresources);
+		std::vector<UINT> numRows(numSubresources);
+		std::vector<UINT64> rowSizes(numSubresources);
+		UINT64 totalBytes = 0;
+		device_->GetCopyableFootprints(
+			&resDesc, 0, numSubresources, 0, layouts.data(), numRows.data(), rowSizes.data(), &totalBytes);
+
+		auto cmd = copyAllocator_.Allocate(totalBytes);
+		auto *stagingBase = static_cast<uint8_t *>(cmd.uploadBuffer.mappedData);
+		auto *stagingResource = ToInternal(&cmd.uploadBuffer)->resource.Get();
+
+		for (UINT i = 0; i < numSubresources; i++) {
+			const auto &layout = layouts[i];
+			const auto &src = initialData[i];
+
+			for (UINT z = 0; z < layout.Footprint.Depth; z++) {
+				for (UINT row = 0; row < numRows[i]; row++) {
+					auto *dst = stagingBase + layout.Offset +
+								static_cast<SIZE_T>(z) * layout.Footprint.RowPitch * numRows[i] +
+								static_cast<SIZE_T>(row) * layout.Footprint.RowPitch;
+					const auto *srcRow = static_cast<const uint8_t *>(src.dataPtr) +
+										 static_cast<SIZE_T>(z) * src.slicePitch +
+										 static_cast<SIZE_T>(row) * src.rowPitch;
+					std::memcpy(dst, srcRow, static_cast<size_t>(rowSizes[i]));
+				}
+			}
+
+			D3D12_TEXTURE_COPY_LOCATION dstLocation{};
+			dstLocation.pResource = is->resource.Get();
+			dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			dstLocation.SubresourceIndex = i;
+
+			D3D12_TEXTURE_COPY_LOCATION srcLocation{};
+			srcLocation.pResource = stagingResource;
+			srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			srcLocation.PlacedFootprint = layout;
+
+			cmd.list->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+		}
+
+		copyAllocator_.Submit(std::move(cmd));
+
+		// コピーを終えた後の遷移を予約する
+		if (layoutState != D3D12_RESOURCE_STATE_COMMON) {
+			D3D12_RESOURCE_BARRIER barrier{};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Transition.pResource = is->resource.Get();
+			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+			barrier.Transition.StateAfter = layoutState;
+
+			std::scoped_lock lock(initTransitionLocker_);
+			initTransitions_.push_back(barrier);
+		}
+	}
+
+	// SRV
+	if (HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE)) {
+		is->srvIndex = allocationHandler_->AllocateResourceIndex();
+		if (is->srvIndex < 0) {
+			FatalError("バインドレスヒープの空きがありません。");
+		}
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format = resDesc.Format;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		if (desc->type == TextureDesc::Type::TEXTURE_2D && desc->arraySize == 1) {
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.MipLevels = desc->mipLevels;
+
+		} else {
+			// TODO: 1D / 3D / 配列 / キューブ
+			Log::Error("この種類のテクスチャの SRV にはまだ対応していません。");
+			return false;
+		}
+
+		device_->CreateShaderResourceView(is->resource.Get(), &srvDesc, GetBindlessCpuHandle(is->srvIndex));
+	}
+
+	// RTV / DSV
+	if (HasFlag(desc->bindFlags, BindFlag::RENDER_TARGET)) {
+		is->rtv = allocationHandler_->descriptorRtv.Allocate();
+		device_->CreateRenderTargetView(is->resource.Get(), nullptr, is->rtv);
+	}
+	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL)) {
+		is->dsv = allocationHandler_->descriptorDsv.Allocate();
+		device_->CreateDepthStencilView(is->resource.Get(), nullptr, is->dsv);
+	}
+
+	return true;
 }
 
 
@@ -1012,6 +1254,24 @@ void ou::GraphicsDevice_DX12::SetName(GpuResource *resource, std::string_view na
 }
 
 
+int ou::GraphicsDevice_DX12::GetDescriptorIndex(const GpuResource *resource, ViewType type, int subresource) const {
+	(void)subresource; // TODO: ミップやスライスごとのビュー
+
+	if (!resource || !resource->IsValid()) { return -1; }
+
+	// TODO: UAV
+	const auto *is = ToInternal(resource);
+	switch (type) {
+		case ViewType::SRV:
+			return is->srvIndex;
+		default:
+			return -1;
+	}
+
+	return 0;
+}
+
+
 CommandList ou::GraphicsDevice_DX12::BeginCommandList(QueueType queue) {
 	HRESULT hr{};
 
@@ -1067,6 +1327,13 @@ CommandList ou::GraphicsDevice_DX12::BeginCommandList(QueueType queue) {
 		ID3D12DescriptorHeap *heaps[] = {descriptorHeapRes_.Get()};
 		list->SetDescriptorHeaps(_countof(heaps), heaps);
 		list->SetGraphicsRootSignature(rootSignature_.Get());
+
+		// Texture をまとめて遷移させる
+		std::scoped_lock lock(initTransitionLocker_);
+		if (!initTransitions_.empty()) {
+			list->ResourceBarrier(static_cast<UINT>(initTransitions_.size()), initTransitions_.data());
+			initTransitions_.clear();
+		}
 	}
 
 	return cmd;
@@ -1189,9 +1456,85 @@ void ou::GraphicsDevice_DX12::RenderPassBegin(const SwapChain *swapChain, Comman
 
 
 void ou::GraphicsDevice_DX12::RenderPassBegin(const RenderPassImage *images, uint32_t imageCount, CommandList cmd) {
-	(void)images;
-	(void)imageCount;
-	(void)cmd;
+	auto &cmdDX12 = GetCommandList(cmd);
+	auto *list = cmdDX12.GetGraphicsCommandList();
+
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[8]{};
+	UINT rtCount = 0;
+	D3D12_CPU_DESCRIPTOR_HANDLE dsv{};
+	bool hasDsv = false;
+
+	std::vector<D3D12_RESOURCE_BARRIER> beginBarriers;
+
+	// バリアの準備と、 RTV / DSV の収集
+	for (uint32_t i = 0; i < imageCount; i++) {
+		const auto &image = images[i];
+		auto *is = ToInternal(image.texture);
+
+		D3D12_RESOURCE_BARRIER barrier{};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Transition.pResource = is->resource.Get();
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES; // TODO: image.subresources
+
+		// before -> layout
+		const auto before = ConvertResourceState(image.layoutBefore);
+		const auto during = ConvertResourceState(image.layout);
+		const auto after = ConvertResourceState(image.layoutAfter);
+		if (before != during) {
+			barrier.Transition.StateBefore = before;
+			barrier.Transition.StateAfter = during;
+			beginBarriers.push_back(barrier);
+		}
+		// layout -> after
+		if (during != after) {
+			barrier.Transition.StateBefore = during;
+			barrier.Transition.StateAfter = after;
+			cmdDX12.renderPassBarriersEnd.push_back(barrier);
+		}
+
+		switch (image.type) {
+			case RenderPassImage::Type::RENDERTARGET:
+				rtvs[rtCount++] = is->rtv;
+				break;
+			case RenderPassImage::Type::DEPTH_STENCIL:
+				dsv = is->dsv;
+				hasDsv = true;
+				break;
+		}
+	}
+
+	if (!beginBarriers.empty()) {
+		list->ResourceBarrier(static_cast<UINT>(beginBarriers.size()), beginBarriers.data());
+	}
+
+	list->OMSetRenderTargets(rtCount, rtvs, FALSE, hasDsv ? &dsv : nullptr);
+
+	// LoadOp::CLEAR をクリアする
+	for (uint32_t i = 0; i < imageCount; i++) {
+		const auto &image = images[i];
+		if (image.loadOp != RenderPassImage::LoadOp::CLEAR) { continue; }
+
+		const auto &texDesc = image.texture->desc;
+		auto *is = ToInternal(image.texture);
+
+		switch (image.type) {
+			case RenderPassImage::Type::RENDERTARGET:
+				list->ClearRenderTargetView(is->rtv, texDesc.clear.color, 0, nullptr);
+				break;
+
+			case RenderPassImage::Type::DEPTH_STENCIL:
+				{
+					auto flags = D3D12_CLEAR_FLAG_DEPTH;
+					if (texDesc.format == Format::D24_UNORM_S8_UINT) {
+						flags |= D3D12_CLEAR_FLAG_STENCIL;
+					}
+					list->ClearDepthStencilView(
+						is->dsv, flags, texDesc.clear.depthStencil.depth,
+						static_cast<UINT8>(texDesc.clear.depthStencil.stencil), 0, nullptr);
+					break;
+				}
+		}
+	}
 }
 
 
@@ -1204,7 +1547,6 @@ void ou::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
 			static_cast<UINT>(barriers.size()), barriers.data());
 		barriers.clear();
 	}
-	(void)cmd;
 }
 
 
@@ -1334,15 +1676,158 @@ void ou::GraphicsDevice_DX12::DrawIndexedInstanced(uint32_t indexCount, uint32_t
 
 
 void ou::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) {
-	(void)barriers;
-	(void)numBarriers;
-	(void)cmd;
+	std::vector<D3D12_RESOURCE_BARRIER> d3dBarriers;
+	d3dBarriers.reserve(numBarriers);
+
+	for (uint32_t i = 0; i < numBarriers; i++) {
+		const auto &barrier = barriers[i];
+		D3D12_RESOURCE_BARRIER d3d{};
+
+		switch (barrier.type) {
+			case GpuBarrier::Type::MEMORY:
+				{
+					d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+					d3d.UAV.pResource = barrier.memory.resource
+											? ToInternal(barrier.memory.resource)->resource.Get()
+											: nullptr;
+					break;
+				}
+			case GpuBarrier::Type::IMAGE:
+				{
+					const auto *texture = barrier.image.texture;
+					const auto before = ConvertResourceState(barrier.image.layoutBefore);
+					const auto after = ConvertResourceState(barrier.image.layoutAfter);
+					if (before == after) { continue; }
+
+					d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+					d3d.Transition.pResource = ToInternal(texture)->resource.Get();
+					d3d.Transition.StateBefore = before;
+					d3d.Transition.StateAfter = after;
+					if (barrier.image.mip < 0 || barrier.image.slice < 0) {
+						d3d.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+					} else {
+						d3d.Transition.Subresource = barrier.image.mip + barrier.image.slice * texture->desc.mipLevels;
+					}
+
+					break;
+				}
+			case GpuBarrier::Type::BUFFER:
+				{
+					const auto before = ConvertResourceState(barrier.buffer.layoutBefore);
+					const auto after = ConvertResourceState(barrier.buffer.layoutAfter);
+					if (before == after) { continue; }
+
+					d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+					d3d.Transition.pResource = ToInternal(barrier.buffer.buffer)->resource.Get();
+					d3d.Transition.StateBefore = before;
+					d3d.Transition.StateAfter = after;
+					d3d.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+					break;
+				}
+		}
+
+		d3dBarriers.push_back(d3d);
+	}
+
+	if (!d3dBarriers.empty()) {
+		GetCommandList(cmd).GetGraphicsCommandList()->ResourceBarrier(
+			static_cast<UINT>(d3dBarriers.size()), d3dBarriers.data());
+	}
 }
 
 
 GraphicsDevice_DX12::CommandList_DX12 &ou::GraphicsDevice_DX12::GetCommandList(CommandList cmd) const {
 	ASSERT(cmd.IsValid());
 	return *static_cast<CommandList_DX12 *>(cmd.internalState);
+}
+
+
+GraphicsDevice::GpuLinearAllocator &ou::GraphicsDevice_DX12::GetFrameAllocator(CommandList cmd) {
+	auto &cmdDX12 = GetCommandList(cmd);
+	return cmdDX12.frameAllocators[cmdDX12.bufferIndex];
+}
+
+
+D3D12_CPU_DESCRIPTOR_HANDLE ou::GraphicsDevice_DX12::GetBindlessCpuHandle(int index) const {
+	auto handle = descriptorHeapRes_->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += static_cast<SIZE_T>(index) * resDescriptorSize_;
+	return handle;
+}
+
+
+
+void ou::GraphicsDevice_DX12::DescriptorAllocator::Initialize(ID3D12Device *d3dDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorHeapBlock) {
+	device = d3dDevice;
+	desc.Type = type;
+	desc.NumDescriptors = numDescriptorHeapBlock;
+	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; // シェーダ不可視
+	descriptorSize = device->GetDescriptorHandleIncrementSize(type);
+}
+
+
+D3D12_CPU_DESCRIPTOR_HANDLE ou::GraphicsDevice_DX12::DescriptorAllocator::Allocate() {
+	std::scoped_lock lock(locker);
+
+	if (freeList.empty()) {
+		BlockAllocate();
+	}
+
+	const auto handle = freeList.back();
+	freeList.pop_back();
+	return handle;
+}
+
+
+void ou::GraphicsDevice_DX12::DescriptorAllocator::Free(D3D12_CPU_DESCRIPTOR_HANDLE handle) {
+	std::scoped_lock lock(locker);
+	freeList.push_back(handle);
+}
+
+
+void ou::GraphicsDevice_DX12::DescriptorAllocator::BlockAllocate() {
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> &heap = heaps.emplace_back();
+	auto hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap));
+	CheckHResult(hr, "ディスクリプタヒープの作成");
+
+	const auto cpuStart = heap->GetCPUDescriptorHandleForHeapStart();
+	for (UINT i = 0; i < desc.NumDescriptors; i++) {
+		auto handle = cpuStart;
+		handle.ptr += static_cast<SIZE_T>(i) * descriptorSize;
+		freeList.push_back(handle);
+	}
+}
+
+
+void ou::GraphicsDevice_DX12::AllocationHandler::Update(uint64_t currentFrameCount, uint32_t bufferCount) {
+	std::scoped_lock lock(destroyLocker);
+	frameCount = currentFrameCount;
+
+	auto release = [&](auto &destroyer) {
+		while (!destroyer.empty() && destroyer.front().second + bufferCount < frameCount) {
+			destroyer.pop_front();
+		}
+	};
+	release(destroyerResources);
+	release(destroyerPipelines);
+
+	// 番号は破棄せず、フリーリストに戻す
+	while (!destroyBindlessRes.empty() && destroyBindlessRes.front().second + bufferCount < frameCount) {
+		freeBindlessRes.push_back(destroyBindlessRes.front().first);
+		destroyBindlessRes.pop_front();
+	}
+}
+
+
+int ou::GraphicsDevice_DX12::AllocationHandler::AllocateResourceIndex() {
+	std::scoped_lock lock(destroyLocker);
+
+	// プールに空きがなければ -1 を返す
+	if (freeBindlessRes.empty()) { return -1; }
+
+	const auto index = freeBindlessRes.back();
+	freeBindlessRes.pop_back();
+	return index;
 }
 
 
@@ -1358,6 +1843,7 @@ void ou::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBufferIndex) {
 	bufferIndex = newBufferIndex;
 	swapChains.clear();
 	renderPassBarriersEnd.clear();
+	frameAllocators[newBufferIndex].Reset();
 	activePso = nullptr;
 }
 
@@ -1369,20 +1855,6 @@ ID3D12CommandAllocator *ou::GraphicsDevice_DX12::CommandList_DX12::GetCommandAll
 
 ID3D12GraphicsCommandList *ou::GraphicsDevice_DX12::CommandList_DX12::GetGraphicsCommandList() const {
 	return lists[queue].Get();
-}
-
-
-void ou::GraphicsDevice_DX12::AllocationHandler::Update(uint64_t currentFrameCount, uint32_t bufferCount) {
-	std::scoped_lock lock(destroyLocker);
-	frameCount = currentFrameCount;
-
-	auto release = [&](auto &destroyer) {
-		while (!destroyer.empty() && destroyer.front().second + bufferCount < frameCount) {
-			destroyer.pop_front();
-		}
-	};
-	release(destroyerResources);
-	release(destroyerPipelines);
 }
 
 

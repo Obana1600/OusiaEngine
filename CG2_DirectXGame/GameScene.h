@@ -1,7 +1,6 @@
 #pragma once
 
-#include "3d/Camera.h"
-#include "3d/DebugCamera.h"
+#include "Graphics/GraphicsTypes.h"
 
 
 namespace ou {
@@ -13,18 +12,15 @@ public: // メンバ関数
 
 	void Update();
 
-	void Draw() const;
+	void Draw(CommandList cmd) const;
 
 
 private: // メンバ変数
 
-	// camera
-	DebugCamera camera_{};
 
 
 private: // メンバ関数
 
-	void OnImGui();
 };
 
 } // namespace ou
