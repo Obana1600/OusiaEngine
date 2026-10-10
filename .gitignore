@@ -373,5 +373,8 @@ Dumps/
 # imgui
 imgui.ini
 
+# output
+Generated/
+
 # markdown
 *.md
