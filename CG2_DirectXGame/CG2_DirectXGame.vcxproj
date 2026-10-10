@@ -161,7 +161,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include=".editorconfig" />
     <None Include="resources\shader\Blit.hlsli" />
     <None Include="resources\shader\Textured.hlsli" />
     <None Include="resources\shader\Triangle.hlsli">

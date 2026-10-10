@@ -39,7 +39,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".editorconfig" />
     <None Include="resources\shader\Sprite.hlsli">
       <Filter>shader</Filter>
     </None>
