@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Develop" />
+    <BuildType Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <!-- 先頭のプロジェクトが既定のスタートアッププロジェクトになるので、Game を最初に置く -->
+  <Project Path="Game/Game.vcxproj" Id="6f97b06d-51b8-4807-bdc0-8a6e53fe087a" />
+  <Project Path="Engine/Engine.vcxproj" Id="cb6d32a0-4551-4278-8db9-3352e4b67748" />
+  <Folder Name="/External/">
+    <Project Path="External/DirectXTex/DirectXTex_Desktop_2022_Win10.vcxproj" Id="371b9fa9-4c90-4ac6-a123-aced756d6c77" />
+  </Folder>
+</Solution>

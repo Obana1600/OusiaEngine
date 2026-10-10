@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a05}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineAssets">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineAssets\Shader">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\imgui">
+      <UniqueIdentifier>{0f1d6a3e-2c4b-4b8e-9a51-6d2f7c1e0a09}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core\Assert.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\BuildInfo.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\CrashHandler.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\Fatal.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\Log.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\Paths.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Engine.h" />
+    <ClInclude Include="Graphics\DXCompiler.h"><Filter>Graphics</Filter></ClInclude>
+    <ClInclude Include="Graphics\GraphicsDevice.h"><Filter>Graphics</Filter></ClInclude>
+    <ClInclude Include="Graphics\GraphicsDevice_DX12.h"><Filter>Graphics</Filter></ClInclude>
+    <ClInclude Include="Graphics\GraphicsTypes.h"><Filter>Graphics</Filter></ClInclude>
+    <ClInclude Include="Input\InputSystem.h"><Filter>Input</Filter></ClInclude>
+    <ClInclude Include="Math\Mathf.h"><Filter>Math</Filter></ClInclude>
+    <ClInclude Include="Math\Matrix4x4.h"><Filter>Math</Filter></ClInclude>
+    <ClInclude Include="Math\Quaternion.h"><Filter>Math</Filter></ClInclude>
+    <ClInclude Include="Math\Vector2.h"><Filter>Math</Filter></ClInclude>
+    <ClInclude Include="Math\Vector3.h"><Filter>Math</Filter></ClInclude>
+    <ClInclude Include="Math\Vector4.h"><Filter>Math</Filter></ClInclude>
+    <ClInclude Include="Platform\Window.h"><Filter>Platform</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Core\CrashHandler.cpp"><Filter>Core</Filter></ClCompile>
+    <ClCompile Include="Core\Fatal.cpp"><Filter>Core</Filter></ClCompile>
+    <ClCompile Include="Core\Log.cpp"><Filter>Core</Filter></ClCompile>
+    <ClCompile Include="Core\Paths.cpp"><Filter>Core</Filter></ClCompile>
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="Graphics\DXCompiler.cpp"><Filter>Graphics</Filter></ClCompile>
+    <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp"><Filter>Graphics</Filter></ClCompile>
+    <ClCompile Include="Input\InputSystem.cpp"><Filter>Input</Filter></ClCompile>
+    <ClCompile Include="Math\Mathf.cpp"><Filter>Math</Filter></ClCompile>
+    <ClCompile Include="Math\Matrix4x4.cpp"><Filter>Math</Filter></ClCompile>
+    <ClCompile Include="Math\Quaternion.cpp"><Filter>Math</Filter></ClCompile>
+    <ClCompile Include="Math\Vector2.cpp"><Filter>Math</Filter></ClCompile>
+    <ClCompile Include="Math\Vector3.cpp"><Filter>Math</Filter></ClCompile>
+    <ClCompile Include="Math\Vector4.cpp"><Filter>Math</Filter></ClCompile>
+    <ClCompile Include="Platform\Window.cpp"><Filter>Platform</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_demo.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_draw.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_tables.cpp"><Filter>External\imgui</Filter></ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_widgets.cpp"><Filter>External\imgui</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\Blit.hlsli"><Filter>EngineAssets\Shader</Filter></None>
+    <None Include="EngineAssets\Shader\Blit.PS.hlsl"><Filter>EngineAssets\Shader</Filter></None>
+    <None Include="EngineAssets\Shader\Blit.VS.hlsl"><Filter>EngineAssets\Shader</Filter></None>
+  </ItemGroup>
+</Project>
