@@ -52,20 +52,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">
-    <OutDir>$(MSBuildThisFileDirectory)..\..\Generated\Outputs\$(Configuration)\</OutDir>
-    <IntDir>$(MSBuildThisFileDirectory)..\..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(MSBuildThisFileDirectory)..\..\..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)..\..\..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>DirectXTex</TargetName>
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|X64'">
-    <OutDir>$(MSBuildThisFileDirectory)..\..\Generated\Outputs\$(Configuration)\</OutDir>
-    <IntDir>$(MSBuildThisFileDirectory)..\..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(MSBuildThisFileDirectory)..\..\..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)..\..\..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>DirectXTex</TargetName>
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|X64'">
-    <OutDir>$(MSBuildThisFileDirectory)..\..\Generated\Outputs\$(Configuration)\</OutDir>
-    <IntDir>$(MSBuildThisFileDirectory)..\..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(MSBuildThisFileDirectory)..\..\..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)..\..\..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>DirectXTex</TargetName>
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>

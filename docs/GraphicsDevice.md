@@ -17,7 +17,7 @@ D3D12 の呼び出しはすべて `GraphicsDevice` に集め、描画命令は `
 
 エージェントがファイルを編集するのは、このドキュメントの更新と、ユーザーが明示的に頼んだときだけ。
 
-例外として、**検証用の `main.cpp`（テストコード）はエージェントが書く**（2026-10-10 にユーザーが依頼）。写経するのは `Engine/Graphics/` 以下などのエンジン本体のコードで、`main.cpp` はヘルパー関数（`CompileShader` / `LoadTexture` / `CreateSceneTargets` / `CreateStaticBuffer`）に分けて読みやすく保つ。書いたらビルドし、exe を数秒起動して `Generated/Outputs/Debug/Logs/` の最新ログに D3D12 のエラーがないことを確認する。
+例外として、**検証用の `main.cpp`（テストコード）はエージェントが書く**（2026-10-10 にユーザーが依頼）。写経するのは `Engine/Graphics/` 以下などのエンジン本体のコードで、`main.cpp` はヘルパー関数（`CompileShader` / `LoadTexture` / `CreateSceneTargets` / `CreateStaticBuffer`）に分けて読みやすく保つ。書いたらビルドし、exe を数秒起動して、リポジトリのルートの `Generated/Outputs/Debug/Logs/` の最新ログに D3D12 のエラーがないことを確認する。
 
 ## 命名と正の情報源
 
@@ -51,7 +51,7 @@ D3D12 の呼び出しはすべて `GraphicsDevice` に集め、描画命令は `
 - `Game/`（`Game.vcxproj`、exe）… `main.cpp`、`GameScene`、`Assets/`（旧 `resources/`）、`UserSettings/`
 - `Legacy/`（**ビルド対象外**）… `2d/`（ImGuiManager / Sprite）、`3d/`、`base/`（DirectXCommon / TextureManager / CreateBufferResource）、`Graphics/`（旧 RHI クラス）、`shader/`（Sprite / Model の旧シェーダと、Phase 3・4 の検証用 Triangle / Textured）
 - `External/` … DirectXTex（`Engine` が参照し、`Engine.lib` にまとめてリンクされる）、imgui（`Engine.vcxproj` でコンパイル）、spdlog
-- `Generated/` … ビルド出力。`Paths.cpp` が exe の場所から親をたどってアセットを探すので、`CG_DirectXGame/` の中に置く
+- `Generated/` … ビルド出力。ユーザーの希望で、リポジトリのルート（`.git` と同じ層）に置く。出力先は `Build/Common.props` だけで決める。エディタ版はアセットを `SOURCE_DIR`（ビルド時に埋め込む `CG_DirectXGame/` の絶対パス）から探すので、出力先の場所に依存しない
 - `Build/Common.props` … 全プロジェクト共通の設定。`#include` は `Engine/` からの相対パス（例: `"Graphics/GraphicsDevice.h"`）、外部ライブラリは `External/` からの相対パス（例: `"imgui/imgui.h"`）
 - `DXCompiler::CompileShader` はフルパスを受け取る。`Engine.cpp` は `FindEngineAssetsFolder() / "Shader" / ファイル名` を渡す
 

@@ -145,6 +145,7 @@
     <Import Project="..\Build\Common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <!-- 出力先は Build/Common.props で決める（リポジトリのルートの Generated） -->
   <!-- 参照しているライブラリ（DirectXTex）を Engine.lib にまとめる。静的ライブラリではデフォルトで無効 -->
   <ItemDefinitionGroup>
     <ProjectReference>

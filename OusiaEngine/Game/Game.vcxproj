@@ -72,6 +72,7 @@
     <Import Project="..\Build\Common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <!-- 出力先は Build/Common.props で決める（リポジトリのルートの Generated） -->
   <ItemDefinitionGroup>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,8 +109,8 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <PostBuildEvent>
       <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
-xcopy /E /I /Y /Q "$(RepoRoot)Engine\EngineAssets" "$(TargetDir)EngineAssets"
-xcopy /E /I /Y /Q "$(RepoRoot)Game\Assets" "$(TargetDir)Assets"</Command>
+xcopy /E /I /Y /Q "$(SourceRoot)Engine\EngineAssets" "$(TargetDir)EngineAssets"
+xcopy /E /I /Y /Q "$(SourceRoot)Game\Assets" "$(TargetDir)Assets"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

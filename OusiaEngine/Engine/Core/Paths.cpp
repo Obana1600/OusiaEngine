@@ -8,6 +8,28 @@
 #pragma comment(lib, "Shell32.lib")
 
 
+namespace {
+
+// エディタ版はソースフォルダの中を直接、それ以外は exe の隣を見る
+std::optional<std::filesystem::path> FindFolder(const wchar_t *editorRelative, const wchar_t *shippingRelative) {
+#ifdef WITH_EDITOR
+	(void)shippingRelative;
+	auto candidate = std::filesystem::path(ou::Utf8ToWide(SOURCE_DIR)) / editorRelative;
+#else
+	(void)editorRelative;
+	auto candidate = ou::ExecutableDirectory() / shippingRelative;
+#endif
+
+	if (std::filesystem::is_directory(candidate)) {
+		return candidate;
+	}
+	return std::nullopt;
+}
+
+} // namespace
+
+
+
 std::wstring ou::Utf8ToWide(std::string_view utf8) {
 	if (utf8.empty()) {
 		return {};
@@ -73,48 +95,12 @@ std::filesystem::path ou::ExecutableDirectory() {
 
 
 std::optional<std::filesystem::path> ou::FindAssetsFolder() {
-	const auto exeDir = ExecutableDirectory();
-
-#ifdef WITH_EDITOR
-	for (auto dir = exeDir;; dir = dir.parent_path()) {
-		auto candidate = dir / L"Game" / L"Assets";
-		if (std::filesystem::is_directory(candidate)) {
-			return candidate;
-		}
-		if (dir == dir.root_path()) {
-			return std::nullopt;
-		}
-	}
-#else
-	auto candidate = exeDir / L"Assets";
-	if (std::filesystem::is_directory(candidate)) {
-		return candidate;
-	}
-	return std::nullopt;
-#endif
+	return FindFolder(L"Game/Assets", L"Assets");
 }
 
 
 std::optional<std::filesystem::path> ou::FindEngineAssetsFolder() {
-	const auto exeDir = ExecutableDirectory();
-
-#ifdef WITH_EDITOR
-	for (auto dir = exeDir;; dir = dir.parent_path()) {
-		auto candidate = dir / L"Engine" / L"EngineAssets";
-		if (std::filesystem::is_directory(candidate)) {
-			return candidate;
-		}
-		if (dir == dir.root_path()) {
-			return std::nullopt;
-		}
-	}
-#else
-	auto candidate = exeDir / L"EngineAssets";
-	if (std::filesystem::is_directory(candidate)) {
-		return candidate;
-	}
-	return std::nullopt;
-#endif
+	return FindFolder(L"Engine/EngineAssets", L"EngineAssets");
 }
 
 
