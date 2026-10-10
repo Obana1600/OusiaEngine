@@ -1,17 +1,21 @@
-name: DebugBuild
+name: Build
 
 on:
   push:
-    branches: 
+    branches:
       - master
 
 env:
   SOLUTION_FILE_PATH: OusiaEngine/OusiaEngine.slnx
-  CONFIGURATION: Debug
 
 jobs:
   build:
     runs-on: windows-2025-vs2026
+
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
 
     steps:
       - name: Checkout
@@ -24,4 +28,4 @@ jobs:
 
       - name: Build
         run: |
-          msbuild ${{env.SOLUTION_FILE_PATH}} /m /p:Configuration=${{env.CONFIGURATION}} /p:Platform=x64
+          msbuild ${{env.SOLUTION_FILE_PATH}} /m /p:Configuration=${{matrix.configuration}} /p:Platform=x64
