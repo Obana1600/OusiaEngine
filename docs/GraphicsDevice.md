@@ -44,14 +44,14 @@ D3D12 の呼び出しはすべて `GraphicsDevice` に集め、描画命令は `
 
 ## フォルダ構成（2026-10-10 に CG2_DirectXGame リポジトリと同じ形に整理）
 
-リポジトリのルート（`C:\CG_DirectXGame`）には `.git` / `.gitignore` / `.clang-format` / `.editorconfig` / `CLAUDE.md` / `docs/` だけを置き、ソリューションとソースは `CG_DirectXGame/` に入れる（ユーザーの希望）。以下のパスは `CG_DirectXGame/` からの相対パス。
+リポジトリのルート（`C:\CG_DirectXGame`）には `.git` / `.gitignore` / `.clang-format` / `.editorconfig` / `CLAUDE.md` / `docs/` だけを置き、ソリューションとソースは `OusiaEngine/` に入れる（ユーザーの希望）。以下のパスは `OusiaEngine/` からの相対パス。
 
-- `CG_DirectXGame.slnx` … `Engine` / `Game` / `External/DirectXTex` の 3 プロジェクト
+- `OusiaEngine.slnx` … `Engine` / `Game` / `External/DirectXTex` の 3 プロジェクト
 - `Engine/`（`Engine.vcxproj`、静的ライブラリ）… `Engine.h/.cpp`、`Core/`、`Graphics/`（`GraphicsTypes` / `GraphicsDevice` / `GraphicsDevice_DX12` / `DXCompiler`）、`Math/`、`Input/`、`Platform/`（`Window`）、`EngineAssets/Shader/`（`Blit.*`）
 - `Game/`（`Game.vcxproj`、exe）… `main.cpp`、`GameScene`、`Assets/`（旧 `resources/`）、`UserSettings/`
 - `Legacy/`（**ビルド対象外**）… `2d/`（ImGuiManager / Sprite）、`3d/`、`base/`（DirectXCommon / TextureManager / CreateBufferResource）、`Graphics/`（旧 RHI クラス）、`shader/`（Sprite / Model の旧シェーダと、Phase 3・4 の検証用 Triangle / Textured）
 - `External/` … DirectXTex（`Engine` が参照し、`Engine.lib` にまとめてリンクされる）、imgui（`Engine.vcxproj` でコンパイル）、spdlog
-- `Generated/` … ビルド出力。ユーザーの希望で、リポジトリのルート（`.git` と同じ層）に置く。出力先は `Build/Common.props` だけで決める。エディタ版はアセットを `SOURCE_DIR`（ビルド時に埋め込む `CG_DirectXGame/` の絶対パス）から探すので、出力先の場所に依存しない
+- `Generated/` … ビルド出力。ユーザーの希望で、リポジトリのルート（`.git` と同じ層）に置く。出力先は `Build/Common.props` だけで決める。エディタ版はアセットを `SOURCE_DIR`（ビルド時に埋め込む `OusiaEngine/` の絶対パス）から探すので、出力先の場所に依存しない
 - `Build/Common.props` … 全プロジェクト共通の設定。`#include` は `Engine/` からの相対パス（例: `"Graphics/GraphicsDevice.h"`）、外部ライブラリは `External/` からの相対パス（例: `"imgui/imgui.h"`）
 - `DXCompiler::CompileShader` はフルパスを受け取る。`Engine.cpp` は `FindEngineAssetsFolder() / "Shader" / ファイル名` を渡す
 
