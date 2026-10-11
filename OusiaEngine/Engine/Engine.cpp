@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
+#include "Graphics/DXCompiler.h"
 
 #include <thread>
 #include <format>
@@ -23,23 +24,6 @@ const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0f / 65.0f));
 struct BlitConstants {
 	uint32_t sourceIndex;
 };
-
-// Engine/EngineAssets/Shader/ の HLSL をコンパイルして Shader を作る
-Shader CompileShader(GraphicsDevice &device, const std::wstring &fileName, ShaderStage stage) {
-	const auto engineAssets = FindEngineAssetsFolder();
-	if (!engineAssets) {
-		FatalError("EngineAssets フォルダが見つかりません。");
-	}
-
-	const auto *profile = (stage == ShaderStage::VS) ? L"vs_6_6" : L"ps_6_6";
-	auto blob = DXCompiler::GetInstance()->CompileShader((*engineAssets / L"Shader" / fileName).wstring(), profile);
-
-	Shader shader;
-	if (!device.CreateShader(stage, blob->GetBufferPointer(), blob->GetBufferSize(), &shader)) {
-		FatalError("シェーダの作成に失敗しました。");
-	}
-	return shader;
-}
 
 } // namespace
 
@@ -73,8 +57,8 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 	// blit
 	DXCompiler::GetInstance()->Initialize();
-	blitVs_ = CompileShader(*device_, L"Blit.VS.hlsl", ShaderStage::VS);
-	blitPs_ = CompileShader(*device_, L"Blit.PS.hlsl", ShaderStage::PS);
+	blitVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.VS.hlsl", ShaderStage::VS);
+	blitPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.PS.hlsl", ShaderStage::PS);
 
 	PipelineStateDesc blitPsoDesc{};
 	blitPsoDesc.vs = &blitVs_;
@@ -95,6 +79,8 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 void ou::Engine::Finalize() {
 	device_->WaitForGpu();
+
+	TextureManager::GetInstance()->Finalize();
 
 	timeEndPeriod(1);
 

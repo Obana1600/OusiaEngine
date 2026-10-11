@@ -1,16 +1,17 @@
 #pragma once
 
 #include "Core/Log.h"
+#include "Graphics/DXCompiler.h"
 #include "Graphics/GraphicsDevice_DX12.h"
 #include "Graphics/GraphicsTypes.h"
-#include "Platform/Window.h"
-#include "Graphics/DXCompiler.h"
+#include "Graphics/TextureManager.h"
 #include "Input/InputSystem.h"
+#include "Platform/Window.h"
 
-#include <cstdint>
-#include <string>
 #include <chrono>
+#include <cstdint>
 #include <memory>
+#include <string>
 
 
 namespace ou {

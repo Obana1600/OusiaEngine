@@ -1,10 +1,13 @@
 #pragma once
 
-#include <wrl.h>
+#include "Graphics/GraphicsTypes.h"
 
-#include <dxcapi.h>
-#include <string>
+#include <wrl/client.h>
+#include <dxcapi.h> // wrl/client.h より後ろに置く
+#include <string_view>
 
+
+namespace ou {
 
 class DXCompiler {
 public: // 静的メンバ関数
@@ -16,11 +19,7 @@ public: // メンバ関数
 
 	void Initialize();
 
-	// filePath はフルパス（#include はこのファイルのフォルダから探される）
-	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
-		const std::wstring &filePath,
-		const wchar_t *profile
-	);
+	Shader CompileEngineShader(std::wstring_view fileName, ShaderStage stage);
 
 
 private: // メンバ変数
@@ -32,8 +31,16 @@ private: // メンバ変数
 
 private: // メンバ関数
 
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShaderInternal(
+		std::wstring_view filePath, const wchar_t *profile);
+
+
+private: // コンストラクタ
+
 	DXCompiler() = default;
 	~DXCompiler() = default;
 	DXCompiler(const DXCompiler &) = delete;
 	DXCompiler operator=(const DXCompiler &) = delete;
 };
+
+} // namespace ou

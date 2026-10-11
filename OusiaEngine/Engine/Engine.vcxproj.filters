@@ -16,54 +16,167 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core\Assert.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Core\BuildInfo.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Core\CrashHandler.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Core\Fatal.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Core\Log.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Core\Paths.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Engine.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Graphics\DXCompiler.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Graphics\GraphicsDevice.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Graphics\GraphicsDevice_DX12.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Graphics\GraphicsTypes.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Input\InputSystem.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Math\Mathf.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Math\Matrix4x4.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Math\Quaternion.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Math\Vector2.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Math\Vector3.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Math\Vector4.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
-    <ClInclude Include="Platform\Window.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="Core\Assert.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\BuildInfo.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CrashHandler.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Fatal.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Log.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Paths.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DXCompiler.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsDevice.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsDevice_DX12.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsTypes.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\InputSystem.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Mathf.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix4x4.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quaternion.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector2.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector3.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector4.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Window.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\TextureManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Core\CrashHandler.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Core\Fatal.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Core\Log.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Core\Paths.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Engine.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Graphics\DXCompiler.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Input\InputSystem.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Math\Mathf.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Math\Matrix4x4.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Math\Quaternion.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Math\Vector2.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Math\Vector3.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Math\Vector4.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="Platform\Window.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_demo.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_draw.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_tables.cpp"><Filter>ソース ファイル</Filter></ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_widgets.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="Core\CrashHandler.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Fatal.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Log.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Paths.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\DXCompiler.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\InputSystem.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Mathf.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Matrix4x4.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Quaternion.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector2.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector3.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector4.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\Window.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_demo.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_draw.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_tables.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_widgets.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TextureManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Sprite.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="EngineAssets\Shader\Blit.hlsli"><Filter>リソース ファイル</Filter></None>
-    <None Include="EngineAssets\Shader\Blit.PS.hlsl"><Filter>リソース ファイル</Filter></None>
-    <None Include="EngineAssets\Shader\Blit.VS.hlsl"><Filter>リソース ファイル</Filter></None>
+    <None Include="EngineAssets\Shader\Blit.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Blit.PS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Blit.VS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Sprite.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="EngineAssets\Shader\Sprite.VS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </FxCompile>
+    <FxCompile Include="EngineAssets\Shader\Sprite.PS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

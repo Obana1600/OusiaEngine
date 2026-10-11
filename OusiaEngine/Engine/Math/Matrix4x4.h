@@ -68,6 +68,8 @@ public: // 静的メンバ変数
 
 public: // 静的メンバ関数
 
+	// TODO: Transform の追加
+
 	static Matrix4x4 Translate(const Vector3 &v);
 
 	static Matrix4x4 Scale(const Vector3 &v);
