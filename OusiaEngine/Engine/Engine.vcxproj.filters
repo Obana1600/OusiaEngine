@@ -1,180 +1,194 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- VS 既定の 3 つのフィルタだけを使う。Extensions により、プロジェクトに追加したファイルは拡張子で自動的に振り分けられる -->
+  <!-- フィルタは実フォルダと同じ構成にする（..\External は External に置く） -->
   <ItemGroup>
-    <Filter Include="ソース ファイル">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="2D">
+      <UniqueIdentifier>{07cff000-59f5-4dcf-9c83-88216d3b85d6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="Core">
+      <UniqueIdentifier>{28a31847-0794-423b-a770-2258074998c2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="リソース ファイル">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms;hlsl;hlsli</Extensions>
+    <Filter Include="EngineAssets">
+      <UniqueIdentifier>{20e1016f-6c1e-44a6-b4a0-113d387403cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineAssets\Shader">
+      <UniqueIdentifier>{2f6886a7-07b5-463d-9b5a-d1fcbb818e5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{d53674b1-bff9-4695-b913-dc982aa2153c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\imgui">
+      <UniqueIdentifier>{6d123aea-a77f-4092-9f92-56d13df01fd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{5c64abbf-ea94-4b14-9416-9590d41e84fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{f55ca4d9-1b86-4c7a-961e-df876974055d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{a87f6d3d-39b4-4c92-bec4-ddb0171429d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{2075ac27-d599-4be7-aaa9-3a2f8c02f6d1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\BuildInfo.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\CrashHandler.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Fatal.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Log.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Paths.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
+    <ClInclude Include="Engine.h" />
     <ClInclude Include="Graphics\DXCompiler.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GraphicsDevice.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GraphicsDevice_DX12.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GraphicsTypes.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Input\InputSystem.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="Math\Mathf.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Math\Matrix4x4.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Math\Quaternion.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Math\Vector2.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Math\Vector3.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Math\Vector4.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Platform\Window.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\TextureManager.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="2D\Sprite.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>2D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\CrashHandler.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Fatal.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Log.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Paths.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Graphics\DXCompiler.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Input\InputSystem.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="Math\Mathf.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Math\Matrix4x4.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Math\Quaternion.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Math\Vector2.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Math\Vector3.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Math\Vector4.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Platform\Window.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_demo.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_draw.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_tables.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_widgets.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\TextureManager.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="2D\Sprite.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>2D</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_demo.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_draw.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_tables.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\External\imgui\imgui_widgets.cpp">
+      <Filter>External\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli">
-      <Filter>リソース ファイル</Filter>
+      <Filter>EngineAssets\Shader</Filter>
     </None>
     <None Include="EngineAssets\Shader\Blit.PS.hlsl">
-      <Filter>リソース ファイル</Filter>
+      <Filter>EngineAssets\Shader</Filter>
     </None>
     <None Include="EngineAssets\Shader\Blit.VS.hlsl">
-      <Filter>リソース ファイル</Filter>
+      <Filter>EngineAssets\Shader</Filter>
     </None>
     <None Include="EngineAssets\Shader\Sprite.hlsli">
-      <Filter>リソース ファイル</Filter>
+      <Filter>EngineAssets\Shader</Filter>
     </None>
     <None Include="EngineAssets\Shader\Sprite.PS.hlsl">
-      <Filter>リソース ファイル</Filter>
+      <Filter>EngineAssets\Shader</Filter>
     </None>
     <None Include="EngineAssets\Shader\Sprite.VS.hlsl">
-      <Filter>リソース ファイル</Filter>
+      <Filter>EngineAssets\Shader</Filter>
     </None>
   </ItemGroup>
 </Project>
