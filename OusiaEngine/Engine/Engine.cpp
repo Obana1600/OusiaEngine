@@ -4,6 +4,7 @@
 #include "Core/Paths.h"
 #include "Graphics/DXCompiler.h"
 #include "Render/Material.h"
+#include "Render/ModelManager.h"
 
 #include <format>
 #include <thread>
@@ -89,6 +90,7 @@ void ou::Engine::Finalize() {
 	device_->WaitForGpu();
 
 	TextureManager::GetInstance()->Finalize();
+	ModelManager::GetInstance()->Finalize();
 	Sprite::StaticFinalize();
 	Material::StaticFinalize();
 

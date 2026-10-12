@@ -21,6 +21,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Render\ModelManager.h" />
+    <ClInclude Include="Render\Model.h" />
+    <ClInclude Include="Render\ObjParser.h" />
     <ClInclude Include="Scene\DirectionalLight.h" />
     <ClInclude Include="Render\Mesh.h" />
     <ClInclude Include="Render\Material.h" />
@@ -55,6 +58,9 @@
     <ClInclude Include="Scene\Transform.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Render\ModelManager.cpp" />
+    <ClCompile Include="Render\Model.cpp" />
+    <ClCompile Include="Render\ObjParser.cpp" />
     <ClCompile Include="Scene\DirectionalLight.cpp" />
     <ClCompile Include="Render\Mesh.cpp" />
     <ClCompile Include="Render\Material.cpp" />
