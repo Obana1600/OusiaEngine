@@ -1,11 +1,12 @@
 #include "Engine.h"
+#include "2D/Sprite.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
 #include "Graphics/DXCompiler.h"
-#include "2D/Sprite.h"
+#include "Render/Material.h"
 
-#include <thread>
 #include <format>
+#include <thread>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -72,6 +73,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// スプライト
 	Sprite::StaticInitialize(sceneInfo_, scDesc.width, scDesc.height);
 
+	// マテリアル
+	Material::StaticInitialize(sceneInfo_);
+
 	// その他
 	InputSystem::GetInstance()->Initialize(window_->Hwnd());
 
@@ -86,6 +90,7 @@ void ou::Engine::Finalize() {
 
 	TextureManager::GetInstance()->Finalize();
 	Sprite::StaticFinalize();
+	Material::StaticFinalize();
 
 	timeEndPeriod(1);
 
@@ -203,7 +208,6 @@ void ou::Engine::ResizeIfNeeded() {
 	device_->CreateSwapChain(&desc, window_->Hwnd(), &swapChain_);
 
 	CreateSceneTargets(desc.width, desc.height);
-
 }
 
 

@@ -57,6 +57,8 @@ public: // 静的メンバ関数
 
 	static Quaternion Inverse(const Quaternion &q);
 
+	static Quaternion Euler(const Vector3 &eulerAngles);
+
 
 public: // オペレータ
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics/GraphicsTypes.h"
-#include "2D/Sprite.h"
+#include "Scene/Scene.h"
 
 #include <memory>
 
@@ -20,7 +20,7 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	std::unique_ptr<Sprite> sprite_;
+	std::unique_ptr<Scene> scene_;
 
 
 private: // メンバ関数

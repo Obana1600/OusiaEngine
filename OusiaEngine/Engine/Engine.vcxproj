@@ -21,6 +21,15 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scene\DirectionalLight.h" />
+    <ClInclude Include="Render\Mesh.h" />
+    <ClInclude Include="Render\Material.h" />
+    <ClInclude Include="Render\MeshRenderer.h" />
+    <ClInclude Include="Render\Renderer.h" />
+    <ClInclude Include="Scene\Camera.h" />
+    <ClInclude Include="Scene\Scene.h" />
+    <ClInclude Include="Scene\GameObject.h" />
+    <ClInclude Include="Scene\Component.h" />
     <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\BuildInfo.h" />
     <ClInclude Include="Core\CrashHandler.h" />
@@ -39,11 +48,22 @@
     <ClInclude Include="Math\Vector2.h" />
     <ClInclude Include="Math\Vector3.h" />
     <ClInclude Include="Math\Vector4.h" />
+    <ClInclude Include="Scene\Object.h" />
     <ClInclude Include="Platform\Window.h" />
     <ClInclude Include="Graphics\TextureManager.h" />
     <ClInclude Include="2D\Sprite.h" />
+    <ClInclude Include="Scene\Transform.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Scene\DirectionalLight.cpp" />
+    <ClCompile Include="Render\Mesh.cpp" />
+    <ClCompile Include="Render\Material.cpp" />
+    <ClCompile Include="Render\MeshRenderer.cpp" />
+    <ClCompile Include="Render\Renderer.cpp" />
+    <ClCompile Include="Scene\Camera.cpp" />
+    <ClCompile Include="Scene\Scene.cpp" />
+    <ClCompile Include="Scene\GameObject.cpp" />
+    <ClCompile Include="Scene\Component.cpp" />
     <ClCompile Include="Core\CrashHandler.cpp" />
     <ClCompile Include="Core\Fatal.cpp" />
     <ClCompile Include="Core\Log.cpp" />
@@ -58,9 +78,11 @@
     <ClCompile Include="Math\Vector2.cpp" />
     <ClCompile Include="Math\Vector3.cpp" />
     <ClCompile Include="Math\Vector4.cpp" />
+    <ClCompile Include="Scene\Object.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
     <ClCompile Include="Graphics\TextureManager.cpp" />
     <ClCompile Include="2D\Sprite.cpp" />
+    <ClCompile Include="Scene\Transform.cpp" />
   </ItemGroup>
   <!-- 外部ライブラリ（警告は出さない） -->
   <ItemGroup>
@@ -103,6 +125,7 @@
     <None Include="EngineAssets\Shader\Blit.PS.hlsl" />
     <None Include="EngineAssets\Shader\Blit.VS.hlsl" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
+    <None Include="EngineAssets\Shader\Standard.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Sprite.PS.hlsl">
@@ -122,6 +145,26 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\Standard.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <FileType>Document</FileType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+    </None>
+    <None Include="EngineAssets\Shader\Standard.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <FileType>Document</FileType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
     </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">

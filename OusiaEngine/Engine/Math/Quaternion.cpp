@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cmath>
 
+using namespace ou;
+
 
 const ou::Quaternion ou::Quaternion::Identity = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -119,6 +121,15 @@ ou::Quaternion ou::Quaternion::Inverse(const Quaternion &q) {
 	const float length2 = q.Length2();
 	assert(length2 > 0.0f);
 	return {-q.x / length2, -q.y / length2, -q.z / length2, q.w / length2};
+}
+
+
+Quaternion ou::Quaternion::Euler(const Vector3 &eulerAngles) {
+	const auto qx = AngleAxis({1.0f, 0.0f, 0.0f}, eulerAngles.x);
+	const auto qy = AngleAxis({0.0f, 1.0f, 0.0f}, eulerAngles.y);
+	const auto qz = AngleAxis({0.0f, 0.0f, 1.0f}, eulerAngles.z);
+
+	return qx * qy * qz;
 }
 
 

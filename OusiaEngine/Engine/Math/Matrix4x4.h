@@ -2,6 +2,7 @@
 
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
+#include "Math/Quaternion.h"
 
 #include <string>
 
@@ -74,10 +75,11 @@ public: // 静的メンバ関数
 
 	static Matrix4x4 Scale(const Vector3 &v);
 
-	// TODO: クォータニオンに対応させる
 	static Matrix4x4 Rotate(const Vector3 &v);
+	static Matrix4x4 Rotate(const Quaternion &q);
 
 	static Matrix4x4 SRT(const Vector3 &s, const Vector3 &r, const Vector3 &t);
+	static Matrix4x4 SRT(const Vector3 &s, const Quaternion &r, const Vector3 &t);
 
 	static Matrix4x4 Perspective(float fovY, float aspect, float nearZ, float farZ);
 

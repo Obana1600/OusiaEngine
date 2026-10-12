@@ -2,8 +2,9 @@
 #include "Math/Mathf.h"
 
 #include <cassert>
-#include <cmath>
 #include <format>
+
+using namespace ou; // TODO: 名前をいい感じに整形する
 
 
 namespace {
@@ -187,9 +188,12 @@ ou::Matrix4x4 ou::Matrix4x4::Scale(const Vector3 &v) {
 
 
 ou::Matrix4x4 ou::Matrix4x4::Rotate(const Vector3 &v) {
-	const float sx = std::sin(v.x), cx = std::cos(v.x);
-	const float sy = std::sin(v.y), cy = std::cos(v.y);
-	const float sz = std::sin(v.z), cz = std::cos(v.z);
+	const float sx = Mathf::Sin(v.x);
+	const float cx = Mathf::Cos(v.x);
+	const float sy = Mathf::Sin(v.y);
+	const float cy = Mathf::Cos(v.y);
+	const float sz = Mathf::Sin(v.z);
+	const float cz = Mathf::Cos(v.z);
 
 	const Matrix4x4 rotateX = {
 		1.0f, 0.0f, 0.0f, 0.0f,
@@ -213,30 +217,55 @@ ou::Matrix4x4 ou::Matrix4x4::Rotate(const Vector3 &v) {
 }
 
 
+Matrix4x4 ou::Matrix4x4::Rotate(const Quaternion &q) {
+	const auto n = Quaternion::Normalize(q);
+	const auto xx = n.x * n.x;
+	const auto yy = n.y * n.y;
+	const auto zz = n.z * n.z;
+	const auto xy = n.x * n.y;
+	const auto xz = n.x * n.z;
+	const auto yz = n.y * n.z;
+	const auto wx = n.w * n.x;
+	const auto wy = n.w * n.y;
+	const auto wz = n.w * n.z;
+
+	return {
+		1.0f - 2.0f * (yy + zz), 2.0f * (xy + wz), 2.0f * (xz - wy), 0.0f,
+		2.0f * (xy - wz), 1.0f - 2.0f * (xx + zz), 2.0f * (yz + wx), 0.0f,
+		2.0f * (xz + wy), 2.0f * (yz - wx), 1.0f - 2.0f * (xx + yy), 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f};
+}
+
+
 ou::Matrix4x4 ou::Matrix4x4::SRT(const Vector3 &s, const Vector3 &r, const Vector3 &t) {
 	return Scale(s) * Rotate(r) * Translate(t);
 }
 
 
+Matrix4x4 ou::Matrix4x4::SRT(const Vector3 &s, const Quaternion &r, const Vector3 &t) {
+	return Scale(s) * Rotate(r) * Translate(t);
+}
+
+
 ou::Matrix4x4 ou::Matrix4x4::Perspective(float fovY, float aspect, float nearZ, float farZ) {
-	const float yScale = 1.0f / std::tan(fovY * 0.5f);
-	const float xScale = yScale / aspect;
-	const float range = farZ / (nearZ - farZ);
+	const auto yScale = 1.0f / Mathf::Tan(fovY * 0.5f);
+	const auto xScale = yScale / aspect;
+	const auto range = farZ / (farZ - nearZ);
 
 	return {xScale, 0.0f, 0.0f, 0.0f,
 			0.0f, yScale, 0.0f, 0.0f,
-			0.0f, 0.0f, range, -1.0f,
-			0.0f, 0.0f, range * nearZ, 0.0f};
+			0.0f, 0.0f, range, 1.0f,
+			0.0f, 0.0f, -range * nearZ, 0.0f};
 }
 
 
 ou::Matrix4x4 ou::Matrix4x4::Ortho(float width, float height, float nearZ, float farZ) {
-	const float range = 1.0f / (nearZ - farZ);
+	const auto range = 1.0f / (farZ - nearZ);
 
 	return {2.0f / width, 0.0f, 0.0f, 0.0f,
 			0.0f, 2.0f / height, 0.0f, 0.0f,
 			0.0f, 0.0f, range, 0.0f,
-			0.0f, 0.0f, range * nearZ, 1.0f};
+			0.0f, 0.0f, -range * nearZ, 1.0f};
 }
 
 
