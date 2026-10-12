@@ -49,7 +49,7 @@ private: // 静的メンバ変数
 	static inline Shader sPs_{};
 	static inline PipelineState sPso_{};
 
-	static inline Matrix4x4 sMapProj_{};
+	static inline Matrix4x4 sMatProj_{};
 
 
 public: // メンバ関数

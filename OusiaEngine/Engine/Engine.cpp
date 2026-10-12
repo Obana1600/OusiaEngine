@@ -2,6 +2,7 @@
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
 #include "Graphics/DXCompiler.h"
+#include "2D/Sprite.h"
 
 #include <thread>
 #include <format>
@@ -68,6 +69,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		FatalError("Blit の PSO の作成に失敗しました。");
 	}
 
+	// スプライト
+	Sprite::StaticInitialize(sceneInfo_, scDesc.width, scDesc.height);
+
 	// その他
 	InputSystem::GetInstance()->Initialize(window_->Hwnd());
 
@@ -81,6 +85,7 @@ void ou::Engine::Finalize() {
 	device_->WaitForGpu();
 
 	TextureManager::GetInstance()->Finalize();
+	Sprite::StaticFinalize();
 
 	timeEndPeriod(1);
 

@@ -76,7 +76,7 @@
     <ClInclude Include="Graphics\TextureManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Sprite.h">
+    <ClInclude Include="2D\Sprite.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -153,7 +153,7 @@
     <ClCompile Include="Graphics\TextureManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Sprite.cpp">
+    <ClCompile Include="2D\Sprite.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -170,13 +170,11 @@
     <None Include="EngineAssets\Shader\Sprite.hlsli">
       <Filter>リソース ファイル</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="EngineAssets\Shader\Sprite.VS.hlsl">
+    <None Include="EngineAssets\Shader\Sprite.PS.hlsl">
       <Filter>リソース ファイル</Filter>
-    </FxCompile>
-    <FxCompile Include="EngineAssets\Shader\Sprite.PS.hlsl">
+    </None>
+    <None Include="EngineAssets\Shader\Sprite.VS.hlsl">
       <Filter>リソース ファイル</Filter>
-    </FxCompile>
+    </None>
   </ItemGroup>
 </Project>
