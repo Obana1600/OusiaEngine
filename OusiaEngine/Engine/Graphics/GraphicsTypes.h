@@ -47,6 +47,14 @@ enum class ShaderStage : uint8_t {
 	Count,
 };
 
+// シェーダーモデル: 最小値は 6.6
+enum class ShaderModel : uint8_t {
+	SM_6_6,
+	SM_6_7,
+	SM_6_8,
+	SM_6_9,
+};
+
 enum class PrimitiveTopology : uint8_t {
 	UNDEFINED,	   // 未設定
 	TRIANGLELIST,  // 3 頂点で 1 つの三角形

@@ -24,6 +24,7 @@
     <ClInclude Include="Render\ModelManager.h" />
     <ClInclude Include="Render\Model.h" />
     <ClInclude Include="Render\ObjParser.h" />
+    <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="Scene\DirectionalLight.h" />
     <ClInclude Include="Render\Mesh.h" />
     <ClInclude Include="Render\Material.h" />
@@ -56,11 +57,13 @@
     <ClInclude Include="Graphics\TextureManager.h" />
     <ClInclude Include="2D\Sprite.h" />
     <ClInclude Include="Scene\Transform.h" />
+    <ClInclude Include="ShaderCompiler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Render\ModelManager.cpp" />
     <ClCompile Include="Render\Model.cpp" />
     <ClCompile Include="Render\ObjParser.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Scene\DirectionalLight.cpp" />
     <ClCompile Include="Render\Mesh.cpp" />
     <ClCompile Include="Render\Material.cpp" />
@@ -89,6 +92,7 @@
     <ClCompile Include="Graphics\TextureManager.cpp" />
     <ClCompile Include="2D\Sprite.cpp" />
     <ClCompile Include="Scene\Transform.cpp" />
+    <ClCompile Include="ShaderCompiler.cpp" />
   </ItemGroup>
   <!-- 外部ライブラリ（警告は出さない） -->
   <ItemGroup>

@@ -149,8 +149,8 @@ ou::Matrix4x4 ou::Matrix4x4::Transpose() const {
 bool ou::Matrix4x4::IsIdentity() const {
 	for (int row = 0; row < 4; row++) {
 		for (int column = 0; column < 4; column++) {
-			const auto def = Mathf::Abs(m[row][column] - m[row][column]);
-			if (def > Mathf::Epsilon) {
+			const auto expected = (row == column) ? 1.0f : 0.0f;
+			if ((Mathf::Abs(m[row][column] - expected) > Mathf::Epsilon)) {
 				return false;
 			}
 		}
