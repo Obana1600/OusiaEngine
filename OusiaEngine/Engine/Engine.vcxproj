@@ -58,6 +58,7 @@
     <ClInclude Include="2D\Sprite.h" />
     <ClInclude Include="Scene\Transform.h" />
     <ClInclude Include="ShaderCompiler.h" />
+    <ClInclude Include="ShaderImpoter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Render\ModelManager.cpp" />
@@ -93,6 +94,7 @@
     <ClCompile Include="2D\Sprite.cpp" />
     <ClCompile Include="Scene\Transform.cpp" />
     <ClCompile Include="ShaderCompiler.cpp" />
+    <ClCompile Include="ShaderImpoter.cpp" />
   </ItemGroup>
   <!-- 外部ライブラリ（警告は出さない） -->
   <ItemGroup>
