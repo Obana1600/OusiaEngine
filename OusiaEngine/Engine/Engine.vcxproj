@@ -57,8 +57,11 @@
     <ClInclude Include="Graphics\TextureManager.h" />
     <ClInclude Include="2D\Sprite.h" />
     <ClInclude Include="Scene\Transform.h" />
+    <ClInclude Include="Asset\Shader.h" />
     <ClInclude Include="ShaderCompiler.h" />
-    <ClInclude Include="ShaderImpoter.h" />
+    <ClInclude Include="Asset\AssetImporter.h" />
+    <ClInclude Include="Asset\ShaderImporter.h" />
+    <ClInclude Include="Asset\TextureImporter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Render\ModelManager.cpp" />
@@ -93,8 +96,11 @@
     <ClCompile Include="Graphics\TextureManager.cpp" />
     <ClCompile Include="2D\Sprite.cpp" />
     <ClCompile Include="Scene\Transform.cpp" />
+    <ClCompile Include="Asset\Shader.cpp" />
     <ClCompile Include="ShaderCompiler.cpp" />
-    <ClCompile Include="ShaderImpoter.cpp" />
+    <ClCompile Include="Asset\AssetImporter.cpp" />
+    <ClCompile Include="Asset\ShaderImporter.cpp" />
+    <ClCompile Include="Asset\TextureImporter.cpp" />
   </ItemGroup>
   <!-- 外部ライブラリ（警告は出さない） -->
   <ItemGroup>

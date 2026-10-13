@@ -47,7 +47,7 @@
     <!-- Develop -->
     <ItemDefinitionGroup Condition="'$(Configuration)'=='Develop'">
         <ClCompile>
-            <PreprocessorDefinitions>WITH_EDITOR;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>_DEVELOP;WITH_EDITOR;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
             <Optimization>MaxSpeed</Optimization>
         </ClCompile>
