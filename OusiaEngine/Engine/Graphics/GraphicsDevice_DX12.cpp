@@ -13,6 +13,7 @@
 #pragma comment(lib, "dxgi.lib")
 
 using namespace ou;
+using namespace ou::Graphics;
 using namespace Microsoft::WRL;
 
 
@@ -225,7 +226,7 @@ ComPtr<ID3D12RootSignature> CreateGlobalRootSignature(ID3D12Device *device) {
 
 
 
-namespace ou::Internal {
+namespace ou::Graphics::Internal {
 
 // Format -> DXGI_FORMAT
 constexpr DXGI_FORMAT ConvertFormat(Format format) {
@@ -590,13 +591,13 @@ PipelineState_DX12 *ToInternal(const PipelineState *param) {
 
 // ================================================================================================
 
-} // namespace ou::Internal
+} // namespace ou::Graphics::Internal
 
-using namespace ou::Internal;
+using namespace ou::Graphics::Internal;
 
 
 
-ou::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
+ou::Graphics::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
 	: validationMode_(validationMode) {
 	HRESULT hr{};
 
@@ -709,7 +710,7 @@ ou::GraphicsDevice_DX12::GraphicsDevice_DX12(ValidationMode validationMode)
 }
 
 
-ou::GraphicsDevice_DX12::~GraphicsDevice_DX12() {
+ou::Graphics::GraphicsDevice_DX12::~GraphicsDevice_DX12() {
 	if (!device_) { return; }
 
 	WaitForGpu();
@@ -735,7 +736,7 @@ ou::GraphicsDevice_DX12::~GraphicsDevice_DX12() {
 }
 
 
-bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hwnd, SwapChain *swapChain) {
+bool ou::Graphics::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hwnd, SwapChain *swapChain) {
 	HRESULT hr{};
 
 	if (desc->width == 0 || desc->height == 0) { return false; }
@@ -828,7 +829,7 @@ bool ou::GraphicsDevice_DX12::CreateSwapChain(const SwapChainDesc *desc, HWND hw
 }
 
 
-bool ou::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, const void *initialData, GpuBuffer *buffer) {
+bool ou::Graphics::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, const void *initialData, GpuBuffer *buffer) {
 	HRESULT hr{};
 
 	auto is = std::make_shared<Resource_DX12>();
@@ -924,7 +925,7 @@ bool ou::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, const void
 }
 
 
-bool ou::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) {
+bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) {
 	HRESULT hr{};
 
 	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL) && HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE)) {
@@ -1104,7 +1105,7 @@ bool ou::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, const Subre
 }
 
 
-bool ou::GraphicsDevice_DX12::CreateShader(ShaderStage stage, const void *shaderCode, size_t shaderCodeSize, Shader *shader) {
+bool ou::Graphics::GraphicsDevice_DX12::CreateShader(ShaderStage stage, const void *shaderCode, size_t shaderCodeSize, Shader *shader) {
 	if (!shaderCode || shaderCodeSize == 0) {
 		Log::Error("シェーダのバイトコードが空です。");
 		return false;
@@ -1123,14 +1124,14 @@ bool ou::GraphicsDevice_DX12::CreateShader(ShaderStage stage, const void *shader
 }
 
 
-bool ou::GraphicsDevice_DX12::CreateSampler(const SamplerDesc *desc, Sampler *sampler) {
+bool ou::Graphics::GraphicsDevice_DX12::CreateSampler(const SamplerDesc *desc, Sampler *sampler) {
 	(void)desc;
 	(void)sampler;
 	return false;
 }
 
 
-bool ou::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) {
+bool ou::Graphics::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) {
 	if (!renderPassInfo) {
 		// TODO: 描画時の PSO ソートに対応させる
 		Log::Error("CreatePipelineState には RenderPassInfo が必要です。");
@@ -1244,7 +1245,7 @@ bool ou::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc,
 }
 
 
-void ou::GraphicsDevice_DX12::SetName(GpuResource *resource, std::string_view name) const {
+void ou::Graphics::GraphicsDevice_DX12::SetName(GpuResource *resource, std::string_view name) const {
 	if (!resource || !resource->IsValid()) { return; }
 
 	auto *is = ToInternal(resource);
@@ -1254,7 +1255,7 @@ void ou::GraphicsDevice_DX12::SetName(GpuResource *resource, std::string_view na
 }
 
 
-int ou::GraphicsDevice_DX12::GetDescriptorIndex(const GpuResource *resource, ViewType type, int subresource) const {
+int ou::Graphics::GraphicsDevice_DX12::GetDescriptorIndex(const GpuResource *resource, ViewType type, int subresource) const {
 	(void)subresource; // TODO: ミップやスライスごとのビュー
 
 	if (!resource || !resource->IsValid()) { return -1; }
@@ -1270,7 +1271,7 @@ int ou::GraphicsDevice_DX12::GetDescriptorIndex(const GpuResource *resource, Vie
 }
 
 
-CommandList ou::GraphicsDevice_DX12::BeginCommandList(QueueType queue) {
+CommandList ou::Graphics::GraphicsDevice_DX12::BeginCommandList(QueueType queue) {
 	HRESULT hr{};
 
 	// スロットから 1 つ借りる
@@ -1338,7 +1339,7 @@ CommandList ou::GraphicsDevice_DX12::BeginCommandList(QueueType queue) {
 }
 
 
-void ou::GraphicsDevice_DX12::SubmitCommandLists() {
+void ou::Graphics::GraphicsDevice_DX12::SubmitCommandLists() {
 	HRESULT hr{};
 
 	std::scoped_lock lock(cmdLocker_);
@@ -1405,7 +1406,7 @@ void ou::GraphicsDevice_DX12::SubmitCommandLists() {
 }
 
 
-void ou::GraphicsDevice_DX12::WaitForGpu() const {
+void ou::Graphics::GraphicsDevice_DX12::WaitForGpu() const {
 	ComPtr<ID3D12Fence> fence;
 	HRESULT hr = device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
 	CheckHResult(hr, "待機用フェンスの作成");
@@ -1423,7 +1424,7 @@ void ou::GraphicsDevice_DX12::WaitForGpu() const {
 }
 
 
-void ou::GraphicsDevice_DX12::RenderPassBegin(const SwapChain *swapChain, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::RenderPassBegin(const SwapChain *swapChain, CommandList cmd) {
 	auto &cmdDX12 = GetCommandList(cmd);
 	auto *list = cmdDX12.GetGraphicsCommandList();
 	auto *scDX12 = ToInternal(swapChain);
@@ -1453,7 +1454,7 @@ void ou::GraphicsDevice_DX12::RenderPassBegin(const SwapChain *swapChain, Comman
 }
 
 
-void ou::GraphicsDevice_DX12::RenderPassBegin(const RenderPassImage *images, uint32_t imageCount, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::RenderPassBegin(const RenderPassImage *images, uint32_t imageCount, CommandList cmd) {
 	auto &cmdDX12 = GetCommandList(cmd);
 	auto *list = cmdDX12.GetGraphicsCommandList();
 
@@ -1536,7 +1537,7 @@ void ou::GraphicsDevice_DX12::RenderPassBegin(const RenderPassImage *images, uin
 }
 
 
-void ou::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
 	auto &cmdDX12 = GetCommandList(cmd);
 	auto &barriers = cmdDX12.renderPassBarriersEnd;
 
@@ -1548,7 +1549,7 @@ void ou::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
 }
 
 
-void ou::GraphicsDevice_DX12::BindViewports(uint32_t numViewports, const Viewport *viewports, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::BindViewports(uint32_t numViewports, const Viewport *viewports, CommandList cmd) {
 	ASSERT(numViewports <= D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "D3D12 のビューポート上限を超過しています。");
 
 	D3D12_VIEWPORT d3dViewports[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
@@ -1565,7 +1566,7 @@ void ou::GraphicsDevice_DX12::BindViewports(uint32_t numViewports, const Viewpor
 }
 
 
-void ou::GraphicsDevice_DX12::BindScissorRects(uint32_t numScissors, const Scissor *scissors, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::BindScissorRects(uint32_t numScissors, const Scissor *scissors, CommandList cmd) {
 	ASSERT(numScissors <= D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, " D3D12 のシザー矩形上限を超過しています: {}", numScissors);
 
 	D3D12_RECT d3dScissors[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
@@ -1580,7 +1581,7 @@ void ou::GraphicsDevice_DX12::BindScissorRects(uint32_t numScissors, const Sciss
 }
 
 
-void ou::GraphicsDevice_DX12::BindPipelineState(const PipelineState *pso, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::BindPipelineState(const PipelineState *pso, CommandList cmd) {
 	auto &cmdIs = GetCommandList(cmd);
 
 	// 同じ PSO なら積まない
@@ -1594,7 +1595,7 @@ void ou::GraphicsDevice_DX12::BindPipelineState(const PipelineState *pso, Comman
 }
 
 
-void ou::GraphicsDevice_DX12::BindVertexBuffers(const GpuBuffer *const *buffers, uint32_t slot, uint32_t count, const uint32_t *strides, const uint64_t *offsets, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::BindVertexBuffers(const GpuBuffer *const *buffers, uint32_t slot, uint32_t count, const uint32_t *strides, const uint64_t *offsets, CommandList cmd) {
 	ASSERT(count <= D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT);
 
 	D3D12_VERTEX_BUFFER_VIEW views[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT]{};
@@ -1611,7 +1612,7 @@ void ou::GraphicsDevice_DX12::BindVertexBuffers(const GpuBuffer *const *buffers,
 }
 
 
-void ou::GraphicsDevice_DX12::BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offset, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::BindIndexBuffer(const GpuBuffer *buffer, IndexBufferFormat format, uint64_t offset, CommandList cmd) {
 	D3D12_INDEX_BUFFER_VIEW view{};
 
 	if (buffer) {
@@ -1626,7 +1627,7 @@ void ou::GraphicsDevice_DX12::BindIndexBuffer(const GpuBuffer *buffer, IndexBuff
 }
 
 
-void ou::GraphicsDevice_DX12::BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset) {
+void ou::Graphics::GraphicsDevice_DX12::BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset) {
 	ASSERT(slot < DESCRIPTORBINDER_CBV_COUNT);
 
 	GetCommandList(cmd).GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(
@@ -1634,7 +1635,7 @@ void ou::GraphicsDevice_DX12::BindConstantBuffer(const GpuBuffer *buffer, uint32
 }
 
 
-void ou::GraphicsDevice_DX12::BindResource(const GpuResource *resource, uint32_t slot, CommandList cmd, int subresource) {
+void ou::Graphics::GraphicsDevice_DX12::BindResource(const GpuResource *resource, uint32_t slot, CommandList cmd, int subresource) {
 	(void)resource;
 	(void)slot;
 	(void)cmd;
@@ -1642,38 +1643,38 @@ void ou::GraphicsDevice_DX12::BindResource(const GpuResource *resource, uint32_t
 }
 
 
-void ou::GraphicsDevice_DX12::BindSampler(const Sampler *sampler, uint32_t slot, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::BindSampler(const Sampler *sampler, uint32_t slot, CommandList cmd) {
 	(void)sampler;
 	(void)slot;
 	(void)cmd;
 }
 
 
-void ou::GraphicsDevice_DX12::Draw(uint32_t vertexCount, uint32_t startVertexLocation, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::Draw(uint32_t vertexCount, uint32_t startVertexLocation, CommandList cmd) {
 	GetCommandList(cmd).GetGraphicsCommandList()->DrawInstanced(
 		vertexCount, 1, startVertexLocation, 0);
 }
 
 
-void ou::GraphicsDevice_DX12::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation, CommandList cmd) {
 	GetCommandList(cmd).GetGraphicsCommandList()->DrawIndexedInstanced(
 		indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 
-void ou::GraphicsDevice_DX12::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
 	GetCommandList(cmd).GetGraphicsCommandList()->DrawInstanced(
 		vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 
-void ou::GraphicsDevice_DX12::DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
 	GetCommandList(cmd).GetGraphicsCommandList()->DrawIndexedInstanced(
 		indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 
-void ou::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) {
+void ou::Graphics::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) {
 	std::vector<D3D12_RESOURCE_BARRIER> d3dBarriers;
 	d3dBarriers.reserve(numBarriers);
 
@@ -1735,19 +1736,19 @@ void ou::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint32_t numBa
 }
 
 
-GraphicsDevice_DX12::CommandList_DX12 &ou::GraphicsDevice_DX12::GetCommandList(CommandList cmd) const {
+GraphicsDevice_DX12::CommandList_DX12 &ou::Graphics::GraphicsDevice_DX12::GetCommandList(CommandList cmd) const {
 	ASSERT(cmd.IsValid());
 	return *static_cast<CommandList_DX12 *>(cmd.internalState);
 }
 
 
-GraphicsDevice::GpuLinearAllocator &ou::GraphicsDevice_DX12::GetFrameAllocator(CommandList cmd) {
+GraphicsDevice::GpuLinearAllocator &ou::Graphics::GraphicsDevice_DX12::GetFrameAllocator(CommandList cmd) {
 	auto &cmdDX12 = GetCommandList(cmd);
 	return cmdDX12.frameAllocators[cmdDX12.bufferIndex];
 }
 
 
-D3D12_CPU_DESCRIPTOR_HANDLE ou::GraphicsDevice_DX12::GetBindlessCpuHandle(int index) const {
+D3D12_CPU_DESCRIPTOR_HANDLE ou::Graphics::GraphicsDevice_DX12::GetBindlessCpuHandle(int index) const {
 	auto handle = descriptorHeapRes_->GetCPUDescriptorHandleForHeapStart();
 	handle.ptr += static_cast<SIZE_T>(index) * resDescriptorSize_;
 	return handle;
@@ -1755,7 +1756,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ou::GraphicsDevice_DX12::GetBindlessCpuHandle(int in
 
 
 
-void ou::GraphicsDevice_DX12::DescriptorAllocator::Initialize(ID3D12Device *d3dDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorHeapBlock) {
+void ou::Graphics::GraphicsDevice_DX12::DescriptorAllocator::Initialize(ID3D12Device *d3dDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorHeapBlock) {
 	device = d3dDevice;
 	desc.Type = type;
 	desc.NumDescriptors = numDescriptorHeapBlock;
@@ -1764,7 +1765,7 @@ void ou::GraphicsDevice_DX12::DescriptorAllocator::Initialize(ID3D12Device *d3dD
 }
 
 
-D3D12_CPU_DESCRIPTOR_HANDLE ou::GraphicsDevice_DX12::DescriptorAllocator::Allocate() {
+D3D12_CPU_DESCRIPTOR_HANDLE ou::Graphics::GraphicsDevice_DX12::DescriptorAllocator::Allocate() {
 	std::scoped_lock lock(locker);
 
 	if (freeList.empty()) {
@@ -1777,13 +1778,13 @@ D3D12_CPU_DESCRIPTOR_HANDLE ou::GraphicsDevice_DX12::DescriptorAllocator::Alloca
 }
 
 
-void ou::GraphicsDevice_DX12::DescriptorAllocator::Free(D3D12_CPU_DESCRIPTOR_HANDLE handle) {
+void ou::Graphics::GraphicsDevice_DX12::DescriptorAllocator::Free(D3D12_CPU_DESCRIPTOR_HANDLE handle) {
 	std::scoped_lock lock(locker);
 	freeList.push_back(handle);
 }
 
 
-void ou::GraphicsDevice_DX12::DescriptorAllocator::BlockAllocate() {
+void ou::Graphics::GraphicsDevice_DX12::DescriptorAllocator::BlockAllocate() {
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> &heap = heaps.emplace_back();
 	auto hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap));
 	CheckHResult(hr, "ディスクリプタヒープの作成");
@@ -1797,7 +1798,7 @@ void ou::GraphicsDevice_DX12::DescriptorAllocator::BlockAllocate() {
 }
 
 
-void ou::GraphicsDevice_DX12::AllocationHandler::Update(uint64_t currentFrameCount, uint32_t bufferCount) {
+void ou::Graphics::GraphicsDevice_DX12::AllocationHandler::Update(uint64_t currentFrameCount, uint32_t bufferCount) {
 	std::scoped_lock lock(destroyLocker);
 	frameCount = currentFrameCount;
 
@@ -1817,7 +1818,7 @@ void ou::GraphicsDevice_DX12::AllocationHandler::Update(uint64_t currentFrameCou
 }
 
 
-int ou::GraphicsDevice_DX12::AllocationHandler::AllocateResourceIndex() {
+int ou::Graphics::GraphicsDevice_DX12::AllocationHandler::AllocateResourceIndex() {
 	std::scoped_lock lock(destroyLocker);
 
 	// プールに空きがなければ -1 を返す
@@ -1829,7 +1830,7 @@ int ou::GraphicsDevice_DX12::AllocationHandler::AllocateResourceIndex() {
 }
 
 
-void ou::GraphicsDevice_DX12::CommandQueue::Submit() {
+void ou::Graphics::GraphicsDevice_DX12::CommandQueue::Submit() {
 	if (submitCmds.empty()) { return; }
 
 	queue->ExecuteCommandLists(static_cast<UINT>(submitCmds.size()), submitCmds.data());
@@ -1837,7 +1838,7 @@ void ou::GraphicsDevice_DX12::CommandQueue::Submit() {
 }
 
 
-void ou::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBufferIndex) {
+void ou::Graphics::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBufferIndex) {
 	bufferIndex = newBufferIndex;
 	swapChains.clear();
 	renderPassBarriersEnd.clear();
@@ -1846,22 +1847,22 @@ void ou::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBufferIndex) {
 }
 
 
-ID3D12CommandAllocator *ou::GraphicsDevice_DX12::CommandList_DX12::GetCommandAllocator() const {
+ID3D12CommandAllocator *ou::Graphics::GraphicsDevice_DX12::CommandList_DX12::GetCommandAllocator() const {
 	return allocators[bufferIndex][queue].Get();
 }
 
 
-ID3D12GraphicsCommandList *ou::GraphicsDevice_DX12::CommandList_DX12::GetGraphicsCommandList() const {
+ID3D12GraphicsCommandList *ou::Graphics::GraphicsDevice_DX12::CommandList_DX12::GetGraphicsCommandList() const {
 	return lists[queue].Get();
 }
 
 
-void ou::GraphicsDevice_DX12::CopyAllocator::Initialize(GraphicsDevice_DX12 *owner) {
+void ou::Graphics::GraphicsDevice_DX12::CopyAllocator::Initialize(GraphicsDevice_DX12 *owner) {
 	device = owner;
 }
 
 
-GraphicsDevice_DX12::CopyAllocator::CopyCMD ou::GraphicsDevice_DX12::CopyAllocator::Allocate(uint64_t stagingSize) {
+GraphicsDevice_DX12::CopyAllocator::CopyCMD ou::Graphics::GraphicsDevice_DX12::CopyAllocator::Allocate(uint64_t stagingSize) {
 	HRESULT hr{};
 	CopyCMD cmd;
 
@@ -1910,7 +1911,7 @@ GraphicsDevice_DX12::CopyAllocator::CopyCMD ou::GraphicsDevice_DX12::CopyAllocat
 }
 
 
-void ou::GraphicsDevice_DX12::CopyAllocator::Submit(CopyCMD cmd) {
+void ou::Graphics::GraphicsDevice_DX12::CopyAllocator::Submit(CopyCMD cmd) {
 	HRESULT hr = cmd.list->Close();
 	CheckHResult(hr, "コピー用コマンドリストのクローズ");
 

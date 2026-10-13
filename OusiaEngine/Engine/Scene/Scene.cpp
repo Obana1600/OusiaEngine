@@ -59,11 +59,11 @@ void ou::Scene::Update() {
 }
 
 
-void ou::Scene::Render(CommandList cmd) const {
+void ou::Scene::Render(Graphics::CommandList cmd) const {
 	const auto *camera = GetMainCamera();
 	if (!camera) { return; }
 
-	auto *device = GetDevice();
+	auto *device = Graphics::GetDevice();
 	Material::BindPipelineState(cmd);
 	device->BindDynamicConstantBuffer(camera->MakePerCamera(), 2, cmd);
 

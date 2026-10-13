@@ -34,10 +34,10 @@ public: // インナークラス
 
 public: // 静的メンバ関数
 
-	static void StaticInitialize(const RenderPassInfo &renderPass);
+	static void StaticInitialize(const Graphics::RenderPassInfo &renderPass);
 	static void StaticFinalize();
 
-	static void BindPipelineState(CommandList cmd);
+	static void BindPipelineState(Graphics::CommandList cmd);
 
 	static std::shared_ptr<Material> Create();
 
@@ -67,9 +67,9 @@ public: // メンバ関数
 
 private: // 静的メンバ変数
 
-	static inline Shader sVs_{};
-	static inline Shader sPs_{};
-	static inline PipelineState sPso_{};
+	static inline Graphics::Shader sVs_{};
+	static inline Graphics::Shader sPs_{};
+	static inline Graphics::PipelineState sPso_{};
 
 
 private: // メンバ変数

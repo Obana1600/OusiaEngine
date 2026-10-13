@@ -67,7 +67,7 @@ void GameScene::Update() {
 }
 
 
-void ou::GameScene::Draw(CommandList cmd) const {
+void ou::GameScene::Draw(Graphics::CommandList cmd) const {
 	scene_->Render(cmd);
 }
 

@@ -30,17 +30,17 @@ void DXCompiler::Initialize() {
 }
 
 
-Shader ou::DXCompiler::CompileEngineShader(std::wstring_view fileName, ShaderStage stage) {
+Graphics::Shader ou::DXCompiler::CompileEngineShader(std::wstring_view fileName, Graphics::ShaderStage stage) {
 	const auto engineAssets = FindEngineAssetsFolder();
 	if (!engineAssets) {
 		FatalError("EngineAssets フォルダが見つかりません");
 	}
 
-	const auto *profile = (stage == ShaderStage::VS) ? L"vs_6_6" : L"ps_6_6";
+	const auto *profile = (stage == Graphics::ShaderStage::VS) ? L"vs_6_6" : L"ps_6_6";
 	auto blob = GetInstance()->CompileShaderInternal(std::wstring(*engineAssets / L"Shader" / fileName), profile);
 
-	Shader shader{};
-	if (!GetDevice()->CreateShader(stage, blob->GetBufferPointer(), blob->GetBufferSize(), &shader)) {
+	Graphics::Shader shader{};
+	if (!Graphics::GetDevice()->CreateShader(stage, blob->GetBufferPointer(), blob->GetBufferSize(), &shader)) {
 		FatalError("エンジンのシェーダの作成に失敗しました。");
 	}
 

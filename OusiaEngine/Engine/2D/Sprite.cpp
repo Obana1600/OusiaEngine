@@ -23,22 +23,22 @@ Matrix4x4 MakeScreenOrtho(float width, float height) {
 
 
 
-void ou::Sprite::StaticInitialize(const RenderPassInfo &renderPass, uint32_t windowWidth, uint32_t windowHeight) {
+void ou::Sprite::StaticInitialize(const Graphics::RenderPassInfo &renderPass, uint32_t windowWidth, uint32_t windowHeight) {
 	sMatProj_ = MakeScreenOrtho(static_cast<float>(windowWidth), static_cast<float>(windowHeight));
 
-	sVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Sprite.VS.hlsl", ShaderStage::VS);
-	sPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Sprite.PS.hlsl", ShaderStage::PS);
+	sVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Sprite.VS.hlsl", Graphics::ShaderStage::VS);
+	sPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Sprite.PS.hlsl", Graphics::ShaderStage::PS);
 
-	BlendState blend{};
+	Graphics::BlendState blend{};
 	blend.renderTarget[0].blendEnable = true;
-	blend.renderTarget[0].destBlendAlpha = Blend::ZERO;
+	blend.renderTarget[0].destBlendAlpha = Graphics::Blend::ZERO;
 
-	PipelineStateDesc desc{};
+	Graphics::PipelineStateDesc desc{};
 	desc.vs = &sVs_;
 	desc.ps = &sPs_;
 	desc.bs = &blend;
-	desc.pt = PrimitiveTopology::TRIANGLESTRIP;
-	if (!GetDevice()->CreatePipelineState(&desc, &sPso_, &renderPass)) {
+	desc.pt = Graphics::PrimitiveTopology::TRIANGLESTRIP;
+	if (!Graphics::GetDevice()->CreatePipelineState(&desc, &sPso_, &renderPass)) {
 		FatalError("Sprite の PSO の作成に失敗しました。");
 	}
 }
@@ -51,8 +51,8 @@ void ou::Sprite::StaticFinalize() {
 }
 
 
-void ou::Sprite::PreDraw(CommandList cmd) {
-	GetDevice()->BindPipelineState(&sPso_, cmd);
+void ou::Sprite::PreDraw(Graphics::CommandList cmd) {
+	Graphics::GetDevice()->BindPipelineState(&sPso_, cmd);
 }
 
 
@@ -61,7 +61,7 @@ std::unique_ptr<Sprite> ou::Sprite::Create(uint32_t textureHandle, Vector2 posit
 }
 
 
-void ou::Sprite::Draw(CommandList cmd) const {
+void ou::Sprite::Draw(Graphics::CommandList cmd) const {
 	auto *texMgr = TextureManager::GetInstance();
 	const auto &texDesc = texMgr->GetTexture(textureHandle_).GetDesc();
 	const auto texWidth = static_cast<float>(texDesc.width);
@@ -101,7 +101,7 @@ void ou::Sprite::Draw(CommandList cmd) const {
 	constants.texcoordRect = {texLeft, texTop, texRight, texBottom};
 	constants.textureIndex = texMgr->GetDescriptorIndex(textureHandle_);
 
-	auto *device = GetDevice();
+	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(constants, 0, cmd);
 	device->Draw(kNumVertex, 0, cmd);
 }

@@ -28,7 +28,7 @@ public: // メンバ関数
 	void Awake() override;
 	void OnDestroy() override;
 
-	virtual void Draw(CommandList cmd) const = 0;
+	virtual void Draw(Graphics::CommandList cmd) const = 0;
 
 	void SetMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> &GetMaterial() const;

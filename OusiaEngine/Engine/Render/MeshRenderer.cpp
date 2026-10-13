@@ -8,10 +8,10 @@
 using namespace ou;
 
 
-void ou::MeshRenderer::Draw(CommandList cmd) const {
+void ou::MeshRenderer::Draw(Graphics::CommandList cmd) const {
 	if (!mesh_) { return; }
 
-	auto *device = GetDevice();
+	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(MakePerDraw(), 0, cmd);
 	mesh_->BindBuffers(cmd);
 

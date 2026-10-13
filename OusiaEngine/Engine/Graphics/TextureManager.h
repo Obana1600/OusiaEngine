@@ -23,7 +23,7 @@ public: // メンバ関数
 
 	void Finalize();
 
-	const Texture &GetTexture(uint32_t textureHandle) const;
+	const Graphics::Texture &GetTexture(uint32_t textureHandle) const;
 
 	uint32_t GetDescriptorIndex(uint32_t textureHandle) const;
 
@@ -31,7 +31,7 @@ public: // メンバ関数
 private: // インナークラス
 
 	struct Entry {
-		Texture texture;
+		Graphics::Texture texture;
 		std::string name;
 	};
 

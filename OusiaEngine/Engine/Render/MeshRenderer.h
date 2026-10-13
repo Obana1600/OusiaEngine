@@ -13,7 +13,7 @@ class Mesh;
 class MeshRenderer final: public Renderer {
 public: // メンバ関数
 
-	void Draw(CommandList cmd) const override;
+	void Draw(Graphics::CommandList cmd) const override;
 
 	void SetMesh(std::shared_ptr<Mesh> mesh);
 	const std::shared_ptr<Mesh> &GetMesh() const;

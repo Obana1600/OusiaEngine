@@ -12,7 +12,7 @@
 #include <wrl/client.h>
 
 
-namespace ou {
+namespace ou::Graphics {
 
 class GraphicsDevice_DX12 final: public GraphicsDevice {
 public: // メンバ関数
@@ -209,4 +209,4 @@ private: // コピー禁止
 	GraphicsDevice_DX12 &operator=(const GraphicsDevice_DX12 &) = delete;
 };
 
-} // namespace ou
+} // namespace ou::Graphics

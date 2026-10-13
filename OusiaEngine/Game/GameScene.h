@@ -17,7 +17,7 @@ public: // メンバ関数
 
 	void Update();
 
-	void Draw(CommandList cmd) const;
+	void Draw(Graphics::CommandList cmd) const;
 
 
 private: // メンバ変数

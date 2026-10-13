@@ -11,7 +11,7 @@
 // TODO: 列挙子、Desc、実体でファイルを分けたい
 
 // グラフィクスの列挙子
-namespace ou {
+namespace ou::Graphics {
 
 // ルート CBV の数
 // TODO: 別のファイルに移したい
@@ -237,11 +237,11 @@ constexpr uint64_t AlignTo(uint64_t value, uint64_t alignment) {
 	return (value + alignment - 1) / alignment * alignment;
 }
 
-} // namespace ou
+} // namespace ou::Graphics
 
 
 // グラフィクスの設定
-namespace ou {
+namespace ou::Graphics {
 
 // 前方宣言
 struct Shader;
@@ -387,11 +387,11 @@ struct PipelineStateDesc {
 	uint32_t sampleMask = 0xFFFFFFFF;
 };
 
-} // namespace ou
+} // namespace ou::Graphics
 
 
 // グラフィクスの実体
-namespace ou {
+namespace ou::Graphics {
 
 // ビューポート
 struct Viewport {
@@ -679,7 +679,7 @@ struct RenderPassInfo {
 	}
 };
 
-} // namespace ou
+} // namespace ou::Graphics
 
 
 // 列挙子のビット演算を有効化する構造体
@@ -720,21 +720,21 @@ constexpr std::enable_if_t<EnableBitmaskOperators<E>::enable, bool> HasFlag(E va
 
 // ビット演算を有効化する列挙子 4選
 template <>
-struct EnableBitmaskOperators<ou::ColorWrite> {
+struct EnableBitmaskOperators<ou::Graphics::ColorWrite> {
 	static constexpr bool enable = true;
 };
 
 template <>
-struct EnableBitmaskOperators<ou::BindFlag> {
+struct EnableBitmaskOperators<ou::Graphics::BindFlag> {
 	static constexpr bool enable = true;
 };
 
 template <>
-struct EnableBitmaskOperators<ou::ResourceMiscFlag> {
+struct EnableBitmaskOperators<ou::Graphics::ResourceMiscFlag> {
 	static constexpr bool enable = true;
 };
 
 template <>
-struct EnableBitmaskOperators<ou::ResourceState> {
+struct EnableBitmaskOperators<ou::Graphics::ResourceState> {
 	static constexpr bool enable = true;
 };

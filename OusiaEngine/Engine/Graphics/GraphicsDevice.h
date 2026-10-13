@@ -9,7 +9,7 @@
 
 // TODO: ShaderModel6.6~ の bindless に対応させたい
 
-namespace ou {
+namespace ou::Graphics {
 
 class GraphicsDevice {
 public: // 定数
@@ -113,7 +113,7 @@ inline GraphicsDevice *&GetDevice() {
 }
 
 
-inline GpuAllocation ou::GraphicsDevice::AllocateGpu(uint64_t dataSize, CommandList cmd) {
+inline GpuAllocation GraphicsDevice::AllocateGpu(uint64_t dataSize, CommandList cmd) {
 	GpuAllocation allocation;
 	if (dataSize == 0) { return allocation; }
 
@@ -149,4 +149,4 @@ inline void GraphicsDevice::BindDynamicConstantBuffer(const T &data, uint32_t sl
 	BindConstantBuffer(&allocation.buffer, slot, cmd, allocation.offset);
 }
 
-} // namespace ou
+} // namespace ou::Graphics

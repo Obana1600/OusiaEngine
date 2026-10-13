@@ -31,7 +31,7 @@ public: // 静的メンバ関数
 
 	static std::shared_ptr<Mesh> CreateCube();
 
-	static InputLayout MakeInputLayout();
+	static Graphics::InputLayout MakeInputLayout();
 
 
 public: // メンバ関数
@@ -47,8 +47,8 @@ public: // メンバ関数
 	void SetSubMeshes(std::vector<SubMesh> subMeshes);
 	const std::vector<SubMesh> &GetSubMeshes() const;
 
-	void BindBuffers(CommandList cmd);
-	void DrawSubMesh(uint32_t subMeshIndex, CommandList cmd) const;
+	void BindBuffers(Graphics::CommandList cmd);
+	void DrawSubMesh(uint32_t subMeshIndex, Graphics::CommandList cmd) const;
 
 
 private: // メンバ変数
@@ -57,8 +57,8 @@ private: // メンバ変数
 	std::vector<uint32_t> indices_;
 	std::vector<SubMesh> subMeshes_;
 
-	GpuBuffer vertexBuffer_;
-	GpuBuffer indexBuffer_;
+	Graphics::GpuBuffer vertexBuffer_;
+	Graphics::GpuBuffer indexBuffer_;
 };
 
 } // namespace ou

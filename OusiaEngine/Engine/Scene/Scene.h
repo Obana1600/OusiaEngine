@@ -29,7 +29,7 @@ public: // メンバ関数
 	GameObject *Find(std::string_view name) const;
 
 	void Update();
-	void Render(CommandList cmd) const;
+	void Render(Graphics::CommandList cmd) const;
 
 	// Camera
 	void RegisterCamera(Camera *camera);

@@ -40,15 +40,15 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	window_ = Window::Create({.title = desc.title, .width = desc.width, .height = desc.height});
 
 	// デバイス
-	device_ = std::make_unique<GraphicsDevice_DX12>(desc.validationMode);
-	GetDevice() = device_.get();
+	device_ = std::make_unique<Graphics::GraphicsDevice_DX12>(desc.validationMode);
+	Graphics::GetDevice() = device_.get();
 
 	// スワップチェーン
-	SwapChainDesc scDesc{};
+	Graphics::SwapChainDesc scDesc{};
 	scDesc.width = window_->ClientWidth();
 	scDesc.height = window_->ClientHeight();
 	scDesc.bufferCount = 2;
-	scDesc.format = Format::B8G8R8A8_UNORM_SRGB;
+	scDesc.format = Graphics::Format::B8G8R8A8_UNORM_SRGB;
 	for (int i = 0; i < 4; i++) {
 		scDesc.clearColor[i] = kClearColor[i];
 	}
@@ -60,13 +60,13 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 	// blit
 	DXCompiler::GetInstance()->Initialize();
-	blitVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.VS.hlsl", ShaderStage::VS);
-	blitPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.PS.hlsl", ShaderStage::PS);
+	blitVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.VS.hlsl", Graphics::ShaderStage::VS);
+	blitPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.PS.hlsl", Graphics::ShaderStage::PS);
 
-	PipelineStateDesc blitPsoDesc{};
+	Graphics::PipelineStateDesc blitPsoDesc{};
 	blitPsoDesc.vs = &blitVs_;
 	blitPsoDesc.ps = &blitPs_;
-	const auto scInfo = RenderPassInfo::From(swapChain_.GetDesc());
+	const auto scInfo = Graphics::RenderPassInfo::From(swapChain_.GetDesc());
 	if (!device_->CreatePipelineState(&blitPsoDesc, &blitPso_, &scInfo)) {
 		FatalError("Blit の PSO の作成に失敗しました。");
 	}
@@ -103,7 +103,7 @@ void ou::Engine::Finalize() {
 	sceneColor_ = {};
 	swapChain_ = {};
 
-	GetDevice() = nullptr;
+	Graphics::GetDevice() = nullptr;
 	device_.reset();
 	window_.reset();
 	logSystem_.reset();
@@ -119,7 +119,7 @@ bool ou::Engine::Update() {
 }
 
 
-CommandList ou::Engine::BeginDraw() {
+Graphics::CommandList ou::Engine::BeginDraw() {
 	// 最小化中は描かない
 	if (window_->IsMinimized()) {
 		Sleep(10);
@@ -130,9 +130,9 @@ CommandList ou::Engine::BeginDraw() {
 
 	auto cmd = device_->BeginCommandList();
 
-	const RenderPassImage images[] = {
-		RenderPassImage::RenderTarget(&sceneColor_, RenderPassImage::LoadOp::CLEAR),
-		RenderPassImage::DepthStencil(&sceneDepth_, RenderPassImage::LoadOp::CLEAR, RenderPassImage::StoreOp::DONTCARE),
+	const Graphics::RenderPassImage images[] = {
+		Graphics::RenderPassImage::RenderTarget(&sceneColor_, Graphics::RenderPassImage::LoadOp::CLEAR),
+		Graphics::RenderPassImage::DepthStencil(&sceneDepth_, Graphics::RenderPassImage::LoadOp::CLEAR, Graphics::RenderPassImage::StoreOp::DONTCARE),
 	};
 	device_->RenderPassBegin(images, 2, cmd);
 	BindFullScreenViewport(cmd);
@@ -141,7 +141,7 @@ CommandList ou::Engine::BeginDraw() {
 }
 
 
-void ou::Engine::EndDraw(CommandList cmd) {
+void ou::Engine::EndDraw(Graphics::CommandList cmd) {
 	device_->RenderPassEnd(cmd);
 
 	device_->RenderPassBegin(&swapChain_, cmd);
@@ -150,7 +150,7 @@ void ou::Engine::EndDraw(CommandList cmd) {
 		device_->BindPipelineState(&blitPso_, cmd);
 
 		BlitConstants constants{};
-		constants.sourceIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&sceneColor_, ViewType::SRV));
+		constants.sourceIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&sceneColor_, Graphics::ViewType::SRV));
 		device_->BindDynamicConstantBuffer(constants, 0, cmd);
 
 		device_->Draw(3, 0, cmd);
@@ -164,12 +164,12 @@ void ou::Engine::EndDraw(CommandList cmd) {
 
 
 void ou::Engine::CreateSceneTargets(uint32_t width, uint32_t height) {
-	TextureDesc colDesc{};
+	Graphics::TextureDesc colDesc{};
 	colDesc.width = width;
 	colDesc.height = height;
-	colDesc.format = Format::B8G8R8A8_UNORM_SRGB;
-	colDesc.bindFlags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;
-	colDesc.layout = ResourceState::SHADER_RESOURCE;
+	colDesc.format = Graphics::Format::B8G8R8A8_UNORM_SRGB;
+	colDesc.bindFlags = Graphics::BindFlag::RENDER_TARGET | Graphics::BindFlag::SHADER_RESOURCE;
+	colDesc.layout = Graphics::ResourceState::SHADER_RESOURCE;
 	for (int i = 0; i < 4; i++) {
 		colDesc.clear.color[i] = kClearColor[i];
 	}
@@ -178,23 +178,23 @@ void ou::Engine::CreateSceneTargets(uint32_t width, uint32_t height) {
 	}
 	device_->SetName(&sceneColor_, "SceneColor");
 
-	TextureDesc depthDesc{};
+	Graphics::TextureDesc depthDesc{};
 	depthDesc.width = width;
 	depthDesc.height = height;
-	depthDesc.format = Format::D32_FLOAT;
-	depthDesc.bindFlags = BindFlag::DEPTH_STENCIL;
-	depthDesc.layout = ResourceState::DEPTHSTENCIL;
+	depthDesc.format = Graphics::Format::D32_FLOAT;
+	depthDesc.bindFlags = Graphics::BindFlag::DEPTH_STENCIL;
+	depthDesc.layout = Graphics::ResourceState::DEPTHSTENCIL;
 	depthDesc.clear.depthStencil.depth = 1.0f;
 	if (!device_->CreateTexture(&depthDesc, nullptr, &sceneDepth_)) {
 		FatalError("SceneDepth の作成に失敗しました。");
 	}
 	device_->SetName(&sceneDepth_, "SceneDepth");
 
-	const RenderPassImage images[] = {
-		RenderPassImage::RenderTarget(&sceneColor_),
-		RenderPassImage::DepthStencil(&sceneDepth_),
+	const Graphics::RenderPassImage images[] = {
+		Graphics::RenderPassImage::RenderTarget(&sceneColor_),
+		Graphics::RenderPassImage::DepthStencil(&sceneDepth_),
 	};
-	sceneInfo_ = RenderPassInfo::From(images, 2);
+	sceneInfo_ = Graphics::RenderPassInfo::From(images, 2);
 }
 
 
@@ -213,15 +213,15 @@ void ou::Engine::ResizeIfNeeded() {
 }
 
 
-void ou::Engine::BindFullScreenViewport(CommandList cmd) {
+void ou::Engine::BindFullScreenViewport(Graphics::CommandList cmd) {
 	const auto &desc = swapChain_.GetDesc();
 
-	Viewport viewport{};
+	Graphics::Viewport viewport{};
 	viewport.width = static_cast<float>(desc.width);
 	viewport.height = static_cast<float>(desc.height);
 	device_->BindViewports(1, &viewport, cmd);
 
-	Scissor scissor{};
+	Graphics::Scissor scissor{};
 	scissor.right = static_cast<int32_t>(desc.width);
 	scissor.bottom = static_cast<int32_t>(desc.height);
 	device_->BindScissorRects(1, &scissor, cmd);

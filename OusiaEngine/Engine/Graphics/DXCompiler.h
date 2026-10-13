@@ -19,7 +19,7 @@ public: // メンバ関数
 
 	void Initialize();
 
-	Shader CompileEngineShader(std::wstring_view fileName, ShaderStage stage);
+	Graphics::Shader CompileEngineShader(std::wstring_view fileName, Graphics::ShaderStage stage);
 
 
 private: // メンバ変数

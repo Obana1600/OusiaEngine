@@ -8,32 +8,32 @@
 using namespace ou;
 
 
-void ou::Material::StaticInitialize(const RenderPassInfo &renderPass) {
-	sVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Standard.VS.hlsl", ShaderStage::VS);
-	sPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Standard.PS.hlsl", ShaderStage::PS);
+void ou::Material::StaticInitialize(const Graphics::RenderPassInfo &renderPass) {
+	sVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Standard.VS.hlsl", Graphics::ShaderStage::VS);
+	sPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Standard.PS.hlsl", Graphics::ShaderStage::PS);
 
 	// インプットレイアウト
-	const InputLayout layout = Mesh::MakeInputLayout();
+	const Graphics::InputLayout layout = Mesh::MakeInputLayout();
 
 	// ラスタライザ
-	RasterizerState rasterizer{};
-	rasterizer.cullMode = CullMode::BACK;
+	Graphics::RasterizerState rasterizer{};
+	rasterizer.cullMode = Graphics::CullMode::BACK;
 
 	// 深度ステンシル
-	DepthStencilState depthStencil{};
+	Graphics::DepthStencilState depthStencil{};
 	depthStencil.depthEnable = true;
-	depthStencil.depthWriteMask = DepthWriteMask::ALL;
-	depthStencil.comparisonFunc = ComparisonFunc::LESS;
+	depthStencil.depthWriteMask = Graphics::DepthWriteMask::ALL;
+	depthStencil.comparisonFunc = Graphics::ComparisonFunc::LESS;
 
 	// PSO の作成
-	PipelineStateDesc desc{};
+	Graphics::PipelineStateDesc desc{};
 	desc.vs = &sVs_;
 	desc.ps = &sPs_;
 	desc.il = &layout;
 	desc.rs = &rasterizer;
 	desc.dss = &depthStencil;
-	desc.pt = PrimitiveTopology::TRIANGLELIST;
-	if (!GetDevice()->CreatePipelineState(&desc, &sPso_, &renderPass)) {
+	desc.pt = Graphics::PrimitiveTopology::TRIANGLELIST;
+	if (!Graphics::GetDevice()->CreatePipelineState(&desc, &sPso_, &renderPass)) {
 		FatalError("Standard の PSO の作成に失敗しました。");
 	}
 }
@@ -46,8 +46,8 @@ void ou::Material::StaticFinalize() {
 }
 
 
-void ou::Material::BindPipelineState(CommandList cmd) {
-	GetDevice()->BindPipelineState(&sPso_, cmd);
+void ou::Material::BindPipelineState(Graphics::CommandList cmd) {
+	Graphics::GetDevice()->BindPipelineState(&sPso_, cmd);
 }
 
 

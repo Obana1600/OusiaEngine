@@ -40,34 +40,34 @@ struct CompilerOutput_DXC {
 	ComPtr<IDxcBlob> blob;
 };
 
-std::wstring MakeProfile(ShaderStage stage, ShaderModel model) {
+std::wstring MakeProfile(Graphics::ShaderStage stage, Graphics::ShaderModel model) {
 	const wchar_t *stageName = nullptr;
 	switch (stage) {
-		case ShaderStage::MS:
+		case Graphics::ShaderStage::MS:
 			stageName = L"ms";
 			break;
-		case ShaderStage::AS:
+		case Graphics::ShaderStage::AS:
 			stageName = L"as";
 			break;
-		case ShaderStage::HS:
+		case Graphics::ShaderStage::HS:
 			stageName = L"hs";
 			break;
-		case ShaderStage::DS:
+		case Graphics::ShaderStage::DS:
 			stageName = L"ds";
 			break;
-		case ShaderStage::GS:
+		case Graphics::ShaderStage::GS:
 			stageName = L"gs";
 			break;
-		case ShaderStage::VS:
+		case Graphics::ShaderStage::VS:
 			stageName = L"vs";
 			break;
-		case ShaderStage::PS:
+		case Graphics::ShaderStage::PS:
 			stageName = L"ps";
 			break;
-		case ShaderStage::CS:
+		case Graphics::ShaderStage::CS:
 			stageName = L"cs";
 			break;
-		case ShaderStage::LIB:
+		case Graphics::ShaderStage::LIB:
 			stageName = L"lib";
 			break;
 		default:
@@ -76,16 +76,16 @@ std::wstring MakeProfile(ShaderStage stage, ShaderModel model) {
 
 	const wchar_t *modelName = nullptr;
 	switch (model) {
-		case ShaderModel::SM_6_6:
+		case Graphics::ShaderModel::SM_6_6:
 			modelName = L"6_6";
 			break;
-		case ShaderModel::SM_6_7:
+		case Graphics::ShaderModel::SM_6_7:
 			modelName = L"6_7";
 			break;
-		case ShaderModel::SM_6_8:
+		case Graphics::ShaderModel::SM_6_8:
 			modelName = L"6_8";
 			break;
-		case ShaderModel::SM_6_9:
+		case Graphics::ShaderModel::SM_6_9:
 			modelName = L"6_9";
 			break;
 		default:

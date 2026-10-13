@@ -60,13 +60,13 @@ void ou::TextureManager::Finalize() {
 }
 
 
-const Texture &ou::TextureManager::GetTexture(uint32_t textureHandle) const {
+const Graphics::Texture &ou::TextureManager::GetTexture(uint32_t textureHandle) const {
 	return textures_[textureHandle].texture;
 }
 
 
 uint32_t ou::TextureManager::GetDescriptorIndex(uint32_t textureHandle) const {
-	auto index = GetDevice()->GetDescriptorIndex(&textures_[textureHandle].texture, ViewType::SRV);
+	auto index = Graphics::GetDevice()->GetDescriptorIndex(&textures_[textureHandle].texture, Graphics::ViewType::SRV);
 	return static_cast<uint32_t>(index);
 }
 
@@ -87,17 +87,17 @@ uint32_t ou::TextureManager::LoadInternal(std::string_view fileName) {
 	const auto mipImages = LoadImageWithMips(*assetPath / Utf8ToWide(fileName));
 	const auto &metaData = mipImages.GetMetadata();
 
-	TextureDesc desc{};
+	Graphics::TextureDesc desc{};
 	desc.width = static_cast<uint32_t>(metaData.width);
 	desc.height = static_cast<uint32_t>(metaData.height);
 	desc.arraySize = static_cast<uint32_t>(metaData.arraySize);
 	desc.mipLevels = static_cast<uint32_t>(metaData.mipLevels);
-	desc.format = Format::R8G8B8A8_UNORM_SRGB;
-	desc.bindFlags = BindFlag::SHADER_RESOURCE;
-	desc.layout = ResourceState::SHADER_RESOURCE;
+	desc.format = Graphics::Format::R8G8B8A8_UNORM_SRGB;
+	desc.bindFlags = Graphics::BindFlag::SHADER_RESOURCE;
+	desc.layout = Graphics::ResourceState::SHADER_RESOURCE;
 
 	// ScratchImage の並び
-	std::vector<SubresourceData> subresources(mipImages.GetImageCount());
+	std::vector<Graphics::SubresourceData> subresources(mipImages.GetImageCount());
 	for (size_t i = 0; i < subresources.size(); i++) {
 		const auto &image = mipImages.GetImages()[i];
 		subresources[i].dataPtr = image.pixels;
@@ -107,10 +107,10 @@ uint32_t ou::TextureManager::LoadInternal(std::string_view fileName) {
 
 	Entry entry{};
 	entry.name = fileName;
-	if (!GetDevice()->CreateTexture(&desc, subresources.data(), &entry.texture)) {
+	if (!Graphics::GetDevice()->CreateTexture(&desc, subresources.data(), &entry.texture)) {
 		FatalError("テクスチャの作成に失敗しました: " + std::string(fileName));
 	}
-	GetDevice()->SetName(&entry.texture, fileName);
+	Graphics::GetDevice()->SetName(&entry.texture, fileName);
 
 	textures_.push_back(std::move(entry));
 	return static_cast<uint32_t>(textures_.size() - 1);

@@ -48,12 +48,12 @@ std::shared_ptr<Mesh> ou::Mesh::CreateCube() {
 }
 
 
-InputLayout ou::Mesh::MakeInputLayout() {
-	InputLayout layout{};
+Graphics::InputLayout ou::Mesh::MakeInputLayout() {
+	Graphics::InputLayout layout{};
 	layout.elements = {
-		{"POSITION", 0, Format::R32G32B32_FLOAT},
-		{"NORMAL", 0, Format::R32G32B32_FLOAT},
-		{"TEXCOORD", 0, Format::R32G32_FLOAT}};
+		{"POSITION", 0, Graphics::Format::R32G32B32_FLOAT},
+		{"NORMAL", 0, Graphics::Format::R32G32B32_FLOAT},
+		{"TEXCOORD", 0, Graphics::Format::R32G32_FLOAT}};
 
 	return layout;
 }
@@ -66,21 +66,21 @@ void ou::Mesh::Upload() {
 		subMeshes_.push_back({0, static_cast<uint32_t>(indices_.size())});
 	}
 
-	auto *device = GetDevice();
+	auto *device = Graphics::GetDevice();
 
 	// 頂点バッファの作成
-	GpuBufferDesc vbDesc{};
+	Graphics::GpuBufferDesc vbDesc{};
 	vbDesc.size = vertices_.size() * sizeof(Vertex);
-	vbDesc.bindFlags = BindFlag::VERTEX_BUFFER;
+	vbDesc.bindFlags = Graphics::BindFlag::VERTEX_BUFFER;
 	if (!device->CreateBuffer(&vbDesc, vertices_.data(), &vertexBuffer_)) {
 		FatalError("Mesh の頂点バッファの作成に失敗しました。");
 	}
 	device->SetName(&vertexBuffer_, GetName() + "_VB");
 
 	// インデックスバッファの作成
-	GpuBufferDesc ibDesc{};
+	Graphics::GpuBufferDesc ibDesc{};
 	ibDesc.size = indices_.size() * sizeof(uint32_t);
-	ibDesc.bindFlags = BindFlag::INDEX_BUFFER;
+	ibDesc.bindFlags = Graphics::BindFlag::INDEX_BUFFER;
 	if (!device->CreateBuffer(&ibDesc, indices_.data(), &indexBuffer_)) {
 		FatalError("Mesh のインデックスバッファの作成に失敗しました。");
 	}
@@ -118,17 +118,17 @@ const std::vector<Mesh::SubMesh> &ou::Mesh::GetSubMeshes() const {
 }
 
 
-void ou::Mesh::BindBuffers(CommandList cmd) {
-	auto *device = GetDevice();
-	const GpuBuffer *vbs[] = {&vertexBuffer_};
+void ou::Mesh::BindBuffers(Graphics::CommandList cmd) {
+	auto *device = Graphics::GetDevice();
+	const Graphics::GpuBuffer *vbs[] = {&vertexBuffer_};
 	const uint32_t strides[] = {sizeof(Vertex)};
 	const uint64_t offsets[] = {0};
 	device->BindVertexBuffers(vbs, 0, 1, strides, offsets, cmd);
-	device->BindIndexBuffer(&indexBuffer_, IndexBufferFormat::UINT32, 0, cmd);
+	device->BindIndexBuffer(&indexBuffer_, Graphics::IndexBufferFormat::UINT32, 0, cmd);
 }
 
 
-void ou::Mesh::DrawSubMesh(uint32_t subMeshIndex, CommandList cmd) const {
+void ou::Mesh::DrawSubMesh(uint32_t subMeshIndex, Graphics::CommandList cmd) const {
 	const auto &subMesh = subMeshes_[subMeshIndex];
-	GetDevice()->DrawIndexed(subMesh.indexCount, subMesh.indexStart, 0, cmd);
+	Graphics::GetDevice()->DrawIndexed(subMesh.indexCount, subMesh.indexStart, 0, cmd);
 }

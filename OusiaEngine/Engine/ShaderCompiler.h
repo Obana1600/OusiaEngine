@@ -18,8 +18,8 @@ enum class Flags : uint32_t {
 
 struct CompilerInput {
 	Flags flags = Flags::NONE;
-	ShaderStage stage = ShaderStage::Count;
-	ShaderModel minShaderModel = ShaderModel::SM_6_6;
+	Graphics::ShaderStage stage = Graphics::ShaderStage::Count;
+	Graphics::ShaderModel minShaderModel = Graphics::ShaderModel::SM_6_6;
 	std::string shaderPath; // UTF-8 に変換して注入
 	std::string entryPoint = "main";
 	std::vector<std::string> includeDirectories;

@@ -22,9 +22,9 @@ struct EngineDesc {
 	uint32_t height = 720;
 
 #ifdef _DEBUG
-	ValidationMode validationMode = ValidationMode::Enabled;
+	Graphics::ValidationMode validationMode = Graphics::ValidationMode::Enabled;
 #else
-	ValidationMode validationMode = ValidationMode::Disabled;
+	Graphics::ValidationMode validationMode = Graphics::ValidationMode::Disabled;
 #endif
 };
 
@@ -37,11 +37,11 @@ public: // メンバ関数
 
 	bool Update();
 
-	CommandList BeginDraw();
+	Graphics::CommandList BeginDraw();
 
-	void EndDraw(CommandList cmd);
+	void EndDraw(Graphics::CommandList cmd);
 
-	const RenderPassInfo &GetRenderPassInfo() const {
+	const Graphics::RenderPassInfo &GetRenderPassInfo() const {
 		return sceneInfo_;
 	}
 
@@ -50,18 +50,18 @@ private: // メンバ変数
 
 	std::unique_ptr<LogSystem> logSystem_;
 	std::unique_ptr<Window> window_;
-	std::unique_ptr<GraphicsDevice_DX12> device_;
+	std::unique_ptr<Graphics::GraphicsDevice_DX12> device_;
 
-	SwapChain swapChain_;
+	Graphics::SwapChain swapChain_;
 
 	// シーン描画
-	Texture sceneColor_;
-	Texture sceneDepth_;
-	RenderPassInfo sceneInfo_;
+	Graphics::Texture sceneColor_;
+	Graphics::Texture sceneDepth_;
+	Graphics::RenderPassInfo sceneInfo_;
 
-	Shader blitVs_;
-	Shader blitPs_;
-	PipelineState blitPso_;
+	Graphics::Shader blitVs_;
+	Graphics::Shader blitPs_;
+	Graphics::PipelineState blitPso_;
 
 	// 固定 FPS
 	std::chrono::steady_clock::time_point reference_;
@@ -73,7 +73,7 @@ private: // メンバ関数
 
 	void ResizeIfNeeded();
 
-	void BindFullScreenViewport(CommandList cmd);
+	void BindFullScreenViewport(Graphics::CommandList cmd);
 
 	void WaitForFixedFrameRate();
 };

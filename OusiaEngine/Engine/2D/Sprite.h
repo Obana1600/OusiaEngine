@@ -27,10 +27,10 @@ public: // インナークラス
 
 public: // 静的メンバ関数
 
-	static void StaticInitialize(const RenderPassInfo &renderPass, uint32_t windowWidth, uint32_t windowHeight);
+	static void StaticInitialize(const Graphics::RenderPassInfo &renderPass, uint32_t windowWidth, uint32_t windowHeight);
 	static void StaticFinalize();
 
-	static void PreDraw(CommandList cmd);
+	static void PreDraw(Graphics::CommandList cmd);
 
 	static std::unique_ptr<Sprite> Create(
 		uint32_t textureHandle,
@@ -45,16 +45,16 @@ private: // 静的メンバ変数
 
 	static constexpr uint32_t kNumVertex = 4;
 
-	static inline Shader sVs_{};
-	static inline Shader sPs_{};
-	static inline PipelineState sPso_{};
+	static inline Graphics::Shader sVs_{};
+	static inline Graphics::Shader sPs_{};
+	static inline Graphics::PipelineState sPso_{};
 
 	static inline Matrix4x4 sMatProj_{};
 
 
 public: // メンバ関数
 
-	void Draw(CommandList cmd) const;
+	void Draw(Graphics::CommandList cmd) const;
 
 	void SetTextureHandle(uint32_t textureHandle);
 	uint32_t GetTextureHandle() const;
