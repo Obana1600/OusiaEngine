@@ -4,6 +4,8 @@
 #include <cassert>
 #include <format>
 
+using namespace ou;
+
 
 const ou::Vector2 ou::Vector2::Zero = {0.0f, 0.0f};
 const ou::Vector2 ou::Vector2::One = {1.0f, 1.0f};
@@ -69,6 +71,11 @@ ou::Vector2 ou::Vector2::Min(const Vector2 &v1, const Vector2 &v2) {
 
 ou::Vector2 ou::Vector2::Max(const Vector2 &v1, const Vector2 &v2) {
 	return {std::max(v1.x, v2.x), std::max(v1.y, v2.y)};
+}
+
+
+Vector2 ou::Vector2::Scale(const Vector2 &v1, const Vector2 &v2) {
+	return {v1.x * v2.x, v1.y * v2.y};
 }
 
 

@@ -61,6 +61,8 @@ public: // 静的メンバ関数
 
 	static Vector2 Max(const Vector2 &v1, const Vector2 &v2);
 
+	static Vector2 Scale(const Vector2 &v1, const Vector2 &v2);
+
 
 public: // オペレータ
 

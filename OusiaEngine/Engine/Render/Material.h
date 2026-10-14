@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Asset/Shader.h"
-#include "Graphics/GraphicsTypes.h"
+#include "Asset/Texture.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
@@ -50,8 +50,8 @@ public: // メンバ関数
 	void SetColor(const Vector4 &color);
 	const Vector4 &GetColor() const;
 
-	void SetTextureHandle(uint32_t textureHandle);
-	uint32_t GetTextureHandle() const;
+	void SetMainTexture(std::shared_ptr<Texture> mainTexture);
+	const std::shared_ptr<Texture> &GetMainTexture() const;
 
 	void SetUvOffset(const Vector2 &uvOffset);
 	const Vector2 &GetUvOffset() const;
@@ -72,11 +72,12 @@ private: // 静的メンバ変数
 	static inline std::shared_ptr<Shader> sPs_;
 	static inline Graphics::PipelineState sPso_{};
 
+	static inline std::shared_ptr<Texture> sWhiteTexture_;
 
 private: // メンバ変数
 
 	Vector4 color_ = Vector4::One;
-	uint32_t textureHandle_ = 0;
+	std::shared_ptr<Texture> mainTexture_;
 
 	Vector2 uvOffset_{};
 	float uvRotation_ = 0.0f;

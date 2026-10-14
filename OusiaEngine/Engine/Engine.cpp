@@ -1,5 +1,4 @@
 #include "Engine.h"
-#include "2D/Sprite.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
 #include "Render/Material.h"
@@ -7,7 +6,6 @@
 #include "Asset/AssetDatabase.h"
 
 #include <filesystem>
-#include <format>
 #include <thread>
 
 #pragma comment(lib, "winmm.lib")
@@ -74,9 +72,6 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		FatalError("Blit の PSO の作成に失敗しました。");
 	}
 
-	// スプライト
-	Sprite::StaticInitialize(sceneInfo_, scDesc.width, scDesc.height);
-
 	// マテリアル
 	Material::StaticInitialize(sceneInfo_);
 
@@ -92,9 +87,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 void ou::Engine::Finalize() {
 	device_->WaitForGpu();
 
-	TextureManager::GetInstance()->Finalize();
 	ModelManager::GetInstance()->Finalize();
-	Sprite::StaticFinalize();
 	Material::StaticFinalize();
 	AssetDatabase::UnloadAllAssets();
 

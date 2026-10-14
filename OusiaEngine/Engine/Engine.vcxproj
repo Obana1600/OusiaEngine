@@ -22,10 +22,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asset\AssetDatabase.h" />
+    <ClInclude Include="Math\Rect.h" />
+    <ClInclude Include="Scene\RectTransform.h" />
     <ClInclude Include="Render\ModelManager.h" />
     <ClInclude Include="Render\Model.h" />
     <ClInclude Include="Render\ObjParser.h" />
-    <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="Scene\DirectionalLight.h" />
     <ClInclude Include="Render\Mesh.h" />
     <ClInclude Include="Render\Material.h" />
@@ -54,8 +55,6 @@
     <ClInclude Include="Math\Vector4.h" />
     <ClInclude Include="Scene\Object.h" />
     <ClInclude Include="Platform\Window.h" />
-    <ClInclude Include="Graphics\TextureManager.h" />
-    <ClInclude Include="2D\Sprite.h" />
     <ClInclude Include="Scene\Transform.h" />
     <ClInclude Include="Asset\Shader.h" />
     <ClInclude Include="ShaderCompiler.h" />
@@ -63,13 +62,16 @@
     <ClInclude Include="Asset\ShaderImporter.h" />
     <ClInclude Include="Asset\TextureImporter.h" />
     <ClInclude Include="Asset\Texture.h" />
+    <ClInclude Include="Asset\Sprite.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset\AssetDatabase.cpp" />
+    <ClCompile Include="Asset\Sprite.cpp" />
+    <ClCompile Include="Math\Rect.cpp" />
+    <ClCompile Include="Scene\RectTransform.cpp" />
     <ClCompile Include="Render\ModelManager.cpp" />
     <ClCompile Include="Render\Model.cpp" />
     <ClCompile Include="Render\ObjParser.cpp" />
-    <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Scene\DirectionalLight.cpp" />
     <ClCompile Include="Render\Mesh.cpp" />
     <ClCompile Include="Render\Material.cpp" />
@@ -94,8 +96,6 @@
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="Scene\Object.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
-    <ClCompile Include="Graphics\TextureManager.cpp" />
-    <ClCompile Include="2D\Sprite.cpp" />
     <ClCompile Include="Scene\Transform.cpp" />
     <ClCompile Include="Asset\Shader.cpp" />
     <ClCompile Include="ShaderCompiler.cpp" />

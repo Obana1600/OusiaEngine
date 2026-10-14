@@ -1,7 +1,7 @@
 #include "Model.h"
+#include "Asset/AssetDatabase.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
-#include "Graphics/TextureManager.h"
 #include "Render/Material.h"
 #include "Render/Mesh.h"
 #include "Render/MeshRenderer.h"
@@ -61,7 +61,9 @@ std::vector<std::shared_ptr<Material>> CreateMaterials(const ObjData &data, std:
 		material->SetName(source.name);
 		material->SetColor({source.diffuse, source.alpha});
 		if (!source.diffuseMap.empty()) {
-			material->SetTextureHandle(TextureManager::Load(std::string(directory) + source.diffuseMap));
+			material->SetMainTexture(
+				AssetDatabase::LoadAssetAtPath<Texture>(
+					"Assets/" + std::string(directory) + source.diffuseMap));
 		}
 		materials.push_back(std::move(material));
 	}

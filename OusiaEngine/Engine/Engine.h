@@ -4,7 +4,6 @@
 #include "Core/Log.h"
 #include "Graphics/GraphicsDevice_DX12.h"
 #include "Graphics/GraphicsTypes.h"
-#include "Graphics/TextureManager.h"
 #include "Input/InputSystem.h"
 #include "Platform/Window.h"
 

@@ -102,6 +102,7 @@ void ou::Transform::SetParent(Transform *parent) {
 	parent_ = parent;
 	if (parent_) { parent_->children_.push_back(this); }
 	MarkDirty();
+	OnTransformParentChanged();
 }
 
 

@@ -11,7 +11,7 @@
 
 namespace ou {
 
-class Transform final: public Component {
+class Transform: public Component {
 public: // メンバ関数
 
 	~Transform() override;
@@ -35,6 +35,11 @@ public: // メンバ関数
 	Transform *GetParent() const;
 	void SetParent(Transform *parent);
 	const std::vector<Transform *> &GetChildren() const;
+
+
+protected: // メンバ関数
+
+	virtual void OnTransformParentChanged() {};
 
 
 private: // メンバ変数

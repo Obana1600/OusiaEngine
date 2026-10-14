@@ -1,20 +1,26 @@
 #include "Material.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/Fatal.h"
-#include "Core/Paths.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Graphics/TextureManager.h"
 #include "Render/Mesh.h"
-#include <filesystem>
+
+#include <utility>
 
 using namespace ou;
 
 
 void ou::Material::StaticInitialize(const Graphics::RenderPassInfo &renderPass) {
+	// シェーダの作成
 	sVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Standard.VS.hlsl");
 	sPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Standard.PS.hlsl");
 	if (!sVs_ || !sPs_) {
 		FatalError("マテリアルのシェーダの作成に失敗しました");
+	}
+
+	// 既定のテクスチャ
+	sWhiteTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/white1x1.png");
+	if (!sWhiteTexture_) {
+		FatalError("マテリアルの既定のテクスチャの読み込みに失敗しました");
 	}
 
 	// インプットレイアウト
@@ -46,6 +52,9 @@ void ou::Material::StaticInitialize(const Graphics::RenderPassInfo &renderPass) 
 
 void ou::Material::StaticFinalize() {
 	sPso_ = {};
+	sVs_ = nullptr;
+	sPs_ = nullptr;
+	sWhiteTexture_ = nullptr;
 }
 
 
@@ -56,7 +65,7 @@ void ou::Material::BindPipelineState(Graphics::CommandList cmd) {
 
 std::shared_ptr<Material> ou::Material::Create() {
 	auto material = std::make_shared<Material>();
-	material->SetTextureHandle(TextureManager::Load("white1x1.png"));
+	material->SetMainTexture(sWhiteTexture_);
 	return material;
 }
 
@@ -68,8 +77,10 @@ Material::PerMaterial ou::Material::MakePerMaterial() const {
 		Vector3{0.0f, 0.0f, uvRotation_},
 		{uvOffset_, 0.0f});
 	constants.color = color_;
-	constants.textureIndex_ = TextureManager::GetInstance()->GetDescriptorIndex(textureHandle_);
 	constants.lightingMode = lightingMode_;
+
+	const auto &texture = mainTexture_ ? mainTexture_ : sWhiteTexture_;
+	constants.textureIndex_ = texture->GetDescriptorIndex();
 
 	return constants;
 }
@@ -85,13 +96,13 @@ const Vector4 &ou::Material::GetColor() const {
 }
 
 
-void ou::Material::SetTextureHandle(uint32_t textureHandle) {
-	textureHandle_ = textureHandle;
+void ou::Material::SetMainTexture(std::shared_ptr<Texture> mainTexture) {
+	mainTexture_ = std::move(mainTexture);
 }
 
 
-uint32_t ou::Material::GetTextureHandle() const {
-	return textureHandle_;
+const std::shared_ptr<Texture> &ou::Material::GetMainTexture() const {
+	return mainTexture_;
 }
 
 

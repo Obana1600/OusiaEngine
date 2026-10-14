@@ -9,7 +9,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	using namespace ou;
 
 	Engine engine;
-	engine.Initialize({.title = "LE2A_オバナ_サトル"});
+	engine.Initialize({.title = "OusiaEngine"});
 	
 	{
 		GameScene gameScene;

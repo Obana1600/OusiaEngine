@@ -1,6 +1,5 @@
 #include "GameObject.h"
 #include "Core/Assert.h"
-#include "Scene/Transform.h"
 
 using namespace ou;
 
@@ -83,4 +82,38 @@ void ou::GameObject::NotifyDestroyToAllComponents() {
 	for (auto it = components_.rbegin(); it != components_.rend(); it++) {
 		(*it)->OnDestroy();
 	}
+}
+
+void ou::GameObject::ReplaceTransform(std::unique_ptr<Transform> newTransform) {
+	auto *old = transform_;
+	auto *next = newTransform.get();
+
+	// コンポーネントとしての登録
+	next->gameObject_ = this;
+	next->transform_ = next;
+
+	// SRT を引き継ぐ
+	next->SetLocalPosition(old->GetLocalPosition());
+	next->SetLocalRotation(old->GetLocalRotation());
+	next->SetLocalScale(old->GetLocalScale());
+
+	// 親子関係を引き継ぐ
+	next->SetParent(old->GetParent());
+	const auto children = old->GetChildren();
+	for (auto *child : children) {
+		child->SetParent(next);
+	}
+	old->SetParent(nullptr);
+
+	// ほかのコンポーネントが持つ Transform を付け替える
+	for (auto &comp : components_) {
+		comp->transform_ = next;
+	}
+
+	// 新しい Transform に入れ替える
+	ASSERT(components_.front().get() == old, "コンポーネントの先頭が Transform ではありません");
+	transform_ = next;
+	components_.front() = std::move(newTransform);
+
+	next->Awake();
 }
