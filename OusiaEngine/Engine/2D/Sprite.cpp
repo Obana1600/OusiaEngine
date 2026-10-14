@@ -1,10 +1,12 @@
 #include "Sprite.h"
+#include "Asset/AssetDatabase.h"
 #include "Core/Fatal.h"
-#include "Graphics/DXCompiler.h"
+#include "Core/Paths.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/TextureManager.h"
 
 #include <utility>
+#include <filesystem>
 
 using namespace ou;
 
@@ -26,16 +28,19 @@ Matrix4x4 MakeScreenOrtho(float width, float height) {
 void ou::Sprite::StaticInitialize(const Graphics::RenderPassInfo &renderPass, uint32_t windowWidth, uint32_t windowHeight) {
 	sMatProj_ = MakeScreenOrtho(static_cast<float>(windowWidth), static_cast<float>(windowHeight));
 
-	sVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Sprite.VS.hlsl", Graphics::ShaderStage::VS);
-	sPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Sprite.PS.hlsl", Graphics::ShaderStage::PS);
+	sVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Sprite.VS.hlsl");
+	sPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Sprite.PS.hlsl");
+	if (!sVs_ || !sPs_) {
+		FatalError("スプライトのシェーダの作成に失敗しました");
+	}
 
 	Graphics::BlendState blend{};
 	blend.renderTarget[0].blendEnable = true;
 	blend.renderTarget[0].destBlendAlpha = Graphics::Blend::ZERO;
 
 	Graphics::PipelineStateDesc desc{};
-	desc.vs = &sVs_;
-	desc.ps = &sPs_;
+	desc.vs = &sVs_->GetGraphicsShader();
+	desc.ps = &sPs_->GetGraphicsShader();
 	desc.bs = &blend;
 	desc.pt = Graphics::PrimitiveTopology::TRIANGLESTRIP;
 	if (!Graphics::GetDevice()->CreatePipelineState(&desc, &sPso_, &renderPass)) {
@@ -46,8 +51,6 @@ void ou::Sprite::StaticInitialize(const Graphics::RenderPassInfo &renderPass, ui
 
 void ou::Sprite::StaticFinalize() {
 	sPso_ = {};
-	sPs_ = {};
-	sVs_ = {};
 }
 
 

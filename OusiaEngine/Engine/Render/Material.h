@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Asset/Shader.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector2.h"
@@ -16,7 +17,7 @@ class Material: public Object {
 public: // インナークラス
 
 	// ライティング方法
-	enum class LightingMode: uint32_t {
+	enum class LightingMode : uint32_t {
 		None,
 		Lambert,
 		HalfLambert,
@@ -67,8 +68,8 @@ public: // メンバ関数
 
 private: // 静的メンバ変数
 
-	static inline Graphics::Shader sVs_{};
-	static inline Graphics::Shader sPs_{};
+	static inline std::shared_ptr<Shader> sVs_;
+	static inline std::shared_ptr<Shader> sPs_;
 	static inline Graphics::PipelineState sPso_{};
 
 

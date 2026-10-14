@@ -2,10 +2,11 @@
 #include "2D/Sprite.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
-#include "Graphics/DXCompiler.h"
 #include "Render/Material.h"
 #include "Render/ModelManager.h"
+#include "Asset/AssetDatabase.h"
 
+#include <filesystem>
 #include <format>
 #include <thread>
 
@@ -59,13 +60,15 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	CreateSceneTargets(scDesc.width, scDesc.height);
 
 	// blit
-	DXCompiler::GetInstance()->Initialize();
-	blitVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.VS.hlsl", Graphics::ShaderStage::VS);
-	blitPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Blit.PS.hlsl", Graphics::ShaderStage::PS);
+	blitVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Blit.VS.hlsl");
+	blitPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Blit.PS.hlsl");
+	if (!blitVs_ || !blitPs_) {
+		FatalError("Blit のシェーダの作成に失敗しました");
+	}
 
 	Graphics::PipelineStateDesc blitPsoDesc{};
-	blitPsoDesc.vs = &blitVs_;
-	blitPsoDesc.ps = &blitPs_;
+	blitPsoDesc.vs = &blitVs_->GetGraphicsShader();
+	blitPsoDesc.ps = &blitPs_->GetGraphicsShader();
 	const auto scInfo = Graphics::RenderPassInfo::From(swapChain_.GetDesc());
 	if (!device_->CreatePipelineState(&blitPsoDesc, &blitPso_, &scInfo)) {
 		FatalError("Blit の PSO の作成に失敗しました。");
@@ -93,12 +96,11 @@ void ou::Engine::Finalize() {
 	ModelManager::GetInstance()->Finalize();
 	Sprite::StaticFinalize();
 	Material::StaticFinalize();
+	AssetDatabase::UnloadAllAssets();
 
 	timeEndPeriod(1);
 
 	blitPso_ = {};
-	blitPs_ = {};
-	blitVs_ = {};
 	sceneDepth_ = {};
 	sceneColor_ = {};
 	swapChain_ = {};

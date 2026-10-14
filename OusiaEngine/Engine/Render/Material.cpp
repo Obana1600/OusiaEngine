@@ -1,16 +1,21 @@
 #include "Material.h"
+#include "Asset/AssetDatabase.h"
 #include "Core/Fatal.h"
-#include "Graphics/DXCompiler.h"
+#include "Core/Paths.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/TextureManager.h"
 #include "Render/Mesh.h"
+#include <filesystem>
 
 using namespace ou;
 
 
 void ou::Material::StaticInitialize(const Graphics::RenderPassInfo &renderPass) {
-	sVs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Standard.VS.hlsl", Graphics::ShaderStage::VS);
-	sPs_ = DXCompiler::GetInstance()->CompileEngineShader(L"Standard.PS.hlsl", Graphics::ShaderStage::PS);
+	sVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Standard.VS.hlsl");
+	sPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Standard.PS.hlsl");
+	if (!sVs_ || !sPs_) {
+		FatalError("マテリアルのシェーダの作成に失敗しました");
+	}
 
 	// インプットレイアウト
 	const Graphics::InputLayout layout = Mesh::MakeInputLayout();
@@ -27,8 +32,8 @@ void ou::Material::StaticInitialize(const Graphics::RenderPassInfo &renderPass) 
 
 	// PSO の作成
 	Graphics::PipelineStateDesc desc{};
-	desc.vs = &sVs_;
-	desc.ps = &sPs_;
+	desc.vs = &sVs_->GetGraphicsShader();
+	desc.ps = &sPs_->GetGraphicsShader();
 	desc.il = &layout;
 	desc.rs = &rasterizer;
 	desc.dss = &depthStencil;
@@ -41,8 +46,6 @@ void ou::Material::StaticInitialize(const Graphics::RenderPassInfo &renderPass) 
 
 void ou::Material::StaticFinalize() {
 	sPso_ = {};
-	sPs_ = {};
-	sVs_ = {};
 }
 
 

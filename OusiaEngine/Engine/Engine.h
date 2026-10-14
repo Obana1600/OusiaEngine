@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Asset/Shader.h"
 #include "Core/Log.h"
-#include "Graphics/DXCompiler.h"
 #include "Graphics/GraphicsDevice_DX12.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Graphics/TextureManager.h"
@@ -59,8 +59,8 @@ private: // メンバ変数
 	Graphics::Texture sceneDepth_;
 	Graphics::RenderPassInfo sceneInfo_;
 
-	Graphics::Shader blitVs_;
-	Graphics::Shader blitPs_;
+	std::shared_ptr<Shader> blitVs_;
+	std::shared_ptr<Shader> blitPs_;
 	Graphics::PipelineState blitPso_;
 
 	// 固定 FPS

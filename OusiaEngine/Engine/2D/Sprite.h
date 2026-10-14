@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Asset/Shader.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector2.h"
@@ -45,8 +46,8 @@ private: // 静的メンバ変数
 
 	static constexpr uint32_t kNumVertex = 4;
 
-	static inline Graphics::Shader sVs_{};
-	static inline Graphics::Shader sPs_{};
+	static inline std::shared_ptr<Shader> sVs_{};
+	static inline std::shared_ptr<Shader> sPs_{};
 	static inline Graphics::PipelineState sPso_{};
 
 	static inline Matrix4x4 sMatProj_{};

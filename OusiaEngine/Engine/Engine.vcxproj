@@ -21,6 +21,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Asset\AssetDatabase.h" />
     <ClInclude Include="Render\ModelManager.h" />
     <ClInclude Include="Render\Model.h" />
     <ClInclude Include="Render\ObjParser.h" />
@@ -41,7 +42,6 @@
     <ClInclude Include="Core\Log.h" />
     <ClInclude Include="Core\Paths.h" />
     <ClInclude Include="Engine.h" />
-    <ClInclude Include="Graphics\DXCompiler.h" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\GraphicsDevice_DX12.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
@@ -62,8 +62,10 @@
     <ClInclude Include="Asset\AssetImporter.h" />
     <ClInclude Include="Asset\ShaderImporter.h" />
     <ClInclude Include="Asset\TextureImporter.h" />
+    <ClInclude Include="Asset\Texture.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Render\ModelManager.cpp" />
     <ClCompile Include="Render\Model.cpp" />
     <ClCompile Include="Render\ObjParser.cpp" />
@@ -82,7 +84,6 @@
     <ClCompile Include="Core\Log.cpp" />
     <ClCompile Include="Core\Paths.cpp" />
     <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="Graphics\DXCompiler.cpp" />
     <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Math\Mathf.cpp" />
@@ -101,6 +102,7 @@
     <ClCompile Include="Asset\AssetImporter.cpp" />
     <ClCompile Include="Asset\ShaderImporter.cpp" />
     <ClCompile Include="Asset\TextureImporter.cpp" />
+    <ClCompile Include="Asset\Texture.cpp" />
   </ItemGroup>
   <!-- 外部ライブラリ（警告は出さない） -->
   <ItemGroup>
