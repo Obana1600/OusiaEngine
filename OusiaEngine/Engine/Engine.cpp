@@ -75,6 +75,10 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		FatalError("Blit の PSO の作成に失敗しました。");
 	}
 
+	// imgui
+	imGuiManager_ = std::make_unique<ImGuiManager>(window_.get());
+
+	// graphic
 	Graphic::StaticInitialize(scInfo);
 
 	// マテリアル
@@ -91,6 +95,8 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 void ou::Engine::Finalize() {
 	device_->WaitForGpu();
+
+	imGuiManager_.reset();
 
 	ModelManager::GetInstance()->Finalize();
 	Graphic::StaticFinalize();
@@ -116,11 +122,14 @@ void ou::Engine::Finalize() {
 bool ou::Engine::Update() {
 	window_->PumpMessages();
 	InputSystem::GetInstance()->Update();
+	imGuiManager_->NewFrame();
 	return window_->IsCloseRequested();
 }
 
 
 Graphics::CommandList ou::Engine::BeginDraw() {
+	imGuiManager_->EndFrame();
+
 	// 最小化中は描かない
 	if (window_->IsMinimized()) {
 		Sleep(10);
@@ -163,6 +172,7 @@ void ou::Engine::EndDraw(Graphics::CommandList cmd) {
 	if (!isOverlayBegun_) {
 		BeginOverlay(cmd);
 	}
+	imGuiManager_->Render(cmd);
 	device_->RenderPassEnd(cmd);
 	isOverlayBegun_ = false;
 

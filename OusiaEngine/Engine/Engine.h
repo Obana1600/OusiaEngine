@@ -6,6 +6,7 @@
 #include "Graphics/GraphicsTypes.h"
 #include "Input/InputSystem.h"
 #include "Platform/Window.h"
+#include "Editor/ImGuiManager.h"
 
 #include <chrono>
 #include <cstdint>
@@ -52,6 +53,7 @@ private: // メンバ変数
 	std::unique_ptr<LogSystem> logSystem_;
 	std::unique_ptr<Window> window_;
 	std::unique_ptr<Graphics::GraphicsDevice_DX12> device_;
+	std::unique_ptr<ImGuiManager> imGuiManager_;
 
 	Graphics::SwapChain swapChain_;
 

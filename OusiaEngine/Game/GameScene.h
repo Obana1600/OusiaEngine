@@ -5,10 +5,12 @@
 #include "Scene/Scene.h"
 
 #include <memory>
-#include <string_view>
 
 
 namespace ou {
+
+// 前方宣言
+class Image;
 
 class GameScene {
 public: // メンバ関数
@@ -25,13 +27,13 @@ private: // メンバ変数
 
 	std::unique_ptr<Scene> scene_;
 
-	GameObject *switchable_ = nullptr;
-	int modelIndex_ = 0;
+	Image *uvChecker_ = nullptr;
 
 
 private: // メンバ関数
 
-	void SwitchModel(std::string_view fileName);
+	// uvChecker のプロパティを ImGui で操作する
+	void ShowUvCheckerWindow();
 };
 
 } // namespace ou

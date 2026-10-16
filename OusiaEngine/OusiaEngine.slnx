@@ -7,12 +7,8 @@
   </Configurations>
   <Folder Name="/External/">
     <Project Path="External/DirectXTex/DirectXTex_Desktop_2022_Win10.vcxproj" Id="371b9fa9-4c90-4ac6-a123-aced756d6c77" />
-    <Project Path="imgui/imgui.vcxproj" Id="7bb4cfb8-f09e-4c31-abc8-18f47cb36532" />
+    <Project Path="External/imgui/imgui.vcxproj" Id="7bb4cfb8-f09e-4c31-abc8-18f47cb36532" />
   </Folder>
-  <Project Path="Engine/Engine.vcxproj" Id="cb6d32a0-4551-4278-8db9-3352e4b67748">
-    <BuildDependency Project="imgui/imgui.vcxproj" />
-  </Project>
-  <Project Path="Game/Game.vcxproj" Id="6f97b06d-51b8-4807-bdc0-8a6e53fe087a">
-    <BuildDependency Project="imgui/imgui.vcxproj" />
-  </Project>
+  <Project Path="Engine/Engine.vcxproj" Id="cb6d32a0-4551-4278-8db9-3352e4b67748" />
+  <Project Path="Game/Game.vcxproj" Id="6f97b06d-51b8-4807-bdc0-8a6e53fe087a" />
 </Solution>
