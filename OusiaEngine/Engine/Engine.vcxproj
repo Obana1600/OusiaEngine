@@ -115,40 +115,6 @@
     <ClCompile Include="Asset\Texture.cpp" />
   </ItemGroup>
   <!-- 外部ライブラリ（警告は出さない） -->
-  <ItemGroup>
-    <ClCompile Include="..\External\imgui\imgui.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_demo.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_draw.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_tables.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_widgets.cpp">
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <TreatWarningAsError>false</TreatWarningAsError>
-    </ClCompile>
-  </ItemGroup>
   <!-- シェーダは実行時に DXCompiler でコンパイルするので、ビルドはしない -->
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli" />

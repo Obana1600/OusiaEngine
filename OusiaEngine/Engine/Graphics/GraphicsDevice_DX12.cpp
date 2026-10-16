@@ -1736,6 +1736,41 @@ void ou::Graphics::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint
 }
 
 
+ID3D12Device *ou::Graphics::GraphicsDevice_DX12::GetNativeDevice() const {
+	return device_.Get();
+}
+
+
+ID3D12CommandQueue *ou::Graphics::GraphicsDevice_DX12::GetNativeCommandQueue(QueueType queue) const {
+	return queues_[queue].queue.Get();
+}
+
+
+ID3D12GraphicsCommandList *ou::Graphics::GraphicsDevice_DX12::GetNativeCommandList(CommandList cmd) const {
+	return GetCommandList(cmd).GetGraphicsCommandList();
+}
+
+
+ID3D12DescriptorHeap *ou::Graphics::GraphicsDevice_DX12::GetBindlessHeap() const {
+	return descriptorHeapRes_.Get();
+}
+
+
+int ou::Graphics::GraphicsDevice_DX12::AllocateBindlessIndex() {
+	const auto index = allocationHandler_->AllocateResourceIndex();
+	if (index < 0) { FatalError("バインドレスヒープの空きがありません"); }
+	return index;
+}
+
+
+void ou::Graphics::GraphicsDevice_DX12::FreeBindlessIndex(int index) {
+	if (index < 0) { return; }
+
+	std::scoped_lock lock(allocationHandler_->destroyLocker);
+	allocationHandler_->destroyBindlessRes.push_back({index, allocationHandler_->frameCount});
+}
+
+
 GraphicsDevice_DX12::CommandList_DX12 &ou::Graphics::GraphicsDevice_DX12::GetCommandList(CommandList cmd) const {
 	ASSERT(cmd.IsValid());
 	return *static_cast<CommandList_DX12 *>(cmd.internalState);
@@ -1754,6 +1789,12 @@ D3D12_CPU_DESCRIPTOR_HANDLE ou::Graphics::GraphicsDevice_DX12::GetBindlessCpuHan
 	return handle;
 }
 
+
+D3D12_GPU_DESCRIPTOR_HANDLE ou::Graphics::GraphicsDevice_DX12::GetBindlessGpuHandle(int index) const {
+	auto handle = descriptorHeapRes_->GetGPUDescriptorHandleForHeapStart();
+	handle.ptr += static_cast<UINT64>(index) * resDescriptorSize_;
+	return handle;
+}
 
 
 void ou::Graphics::GraphicsDevice_DX12::DescriptorAllocator::Initialize(ID3D12Device *d3dDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorHeapBlock) {

@@ -201,30 +201,6 @@
     <ClCompile Include="Platform\Window.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_demo.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_draw.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_dx12.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_impl_win32.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_stdlib.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_tables.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\External\imgui\imgui_widgets.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Object.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>

@@ -89,6 +89,10 @@
       <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"</Command>
     </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Generated\Outputs\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">
     <ClCompile>
@@ -99,6 +103,10 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"</Command>
     </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Generated\Outputs\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <!-- Release は WITH_EDITOR がないので、アセットも exe の隣から探す（Core/Paths.cpp） -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -112,6 +120,10 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
 xcopy /E /I /Y /Q "$(SourceRoot)Engine\EngineAssets" "$(TargetDir)EngineAssets"
 xcopy /E /I /Y /Q "$(SourceRoot)Game\Assets" "$(TargetDir)Assets"</Command>
     </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Generated\Outputs\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

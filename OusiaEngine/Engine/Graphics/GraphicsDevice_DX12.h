@@ -66,6 +66,19 @@ public: // メンバ関数
 
 	void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) override;
 
+	// ----- ネイティブ -----
+
+	ID3D12Device *GetNativeDevice() const;
+	ID3D12CommandQueue *GetNativeCommandQueue(QueueType queue = QUEUE_GRAPHICS) const;
+	ID3D12GraphicsCommandList *GetNativeCommandList(CommandList cmd) const;
+	ID3D12DescriptorHeap *GetBindlessHeap() const;
+
+	int AllocateBindlessIndex();
+	void FreeBindlessIndex(int index);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetBindlessCpuHandle(int index) const;
+	D3D12_GPU_DESCRIPTOR_HANDLE GetBindlessGpuHandle(int index) const;
+
 
 public: // インナークラス
 
@@ -198,9 +211,7 @@ private: // メンバ関数
 
 	CommandList_DX12 &GetCommandList(CommandList cmd) const;
 
-		GpuLinearAllocator &GetFrameAllocator(CommandList cmd) override;
-
-	D3D12_CPU_DESCRIPTOR_HANDLE GetBindlessCpuHandle(int index) const;
+	GpuLinearAllocator &GetFrameAllocator(CommandList cmd) override;
 
 
 private: // コピー禁止
