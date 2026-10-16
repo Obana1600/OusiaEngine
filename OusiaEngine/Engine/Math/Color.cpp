@@ -131,6 +131,17 @@ Color ou::Color::HSVToRGB(float h, float s, float v) {
 }
 
 
+Color ou::Color::Lerp(const Color &a, const Color &b, float t) {
+	return a + (b - a) * t;
+}
+
+
+Color ou::Color::LerpUnclamped(const Color &a, const Color &b, float t) {
+	t = Mathf::Clamp01(t);
+	return Lerp(a, b, t);
+}
+
+
 void ou::Color::RGBToHSV(const Color &rgb, float &outH, float &outS, float &outV) {
 	const auto maxC = rgb.MaxColorComponent();
 	const auto minC = rgb.MinColorComponent();

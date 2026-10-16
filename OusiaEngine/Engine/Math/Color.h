@@ -57,6 +57,10 @@ public: // 静的メンバ関数
 
 	static Color HSVToRGB(float h, float s, float v);
 
+	static Color Lerp(const Color &a, const Color &b, float t);
+
+	static Color LerpUnclamped(const Color &a, const Color &b, float t);
+
 	static void RGBToHSV(const Color &rgb, float &outH, float &outS, float &outV);
 
 

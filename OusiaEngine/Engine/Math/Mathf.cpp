@@ -16,11 +16,9 @@ float ou::Mathf::Acos(float f) {
 
 
 bool ou::Mathf::Approximately(float a, float b) {
-	if (a == b) {
-		return true;
-	}
-	const auto scale = Max(Abs(a), Abs(b));
-	return Abs(a - b) <= Max(scale * 1e-6f, 1e-6f);
+	if (a == b) { return true; }
+	const auto approxEpsilon = Epsilon * 8.0f;
+	return Abs(b - a) < Max(Epsilon * Max(Abs(a), Abs(b)), approxEpsilon);
 }
 
 

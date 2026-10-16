@@ -23,11 +23,11 @@ ou::Quaternion::Quaternion(const Vector3 &axis, float r)
 
 
 float ou::Quaternion::Length() const {
-	return std::sqrt(Length2());
+	return std::sqrt(LengthSquared());
 }
 
 
-float ou::Quaternion::Length2() const {
+float ou::Quaternion::LengthSquared() const {
 	return Dot(*this, *this);
 }
 
@@ -111,14 +111,14 @@ float ou::Quaternion::Angle(const Quaternion &q1, const Quaternion &q2) {
 
 
 ou::Quaternion ou::Quaternion::AngleAxis(const Vector3 &axis, float angle) {
-	const Vector3 n = Vector3::Normalize(axis);
+	const Vector3 n = axis.Normalize();
 	const float s = std::sin(angle * 0.5f);
 	return {n.x * s, n.y * s, n.z * s, std::cos(angle * 0.5f)};
 }
 
 
 ou::Quaternion ou::Quaternion::Inverse(const Quaternion &q) {
-	const float length2 = q.Length2();
+	const float length2 = q.LengthSquared();
 	assert(length2 > 0.0f);
 	return {-q.x / length2, -q.y / length2, -q.z / length2, q.w / length2};
 }

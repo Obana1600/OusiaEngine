@@ -27,6 +27,13 @@ public: // メンバ変数
 #pragma warning(pop)
 
 
+public: // 静的メンバ変数
+
+	static const Matrix4x4 Identity;
+
+	static const Matrix4x4 Zero;
+
+
 public: // コンストラクタ
 
 	Matrix4x4() = default;
@@ -55,21 +62,18 @@ public: // メンバ関数
 
 	Matrix4x4 Transpose() const;
 
+	Vector3 MultiplyPoint(const Vector3 &point) const;
+
+	Vector3 MultiplyPoint3x4(const Vector3 &point) const;
+
+	Vector3 MultiplyVector(const Vector3 &vector) const;
+
 	bool IsIdentity() const;
 
 	std::string ToString() const;
 
 
-public: // 静的メンバ変数
-
-	static const Matrix4x4 Identity;
-
-	static const Matrix4x4 Zero;
-
-
 public: // 静的メンバ関数
-
-	// TODO: Transform の追加
 
 	static Matrix4x4 Translate(const Vector3 &v);
 

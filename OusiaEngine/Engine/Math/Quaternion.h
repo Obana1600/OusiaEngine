@@ -29,7 +29,7 @@ public: // メンバ関数
 
 	float Length() const;
 
-	float Length2() const;
+	float LengthSquared() const;
 
 	void Normalize();
 

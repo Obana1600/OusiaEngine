@@ -66,7 +66,8 @@ private: // メンバ変数
 	std::shared_ptr<Shader> blitPs_;
 	Graphics::PipelineState blitPso_;
 
-	// 固定 FPS
+	// フレーム
+	std::chrono::steady_clock::time_point lastUpdateTime_;
 	std::chrono::steady_clock::time_point reference_;
 
 	bool isOverlayBegun_ = false;

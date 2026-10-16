@@ -892,6 +892,41 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, 
 
 	is->gpuAddress = is->resource->GetGPUVirtualAddress();
 
+	// バッファの SRV
+	// TODO: CreateSubresource に分ける
+	if (HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE)) {
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Buffer.FirstElement = 0;
+
+		if (HasFlag(desc->miscFlags, ResourceMiscFlag::BUFFER_RAW)) {
+			srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+			srvDesc.Buffer.NumElements = static_cast<UINT>(desc->size / 4);
+
+		} else if (HasFlag(desc->miscFlags, ResourceMiscFlag::BUFFER_STRUCTURED)) {
+			if (desc->stride == 0) {
+				Log::Error("StructuredBuffer の stride が 0 です");
+				return false;
+			}
+			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+			srvDesc.Buffer.StructureByteStride = desc->stride;
+			srvDesc.Buffer.NumElements = static_cast<UINT>(desc->size / desc->stride);
+
+		} else {
+			// TODO: 型月バッファの対応
+			Log::Error("型付きバッファの SRV にはまだ対応していません");
+			return false;
+		}
+
+		is->srvIndex = allocationHandler_->AllocateResourceIndex();
+		if (is->srvIndex < 0) {
+			FatalError("バインドレスヒープの空きがありません");
+		}
+		device_->CreateShaderResourceView(is->resource.Get(), &srvDesc, GetBindlessCpuHandle(is->srvIndex));
+	}
+
 	// マッピング
 	if (desc->heapType == HeapType::UPLOAD) {
 		D3D12_RANGE readRange{0, 0};

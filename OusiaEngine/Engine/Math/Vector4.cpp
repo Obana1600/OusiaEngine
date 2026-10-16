@@ -1,12 +1,29 @@
 #include "Vector4.h"
+#include "Core/Assert.h"
 #include "Math/Mathf.h"
 
-#include <cassert>
 #include <format>
 
+using namespace ou;
 
-const ou::Vector4 ou::Vector4::Zero = {0.0f, 0.0f, 0.0f, 0.0f};
-const ou::Vector4 ou::Vector4::One = {1.0f, 1.0f, 1.0f, 1.0f};
+
+const Vector4 ou::Vector4::Zero = {0.0f, 0.0f, 0.0f, 0.0f};
+const Vector4 ou::Vector4::One = {1.0f, 1.0f, 1.0f, 1.0f};
+const Vector4 ou::Vector4::PositiveInifinity = {Mathf::Infinity,
+												Mathf::Infinity,
+												Mathf::Infinity,
+												Mathf::Infinity};
+const Vector4 ou::Vector4::NegativeInifinity = {Mathf::NegativeInfinity,
+												Mathf::NegativeInfinity,
+												Mathf::NegativeInfinity,
+												Mathf::NegativeInfinity};
+
+
+ou::Vector4::Vector4()
+	: x(0.0f),
+	  y(0.0f),
+	  z(0.0f),
+	  w(0.0f) {}
 
 
 ou::Vector4::Vector4(float x, float y, float z, float w)
@@ -30,50 +47,58 @@ ou::Vector4::Vector4(const Vector3 &vec, float w)
 	  w(w) {}
 
 
-ou::Vector2 ou::Vector4::XY() const {
+Vector2 ou::Vector4::XY() const {
 	return {x, y};
 }
 
 
-ou::Vector2 ou::Vector4::YZ() const {
+Vector2 ou::Vector4::YZ() const {
 	return {y, z};
 }
 
 
-ou::Vector2 ou::Vector4::ZX() const {
+Vector2 ou::Vector4::ZX() const {
 	return {z, x};
 }
 
 
-ou::Vector3 ou::Vector4::XYZ() const {
+Vector3 ou::Vector4::XYZ() const {
 	return {x, y, z};
 }
 
 
-ou::Vector3 ou::Vector4::ZYX() const {
+Vector3 ou::Vector4::ZYX() const {
 	return {z, y, x};
 }
 
 
 float ou::Vector4::Length() const {
-	return Mathf::Sqrt(Length2());
+	return Mathf::Sqrt(LengthSquared());
 }
 
 
-float ou::Vector4::Length2() const {
-	return x * x + y * y + z * z + w * w;
+float ou::Vector4::LengthSquared() const {
+	return x * x +
+		   y * y +
+		   z * z +
+		   w * w;
 }
 
 
-void ou::Vector4::Normalize() {
-	float length = Length();
-	if (length == 0.0f) { return; }
-	*this /= length;
+Vector4 ou::Vector4::Normalize() const {
+	float len = Length();
+	if (len == 0.0f) { return; }
+
+	return {
+		x / len,
+		y / len,
+		z / len,
+		w / len};
 }
 
 
 std::string ou::Vector4::ToString() const {
-	return std::format("({}, {}, {}, {})", x, y, z, w);
+	return std::format("({:.2f}, {:.2f}, {:.2f}, {:.2f})", x, y, z, w);
 }
 
 
@@ -82,42 +107,58 @@ float ou::Vector4::Distance(const Vector4 &v1, const Vector4 &v2) {
 }
 
 
-ou::Vector4 ou::Vector4::Normalize(const Vector4 &v) {
-	auto result = v;
-	result.Normalize();
-	return result;
+Vector4 ou::Vector4::Normalize(Vector4 &v) {
+	return v = v.Normalize();
 }
 
 
 float ou::Vector4::Dot(const Vector4 &v1, const Vector4 &v2) {
-	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
+	return v1.x * v2.x +
+		   v1.y * v2.y +
+		   v1.z * v2.z +
+		   v1.w * v2.w;
 }
 
 
-ou::Vector4 ou::Vector4::Min(const Vector4 &v1, const Vector4 &v2) {
-	return {Mathf::Min(v1.x, v2.x), Mathf::Min(v1.y, v2.y), Mathf::Min(v1.z, v2.z), Mathf::Min(v1.w, v2.w)};
+Vector4 ou::Vector4::Min(const Vector4 &v1, const Vector4 &v2) {
+	return {Mathf::Min(v1.x, v2.x),
+			Mathf::Min(v1.y, v2.y),
+			Mathf::Min(v1.z, v2.z),
+			Mathf::Min(v1.w, v2.w)};
 }
 
 
-ou::Vector4 ou::Vector4::Max(const Vector4 &v1, const Vector4 &v2) {
-	return {Mathf::Max(v1.x, v2.x), Mathf::Max(v1.y, v2.y), Mathf::Max(v1.z, v2.z), Mathf::Max(v1.w, v2.w)};
+Vector4 ou::Vector4::Max(const Vector4 &v1, const Vector4 &v2) {
+	return {Mathf::Max(v1.x, v2.x),
+			Mathf::Max(v1.y, v2.y),
+			Mathf::Max(v1.z, v2.z),
+			Mathf::Max(v1.w, v2.w)};
 }
 
 
 namespace ou {
 
 Vector4 operator+(const Vector4 &v1, const Vector4 &v2) {
-	return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z, v1.w + v2.w};
+	return {v1.x + v2.x,
+			v1.y + v2.y,
+			v1.z + v2.z,
+			v1.w + v2.w};
 }
 
 
 Vector4 operator-(const Vector4 &v1, const Vector4 &v2) {
-	return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, v1.w - v2.w};
+	return {v1.x - v2.x,
+			v1.y - v2.y,
+			v1.z - v2.z,
+			v1.w - v2.w};
 }
 
 
 Vector4 operator*(const Vector4 &v1, float v2) {
-	return {v1.x * v2, v1.y * v2, v1.z * v2, v1.w * v2};
+	return {v1.x * v2,
+			v1.y * v2,
+			v1.z * v2,
+			v1.w * v2};
 }
 
 
@@ -127,46 +168,82 @@ Vector4 operator*(float v1, const Vector4 &v2) {
 
 
 Vector4 operator/(const Vector4 &v1, float v2) {
-	return {v1.x / v2, v1.y / v2, v1.z / v2, v1.w / v2};
+	return {v1.x / v2,
+			v1.y / v2,
+			v1.z / v2,
+			v1.w / v2};
 }
 
 
 Vector4 operator/(float v1, const Vector4 &v2) {
-	return {v1 / v2.x, v1 / v2.y, v1 / v2.z, v1 / v2.w};
+	return {v1 / v2.x,
+			v1 / v2.y,
+			v1 / v2.z,
+			v1 / v2.w};
+}
+
+
+bool operator==(const Vector4 &a, const Vector4 &b) {
+	return Mathf::Approximately(a.x, b.x) &&
+		   Mathf::Approximately(a.y, b.y) &&
+		   Mathf::Approximately(a.z, b.z) &&
+		   Mathf::Approximately(a.w, b.w);
 }
 
 } // namespace ou
 
 
-ou::Vector4 &ou::Vector4::operator+=(const Vector4 &v) {
+Vector4 &ou::Vector4::operator+=(const Vector4 &v) {
 	return *this = *this + v;
 }
 
 
-ou::Vector4 &ou::Vector4::operator-=(const Vector4 &v) {
+Vector4 &ou::Vector4::operator-=(const Vector4 &v) {
 	return *this = *this - v;
 }
 
 
-ou::Vector4 &ou::Vector4::operator*=(float v) {
+Vector4 &ou::Vector4::operator*=(float v) {
 	return *this = *this * v;
 }
 
 
-ou::Vector4 &ou::Vector4::operator/=(float v) {
+Vector4 &ou::Vector4::operator/=(float v) {
 	return *this = *this / v;
 }
 
 
 float &ou::Vector4::operator[](int index) {
-	assert(0 <= index && index < 4);
-	return (&x)[index];
+	switch (index) {
+		case 0:
+			return x;
+		case 1:
+			return y;
+		case 2:
+			return z;
+		case 3:
+			return w;
+		default:
+			ASSERT(false, "範囲外のインデックスです: {}", index);
+			return x;
+	}
 }
 
 
 float ou::Vector4::operator[](int index) const {
-	assert(0 <= index && index < 4);
-	return (&x)[index];
+	switch (index) {
+		case 0:
+			return x;
+		case 1:
+			return y;
+		case 2:
+			return z;
+		case 3:
+			return w;
+		default:
+			ASSERT(false, "範囲外のインデックスです: {}", index);
+			return x;
+	}
 }
 
 

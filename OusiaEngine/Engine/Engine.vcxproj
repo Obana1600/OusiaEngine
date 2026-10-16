@@ -15,9 +15,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-      <ProjectReference Include="..\External\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
-          <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
-      </ProjectReference>
+    <ProjectReference Include="..\External\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
+      <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'!='Release'">
     <ProjectReference Include="..\External\imgui\imgui.vcxproj">
@@ -27,6 +27,9 @@
   <ItemGroup>
     <ClInclude Include="Asset\AssetDatabase.h" />
     <ClInclude Include="Editor\ImGuiManager.h" />
+    <ClInclude Include="Core\Time.h" />
+    <ClInclude Include="Math\Random.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="UI\Image.h" />
     <ClInclude Include="Math\Color.h" />
     <ClInclude Include="Core\Screen.h" />
@@ -78,6 +81,9 @@
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Sprite.cpp" />
     <ClCompile Include="Editor\ImGuiManager.cpp" />
+    <ClCompile Include="Core\Time.cpp" />
+    <ClCompile Include="Math\Random.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="UI\Image.cpp" />
     <ClCompile Include="Math\Color.cpp" />
     <ClCompile Include="Core\Screen.cpp" />

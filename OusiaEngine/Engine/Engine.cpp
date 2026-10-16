@@ -6,6 +6,7 @@
 #include "Render/Material.h"
 #include "Render/ModelManager.h"
 #include "UI/Graphic.h"
+#include "Core/Time.h"
 
 #include <filesystem>
 #include <thread>
@@ -90,6 +91,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// 固定 FPS
 	reference_ = std::chrono::steady_clock::now();
 	timeBeginPeriod(1);
+
+	// フレーム計測開始
+	lastUpdateTime_ = std::chrono::steady_clock::now();
 }
 
 
@@ -120,6 +124,12 @@ void ou::Engine::Finalize() {
 
 
 bool ou::Engine::Update() {
+	// Time を進める
+	const auto now = std::chrono::steady_clock::now();
+	const auto duration = std::chrono::duration<float>(now - lastUpdateTime_).count();
+	Time::Advance(duration);
+	lastUpdateTime_ = now;
+
 	window_->PumpMessages();
 	InputSystem::GetInstance()->Update();
 	imGuiManager_->NewFrame();

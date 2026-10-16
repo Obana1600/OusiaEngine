@@ -146,6 +146,32 @@ ou::Matrix4x4 ou::Matrix4x4::Transpose() const {
 }
 
 
+Vector3 ou::Matrix4x4::MultiplyPoint(const Vector3 &point) const {
+	const auto x = point.x * m11 + point.y * m21 + point.z * m31 + m41;
+	const auto y = point.x * m12 + point.y * m22 + point.z * m32 + m42;
+	const auto z = point.x * m13 + point.y * m23 + point.z * m33 + m43;
+	const auto w = point.x * m14 + point.y * m24 + point.z * m34 + m44;
+
+	return {x / w, y / w, z / w};
+}
+
+
+Vector3 ou::Matrix4x4::MultiplyPoint3x4(const Vector3 &point) const {
+	return {
+		point.x * m11 + point.y * m21 + point.z * m31 + m41,
+		point.x * m12 + point.y * m22 + point.z * m32 + m42,
+		point.x * m13 + point.y * m23 + point.z * m33 + m43};
+}
+
+
+Vector3 ou::Matrix4x4::MultiplyVector(const Vector3 &vector) const {
+	return {
+		vector.x * m11 + vector.y * m21 + vector.z * m31,
+		vector.x * m12 + vector.y * m22 + vector.z * m32,
+		vector.x * m13 + vector.y * m23 + vector.z * m33};
+}
+
+
 bool ou::Matrix4x4::IsIdentity() const {
 	for (int row = 0; row < 4; row++) {
 		for (int column = 0; column < 4; column++) {

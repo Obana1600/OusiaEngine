@@ -16,7 +16,7 @@ inline constexpr float Infinity = std::numeric_limits<float>::infinity();
 
 inline constexpr float NegativeInfinity = -std::numeric_limits<float>::infinity();
 
-inline constexpr float Epsilon = std::numeric_limits<float>::epsilon();
+inline constexpr float Epsilon = 1e-6f;
 
 
 float Abs(float f);

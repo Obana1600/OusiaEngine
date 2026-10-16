@@ -78,7 +78,7 @@ Vector3 ou::Transform::GetWorldPosition() const {
 
 Vector3 ou::Transform::GetForward() const {
 	const auto &m = GetLocalToWorldMatrix();
-	return Vector3::Normalize({m.m31, m.m32, m.m33});
+	return Vector3(m.m31, m.m32, m.m33).Normalize();
 }
 
 
