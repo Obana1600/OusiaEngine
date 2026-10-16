@@ -1,4 +1,6 @@
 #include "Camera.h"
+#include "Core/Screen.h"
+#include "Math/Mathf.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"
@@ -16,19 +18,19 @@ void ou::Camera::OnDestroy() {
 }
 
 
-Matrix4x4 ou::Camera::GetViewMatrix() const {
+Matrix4x4 ou::Camera::GetWorldToCameraMatrix() const {
 	return GetTransform()->GetLocalToWorldMatrix().Inverse();
 }
 
 
 Matrix4x4 ou::Camera::GetProjectionMatrix() const {
-	return Matrix4x4::Perspective(fovY_, aspect_, nearZ_, farZ_);
+	return Matrix4x4::Perspective(fieldOfView_ * Mathf::Deg2Rad, GetAspect(), nearClipPlane_, farClipPlane_);
 }
 
 
 Camera::PerCamera ou::Camera::MakePerCamera() const {
 	PerCamera constants{};
-	constants.view = GetViewMatrix();
+	constants.view = GetWorldToCameraMatrix();
 	constants.projection = GetProjectionMatrix();
 	constants.viewProjection = constants.view * constants.projection;
 	constants.worldPosition = GetTransform()->GetWorldPosition();
@@ -37,13 +39,13 @@ Camera::PerCamera ou::Camera::MakePerCamera() const {
 }
 
 
-void ou::Camera::SetFovY(float fovY) {
-	fovY_ = fovY;
+void ou::Camera::SetFieldOfView(float fieldOfView) {
+	fieldOfView_ = fieldOfView;
 }
 
 
-float ou::Camera::GetFovY() const {
-	return fovY_;
+float ou::Camera::GetFieldOfView() const {
+	return fieldOfView_;
 }
 
 
@@ -53,21 +55,35 @@ void ou::Camera::SetAspect(float aspect) {
 
 
 float ou::Camera::GetAspect() const {
-	return aspect_;
+	if (aspect_ > 0.0f) { return aspect_; }
+
+	const auto width = Screen::GetWidth();
+	const auto height = Screen::GetHeight();
+	if (width == 0 || height == 0) { return 1.0f; }
+	return static_cast<float>(width) / static_cast<float>(height);
 }
 
 
-void ou::Camera::SetClipPlanes(float nearZ, float farZ) {
-	nearZ_ = nearZ;
-	farZ_ = farZ;
+void ou::Camera::ResetAspect() {
+	aspect_ = 0.0f;
 }
 
 
-float ou::Camera::GetNearZ() const {
-	return nearZ_;
+void ou::Camera::SetNearClipPlane(float nearClipPlane) {
+	nearClipPlane_ = nearClipPlane;
 }
 
 
-float ou::Camera::GetFarZ() const {
-	return farZ_;
+float ou::Camera::GetNearClipPlane() const {
+	return nearClipPlane_;
+}
+
+
+void ou::Camera::SetFarClipPlane(float farClipPlane) {
+	farClipPlane_ = farClipPlane;
+}
+
+
+float ou::Camera::GetFarClipPlane() const {
+	return farClipPlane_;
 }

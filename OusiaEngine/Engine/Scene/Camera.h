@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
 #include "Scene/Component.h"
@@ -27,28 +26,31 @@ public: // メンバ関数
 	void Awake() override;
 	void OnDestroy() override;
 
-	Matrix4x4 GetViewMatrix() const;
+	Matrix4x4 GetWorldToCameraMatrix() const;
 	Matrix4x4 GetProjectionMatrix() const;
 
 	PerCamera MakePerCamera() const;
 
-	void SetFovY(float fovY);
-	float GetFovY() const;
+	void SetFieldOfView(float fieldOfView);
+	float GetFieldOfView() const;
 
 	void SetAspect(float aspect);
 	float GetAspect() const;
+	void ResetAspect();
 
-	void SetClipPlanes(float nearZ, float farZ);
-	float GetNearZ() const;
-	float GetFarZ() const;
+	void SetNearClipPlane(float nearClipPlane);
+	float GetNearClipPlane() const;
+
+	void SetFarClipPlane(float farClipPlane);
+	float GetFarClipPlane() const;
 
 
 private: // メンバ変数
 
-	float fovY_ = 60.0f * Mathf::Deg2Rad;
-	float aspect_ = 16.0f / 9.0f;
-	float nearZ_ = 0.1f;
-	float farZ_ = 1000.0f;
+	float fieldOfView_ = 60.0f;
+	float aspect_ = 0.0f;
+	float nearClipPlane_ = 0.3f;
+	float farClipPlane_ = 1000.0f;
 };
 
 } // namespace ou
