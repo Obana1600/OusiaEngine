@@ -14,6 +14,7 @@ namespace ou {
 class Camera;
 class Renderer;
 class DirectionalLight;
+class Canvas;
 
 class Scene {
 public: // メンバ関数
@@ -30,6 +31,7 @@ public: // メンバ関数
 
 	void Update();
 	void Render(Graphics::CommandList cmd) const;
+	void RenderOverlay(Graphics::CommandList cmd) const;
 
 	// Camera
 	void RegisterCamera(Camera *camera);
@@ -44,11 +46,16 @@ public: // メンバ関数
 	void RegisterLight(DirectionalLight *light);
 	void UnregisterLight(DirectionalLight *light);
 
+	// ui
+	void RegisterCanvas(Canvas *canvas);
+	void UnregisterCanvas(Canvas *canvas);
+
 
 private: // メンバ変数
 
 	std::vector<Camera *> cameras_;
 	std::vector<Renderer *> renderers_;
+	std::vector<Canvas *> canvases_;
 	std::vector<DirectionalLight *> lights_;
 	std::vector<std::unique_ptr<GameObject>> gameObjects_;
 

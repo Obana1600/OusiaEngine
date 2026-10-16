@@ -4,9 +4,7 @@
 #include <numbers>
 
 
-namespace ou {
-
-namespace Mathf {
+namespace ou::Mathf {
 
 inline constexpr float PI = std::numbers::pi_v<float>;
 
@@ -47,6 +45,8 @@ float Floor(float f);
 
 int FloorToInt(float f);
 
+float Fmod(float x, float y);
+
 float InverseLerp(float a, float b, float t);
 
 float Lerp(float a, float b, float t);
@@ -55,8 +55,12 @@ float LerpUnclamped(float a, float b, float t);
 
 float Log(float f);
 
+template <typename... Args>
+float Max(float a, float b, Args... args);
 float Max(float a, float b);
 
+template <typename... Args>
+float Min(float a, float b, Args... args);
 float Min(float a, float b);
 
 float Pow(float f, float p);
@@ -75,6 +79,17 @@ float Sqrt(float f);
 
 float Tan(float f);
 
-} // namespace Mathf
 
-} // namespace ou
+
+template <typename... Args>
+inline float Max(float a, float b, Args... args) {
+	return Max(Max(a, b), args...);
+}
+
+
+template <typename... Args>
+inline float Min(float a, float b, Args... args) {
+	return Min(Min(a, b), args...);
+}
+
+} // namespace ou::Mathf

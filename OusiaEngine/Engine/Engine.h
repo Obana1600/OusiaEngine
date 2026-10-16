@@ -38,6 +38,8 @@ public: // メンバ関数
 
 	Graphics::CommandList BeginDraw();
 
+	void BeginOverlay(Graphics::CommandList cmd);
+
 	void EndDraw(Graphics::CommandList cmd);
 
 	const Graphics::RenderPassInfo &GetRenderPassInfo() const {
@@ -64,6 +66,8 @@ private: // メンバ変数
 
 	// 固定 FPS
 	std::chrono::steady_clock::time_point reference_;
+
+	bool isOverlayBegun_ = false;
 
 
 private: // メンバ関数

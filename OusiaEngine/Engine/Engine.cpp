@@ -1,9 +1,11 @@
 #include "Engine.h"
+#include "Asset/AssetDatabase.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
+#include "Core/Screen.h"
 #include "Render/Material.h"
 #include "Render/ModelManager.h"
-#include "Asset/AssetDatabase.h"
+#include "UI/Graphic.h"
 
 #include <filesystem>
 #include <thread>
@@ -55,6 +57,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		FatalError("スワップチェーンの作成に失敗しました。");
 	}
 
+	Screen::SetSize(scDesc.width, scDesc.height);
 	CreateSceneTargets(scDesc.width, scDesc.height);
 
 	// blit
@@ -72,6 +75,8 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		FatalError("Blit の PSO の作成に失敗しました。");
 	}
 
+	Graphic::StaticInitialize(scInfo);
+
 	// マテリアル
 	Material::StaticInitialize(sceneInfo_);
 
@@ -88,6 +93,7 @@ void ou::Engine::Finalize() {
 	device_->WaitForGpu();
 
 	ModelManager::GetInstance()->Finalize();
+	Graphic::StaticFinalize();
 	Material::StaticFinalize();
 	AssetDatabase::UnloadAllAssets();
 
@@ -136,21 +142,29 @@ Graphics::CommandList ou::Engine::BeginDraw() {
 }
 
 
-void ou::Engine::EndDraw(Graphics::CommandList cmd) {
+void ou::Engine::BeginOverlay(Graphics::CommandList cmd) {
 	device_->RenderPassEnd(cmd);
 
 	device_->RenderPassBegin(&swapChain_, cmd);
-	{
-		BindFullScreenViewport(cmd);
-		device_->BindPipelineState(&blitPso_, cmd);
+	BindFullScreenViewport(cmd);
+	device_->BindPipelineState(&blitPso_, cmd);
 
-		BlitConstants constants{};
-		constants.sourceIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&sceneColor_, Graphics::ViewType::SRV));
-		device_->BindDynamicConstantBuffer(constants, 0, cmd);
+	BlitConstants constants{};
+	constants.sourceIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&sceneColor_, Graphics::ViewType::SRV));
+	device_->BindDynamicConstantBuffer(constants, 0, cmd);
 
-		device_->Draw(3, 0, cmd);
+	device_->Draw(3, 0, cmd);
+
+	isOverlayBegun_ = true;
+}
+
+
+void ou::Engine::EndDraw(Graphics::CommandList cmd) {
+	if (!isOverlayBegun_) {
+		BeginOverlay(cmd);
 	}
 	device_->RenderPassEnd(cmd);
+	isOverlayBegun_ = false;
 
 	device_->SubmitCommandLists();
 
@@ -204,6 +218,7 @@ void ou::Engine::ResizeIfNeeded() {
 	desc.height = window_->ClientHeight();
 	device_->CreateSwapChain(&desc, window_->Hwnd(), &swapChain_);
 
+	Screen::SetSize(desc.width, desc.height);
 	CreateSceneTargets(desc.width, desc.height);
 }
 

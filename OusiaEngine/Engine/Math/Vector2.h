@@ -72,6 +72,7 @@ public: // オペレータ
 	friend Vector2 operator*(float v1, const Vector2 &v2);
 	friend Vector2 operator/(const Vector2 &v1, float v2);
 	friend Vector2 operator/(float v1, const Vector2 &v2);
+	friend bool operator==(const Vector2 &v1, const Vector2 &v2);
 
 	Vector2 &operator+=(const Vector2 &v);
 	Vector2 &operator-=(const Vector2 &v);

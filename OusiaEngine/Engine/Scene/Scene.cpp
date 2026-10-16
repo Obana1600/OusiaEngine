@@ -1,11 +1,12 @@
 #include "Scene.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Render/Renderer.h"
-#include "Scene/Component.h"
-#include "Scene/Transform.h"
 #include "Render/Material.h"
+#include "Render/Renderer.h"
 #include "Scene/Camera.h"
+#include "Scene/Component.h"
 #include "Scene/DirectionalLight.h"
+#include "Scene/Transform.h"
+#include "UI/Canvas.h"
 
 using namespace ou;
 
@@ -81,6 +82,13 @@ void ou::Scene::Render(Graphics::CommandList cmd) const {
 }
 
 
+void ou::Scene::RenderOverlay(Graphics::CommandList cmd) const {
+	for (const auto *canvas : canvases_) {
+		canvas->Render(cmd);
+	}
+}
+
+
 void ou::Scene::RegisterCamera(Camera *camera) {
 	cameras_.push_back(camera);
 }
@@ -113,6 +121,16 @@ void ou::Scene::RegisterLight(DirectionalLight *light) {
 
 void ou::Scene::UnregisterLight(DirectionalLight *light) {
 	std::erase(lights_, light);
+}
+
+
+void ou::Scene::RegisterCanvas(Canvas *canvas) {
+	canvases_.push_back(canvas);
+}
+
+
+void ou::Scene::UnregisterCanvas(Canvas *canvas) {
+	std::erase(canvases_, canvas);
 }
 
 

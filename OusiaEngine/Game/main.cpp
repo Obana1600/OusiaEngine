@@ -24,6 +24,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			gameScene.Draw(cmd);
 
+			engine.BeginOverlay(cmd);
+			gameScene.DrawOverlay(cmd);
+
 			engine.EndDraw(cmd);
 		}
 	} // GameScene が持つリソースは、デバイス（Engine）より先に手放す

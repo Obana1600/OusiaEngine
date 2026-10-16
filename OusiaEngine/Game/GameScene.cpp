@@ -1,4 +1,7 @@
 #include "GameScene.h"
+#include "Asset/AssetDatabase.h"
+#include "Asset/Sprite.h"
+#include "Asset/Texture.h"
 #include "Input/InputSystem.h"
 #include "Math/Mathf.h"
 #include "Render/Material.h"
@@ -7,8 +10,10 @@
 #include "Render/ModelManager.h"
 #include "Scene/Camera.h"
 #include "Scene/DirectionalLight.h"
+#include "Scene/RectTransform.h"
 #include "Scene/Transform.h"
-
+#include "UI/Canvas.h"
+#include "UI/Image.h"
 
 #include <cassert>
 
@@ -52,6 +57,41 @@ void GameScene::Initialize() {
 	auto *lightObject = scene_->CreateGameObject("Directional Light");
 	lightObject->AddComponent<DirectionalLight>();
 	lightObject->GetTransform()->SetLocalEulerAngles({50.0f * Mathf::Deg2Rad, -30.0f * Mathf::Deg2Rad, 0.0f});
+
+	// UI
+	auto *canvasObject = scene_->CreateGameObject("Canvas");
+	canvasObject->AddComponent<Canvas>();
+	auto *canvasTransform = canvasObject->GetTransform();
+
+	// 左上に 20 ピクセル離して uvChecker
+	{
+		auto *imageObject = scene_->CreateGameObject("UV Checker");
+		auto *image = imageObject->AddComponent<Image>();
+		image->SetSprite(Sprite::Create(AssetDatabase::LoadAssetAtPath<Texture>("Assets/uvChecker.png")));
+
+		auto *rectTransform = imageObject->GetComponent<RectTransform>();
+		rectTransform->SetParent(canvasTransform);
+		rectTransform->SetAnchorMin({0.0f, 1.0f});
+		rectTransform->SetAnchorMax({0.0f, 1.0f});
+		rectTransform->SetPivot({0.0f, 1.0f});
+		rectTransform->SetAnchoredPosition({20.0f, -20.0f});
+		rectTransform->SetSizeDelta({256.0f, 256.0f});
+	}
+
+	// 右下に 20 ピクセル離して半透明の赤い四角（Sprite なし）
+	{
+		auto *imageObject = scene_->CreateGameObject("Red Box");
+		auto *image = imageObject->AddComponent<Image>();
+		image->SetColor({1.0f, 0.0f, 0.0f, 0.5f});
+
+		auto *rectTransform = imageObject->GetComponent<RectTransform>();
+		rectTransform->SetParent(canvasTransform);
+		rectTransform->SetAnchorMin({1.0f, 0.0f});
+		rectTransform->SetAnchorMax({1.0f, 0.0f});
+		rectTransform->SetPivot({1.0f, 0.0f});
+		rectTransform->SetAnchoredPosition({-20.0f, 20.0f});
+		rectTransform->SetSizeDelta({200.0f, 100.0f});
+	}
 }
 
 
@@ -68,6 +108,11 @@ void GameScene::Update() {
 
 void ou::GameScene::Draw(Graphics::CommandList cmd) const {
 	scene_->Render(cmd);
+}
+
+
+void ou::GameScene::DrawOverlay(Graphics::CommandList cmd) const {
+	scene_->RenderOverlay(cmd);
 }
 
 

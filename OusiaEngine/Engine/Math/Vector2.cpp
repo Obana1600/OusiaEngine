@@ -110,6 +110,12 @@ Vector2 operator/(float v1, const Vector2 &v2) {
 	return {v1 / v2.x, v1 / v2.y};
 }
 
+
+bool operator==(const Vector2 &v1, const Vector2 &v2) {
+	return Mathf::Approximately(v1.x, v2.x) &&
+		   Mathf::Approximately(v1.y, v2.y);
+}
+
 } // namespace ou
 
 

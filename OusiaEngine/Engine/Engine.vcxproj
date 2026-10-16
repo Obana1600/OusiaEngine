@@ -22,6 +22,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asset\AssetDatabase.h" />
+    <ClInclude Include="UI\Image.h" />
+    <ClInclude Include="Math\Color.h" />
+    <ClInclude Include="Core\Screen.h" />
+    <ClInclude Include="UI\Graphic.h" />
+    <ClInclude Include="UI\Canvas.h" />
     <ClInclude Include="Math\Rect.h" />
     <ClInclude Include="Scene\RectTransform.h" />
     <ClInclude Include="Render\ModelManager.h" />
@@ -67,6 +72,11 @@
   <ItemGroup>
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Sprite.cpp" />
+    <ClCompile Include="UI\Image.cpp" />
+    <ClCompile Include="Math\Color.cpp" />
+    <ClCompile Include="Core\Screen.cpp" />
+    <ClCompile Include="UI\Graphic.cpp" />
+    <ClCompile Include="UI\Canvas.cpp" />
     <ClCompile Include="Math\Rect.cpp" />
     <ClCompile Include="Scene\RectTransform.cpp" />
     <ClCompile Include="Render\ModelManager.cpp" />

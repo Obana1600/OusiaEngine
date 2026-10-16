@@ -74,6 +74,11 @@ int ou::Mathf::FloorToInt(float f) {
 }
 
 
+float ou::Mathf::Fmod(float x, float y) {
+	return std::fmod(x, y);
+}
+
+
 float ou::Mathf::InverseLerp(float a, float b, float t) {
 	return Clamp01((t - a) / (b - a));
 }
