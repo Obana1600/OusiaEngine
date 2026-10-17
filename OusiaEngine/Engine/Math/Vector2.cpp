@@ -1,6 +1,7 @@
 #include "Vector2.h"
 #include "Core/Assert.h"
 #include "Math/Mathf.h"
+#include "Math/Vector3.h"
 
 #include <format>
 
@@ -25,6 +26,12 @@ ou::Vector2::Vector2()
 ou::Vector2::Vector2(float x, float y)
 	: x(x),
 	  y(y) {}
+
+
+bool ou::Vector2::Equals(const Vector2 &other) const {
+	return x == other.x &&
+		   y == other.y;
+}
 
 
 float ou::Vector2::Length() const {
@@ -84,6 +91,17 @@ Vector2 ou::Vector2::Max(const Vector2 &v1, const Vector2 &v2) {
 Vector2 ou::Vector2::Scale(const Vector2 &v1, const Vector2 &v2) {
 	return {v1.x * v2.x,
 			v1.y * v2.y};
+}
+
+
+Vector2 ou::Vector2::Lerp(const Vector2 &a, const Vector2 &b, float t) {
+	t = Mathf::Clamp01(t);
+	return LerpUnclamped(a, b, t);
+}
+
+
+Vector2 ou::Vector2::LerpUnclamped(const Vector2 &a, const Vector2 &b, float t) {
+	return a + (b - a) * t;
 }
 
 
@@ -180,4 +198,9 @@ float ou::Vector2::operator[](int index) const {
 
 Vector2 ou::Vector2::operator-() const {
 	return {-x, -y};
+}
+
+
+ou::Vector2::operator Vector3() const {
+	return {x, y, 0.0f};
 }

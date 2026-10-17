@@ -46,6 +46,12 @@ public:
 	// Vector3, w 成分で作成する
 	Vector4(const Vector3 &vec, float w);
 
+	// Vector2 成分で作成する (z, w は 0.0f)
+	Vector4(const Vector2 &v);
+
+	// Vector3 成分で作成する (w は 0.0f)
+	Vector4(const Vector3 &v);
+
 
 public:
 
@@ -64,6 +70,9 @@ public:
 	// Vector3(z, y, x)
 	Vector3 ZYX() const;
 
+	// 指定されたベクトルが完全に等しいか
+	bool Equals(const Vector4 &other) const;
+
 	// ベクトルの長さを返す
 	float Length() const;
 
@@ -75,9 +84,10 @@ public:
 
 	// ベクトルの値をフォーマットされた文字列として返す
 	std::string ToString() const;
+	// TODO: フォーマット指定のオーバーライド
 
 
-public: // 静的メンバ関数
+public: // TODO: API の追加 / コメント書く
 
 	static float Distance(const Vector4 &v1, const Vector4 &v2);
 
@@ -88,6 +98,10 @@ public: // 静的メンバ関数
 	static Vector4 Min(const Vector4 &v1, const Vector4 &v2);
 
 	static Vector4 Max(const Vector4 &v1, const Vector4 &v2);
+
+	static Vector4 Lerp(const Vector4 &a, const Vector4 &b, float t);
+
+	static Vector4 LerpUnclamped(const Vector4 &a, const Vector4 &b, float t);
 
 	// TODO: Projectを追加
 
@@ -110,6 +124,9 @@ public: // オペレータ
 	float &operator[](int index);
 	float operator[](int index) const;
 	Vector4 operator-() const;
+
+	operator Vector2() const;
+	operator Vector3() const;
 };
 
 } // namespace ou

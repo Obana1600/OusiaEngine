@@ -30,6 +30,8 @@ public: // メンバ関数
 
 	virtual void Draw(Graphics::CommandList cmd) const = 0;
 
+	virtual int GetRenderQueue() const;
+
 	void SetMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> &GetMaterial() const;
 

@@ -47,6 +47,20 @@ ou::Vector4::Vector4(const Vector3 &vec, float w)
 	  w(w) {}
 
 
+ou::Vector4::Vector4(const Vector2 &v)
+	: x(v.x),
+	  y(v.y),
+	  z(0.0f),
+	  w(0.0f) {}
+
+
+ou::Vector4::Vector4(const Vector3 &v)
+	: x(v.x),
+	  y(v.y),
+	  z(v.z),
+	  w(0.0f) {}
+
+
 Vector2 ou::Vector4::XY() const {
 	return {x, y};
 }
@@ -72,6 +86,14 @@ Vector3 ou::Vector4::ZYX() const {
 }
 
 
+bool ou::Vector4::Equals(const Vector4 &other) const {
+	return x == other.x &&
+		   y == other.y &&
+		   z == other.z &&
+		   w == other.w;
+}
+
+
 float ou::Vector4::Length() const {
 	return Mathf::Sqrt(LengthSquared());
 }
@@ -87,7 +109,7 @@ float ou::Vector4::LengthSquared() const {
 
 Vector4 ou::Vector4::Normalize() const {
 	float len = Length();
-	if (len == 0.0f) { return; }
+	if (len == 0.0f) { return Vector4::Zero; }
 
 	return {
 		x / len,
@@ -133,6 +155,17 @@ Vector4 ou::Vector4::Max(const Vector4 &v1, const Vector4 &v2) {
 			Mathf::Max(v1.y, v2.y),
 			Mathf::Max(v1.z, v2.z),
 			Mathf::Max(v1.w, v2.w)};
+}
+
+
+Vector4 ou::Vector4::Lerp(const Vector4 &a, const Vector4 &b, float t) {
+	t = Mathf::Clamp01(t);
+	return LerpUnclamped(a, b, t);
+}
+
+
+Vector4 ou::Vector4::LerpUnclamped(const Vector4 &a, const Vector4 &b, float t) {
+	return a + (b - a) * t;
 }
 
 
@@ -249,4 +282,14 @@ float ou::Vector4::operator[](int index) const {
 
 ou::Vector4 ou::Vector4::operator-() const {
 	return {-x, -y, -z, -w};
+}
+
+
+ou::Vector4::operator Vector2() const {
+	return {x, y};
+}
+
+
+ou::Vector4::operator Vector3() const {
+	return {x, y, z};
 }

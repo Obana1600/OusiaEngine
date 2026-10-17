@@ -52,6 +52,13 @@ Vector2 ou::Vector3::ZX() const {
 }
 
 
+bool ou::Vector3::Equals(const Vector3 &other) const {
+	return x == other.x &&
+		   y == other.y &&
+		   z == other.z;
+}
+
+
 float ou::Vector3::Length() const {
 	return Mathf::Sqrt(LengthSquared());
 }
@@ -114,6 +121,17 @@ Vector3 ou::Vector3::Max(const Vector3 &v1, const Vector3 &v2) {
 	return {Mathf::Max(v1.x, v2.x),
 			Mathf::Max(v1.y, v2.y),
 			Mathf::Max(v1.z, v2.z)};
+}
+
+
+Vector3 ou::Vector3::Lerp(const Vector3 &a, const Vector3 &b, float t) {
+	t = Mathf::Clamp01(t);
+	return LerpUnclamped(a, b, t);
+}
+
+
+Vector3 ou::Vector3::LerpUnclamped(const Vector3 &a, const Vector3 &b, float t) {
+	return a + (b - a) * t;
 }
 
 

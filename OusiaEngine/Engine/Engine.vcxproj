@@ -29,7 +29,8 @@
     <ClInclude Include="Editor\ImGuiManager.h" />
     <ClInclude Include="Core\Time.h" />
     <ClInclude Include="Math\Random.h" />
-    <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="Particle\ParticleSystemRenderer.h" />
+    <ClInclude Include="Particle\ParticleSystem.h" />
     <ClInclude Include="UI\Image.h" />
     <ClInclude Include="Math\Color.h" />
     <ClInclude Include="Core\Screen.h" />
@@ -83,7 +84,8 @@
     <ClCompile Include="Editor\ImGuiManager.cpp" />
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Math\Random.cpp" />
-    <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="Particle\ParticleSystemRenderer.cpp" />
+    <ClCompile Include="Particle\ParticleSystem.cpp" />
     <ClCompile Include="UI\Image.cpp" />
     <ClCompile Include="Math\Color.cpp" />
     <ClCompile Include="Core\Screen.cpp" />
@@ -130,6 +132,7 @@
     <None Include="EngineAssets\Shader\Blit.hlsli" />
     <None Include="EngineAssets\Shader\Blit.PS.hlsl" />
     <None Include="EngineAssets\Shader\Blit.VS.hlsl" />
+    <None Include="EngineAssets\Shader\Particle.hlsli" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
     <None Include="EngineAssets\Shader\Standard.hlsli" />
   </ItemGroup>
@@ -171,6 +174,26 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\Particle.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\Particle.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">

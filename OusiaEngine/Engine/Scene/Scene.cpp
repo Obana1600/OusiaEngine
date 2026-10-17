@@ -7,6 +7,7 @@
 #include "Scene/DirectionalLight.h"
 #include "Scene/Transform.h"
 #include "UI/Canvas.h"
+#include <algorithm>
 
 using namespace ou;
 
@@ -65,7 +66,6 @@ void ou::Scene::Render(Graphics::CommandList cmd) const {
 	if (!camera) { return; }
 
 	auto *device = Graphics::GetDevice();
-	Material::BindPipelineState(cmd);
 	device->BindDynamicConstantBuffer(camera->MakePerCamera(), 2, cmd);
 
 	// ライトのセット
@@ -76,7 +76,12 @@ void ou::Scene::Render(Graphics::CommandList cmd) const {
 	}
 	device->BindDynamicConstantBuffer(perFrame, 3, cmd);
 
-	for (const auto *renderer : renderers_) {
+	// renderQueue の小さい順に描く
+	auto renderers = renderers_;
+	std::stable_sort(renderers.begin(), renderers.end(), [](const auto *a, const auto *b) {
+		return a->GetRenderQueue() < b->GetRenderQueue();
+	});
+	for (const auto *renderer : renderers) {
 		renderer->Draw(cmd);
 	}
 }

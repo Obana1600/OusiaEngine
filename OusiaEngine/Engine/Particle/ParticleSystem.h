@@ -84,6 +84,7 @@ public: // インナークラス
 		ShapeType shapeType = ShapeType::Sphere;
 		float angle = 25.0f;
 		float radius = 1.0f;
+		float radiusThickness = 1.0f;
 	};
 
 	struct ColorOverLifetimeModule {

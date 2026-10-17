@@ -4,7 +4,7 @@
 #include <numbers>
 
 
-namespace ou::Mathf {
+namespace ou::Mathf { // TODO: API の追加 / コメント書く
 
 inline constexpr float PI = std::numbers::pi_v<float>;
 

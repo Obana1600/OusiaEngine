@@ -5,6 +5,9 @@
 
 namespace ou {
 
+// 前方宣言
+struct Vector3;
+
 struct Vector2 {
 public:
 
@@ -39,7 +42,7 @@ public:
 	static const Vector2 NegativeInfinity;
 
 
-public: 
+public:
 
 	// デフォルトコンストラクタ
 	Vector2();
@@ -49,6 +52,9 @@ public:
 
 
 public:
+
+	// 指定されたベクトルが完全に等しいか
+	bool Equals(const Vector2 &other) const;
 
 	// ベクトルの長さを返す
 	float Length() const;
@@ -61,9 +67,10 @@ public:
 
 	// ベクトルの値をフォーマットされた文字列として返す
 	std::string ToString() const;
+	// TODO: フォーマット指定のオーバーライド
 
 
-public: // 静的メンバ関数
+public: // TODO: API を増やす / コメント書く
 
 	static Vector2 Normalize(Vector2 &v);
 
@@ -78,6 +85,10 @@ public: // 静的メンバ関数
 	static Vector2 Max(const Vector2 &a, const Vector2 &b);
 
 	static Vector2 Scale(const Vector2 &a, const Vector2 &b);
+
+	static Vector2 Lerp(const Vector2 &a, const Vector2 &b, float t);
+
+	static Vector2 LerpUnclamped(const Vector2 &a, const Vector2 &b, float t);
 
 
 public: // オペレータ
@@ -98,6 +109,8 @@ public: // オペレータ
 	float &operator[](int index);
 	float operator[](int index) const;
 	Vector2 operator-() const;
+
+	operator Vector3() const;
 };
 
 } // namespace ou

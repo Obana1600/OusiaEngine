@@ -12,6 +12,7 @@ void ou::MeshRenderer::Draw(Graphics::CommandList cmd) const {
 	if (!mesh_) { return; }
 
 	auto *device = Graphics::GetDevice();
+	Material::BindPipelineState(cmd);
 	device->BindDynamicConstantBuffer(MakePerDraw(), 0, cmd);
 	mesh_->BindBuffers(cmd);
 

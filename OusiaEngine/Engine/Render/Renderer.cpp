@@ -18,6 +18,11 @@ void ou::Renderer::OnDestroy() {
 }
 
 
+int ou::Renderer::GetRenderQueue() const {
+	return 2000;
+}
+
+
 void ou::Renderer::SetMaterial(std::shared_ptr<Material> material) {
 	if (materials_.empty()) {
 		materials_.push_back(std::move(material));

@@ -7,6 +7,7 @@
 #include "Render/ModelManager.h"
 #include "UI/Graphic.h"
 #include "Core/Time.h"
+#include "Particle/ParticleSystemRenderer.h"
 
 #include <filesystem>
 #include <thread>
@@ -79,11 +80,10 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// imgui
 	imGuiManager_ = std::make_unique<ImGuiManager>(window_.get());
 
-	// graphic
+	// 初期化
 	Graphic::StaticInitialize(scInfo);
-
-	// マテリアル
 	Material::StaticInitialize(sceneInfo_);
+	ParticleSystemRenderer::StaticInitialize(sceneInfo_);
 
 	// その他
 	InputSystem::GetInstance()->Initialize(window_->Hwnd());
@@ -105,6 +105,7 @@ void ou::Engine::Finalize() {
 	ModelManager::GetInstance()->Finalize();
 	Graphic::StaticFinalize();
 	Material::StaticFinalize();
+	ParticleSystemRenderer::StaticFinalize();
 	AssetDatabase::UnloadAllAssets();
 
 	timeEndPeriod(1);

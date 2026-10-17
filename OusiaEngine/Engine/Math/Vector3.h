@@ -71,6 +71,9 @@ public:
 	// Vector2(z, x)
 	Vector2 ZX() const;
 
+	// 指定されたベクトルが完全に等しいか
+	bool Equals(const Vector3 &other) const;
+
 	// ベクトルの長さを返す
 	float Length() const;
 
@@ -82,9 +85,10 @@ public:
 
 	// ベクトルの値をフォーマットされた文字列として返す
 	std::string ToString() const;
+	// TODO: フォーマット指定のオーバーライド
 
 
-public:
+public: // TODO: API の追加 / コメント書く
 
 	static float Distance(const Vector3 &v1, const Vector3 &v2);
 
@@ -97,6 +101,10 @@ public:
 	static Vector3 Min(const Vector3 &v1, const Vector3 &v2);
 
 	static Vector3 Max(const Vector3 &v1, const Vector3 &v2);
+
+	static Vector3 Lerp(const Vector3 &a, const Vector3 &b, float t);
+
+	static Vector3 LerpUnclamped(const Vector3 &a, const Vector3 &b, float t);
 
 	// TODO: Projectを追加
 

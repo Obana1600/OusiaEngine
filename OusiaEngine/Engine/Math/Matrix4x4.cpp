@@ -1,10 +1,10 @@
 #include "Matrix4x4.h"
+#include "Core/Assert.h"
 #include "Math/Mathf.h"
 
-#include <cassert>
 #include <format>
 
-using namespace ou; // TODO: 名前をいい感じに整形する
+using namespace ou;
 
 
 namespace {
@@ -45,12 +45,15 @@ const ou::Matrix4x4 ou::Matrix4x4::Identity = {
 	0.0f, 0.0f, 1.0f, 0.0f,
 	0.0f, 0.0f, 0.0f, 1.0f};
 
-
 const ou::Matrix4x4 ou::Matrix4x4::Zero = {
 	0.0f, 0.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 0.0f, 0.0f};
+
+
+ou::Matrix4x4::Matrix4x4()
+	: m{} {}
 
 
 ou::Matrix4x4::Matrix4x4(
@@ -72,14 +75,14 @@ ou::Matrix4x4::Matrix4x4(const Vector4 &row1, const Vector4 &row2, const Vector4
 }
 
 
-ou::Vector4 ou::Matrix4x4::GetColumn(int index) const {
-	assert(0 <= index && index < 4);
+Vector4 ou::Matrix4x4::GetColumn(int index) const {
+	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
 	return {m[0][index], m[1][index], m[2][index], m[3][index]};
 }
 
 
 void ou::Matrix4x4::SetColumn(int index, const Vector4 &v) {
-	assert(0 <= index && index < 4);
+	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
 
 	for (int row = 0; row < 4; row++) {
 		m[row][index] = v[row];
@@ -87,14 +90,14 @@ void ou::Matrix4x4::SetColumn(int index, const Vector4 &v) {
 }
 
 
-ou::Vector4 ou::Matrix4x4::GetRow(int index) const {
-	assert(0 <= index && index < 4);
+Vector4 ou::Matrix4x4::GetRow(int index) const {
+	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
 	return {m[index][0], m[index][1], m[index][2], m[index][3]};
 }
 
 
 void ou::Matrix4x4::SetRow(int index, const Vector4 &v) {
-	assert(0 <= index && index < 4);
+	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
 
 	for (int column = 0; column < 4; column++) {
 		m[index][column] = v[column];
@@ -107,37 +110,37 @@ float ou::Matrix4x4::Determinant() const {
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Inverse() const {
+Matrix4x4 ou::Matrix4x4::Inverse() const {
 	const MinorTerms t(m);
 	const auto det = t.Determinant();
-	assert(Mathf::Abs(det) > Mathf::Epsilon && "逆行列が存在しない");
+	ASSERT(Mathf::Abs(det) > Mathf::Epsilon, "逆行列が存在しない行列です"); // TODO: 行列を出力するようにしたい
 
 	Matrix4x4 result = {
-		m[1][1] * t.c5 - m[1][2] * t.c4 + m[1][3] * t.c3,
+		+m[1][1] * t.c5 - m[1][2] * t.c4 + m[1][3] * t.c3,
 		-m[0][1] * t.c5 + m[0][2] * t.c4 - m[0][3] * t.c3,
-		m[3][1] * t.s5 - m[3][2] * t.s4 + m[3][3] * t.s3,
+		+m[3][1] * t.s5 - m[3][2] * t.s4 + m[3][3] * t.s3,
 		-m[2][1] * t.s5 + m[2][2] * t.s4 - m[2][3] * t.s3,
 
 		-m[1][0] * t.c5 + m[1][2] * t.c2 - m[1][3] * t.c1,
-		m[0][0] * t.c5 - m[0][2] * t.c2 + m[0][3] * t.c1,
+		+m[0][0] * t.c5 - m[0][2] * t.c2 + m[0][3] * t.c1,
 		-m[3][0] * t.s5 + m[3][2] * t.s2 - m[3][3] * t.s1,
-		m[2][0] * t.s5 - m[2][2] * t.s2 + m[2][3] * t.s1,
+		+m[2][0] * t.s5 - m[2][2] * t.s2 + m[2][3] * t.s1,
 
-		m[1][0] * t.c4 - m[1][1] * t.c2 + m[1][3] * t.c0,
+		+m[1][0] * t.c4 - m[1][1] * t.c2 + m[1][3] * t.c0,
 		-m[0][0] * t.c4 + m[0][1] * t.c2 - m[0][3] * t.c0,
-		m[3][0] * t.s4 - m[3][1] * t.s2 + m[3][3] * t.s0,
+		+m[3][0] * t.s4 - m[3][1] * t.s2 + m[3][3] * t.s0,
 		-m[2][0] * t.s4 + m[2][1] * t.s2 - m[2][3] * t.s0,
 
 		-m[1][0] * t.c3 + m[1][1] * t.c1 - m[1][2] * t.c0,
-		m[0][0] * t.c3 - m[0][1] * t.c1 + m[0][2] * t.c0,
+		+m[0][0] * t.c3 - m[0][1] * t.c1 + m[0][2] * t.c0,
 		-m[3][0] * t.s3 + m[3][1] * t.s1 - m[3][2] * t.s0,
-		m[2][0] * t.s3 - m[2][1] * t.s1 + m[2][2] * t.s0};
+		+m[2][0] * t.s3 - m[2][1] * t.s1 + m[2][2] * t.s0};
 
 	return result * (1.0f / det);
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Transpose() const {
+Matrix4x4 ou::Matrix4x4::Transpose() const {
 	return {
 		m11, m21, m31, m41,
 		m12, m22, m32, m42,
@@ -187,7 +190,7 @@ bool ou::Matrix4x4::IsIdentity() const {
 
 std::string ou::Matrix4x4::ToString() const {
 	return std::format(
-		"({}, {}, {}, {})\n({}, {}, {}, {})\n({}, {}, {}, {})\n({}, {}, {}, {})",
+		"({:.2f}, {:.2f}, {:.2f}, {:.2f})\n({:.2f}, {:.2f}, {:.2f}, {:.2f})\n({:.2f}, {:.2f}, {:.2f}, {:.2f})\n({:.2f}, {:.2f}, {:.2f}, {:.2f})",
 		m11, m12, m13, m14,
 		m21, m22, m23, m24,
 		m31, m32, m33, m34,
@@ -195,7 +198,7 @@ std::string ou::Matrix4x4::ToString() const {
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Translate(const Vector3 &v) {
+Matrix4x4 ou::Matrix4x4::Translate(const Vector3 &v) {
 	return {
 		1.0f, 0.0f, 0.0f, 0.0f,
 		0.0f, 1.0f, 0.0f, 0.0f,
@@ -204,7 +207,7 @@ ou::Matrix4x4 ou::Matrix4x4::Translate(const Vector3 &v) {
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Scale(const Vector3 &v) {
+Matrix4x4 ou::Matrix4x4::Scale(const Vector3 &v) {
 	return {
 		v.x, 0.0f, 0.0f, 0.0f,
 		0.0f, v.y, 0.0f, 0.0f,
@@ -213,7 +216,7 @@ ou::Matrix4x4 ou::Matrix4x4::Scale(const Vector3 &v) {
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Rotate(const Vector3 &v) {
+Matrix4x4 ou::Matrix4x4::Rotate(const Vector3 &v) {
 	const float sx = Mathf::Sin(v.x);
 	const float cx = Mathf::Cos(v.x);
 	const float sy = Mathf::Sin(v.y);
@@ -263,7 +266,7 @@ Matrix4x4 ou::Matrix4x4::Rotate(const Quaternion &q) {
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::SRT(const Vector3 &s, const Vector3 &r, const Vector3 &t) {
+Matrix4x4 ou::Matrix4x4::SRT(const Vector3 &s, const Vector3 &r, const Vector3 &t) {
 	return Scale(s) * Rotate(r) * Translate(t);
 }
 
@@ -273,7 +276,7 @@ Matrix4x4 ou::Matrix4x4::SRT(const Vector3 &s, const Quaternion &r, const Vector
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Perspective(float fovY, float aspect, float nearZ, float farZ) {
+Matrix4x4 ou::Matrix4x4::Perspective(float fovY, float aspect, float nearZ, float farZ) {
 	const auto yScale = 1.0f / Mathf::Tan(fovY * 0.5f);
 	const auto xScale = yScale / aspect;
 	const auto range = farZ / (farZ - nearZ);
@@ -285,7 +288,7 @@ ou::Matrix4x4 ou::Matrix4x4::Perspective(float fovY, float aspect, float nearZ, 
 }
 
 
-ou::Matrix4x4 ou::Matrix4x4::Ortho(float width, float height, float nearZ, float farZ) {
+Matrix4x4 ou::Matrix4x4::Ortho(float width, float height, float nearZ, float farZ) {
 	const auto range = 1.0f / (farZ - nearZ);
 
 	return {2.0f / width, 0.0f, 0.0f, 0.0f,
@@ -323,23 +326,25 @@ Matrix4x4 operator*(const Matrix4x4 &m1, float m2) {
 } // namespace ou
 
 
-ou::Matrix4x4 &ou::Matrix4x4::operator*=(const Matrix4x4 &matrix) {
+Matrix4x4 &ou::Matrix4x4::operator*=(const Matrix4x4 &matrix) {
 	return *this = *this * matrix;
 }
 
 
-ou::Matrix4x4 &ou::Matrix4x4::operator*=(float scalar) {
+Matrix4x4 &ou::Matrix4x4::operator*=(float scalar) {
 	return *this = *this * scalar;
 }
 
 
 float &ou::Matrix4x4::operator()(int row, int column) {
-	assert(0 <= row && row < 4 && 0 <= column && column < 4);
+	ASSERT(0 <= row && row < 4 && 0 <= column && column < 4,
+		   "範囲外のインデックスです: [{}] [{}]", row, column);
 	return m[row][column];
 }
 
 
 float ou::Matrix4x4::operator()(int row, int column) const {
-	assert(0 <= row && row < 4 && 0 <= column && column < 4);
+	ASSERT(0 <= row && row < 4 && 0 <= column && column < 4,
+		   "範囲外のインデックスです: [{}] [{}]", row, column);
 	return m[row][column];
 }

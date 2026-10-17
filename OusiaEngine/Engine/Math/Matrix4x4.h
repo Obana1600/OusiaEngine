@@ -10,7 +10,7 @@
 namespace ou {
 
 struct Matrix4x4 {
-public: // メンバ変数
+public:
 
 #pragma warning(push)
 #pragma warning(disable : 4201) // 無名構造体を使う
@@ -27,26 +27,29 @@ public: // メンバ変数
 #pragma warning(pop)
 
 
-public: // 静的メンバ変数
+public:
 
 	static const Matrix4x4 Identity;
 
 	static const Matrix4x4 Zero;
 
 
-public: // コンストラクタ
+public:
 
-	Matrix4x4() = default;
+	// デフォルトコンストラクタ
+	Matrix4x4();
 
+	// 16 のすべての要素を指定して作成する 
 	Matrix4x4(float m11, float m12, float m13, float m14,
 			  float m21, float m22, float m23, float m24,
 			  float m31, float m32, float m33, float m34,
 			  float m41, float m42, float m43, float m44);
 
+	// 各行を Vector4 で指定して作成する
 	Matrix4x4(const Vector4 &row1, const Vector4 &row2, const Vector4 &row3, const Vector4 &row4);
 
 
-public: // メンバ関数
+public: // TODO: API を増やす / コメント書く
 
 	Vector4 GetColumn(int index) const;
 
@@ -73,7 +76,7 @@ public: // メンバ関数
 	std::string ToString() const;
 
 
-public: // 静的メンバ関数
+public: // TODO: API を増やす / コメント書く
 
 	static Matrix4x4 Translate(const Vector3 &v);
 
