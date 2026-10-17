@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asset\AssetDatabase.h" />
+    <ClInclude Include="Audio\Audio.h" />
     <ClInclude Include="Editor\ImGuiManager.h" />
     <ClInclude Include="Core\Time.h" />
     <ClInclude Include="Math\Random.h" />
@@ -81,6 +82,7 @@
   <ItemGroup>
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Sprite.cpp" />
+    <ClCompile Include="Audio\Audio.cpp" />
     <ClCompile Include="Editor\ImGuiManager.cpp" />
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Math\Random.cpp" />

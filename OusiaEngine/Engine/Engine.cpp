@@ -8,6 +8,7 @@
 #include "UI/Graphic.h"
 #include "Core/Time.h"
 #include "Particle/ParticleSystemRenderer.h"
+#include "Audio/Audio.h"
 
 #include <filesystem>
 #include <thread>
@@ -38,8 +39,15 @@ struct BlitConstants {
 void ou::Engine::Initialize(const EngineDesc &desc) {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
+	// ログ
 	logSystem_ = std::make_unique<LogSystem>(LogDirectory("CG2_DirectXGame"), std::span<const std::string>());
 
+	// オーディオ
+	if (!Audio::Initialize()) {
+		Log::Error("オーディオを初期化できませんでした。音は鳴りません");
+	}
+
+	// ウィンドウ
 	window_ = Window::Create({.title = desc.title, .width = desc.width, .height = desc.height});
 
 	// デバイス
@@ -107,6 +115,8 @@ void ou::Engine::Finalize() {
 	Material::StaticFinalize();
 	ParticleSystemRenderer::StaticFinalize();
 	AssetDatabase::UnloadAllAssets();
+
+	Audio::Finalize();
 
 	timeEndPeriod(1);
 
