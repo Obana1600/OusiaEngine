@@ -82,6 +82,7 @@ bool ou::Audio::Initialize() {
 	hr = XAudio2Create(&sXAudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
 	if (FAILED(hr)) {
 		Log::Error("XAudio2 の作成に失敗しました: {}", DescribeHResult(hr));
+		Finalize();
 		return false;
 	}
 
@@ -147,7 +148,70 @@ bool ou::Audio::CreateSound(const std::filesystem::path &path, Sound *sound) {
 	reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), FALSE);
 	reader->SetStreamSelection(stream, TRUE);
 
-	return false;
+	// PCM 形式にフォーマット指定する
+	ComPtr<IMFMediaType> pcmType;
+	MFCreateMediaType(&pcmType);
+	pcmType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+	pcmType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+	hr = reader->SetCurrentMediaType(stream, nullptr, pcmType.Get());
+	if (FAILED(hr)) {
+		Log::Error("PCM にデコードできない形式です: {}: {}", pathUtf8, DescribeHResult(hr));
+		return false;
+	}
+
+	// 実際にセットされたメディアタイプを取得する
+	ComPtr<IMFMediaType> outputType;
+	reader->GetCurrentMediaType(stream, &outputType);
+
+	// WAVEFORMATEX を取得する
+	WAVEFORMATEX *waveFormat = nullptr;
+	UINT32 formatSize = 0;
+	hr = MFCreateWaveFormatExFromMFMediaType(outputType.Get(), &waveFormat, &formatSize);
+	if (FAILED(hr)) {
+		Log::Error("音声の形式を取得できませんでした: {}: {}", pathUtf8, DescribeHResult(hr));
+		return false;
+	}
+
+	// データを格納する準備
+	auto internal = std::make_shared<SoundInternal>();
+	const auto *formatBytes = reinterpret_cast<const uint8_t *>(waveFormat);
+	internal->format.assign(formatBytes, formatBytes + formatSize);
+	CoTaskMemFree(waveFormat);
+
+	// PCM データのバッファを構築
+	while (true) {
+		DWORD flags = 0;
+		ComPtr<IMFSample> sample;
+		hr = reader->ReadSample(stream, 0, nullptr, &flags, nullptr, &sample);
+		if (FAILED(hr)) {
+			Log::Error("音声のデコードに失敗しました: {}: {}", pathUtf8, DescribeHResult(hr));
+			return false;
+		}
+		if (flags & MF_SOURCE_READERF_ENDOFSTREAM) { break; }
+		if (!sample) { continue; }
+
+		ComPtr<IMFMediaBuffer> buffer;
+		hr = sample->ConvertToContiguousBuffer(&buffer);
+		if (FAILED(hr)) {
+			Log::Error("音声のバッファを取得できませんでした: {}: {}", pathUtf8, DescribeHResult(hr));
+			return false;
+		}
+
+		BYTE *data = nullptr;
+		DWORD length = 0;
+		buffer->Lock(&data, nullptr, &length);
+		internal->audioData.insert(internal->audioData.end(), data, data + length);
+		buffer->Unlock();
+	}
+
+	// 空のバッファは XAudio2 に渡せない
+	if (internal->audioData.empty()) {
+		Log::Error("音声のデータが空です: {}", pathUtf8);
+		return false;
+	}
+
+	sound->internalState = std::move(internal);
+	return true;
 }
 
 
@@ -239,6 +303,12 @@ bool ou::Audio::IsPlaying(const SoundInstance *instance) {
 	XAUDIO2_VOICE_STATE state{};
 	internal->voice->GetState(&state, XAUDIO2_VOICE_NOSAMPLESPLAYED);
 	return state.BuffersQueued > 0;
+}
+
+
+bool ou::Audio::IsPaused(const SoundInstance *instance) {
+	const auto *internal = ToInternal(instance);
+	return internal && internal->state == PlayState::Paused;
 }
 
 

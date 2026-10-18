@@ -26,6 +26,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asset\AssetDatabase.h" />
+    <ClInclude Include="Asset\AudioClip.h" />
+    <ClInclude Include="Asset\AudioImporter.h" />
+    <ClInclude Include="Audio\AudioListener.h" />
+    <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\Audio.h" />
     <ClInclude Include="Editor\ImGuiManager.h" />
     <ClInclude Include="Core\Time.h" />
@@ -82,6 +86,10 @@
   <ItemGroup>
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Sprite.cpp" />
+    <ClCompile Include="Asset\AudioClip.cpp" />
+    <ClCompile Include="Asset\AudioImporter.cpp" />
+    <ClCompile Include="Audio\AudioListener.cpp" />
+    <ClCompile Include="Audio\AudioSource.cpp" />
     <ClCompile Include="Audio\Audio.cpp" />
     <ClCompile Include="Editor\ImGuiManager.cpp" />
     <ClCompile Include="Core\Time.cpp" />

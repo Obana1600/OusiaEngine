@@ -1,6 +1,10 @@
 #include "GameScene.h"
 #include "Asset/AssetDatabase.h"
+#include "Asset/AudioClip.h"
 #include "Asset/Texture.h"
+#include "Audio/Audio.h"
+#include "Audio/AudioSource.h"
+#include "Audio/AudioListener.h"
 #include "Core/Time.h"
 #include "Math/Mathf.h"
 #include "Particle/ParticleSystem.h"
@@ -56,6 +60,39 @@ void EditColorRange(const char *label, ColorRange &range) {
 	ImGui::PopID();
 }
 
+// AudioSource の再生の操作と設定。ヘッダが開いていれば true を返す
+bool EditAudioSource(const char *label, AudioSource &source) {
+	if (!ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen)) { return false; }
+	ImGui::PushID(label);
+
+	const auto &clip = source.GetClip();
+	ImGui::Text("%s (%.1f 秒)  %s",
+				clip ? clip->GetName().c_str() : "クリップなし",
+				clip ? clip->GetLength() : 0.0f,
+				source.IsPlaying() ? "再生中" : "停止中");
+
+	if (ImGui::Button("Play")) { source.Play(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Pause")) { source.Pause(); }
+	ImGui::SameLine();
+	if (ImGui::Button("UnPause")) { source.UnPause(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) { source.Stop(); }
+
+	auto volume = source.GetVolume();
+	if (ImGui::SliderFloat("volume", &volume, 0.0f, 1.0f)) { source.SetVolume(volume); }
+	auto pitch = source.GetPitch();
+	if (ImGui::SliderFloat("pitch", &pitch, 0.1f, 3.0f)) { source.SetPitch(pitch); }
+	auto loop = source.GetLoop();
+	if (ImGui::Checkbox("loop（次の Play から）", &loop)) { source.SetLoop(loop); }
+	ImGui::SameLine();
+	auto mute = source.GetMute();
+	if (ImGui::Checkbox("mute", &mute)) { source.SetMute(mute); }
+
+	ImGui::PopID();
+	return true;
+}
+
 #endif
 
 } // namespace
@@ -68,6 +105,7 @@ void GameScene::Initialize() {
 	cameraObject->AddComponent<Camera>();
 	cameraObject->GetTransform()->SetLocalPosition({0.0f, 3.0f, -12.0f});
 	cameraObject->GetTransform()->SetLocalEulerAngles({10.0f * Mathf::Deg2Rad, 0.0f, 0.0f});
+	cameraObject->AddComponent<AudioListener>();
 
 	uvCheckerTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("Assets/uvChecker.png");
 	softCircleTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("Assets/Particle/soft_circle.png");
@@ -97,12 +135,28 @@ void GameScene::Initialize() {
 	sizeOverLifetime.enabled = true;
 	sizeOverLifetime.start = 1.0f;
 	sizeOverLifetime.end = 0.2f;
+
+	// BGM: ループで、シーンの開始と同時に鳴らす（playOnAwake）
+	auto *bgmObject = scene_->CreateGameObject("BGM");
+	bgmSource_ = bgmObject->AddComponent<AudioSource>();
+	bgmSource_->SetSubmixType(Audio::SubmixType::Music); // clip より先に決めると、インスタンスを作り直さずに済む
+	bgmSource_->SetClip(AssetDatabase::LoadAssetAtPath<AudioClip>("Assets/Bgm/maou_14_shining_star.mp3"));
+	bgmSource_->SetLoop(true);
+	bgmSource_->SetVolume(0.5f);
+
+	// 効果音: ボタンで鳴らす
+	seClip_ = AssetDatabase::LoadAssetAtPath<AudioClip>("Assets/Alarm01.wav");
+	auto *seObject = scene_->CreateGameObject("SE");
+	seSource_ = seObject->AddComponent<AudioSource>();
+	seSource_->SetClip(seClip_);
+	seSource_->SetPlayOnAwake(false);
 }
 
 
 void GameScene::Update() {
 	UpdateEmitterMotion();
 	ShowParticleWindow();
+	ShowAudioWindow();
 
 	scene_->Update();
 }
@@ -252,6 +306,44 @@ void ou::GameScene::ShowParticleWindow() {
 		auto sortMode = static_cast<int>(particleRenderer_->GetSortMode());
 		if (ImGui::Combo("sortMode", &sortMode, "None\0Distance\0OldestInFront\0YoungestInFront\0")) {
 			particleRenderer_->SetSortMode(static_cast<ParticleSystemRenderer::SortMode>(sortMode));
+		}
+	}
+
+	ImGui::End();
+#endif
+}
+
+
+void ou::GameScene::ShowAudioWindow() {
+#ifdef USE_IMGUI
+	ImGui::SetNextWindowPos({460.0f, 20.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({400.0f, 500.0f}, ImGuiCond_FirstUseEver);
+	ImGui::Begin("Audio");
+
+	// 全体（AudioListener）とサブミックスの音量
+	auto masterVolume = AudioListener::GetVolume();
+	if (ImGui::SliderFloat("全体の音量", &masterVolume, 0.0f, 1.0f)) {
+		AudioListener::SetVolume(masterVolume);
+	}
+	auto musicVolume = Audio::GetSubmixVolume(Audio::SubmixType::Music);
+	if (ImGui::SliderFloat("BGM の音量", &musicVolume, 0.0f, 1.0f)) {
+		Audio::SetSubmixVolume(Audio::SubmixType::Music, musicVolume);
+	}
+	auto soundEffectVolume = Audio::GetSubmixVolume(Audio::SubmixType::SoundEffect);
+	if (ImGui::SliderFloat("効果音の音量", &soundEffectVolume, 0.0f, 1.0f)) {
+		Audio::SetSubmixVolume(Audio::SubmixType::SoundEffect, soundEffectVolume);
+	}
+
+	EditAudioSource("BGM", *bgmSource_);
+
+	if (EditAudioSource("SE", *seSource_)) {
+		// clip とは別に重ねて鳴らす。連打すると重なる
+		if (ImGui::Button("PlayOneShot")) {
+			seSource_->PlayOneShot(seClip_, 1.0f);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("PlayOneShot（半分の音量）")) {
+			seSource_->PlayOneShot(seClip_, 0.5f);
 		}
 	}
 

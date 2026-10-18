@@ -1,0 +1,33 @@
+#include "AudioImporter.h"
+#include "Asset/AudioClip.h"
+#include "Audio/Audio.h"
+#include "Core/Log.h"
+#include "Core/Paths.h"
+
+#include <utility>
+
+using namespace ou;
+
+
+ou::AudioImporter::AudioImporter(std::filesystem::path assetPath)
+	: AssetImporter(std::move(assetPath)) {}
+
+
+std::shared_ptr<Object> ou::AudioImporter::Import() {
+	return ImportAudioClip();
+}
+
+
+std::shared_ptr<AudioClip> ou::AudioImporter::ImportAudioClip() {
+	// 読み込み層のサウンドを作成
+	Audio::Sound sound;
+	if (!Audio::CreateSound(GetAssetPath(), &sound)) {
+		Log::Error("オーディオクリップを作れませんでした: {}", ToUtf8(GetAssetPath()));
+		return nullptr;
+	}
+	
+	// アセット層のクリップを作成
+	auto clip = std::make_shared<AudioClip>(std::move(sound));
+	clip->SetName(GetName());
+	return clip;
+}

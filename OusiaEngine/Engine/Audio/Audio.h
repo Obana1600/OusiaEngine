@@ -59,6 +59,7 @@ void Play(SoundInstance *instance);
 void Pause(SoundInstance *instance);
 void Stop(SoundInstance *instance);
 bool IsPlaying(const SoundInstance *instance);
+bool IsPaused(const SoundInstance *instance);
 
 void SetVolume(float volume, SoundInstance *instance = nullptr);
 float GetVolume(const SoundInstance *instance = nullptr);

@@ -10,6 +10,8 @@
 namespace ou {
 
 // 前方宣言
+class AudioClip;
+class AudioSource;
 class ParticleSystem;
 class ParticleSystemRenderer;
 class Texture;
@@ -41,6 +43,11 @@ private: // メンバ変数
 	std::shared_ptr<Texture> softCircleTexture_;
 	int textureIndex_ = 2;
 
+	// 音
+	AudioSource *bgmSource_ = nullptr;
+	AudioSource *seSource_ = nullptr;
+	std::shared_ptr<AudioClip> seClip_; // PlayOneShot で鳴らす
+
 
 private: // メンバ関数
 
@@ -48,6 +55,9 @@ private: // メンバ関数
 
 	// パーティクルの設定を ImGui で操作する
 	void ShowParticleWindow();
+
+	// 音の再生と設定を ImGui で操作する
+	void ShowAudioWindow();
 };
 
 } // namespace ou

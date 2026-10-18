@@ -1,5 +1,6 @@
 #include "AssetDatabase.h"
 #include "Asset/AssetImporter.h"
+#include "Asset/AudioImporter.h"
 #include "Asset/ShaderImporter.h"
 #include "Asset/TextureImporter.h"
 #include "Core/Log.h"
@@ -7,11 +8,11 @@
 
 #include <cwctype>
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <functional>
 
 using namespace ou;
 
@@ -73,6 +74,8 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::filesystem::path &fullP
 		{L".png", &MakeImporter<TextureImporter>},
 		{L".jpg", &MakeImporter<TextureImporter>},
 		{L".jpeg", &MakeImporter<TextureImporter>},
+		{L".wav", &MakeImporter<AudioImporter>},
+		{L".mp3", &MakeImporter<AudioImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる
