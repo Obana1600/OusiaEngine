@@ -48,13 +48,12 @@ std::shared_ptr<Mesh> ou::Mesh::CreateCube() {
 }
 
 
-Graphics::InputLayout ou::Mesh::MakeInputLayout() {
-	Graphics::InputLayout layout{};
-	layout.elements = {
+const Graphics::InputLayout &ou::Mesh::GetInputLayout() {
+	static const Graphics::InputLayout layout = {{
 		{"POSITION", 0, Graphics::Format::R32G32B32_FLOAT},
 		{"NORMAL", 0, Graphics::Format::R32G32B32_FLOAT},
-		{"TEXCOORD", 0, Graphics::Format::R32G32_FLOAT}};
-
+		{"TEXCOORD", 0, Graphics::Format::R32G32_FLOAT},
+	}};
 	return layout;
 }
 

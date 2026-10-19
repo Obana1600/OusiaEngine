@@ -677,6 +677,8 @@ struct RenderPassInfo {
 		}
 		return info;
 	}
+
+	bool operator==(const RenderPassInfo &) const = default;
 };
 
 } // namespace ou::Graphics

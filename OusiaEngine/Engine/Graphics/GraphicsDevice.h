@@ -29,7 +29,7 @@ public: // メンバ関数
 	virtual bool CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) = 0;
 	virtual bool CreateShader(ShaderStage stage, const void *shaderCode, size_t shaderCodeSize, Shader *shader) = 0;
 	virtual bool CreateSampler(const SamplerDesc *desc, Sampler *sampler) = 0;
-	virtual bool CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) = 0;
+	virtual bool CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo = nullptr) = 0;
 
 	virtual void SetName(GpuResource *resource, std::string_view name) const = 0;
 

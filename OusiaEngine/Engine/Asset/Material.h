@@ -2,6 +2,7 @@
 
 #include "Asset/Shader.h"
 #include "Asset/Texture.h"
+#include "Math/Color.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
@@ -35,20 +36,27 @@ public: // インナークラス
 
 public: // 静的メンバ関数
 
-	static void StaticInitialize(const Graphics::RenderPassInfo &renderPass);
+	static void StaticInitialize();
 	static void StaticFinalize();
 
-	static void BindPipelineState(Graphics::CommandList cmd);
-
-	static std::shared_ptr<Material> Create();
+	static std::shared_ptr<Material> Create(std::shared_ptr<Shader> shader = nullptr);
 
 
 public: // メンバ関数
 
 	PerMaterial MakePerMaterial() const;
 
-	void SetColor(const Vector4 &color);
-	const Vector4 &GetColor() const;
+	void SetShader(std::shared_ptr<Shader> shader);
+	const std::shared_ptr<Shader> &GetShader() const;
+
+	void SetRenderQueue(int renderQueue);
+	int GetRenderQueue() const;
+
+	void SetRenderStateOverride(const Shader::RenderStateOverride &renderStateOverride);
+	const Shader::RenderStateOverride &GetRenderStateOverride() const;
+
+	void SetColor(const Color &color);
+	const Color &GetColor() const;
 
 	void SetMainTexture(std::shared_ptr<Texture> mainTexture);
 	const std::shared_ptr<Texture> &GetMainTexture() const;
@@ -68,21 +76,22 @@ public: // メンバ関数
 
 private: // 静的メンバ変数
 
-	static inline std::shared_ptr<Shader> sVs_;
-	static inline std::shared_ptr<Shader> sPs_;
-	static inline Graphics::PipelineState sPso_{};
-
+	static inline std::shared_ptr<Shader> sStandardShader_;
 	static inline std::shared_ptr<Texture> sWhiteTexture_;
+
 
 private: // メンバ変数
 
-	Vector4 color_ = Vector4::One;
+	std::shared_ptr<Shader> shader_;
 	std::shared_ptr<Texture> mainTexture_;
+
+	int renderQueue_ = -1;
+	Shader::RenderStateOverride renderStateOverride_{};
 
 	Vector2 uvOffset_{};
 	float uvRotation_ = 0.0f;
 	Vector2 uvScale_ = Vector2::One;
-
+	Color color_ = Color::White;
 	LightingMode lightingMode_ = LightingMode::HalfLambert;
 };
 

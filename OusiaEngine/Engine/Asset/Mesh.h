@@ -31,7 +31,7 @@ public: // 静的メンバ関数
 
 	static std::shared_ptr<Mesh> CreateCube();
 
-	static Graphics::InputLayout MakeInputLayout();
+	static const Graphics::InputLayout &GetInputLayout();
 
 
 public: // メンバ関数

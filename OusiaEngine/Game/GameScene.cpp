@@ -1,6 +1,7 @@
 #include "GameScene.h"
 #include "Asset/AssetDatabase.h"
 #include "Asset/AudioClip.h"
+#include "Asset/Material.h"
 #include "Asset/Texture.h"
 #include "Audio/Audio.h"
 #include "Audio/AudioSource.h"
@@ -113,7 +114,7 @@ void GameScene::Initialize() {
 	// エミッタ: 円錐で上に出して、寿命の終わりに向かって薄く・小さくする
 	emitter_ = scene_->CreateGameObject("Particle Emitter");
 	particleRenderer_ = emitter_->AddComponent<ParticleSystemRenderer>();
-	particleRenderer_->SetTexture(softCircleTexture_);
+	particleRenderer_->GetMaterial()->SetMainTexture(softCircleTexture_); // テクスチャはマテリアルが持つ（Unity と同じ）
 	particleSystem_ = emitter_->GetComponent<ParticleSystem>();
 
 	auto &main = particleSystem_->GetMain();
@@ -293,7 +294,7 @@ void ou::GameScene::ShowParticleWindow() {
 	if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (ImGui::Combo("texture", &textureIndex_, "白（なし）\0uvChecker\0丸いぼかし\0")) {
 			const std::shared_ptr<Texture> textures[] = {nullptr, uvCheckerTexture_, softCircleTexture_};
-			particleRenderer_->SetTexture(textures[textureIndex_]);
+			particleRenderer_->GetMaterial()->SetMainTexture(textures[textureIndex_]);
 		}
 
 		auto blendMode = static_cast<int>(particleRenderer_->GetBlendMode());

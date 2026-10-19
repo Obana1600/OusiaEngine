@@ -34,8 +34,6 @@ void ou::Canvas::Render(Graphics::CommandList cmd) const {
 	const auto &size = rectTransform_->GetSizeDelta();
 	const auto viewProj = Matrix4x4::Ortho(size.x, size.y, 0.0f, 1.0f);
 
-	Graphic::BindPipelineState(cmd);
-
 	std::vector<const Graphic *> graphics;
 	CollectGraphics(rectTransform_, graphics);
 	for (const auto *graphic : graphics) {

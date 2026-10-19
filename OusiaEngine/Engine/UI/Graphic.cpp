@@ -4,47 +4,36 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Scene/GameObject.h"
 #include "Scene/RectTransform.h"
+#include "Asset/Shader.h"
+
+#include <utility>
 
 using namespace ou;
 
 
-void ou::Graphic::StaticInitialize(const Graphics::RenderPassInfo &renderPass) {
-	sVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Sprite.VS.hlsl");
-	sPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Sprite.PS.hlsl");
-	if (!sVs_ || !sPs_) {
-		FatalError("UI のシェーダの作成に失敗しました");
+void ou::Graphic::StaticInitialize() {
+	const auto shader = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Sprite.shader");
+	if (!shader) {
+		FatalError("UI の既定のシェーダの読み込みに失敗しました");
 	}
+	sDefaultMaterial_ = Material::Create(shader);
+	sDefaultMaterial_->SetName("Default UI Material");
 
 	sWhiteTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/white1x1.png");
 	if (!sWhiteTexture_) {
 		FatalError("UI の既定のテクスチャの読み込みに失敗しました");
 	}
-
-	Graphics::BlendState blend{};
-	blend.renderTarget[0].blendEnable = true;
-	blend.renderTarget[0].destBlendAlpha = Graphics::Blend::ZERO;
-
-	Graphics::PipelineStateDesc desc{};
-	desc.vs = &sVs_->GetGraphicsShader();
-	desc.ps = &sPs_->GetGraphicsShader();
-	desc.bs = &blend;
-	desc.pt = Graphics::PrimitiveTopology::TRIANGLESTRIP;
-	if (!Graphics::GetDevice()->CreatePipelineState(&desc, &sPso_, &renderPass)) {
-		FatalError("UI の PSO の作成に失敗しました");
-	}
 }
 
 
 void ou::Graphic::StaticFinalize() {
-	sPso_ = {};
+	sDefaultMaterial_ = nullptr;
 	sWhiteTexture_ = nullptr;
-	sVs_ = nullptr;
-	sPs_ = nullptr;
 }
 
 
-void ou::Graphic::BindPipelineState(Graphics::CommandList cmd) {
-	Graphics::GetDevice()->BindPipelineState(&sPso_, cmd);
+const std::shared_ptr<Material> &ou::Graphic::GetDefaultGraphicMaterial() {
+	return sDefaultMaterial_;
 }
 
 
@@ -55,6 +44,16 @@ void ou::Graphic::Awake() {
 	if (!rectTransform_) {
 		rectTransform_ = GetGameObject()->AddComponent<RectTransform>();
 	}
+}
+
+
+void ou::Graphic::SetMaterial(std::shared_ptr<Material> material) {
+	material_ = std::move(material);
+}
+
+
+const std::shared_ptr<Material> &ou::Graphic::GetMaterial() const {
+	return material_ ? material_ : sDefaultMaterial_;
 }
 
 
@@ -75,4 +74,21 @@ const std::shared_ptr<Texture> &ou::Graphic::GetWhiteTexture() {
 
 RectTransform *ou::Graphic::GetRectTransform() const {
 	return rectTransform_;
+}
+
+
+void ou::Graphic::DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount) const {
+	const auto &material = GetMaterial();
+	if (!material || !material->GetShader()) { return; }
+
+	auto *device = Graphics::GetDevice();
+	const auto &shader = material->GetShader();
+	for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
+		const auto *pso = shader->GetPipelineState(
+			pass, material->GetRenderStateOverride(), nullptr, Graphics::PrimitiveTopology::TRIANGLESTRIP);
+		if (!pso) { continue; }
+
+		device->BindPipelineState(pso, cmd);
+		device->Draw(vertexCount, 0, cmd);
+	}
 }

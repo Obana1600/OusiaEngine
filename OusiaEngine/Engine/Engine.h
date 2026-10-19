@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Asset/Shader.h"
+#include "Asset/ShaderModule.h"
 #include "Core/Log.h"
 #include "Graphics/GraphicsDevice_DX12.h"
 #include "Graphics/GraphicsTypes.h"
@@ -62,8 +62,8 @@ private: // メンバ変数
 	Graphics::Texture sceneDepth_;
 	Graphics::RenderPassInfo sceneInfo_;
 
-	std::shared_ptr<Shader> blitVs_;
-	std::shared_ptr<Shader> blitPs_;
+	std::shared_ptr<ShaderModule> blitVs_;
+	std::shared_ptr<ShaderModule> blitPs_;
 	Graphics::PipelineState blitPso_;
 
 	// フレーム

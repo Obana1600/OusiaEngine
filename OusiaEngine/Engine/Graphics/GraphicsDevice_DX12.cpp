@@ -570,8 +570,20 @@ Shader_DX12 *ToInternal(const Shader *param) {
 struct PipelineState_DX12 {
 	std::shared_ptr<GraphicsDevice_DX12::AllocationHandler> allocationHandler;
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
+	std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+	std::vector<std::string> semanticNames;
+	std::vector<std::shared_ptr<void>> shaders;
+
 	D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+	// RenderPassInfo ごとの PSO
+	struct Variant {
+		RenderPassInfo renderPassInfo;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+	};
+	std::vector<Variant> variants;
+	std::mutex variantsLocker;
 
 	~PipelineState_DX12();
 };
@@ -580,13 +592,46 @@ PipelineState_DX12::~PipelineState_DX12() {
 	if (!allocationHandler) { return; }
 
 	std::scoped_lock lock(allocationHandler->destroyLocker);
-	if (pipelineState) {
-		allocationHandler->destroyerPipelines.push_back({pipelineState, allocationHandler->frameCount});
+	for (const auto &variant : variants) {
+		allocationHandler->destroyerPipelines.push_back(
+			{variant.pipelineState, allocationHandler->frameCount});
 	}
 }
 
 PipelineState_DX12 *ToInternal(const PipelineState *param) {
 	return static_cast<PipelineState_DX12 *>(param->internalState.get());
+}
+
+ID3D12PipelineState *FindOrCreatePipeline(
+	ID3D12Device *device,
+	PipelineState_DX12 &is,
+	const RenderPassInfo &renderPassInfo) {
+	std::scoped_lock lock(is.variantsLocker);
+
+	for (const auto &variant : is.variants) {
+		if (variant.renderPassInfo == renderPassInfo) {
+			return variant.pipelineState.Get();
+		}
+	}
+	auto desc = is.desc;
+	desc.NumRenderTargets = renderPassInfo.rtCount;
+	for (uint32_t i = 0; i < renderPassInfo.rtCount; i++) {
+		desc.RTVFormats[i] = ConvertFormat(renderPassInfo.rtFormats[i]);
+	}
+	desc.DSVFormat = ConvertFormat(renderPassInfo.dsFormat);
+	if (renderPassInfo.dsFormat == Format::UNKNOWN) { desc.DepthStencilState.DepthEnable = FALSE; }
+	desc.SampleDesc.Count = renderPassInfo.sampleCount;
+	desc.SampleDesc.Quality = 0;
+
+	ComPtr<ID3D12PipelineState> pipelineState;
+	auto hr = device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState));
+	if (FAILED(hr)) {
+		Log::Error("PipelineState の作成に失敗しました: {}", DescribeHResult(hr));
+		return nullptr;
+	}
+
+	is.variants.push_back({renderPassInfo, pipelineState});
+	return pipelineState.Get();
 }
 
 // ================================================================================================
@@ -1167,11 +1212,6 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateSampler(const SamplerDesc *desc, S
 
 
 bool ou::Graphics::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateDesc *desc, PipelineState *pso, const RenderPassInfo *renderPassInfo) {
-	if (!renderPassInfo) {
-		// TODO: 描画時の PSO ソートに対応させる
-		Log::Error("CreatePipelineState には RenderPassInfo が必要です。");
-		return false;
-	}
 	if (desc->ms || desc->as) {
 		// TODO: メッシュシェーダ PSO の対応
 		Log::Error("メッシュシェーダの PSO にはまだ対応していません。");
@@ -1180,27 +1220,32 @@ bool ou::Graphics::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateD
 
 	auto is = std::make_shared<PipelineState_DX12>();
 	is->allocationHandler = allocationHandler_;
-	pso->internalState = is;
-	pso->desc = *desc;
 
-	// PSO の設定
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+	// 描画先の形式以外の設定
+	auto &psoDesc = is->desc;
 	psoDesc.pRootSignature = rootSignature_.Get();
 
 	// シェーダ
-	if (desc->vs) { psoDesc.VS = ToInternal(desc->vs)->GetByteCode(); }
-	if (desc->ps) { psoDesc.PS = ToInternal(desc->ps)->GetByteCode(); }
-	if (desc->hs) { psoDesc.HS = ToInternal(desc->hs)->GetByteCode(); }
-	if (desc->ds) { psoDesc.DS = ToInternal(desc->ds)->GetByteCode(); }
-	if (desc->gs) { psoDesc.GS = ToInternal(desc->gs)->GetByteCode(); }
+	const auto setShader = [&is](const Shader *shader, D3D12_SHADER_BYTECODE &byteCode) {
+		if (!shader) { return; }
+		byteCode = ToInternal(shader)->GetByteCode();
+		is->shaders.push_back(shader->internalState);
+	};
+	setShader(desc->vs, psoDesc.VS);
+	setShader(desc->ps, psoDesc.PS);
+	setShader(desc->hs, psoDesc.HS);
+	setShader(desc->ds, psoDesc.DS);
+	setShader(desc->gs, psoDesc.GS);
 
 	// インプットレイアウト
-	std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
 	if (desc->il) {
-		inputElements.reserve(desc->il->elements.size());
-		for (const auto &element : desc->il->elements) {
-			auto &e = inputElements.emplace_back();
-			e.SemanticName = element.semanticName.c_str();
+		const auto &elements = desc->il->elements;
+		is->semanticNames.reserve(elements.size());
+		is->inputElements.reserve(elements.size());
+		for (const auto &element : elements) {
+			const auto &name = is->semanticNames.emplace_back(element.semanticName);
+			auto &e = is->inputElements.emplace_back();
+			e.SemanticName = name.c_str();
 			e.SemanticIndex = element.semanticIndex;
 			e.Format = ConvertFormat(element.format);
 			e.InputSlot = element.inputSlot;
@@ -1209,8 +1254,8 @@ bool ou::Graphics::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateD
 			e.InstanceDataStepRate = (element.inputSlotClass == InputClassification::PER_INSTANCE_DATA) ? 1 : 0;
 		}
 	}
-	psoDesc.InputLayout.pInputElementDescs = inputElements.data();
-	psoDesc.InputLayout.NumElements = static_cast<UINT>(inputElements.size());
+	psoDesc.InputLayout.pInputElementDescs = is->inputElements.data();
+	psoDesc.InputLayout.NumElements = static_cast<UINT>(is->inputElements.size());
 
 	// ラスタライザ
 	const auto rs = desc->rs ? *desc->rs : RasterizerState{};
@@ -1260,19 +1305,11 @@ bool ou::Graphics::GraphicsDevice_DX12::CreatePipelineState(const PipelineStateD
 	psoDesc.PrimitiveTopologyType = ConvertTopologyType(desc->pt);
 	is->primitiveTopology = ConvertTopology(desc->pt, desc->patchControlPoints);
 
-	// 出力先
-	psoDesc.NumRenderTargets = renderPassInfo->rtCount;
-	for (uint32_t i = 0; i < renderPassInfo->rtCount; i++) {
-		psoDesc.RTVFormats[i] = ConvertFormat(renderPassInfo->rtFormats[i]);
-	}
-	psoDesc.DSVFormat = ConvertFormat(renderPassInfo->dsFormat);
-	psoDesc.SampleDesc.Count = renderPassInfo->sampleCount;
-	psoDesc.SampleDesc.Quality = 0;
+	pso->internalState = is;
+	pso->desc = *desc;
 
-	// PSO の作成
-	HRESULT hr = device_->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&is->pipelineState));
-	if (FAILED(hr)) {
-		Log::Error("PipelineState の作成に失敗しました");
+	if (renderPassInfo && !FindOrCreatePipeline(device_.Get(), *is, *renderPassInfo)) {
+		pso->internalState = nullptr;
 		return false;
 	}
 
@@ -1486,6 +1523,9 @@ void ou::Graphics::GraphicsDevice_DX12::RenderPassBegin(const SwapChain *swapCha
 
 	std::swap(barrier.Transition.StateBefore, barrier.Transition.StateAfter);
 	cmdDX12.renderPassBarriersEnd.push_back(barrier);
+
+	cmdDX12.renderPassInfo = RenderPassInfo::From(swapChain->desc);
+	cmdDX12.isPsoDirty = true;
 }
 
 
@@ -1556,19 +1596,21 @@ void ou::Graphics::GraphicsDevice_DX12::RenderPassBegin(const RenderPassImage *i
 				list->ClearRenderTargetView(is->rtv, texDesc.clear.color, 0, nullptr);
 				break;
 
-			case RenderPassImage::Type::DEPTH_STENCIL:
-				{
-					auto flags = D3D12_CLEAR_FLAG_DEPTH;
-					if (texDesc.format == Format::D24_UNORM_S8_UINT) {
-						flags |= D3D12_CLEAR_FLAG_STENCIL;
-					}
-					list->ClearDepthStencilView(
-						is->dsv, flags, texDesc.clear.depthStencil.depth,
-						static_cast<UINT8>(texDesc.clear.depthStencil.stencil), 0, nullptr);
-					break;
+			case RenderPassImage::Type::DEPTH_STENCIL: {
+				auto flags = D3D12_CLEAR_FLAG_DEPTH;
+				if (texDesc.format == Format::D24_UNORM_S8_UINT) {
+					flags |= D3D12_CLEAR_FLAG_STENCIL;
 				}
+				list->ClearDepthStencilView(
+					is->dsv, flags, texDesc.clear.depthStencil.depth,
+					static_cast<UINT8>(texDesc.clear.depthStencil.stencil), 0, nullptr);
+				break;
+			}
 		}
 	}
+
+	cmdDX12.renderPassInfo = RenderPassInfo::From(images, imageCount);
+	cmdDX12.isPsoDirty = true;
 }
 
 
@@ -1617,16 +1659,14 @@ void ou::Graphics::GraphicsDevice_DX12::BindScissorRects(uint32_t numScissors, c
 
 
 void ou::Graphics::GraphicsDevice_DX12::BindPipelineState(const PipelineState *pso, CommandList cmd) {
-	auto &cmdIs = GetCommandList(cmd);
+	auto &cmdDX12 = GetCommandList(cmd);
 
 	// 同じ PSO なら積まない
-	if (cmdIs.activePso == pso) { return; }
-	cmdIs.activePso = pso;
+	if (cmdDX12.activePso == pso) { return; }
+	cmdDX12.activePso = pso;
+	cmdDX12.isPsoDirty = true;
 
-	auto *is = ToInternal(pso);
-	auto *list = cmdIs.GetGraphicsCommandList();
-	list->SetPipelineState(is->pipelineState.Get());
-	list->IASetPrimitiveTopology(is->primitiveTopology);
+	cmdDX12.GetGraphicsCommandList()->IASetPrimitiveTopology(ToInternal(pso)->primitiveTopology);
 }
 
 
@@ -1686,25 +1726,37 @@ void ou::Graphics::GraphicsDevice_DX12::BindSampler(const Sampler *sampler, uint
 
 
 void ou::Graphics::GraphicsDevice_DX12::Draw(uint32_t vertexCount, uint32_t startVertexLocation, CommandList cmd) {
-	GetCommandList(cmd).GetGraphicsCommandList()->DrawInstanced(
+	auto &cmdDX12 = GetCommandList(cmd);
+	if (!ValidatePipelineState(cmdDX12)) { return; }
+
+	cmdDX12.GetGraphicsCommandList()->DrawInstanced(
 		vertexCount, 1, startVertexLocation, 0);
 }
 
 
 void ou::Graphics::GraphicsDevice_DX12::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation, CommandList cmd) {
-	GetCommandList(cmd).GetGraphicsCommandList()->DrawIndexedInstanced(
+	auto &cmdDX12 = GetCommandList(cmd);
+	if (!ValidatePipelineState(cmdDX12)) { return; }
+
+	cmdDX12.GetGraphicsCommandList()->DrawIndexedInstanced(
 		indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 
 void ou::Graphics::GraphicsDevice_DX12::DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
-	GetCommandList(cmd).GetGraphicsCommandList()->DrawInstanced(
+	auto &cmdDX12 = GetCommandList(cmd);
+	if (!ValidatePipelineState(cmdDX12)) { return; }
+
+	cmdDX12.GetGraphicsCommandList()->DrawInstanced(
 		vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 
 void ou::Graphics::GraphicsDevice_DX12::DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) {
-	GetCommandList(cmd).GetGraphicsCommandList()->DrawIndexedInstanced(
+	auto &cmdDX12 = GetCommandList(cmd);
+	if (!ValidatePipelineState(cmdDX12)) { return; }
+
+	cmdDX12.GetGraphicsCommandList()->DrawIndexedInstanced(
 		indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
@@ -1718,47 +1770,44 @@ void ou::Graphics::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint
 		D3D12_RESOURCE_BARRIER d3d{};
 
 		switch (barrier.type) {
-			case GpuBarrier::Type::MEMORY:
-				{
-					d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-					d3d.UAV.pResource = barrier.memory.resource
-											? ToInternal(barrier.memory.resource)->resource.Get()
-											: nullptr;
-					break;
-				}
-			case GpuBarrier::Type::IMAGE:
-				{
-					const auto *texture = barrier.image.texture;
-					const auto before = ConvertResourceState(barrier.image.layoutBefore);
-					const auto after = ConvertResourceState(barrier.image.layoutAfter);
-					if (before == after) { continue; }
+			case GpuBarrier::Type::MEMORY: {
+				d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+				d3d.UAV.pResource = barrier.memory.resource
+										? ToInternal(barrier.memory.resource)->resource.Get()
+										: nullptr;
+				break;
+			}
+			case GpuBarrier::Type::IMAGE: {
+				const auto *texture = barrier.image.texture;
+				const auto before = ConvertResourceState(barrier.image.layoutBefore);
+				const auto after = ConvertResourceState(barrier.image.layoutAfter);
+				if (before == after) { continue; }
 
-					d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-					d3d.Transition.pResource = ToInternal(texture)->resource.Get();
-					d3d.Transition.StateBefore = before;
-					d3d.Transition.StateAfter = after;
-					if (barrier.image.mip < 0 || barrier.image.slice < 0) {
-						d3d.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-					} else {
-						d3d.Transition.Subresource = barrier.image.mip + barrier.image.slice * texture->desc.mipLevels;
-					}
-
-					break;
-				}
-			case GpuBarrier::Type::BUFFER:
-				{
-					const auto before = ConvertResourceState(barrier.buffer.layoutBefore);
-					const auto after = ConvertResourceState(barrier.buffer.layoutAfter);
-					if (before == after) { continue; }
-
-					d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-					d3d.Transition.pResource = ToInternal(barrier.buffer.buffer)->resource.Get();
-					d3d.Transition.StateBefore = before;
-					d3d.Transition.StateAfter = after;
+				d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				d3d.Transition.pResource = ToInternal(texture)->resource.Get();
+				d3d.Transition.StateBefore = before;
+				d3d.Transition.StateAfter = after;
+				if (barrier.image.mip < 0 || barrier.image.slice < 0) {
 					d3d.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-					break;
+				} else {
+					d3d.Transition.Subresource = barrier.image.mip + barrier.image.slice * texture->desc.mipLevels;
 				}
+
+				break;
+			}
+			case GpuBarrier::Type::BUFFER: {
+				const auto before = ConvertResourceState(barrier.buffer.layoutBefore);
+				const auto after = ConvertResourceState(barrier.buffer.layoutAfter);
+				if (before == after) { continue; }
+
+				d3d.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				d3d.Transition.pResource = ToInternal(barrier.buffer.buffer)->resource.Get();
+				d3d.Transition.StateBefore = before;
+				d3d.Transition.StateAfter = after;
+				d3d.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+				break;
+			}
 		}
 
 		d3dBarriers.push_back(d3d);
@@ -1815,6 +1864,23 @@ GraphicsDevice_DX12::CommandList_DX12 &ou::Graphics::GraphicsDevice_DX12::GetCom
 GraphicsDevice::GpuLinearAllocator &ou::Graphics::GraphicsDevice_DX12::GetFrameAllocator(CommandList cmd) {
 	auto &cmdDX12 = GetCommandList(cmd);
 	return cmdDX12.frameAllocators[cmdDX12.bufferIndex];
+}
+
+
+bool ou::Graphics::GraphicsDevice_DX12::ValidatePipelineState(CommandList_DX12 &cmdDX12) {
+	if (!cmdDX12.isPsoDirty) { return true; }
+
+	if (!cmdDX12.activePso) {
+		Log::Error("PSO を設定せずに Draw しようとしました");
+		return false;
+	}
+
+	auto *pso = FindOrCreatePipeline(device_.Get(), *ToInternal(cmdDX12.activePso), cmdDX12.renderPassInfo);
+	if (!pso) { return false; }
+
+	cmdDX12.GetGraphicsCommandList()->SetPipelineState(pso);
+	cmdDX12.isPsoDirty = false;
+	return true;
 }
 
 
@@ -1920,6 +1986,8 @@ void ou::Graphics::GraphicsDevice_DX12::CommandList_DX12::Reset(uint32_t newBuff
 	renderPassBarriersEnd.clear();
 	frameAllocators[newBufferIndex].Reset();
 	activePso = nullptr;
+	renderPassInfo = {};
+	isPsoDirty = false;
 }
 
 

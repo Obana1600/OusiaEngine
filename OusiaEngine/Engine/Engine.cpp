@@ -1,14 +1,14 @@
 #include "Engine.h"
 #include "Asset/AssetDatabase.h"
+#include "Asset/Material.h"
+#include "Audio/Audio.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
 #include "Core/Screen.h"
-#include "Render/Material.h"
-#include "Render/ModelManager.h"
-#include "UI/Graphic.h"
 #include "Core/Time.h"
 #include "Particle/ParticleSystemRenderer.h"
-#include "Audio/Audio.h"
+#include "Render/ModelManager.h"
+#include "UI/Graphic.h"
 
 #include <filesystem>
 #include <thread>
@@ -71,8 +71,8 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	CreateSceneTargets(scDesc.width, scDesc.height);
 
 	// blit
-	blitVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Blit.VS.hlsl");
-	blitPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Blit.PS.hlsl");
+	blitVs_ = AssetDatabase::LoadAssetAtPath<ShaderModule>("EngineAssets/Shader/Blit.VS.hlsl");
+	blitPs_ = AssetDatabase::LoadAssetAtPath<ShaderModule>("EngineAssets/Shader/Blit.PS.hlsl");
 	if (!blitVs_ || !blitPs_) {
 		FatalError("Blit のシェーダの作成に失敗しました");
 	}
@@ -89,9 +89,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	imGuiManager_ = std::make_unique<ImGuiManager>(window_.get());
 
 	// 初期化
-	Graphic::StaticInitialize(scInfo);
-	Material::StaticInitialize(sceneInfo_);
-	ParticleSystemRenderer::StaticInitialize(sceneInfo_);
+	Graphic::StaticInitialize();
+	Material::StaticInitialize();
+	ParticleSystemRenderer::StaticInitialize();
 
 	// その他
 	InputSystem::GetInstance()->Initialize(window_->Hwnd());

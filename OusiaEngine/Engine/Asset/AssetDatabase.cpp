@@ -1,6 +1,8 @@
 #include "AssetDatabase.h"
 #include "Asset/AssetImporter.h"
 #include "Asset/AudioImporter.h"
+#include "Asset/ShaderModuleImporter.h"
+#include "Asset/Shader.h"
 #include "Asset/ShaderImporter.h"
 #include "Asset/TextureImporter.h"
 #include "Core/Log.h"
@@ -70,12 +72,13 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::filesystem::path &fullP
 		std::function<std::unique_ptr<AssetImporter>(std::filesystem::path)> factory;
 	};
 	static const ImporterEntry kImporters[] = {
-		{L".hlsl", &MakeImporter<ShaderImporter>},
+		{L".hlsl", &MakeImporter<ShaderModuleImporter>},
 		{L".png", &MakeImporter<TextureImporter>},
 		{L".jpg", &MakeImporter<TextureImporter>},
 		{L".jpeg", &MakeImporter<TextureImporter>},
 		{L".wav", &MakeImporter<AudioImporter>},
 		{L".mp3", &MakeImporter<AudioImporter>},
+		{L".shader", &MakeImporter<ShaderImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる

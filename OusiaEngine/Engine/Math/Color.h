@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Math/Vector3.h"
 #include "Math/Vector4.h"
 
 #include <string>
@@ -35,6 +36,8 @@ public: // コンストラクタ
 	Color() = default;
 
 	Color(float r, float g, float b, float a);
+
+	Color(const Vector3 &rgb, float a);
 
 	explicit Color(const Vector4 &v);
 

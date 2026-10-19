@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Scene/Component.h"
 #include "Graphics/GraphicsTypes.h"
+#include "Scene/Component.h"
 
 
 namespace ou {
@@ -21,16 +21,16 @@ public: // メンバ関数
 	void Render(Graphics::CommandList cmd) const;
 
 
-	private: // メンバ変数
+private: // メンバ変数
 
-		RectTransform *rectTransform_ = nullptr;
+	RectTransform *rectTransform_ = nullptr;
 
 
-		private: // メンバ関数
+private: // メンバ関数
 
-			void FitToScreen();
+	void FitToScreen();
 
-			static void CollectGraphics(const Transform *transform, std::vector<const Graphic *> &graphics);
+	static void CollectGraphics(const Transform *transform, std::vector<const Graphic *> &graphics);
 };
 
 } // namespace ou

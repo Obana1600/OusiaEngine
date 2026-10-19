@@ -54,5 +54,5 @@ void ou::Image::Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const
 
 	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(constants, 0, cmd);
-	device->Draw(4, 0, cmd);
+	DrawWithMaterial(cmd, 4);
 }

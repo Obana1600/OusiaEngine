@@ -2,6 +2,8 @@
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"
+#include "Asset/Shader.h"
+#include "Asset/Material.h"
 
 #include <utility>
 
@@ -19,7 +21,10 @@ void ou::Renderer::OnDestroy() {
 
 
 int ou::Renderer::GetRenderQueue() const {
-	return 2000;
+	if (materials_.empty() || !materials_.front()) {
+		return Shader::RenderQueue::Geometry;
+	}
+	return materials_.front()->GetRenderQueue();
 }
 
 

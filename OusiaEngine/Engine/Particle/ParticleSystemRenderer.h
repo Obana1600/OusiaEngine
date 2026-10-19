@@ -52,7 +52,7 @@ public: // インナークラス
 
 public: // 静的メンバ関数
 
-	static void StaticInitialize(const Graphics::RenderPassInfo &renderPass);
+	static void StaticInitialize();
 	static void StaticFinalize();
 
 
@@ -62,10 +62,6 @@ public: // メンバ関数
 	void LateUpdate() override;
 
 	void Draw(Graphics::CommandList cmd) const override;
-	int GetRenderQueue() const override;
-
-	void SetTexture(std::shared_ptr<Texture> texture);
-	const std::shared_ptr<Texture> &GetTexture() const;
 
 	void SetBlendMode(BlendMode blendMode);
 	BlendMode GetBlendMode() const;
@@ -76,9 +72,7 @@ public: // メンバ関数
 
 private: // 静的メンバ変数
 
-	static inline std::shared_ptr<Shader> sVs_;
-	static inline std::shared_ptr<Shader> sPs_;
-	static inline Graphics::PipelineState sPsos_[static_cast<size_t>(BlendMode::Count)]{};
+	static inline std::shared_ptr<Shader> sShader_;
 	static inline std::shared_ptr<Texture> sWhiteTexture_;
 
 
@@ -86,7 +80,6 @@ private: // メンバ変数
 
 	ParticleSystem *particleSystem_ = nullptr;
 
-	std::shared_ptr<Texture> texture_;
 	BlendMode blendMode_ = BlendMode::Additive;
 	SortMode sortMode_ = SortMode::None;
 

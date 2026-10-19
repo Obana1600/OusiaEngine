@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Asset/Shader.h"
+#include "Asset/Material.h"
 #include "Asset/Texture.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Color.h"
@@ -9,6 +9,7 @@
 #include "Scene/Component.h"
 
 #include <cstdint>
+#include <memory>
 
 
 namespace ou {
@@ -32,15 +33,18 @@ public: // インナークラス
 
 public: // 静的メンバ関数
 
-	static void StaticInitialize(const Graphics::RenderPassInfo &renderPass);
+	static void StaticInitialize();
 	static void StaticFinalize();
 
-	static void BindPipelineState(Graphics::CommandList cmd);
+	static const std::shared_ptr<Material> &GetDefaultGraphicMaterial();
 
 
 public: // メンバ関数
 
 	void Awake() override;
+
+	void SetMaterial(std::shared_ptr<Material> material);
+	const std::shared_ptr<Material> &GetMaterial() const;
 
 	void SetColor(const Color &color);
 	const Color &GetColor() const;
@@ -57,18 +61,19 @@ protected: // メンバ関数
 
 	RectTransform *GetRectTransform() const;
 
+	void DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount) const;
+
 
 private: // メンバ変数
 
+	std::shared_ptr<Material> material_;
 	Color color_ = Color::White;
 	RectTransform *rectTransform_ = nullptr;
 
 
 private: // 静的メンバ変数
 
-	static inline std::shared_ptr<Shader> sVs_;
-	static inline std::shared_ptr<Shader> sPs_;
-	static inline Graphics::PipelineState sPso_{};
+	static inline std::shared_ptr<Material> sDefaultMaterial_;
 	static inline std::shared_ptr<Texture> sWhiteTexture_;
 };
 

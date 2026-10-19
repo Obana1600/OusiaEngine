@@ -1,7 +1,7 @@
 #include "ParticleSystemRenderer.h"
 #include "Asset/AssetDatabase.h"
+#include "Asset/Material.h"
 #include "Core/Fatal.h"
-#include "Math/Mathf.h"
 #include "Particle/ParticleSystem.h"
 #include "Scene/Camera.h"
 #include "Scene/GameObject.h"
@@ -10,104 +10,64 @@
 
 #include <algorithm>
 #include <numeric>
-#include <utility>
 
 using namespace ou;
 
 
 namespace {
 
-Graphics::BlendState MakeBlendState(ParticleSystemRenderer::BlendMode blendMode) {
-	Graphics::BlendState blend{};
-	auto &target = blend.renderTarget[0];
-	target.blendEnable = true;
-
+void ApplyBlendMode(
+	ParticleSystemRenderer::BlendMode blendMode, Shader::RenderStateOverride &override) {
 	switch (blendMode) {
 		case ParticleSystemRenderer::BlendMode::Additive:
-			target.srcBlend = Graphics::Blend::SRC_ALPHA;
-			target.destBlend = Graphics::Blend::ONE;
+			override.srcBlend = Graphics::Blend::SRC_ALPHA;
+			override.dstBlend = Graphics::Blend::ONE;
+			override.blendOp = Graphics::BlendOp::ADD;
 			break;
 
 		case ParticleSystemRenderer::BlendMode::Subtract:
-			target.srcBlend = Graphics::Blend::SRC_ALPHA;
-			target.destBlend = Graphics::Blend::ONE;
-			target.blendOp = Graphics::BlendOp::REV_SUBTRACT;
+			override.srcBlend = Graphics::Blend::SRC_ALPHA;
+			override.dstBlend = Graphics::Blend::ONE;
+			override.blendOp = Graphics::BlendOp::REV_SUBTRACT;
 			break;
 
 		case ParticleSystemRenderer::BlendMode::Multiply:
-			target.srcBlend = Graphics::Blend::ZERO;
-			target.destBlend = Graphics::Blend::SRC_COLOR;
+			override.srcBlend = Graphics::Blend::ZERO;
+			override.dstBlend = Graphics::Blend::SRC_COLOR;
+			override.blendOp = Graphics::BlendOp::ADD;
 			break;
 
 		case ParticleSystemRenderer::BlendMode::Alpha:
-			target.srcBlend = Graphics::Blend::SRC_ALPHA;
-			target.destBlend = Graphics::Blend::INV_SRC_ALPHA;
+			override.srcBlend = Graphics::Blend::SRC_ALPHA;
+			override.dstBlend = Graphics::Blend::INV_SRC_ALPHA;
+			override.blendOp = Graphics::BlendOp::ADD;
 			break;
 
 		default:
 			break;
 	}
-
-	return blend;
-}
-
-Graphics::PipelineStateDesc MakePsoDesc(
-	const Graphics::Shader *vs,
-	const Graphics::Shader *ps,
-	const Graphics::BlendState *blend,
-	const Graphics::DepthStencilState *depthStencil) {
-	Graphics::PipelineStateDesc desc{};
-	desc.vs = vs;
-	desc.ps = ps;
-	desc.bs = blend;
-	desc.dss = depthStencil;
-	desc.pt = Graphics::PrimitiveTopology::TRIANGLESTRIP;
-	return desc;
 }
 
 } // namespace
 
 
 
-void ou::ParticleSystemRenderer::StaticInitialize(const Graphics::RenderPassInfo &renderPass) {
-	sVs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Particle.VS.hlsl");
-	sPs_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Particle.PS.hlsl");
-	if (!sVs_ || !sPs_) {
-		FatalError("パーティクルのシェーダの作成に失敗しました");
+void ou::ParticleSystemRenderer::StaticInitialize() {
+	sShader_ = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Particle.shader");
+	if (!sShader_) {
+		FatalError("パーティクルのシェーダの読み込みに失敗しました");
 	}
 
 	sWhiteTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/white1x1.png");
 	if (!sWhiteTexture_) {
 		FatalError("パーティクルの既定のテクスチャの読み込みに失敗しました");
 	}
-
-	// 深度ステンシル
-	Graphics::DepthStencilState depthStencil{};
-	depthStencil.depthEnable = true;
-	depthStencil.depthWriteMask = Graphics::DepthWriteMask::ZERO;
-	depthStencil.comparisonFunc = Graphics::ComparisonFunc::LESS_EQUAL;
-
-	auto *device = Graphics::GetDevice();
-	const auto *vs = &sVs_->GetGraphicsShader();
-	const auto *ps = &sPs_->GetGraphicsShader();
-
-	for (size_t i = 0; i < static_cast<size_t>(BlendMode::Count); i++) {
-		const auto blend = MakeBlendState(static_cast<BlendMode>(i));
-		const auto desc = MakePsoDesc(vs, ps, &blend, &depthStencil);
-		if (!device->CreatePipelineState(&desc, &sPsos_[i], &renderPass)) {
-			FatalError("パーティクルの PSO の作成に失敗しました");
-		}
-	}
 }
 
 
 void ou::ParticleSystemRenderer::StaticFinalize() {
-	for (auto &pso : sPsos_) {
-		pso = {};
-	}
+	sShader_ = nullptr;
 	sWhiteTexture_ = nullptr;
-	sVs_ = nullptr;
-	sPs_ = nullptr;
 }
 
 
@@ -118,6 +78,12 @@ void ou::ParticleSystemRenderer::Awake() {
 	particleSystem_ = GetGameObject()->GetComponent<ParticleSystem>();
 	if (!particleSystem_) {
 		particleSystem_ = GetGameObject()->AddComponent<ParticleSystem>();
+	}
+
+	// マテリアルがなければ新しく作る
+	if (!GetMaterial()) {
+		SetMaterial(Material::Create(sShader_));
+		SetBlendMode(blendMode_);
 	}
 }
 
@@ -162,11 +128,12 @@ void ou::ParticleSystemRenderer::LateUpdate() {
 void ou::ParticleSystemRenderer::Draw(Graphics::CommandList cmd) const {
 	if (particleCount_ == 0) { return; }
 
-	auto *device = Graphics::GetDevice();
-	device->BindPipelineState(&sPsos_[static_cast<size_t>(blendMode_)], cmd);
+	const auto &material = GetMaterial();
+	if (!material || !material->GetShader()) { return; }
 
+	auto *device = Graphics::GetDevice();
 	const auto isLocal = particleSystem_->GetMain().simulationSpace == ParticleSystem::SimulationSpace::Local;
-	const auto &texture = texture_ ? texture_ : sWhiteTexture_;
+	const auto &texture = material->GetMainTexture() ? material->GetMainTexture() : sWhiteTexture_;
 	const auto &buffer = particleBuffers_[device->GetBufferIndex()];
 
 	PerParticleSystem constants{};
@@ -176,27 +143,28 @@ void ou::ParticleSystemRenderer::Draw(Graphics::CommandList cmd) const {
 	constants.blendMode = static_cast<uint32_t>(blendMode_);
 	device->BindDynamicConstantBuffer(constants, 0, cmd);
 
-	device->DrawInstanced(4, particleCount_, 0, 0, cmd);
-}
+	// Pass だけ順に描く
+	const auto &shader = material->GetShader();
+	for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
+		const auto *pso = shader->GetPipelineState(
+			pass, material->GetRenderStateOverride(), nullptr, Graphics::PrimitiveTopology::TRIANGLESTRIP);
+		if (!pso) { continue; }
 
-
-int ou::ParticleSystemRenderer::GetRenderQueue() const {
-	return 3000;
-}
-
-
-void ou::ParticleSystemRenderer::SetTexture(std::shared_ptr<Texture> texture) {
-	texture_ = std::move(texture);
-}
-
-
-const std::shared_ptr<Texture> &ou::ParticleSystemRenderer::GetTexture() const {
-	return texture_;
+		device->BindPipelineState(pso, cmd);
+		device->DrawInstanced(4, particleCount_, 0, 0, cmd);
+	}
 }
 
 
 void ou::ParticleSystemRenderer::SetBlendMode(BlendMode blendMode) {
 	blendMode_ = blendMode;
+
+	const auto &material = GetMaterial();
+	if (!material) { return; }
+
+	auto override = material->GetRenderStateOverride();
+	ApplyBlendMode(blendMode, override);
+	material->SetRenderStateOverride(override);
 }
 
 

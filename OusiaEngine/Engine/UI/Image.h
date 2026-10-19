@@ -21,9 +21,9 @@ public: // メンバ関数
 	void Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const override;
 
 
-	private: // メンバ変数
+private: // メンバ変数
 
-		std::shared_ptr<Sprite> sprite_;
+	std::shared_ptr<Sprite> sprite_;
 };
 
 } // namespace ou

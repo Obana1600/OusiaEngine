@@ -36,6 +36,8 @@
     <ClInclude Include="Math\Random.h" />
     <ClInclude Include="Particle\ParticleSystemRenderer.h" />
     <ClInclude Include="Particle\ParticleSystem.h" />
+    <ClInclude Include="Asset\Shader.h" />
+    <ClInclude Include="Asset\ShaderImporter.h" />
     <ClInclude Include="UI\Image.h" />
     <ClInclude Include="Math\Color.h" />
     <ClInclude Include="Core\Screen.h" />
@@ -47,8 +49,8 @@
     <ClInclude Include="Render\Model.h" />
     <ClInclude Include="Render\ObjParser.h" />
     <ClInclude Include="Scene\DirectionalLight.h" />
-    <ClInclude Include="Render\Mesh.h" />
-    <ClInclude Include="Render\Material.h" />
+    <ClInclude Include="Asset\Mesh.h" />
+    <ClInclude Include="Asset\Material.h" />
     <ClInclude Include="Render\MeshRenderer.h" />
     <ClInclude Include="Render\Renderer.h" />
     <ClInclude Include="Scene\Camera.h" />
@@ -75,10 +77,10 @@
     <ClInclude Include="Scene\Object.h" />
     <ClInclude Include="Platform\Window.h" />
     <ClInclude Include="Scene\Transform.h" />
-    <ClInclude Include="Asset\Shader.h" />
-    <ClInclude Include="ShaderCompiler.h" />
+    <ClInclude Include="Asset\ShaderModule.h" />
+    <ClInclude Include="Graphics\ShaderCompiler.h" />
     <ClInclude Include="Asset\AssetImporter.h" />
-    <ClInclude Include="Asset\ShaderImporter.h" />
+    <ClInclude Include="Asset\ShaderModuleImporter.h" />
     <ClInclude Include="Asset\TextureImporter.h" />
     <ClInclude Include="Asset\Texture.h" />
     <ClInclude Include="Asset\Sprite.h" />
@@ -96,6 +98,8 @@
     <ClCompile Include="Math\Random.cpp" />
     <ClCompile Include="Particle\ParticleSystemRenderer.cpp" />
     <ClCompile Include="Particle\ParticleSystem.cpp" />
+    <ClCompile Include="Asset\Shader.cpp" />
+    <ClCompile Include="Asset\ShaderImporter.cpp" />
     <ClCompile Include="UI\Image.cpp" />
     <ClCompile Include="Math\Color.cpp" />
     <ClCompile Include="Core\Screen.cpp" />
@@ -107,8 +111,8 @@
     <ClCompile Include="Render\Model.cpp" />
     <ClCompile Include="Render\ObjParser.cpp" />
     <ClCompile Include="Scene\DirectionalLight.cpp" />
-    <ClCompile Include="Render\Mesh.cpp" />
-    <ClCompile Include="Render\Material.cpp" />
+    <ClCompile Include="Asset\Mesh.cpp" />
+    <ClCompile Include="Asset\Material.cpp" />
     <ClCompile Include="Render\MeshRenderer.cpp" />
     <ClCompile Include="Render\Renderer.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
@@ -131,10 +135,10 @@
     <ClCompile Include="Scene\Object.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
     <ClCompile Include="Scene\Transform.cpp" />
-    <ClCompile Include="Asset\Shader.cpp" />
-    <ClCompile Include="ShaderCompiler.cpp" />
+    <ClCompile Include="Asset\ShaderModule.cpp" />
+    <ClCompile Include="Graphics\ShaderCompiler.cpp" />
     <ClCompile Include="Asset\AssetImporter.cpp" />
-    <ClCompile Include="Asset\ShaderImporter.cpp" />
+    <ClCompile Include="Asset\ShaderModuleImporter.cpp" />
     <ClCompile Include="Asset\TextureImporter.cpp" />
     <ClCompile Include="Asset\Texture.cpp" />
   </ItemGroup>

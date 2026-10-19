@@ -57,6 +57,13 @@ ou::Color::Color(float r, float g, float b, float a)
 	: r(r), g(g), b(b), a(a) {}
 
 
+ou::Color::Color(const Vector3 &rgb, float a)
+	: r(rgb.x),
+	  g(rgb.y),
+	  b(rgb.z),
+	  a(a) {}
+
+
 ou::Color::Color(const Vector4 &v)
 	: r(v.x), g(v.y), b(v.z), a(v.w) {}
 
