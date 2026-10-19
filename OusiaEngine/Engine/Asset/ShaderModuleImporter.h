@@ -17,7 +17,7 @@ class ShaderModule;
 class ShaderModuleImporter final: public AssetImporter {
 public: // メンバ関数
 
-	explicit ShaderModuleImporter(std::filesystem::path assetPath);
+	explicit ShaderModuleImporter(std::string assetPath, std::filesystem::path fullPath);
 
 	std::shared_ptr<Object> Import() override;
 	std::shared_ptr<ShaderModule> ImportShaderModule();

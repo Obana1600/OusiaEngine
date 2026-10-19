@@ -32,11 +32,14 @@ public: // メンバ関数
 
 	virtual int GetRenderQueue() const;
 
-	void SetMaterial(std::shared_ptr<Material> material);
-	const std::shared_ptr<Material> &GetMaterial() const;
+	void SetSharedMaterial(std::shared_ptr<Material> material);
+	const std::shared_ptr<Material> &GetSharedMaterial() const;
 
-	void SetMaterials(std::vector<std::shared_ptr<Material>> materials);
-	const std::vector<std::shared_ptr<Material>> &GetMaterials() const;
+	void SetSharedMaterials(std::vector<std::shared_ptr<Material>> materials);
+	const std::vector<std::shared_ptr<Material>> &GetSharedMaterials() const;
+
+	const std::shared_ptr<Material> &GetMaterial();
+	const std::vector<std::shared_ptr<Material>> &GetMaterials();
 
 
 protected: // メンバ関数
@@ -49,6 +52,12 @@ protected: // メンバ関数
 private: // メンバ変数
 
 	std::vector<std::shared_ptr<Material>> materials_;
+	std::vector<bool> isInstanced_;
+
+
+private: // メンバ関数
+
+	void InstantiateMaterial(size_t index);
 };
 
 } // namespace ou

@@ -35,6 +35,24 @@ std::shared_ptr<Material> ou::Material::Create(std::shared_ptr<Shader> shader) {
 }
 
 
+std::shared_ptr<Material> ou::Material::Create(const Material &source) {
+	auto material = std::make_shared<Material>();
+	material->SetName(source.GetName());
+
+	material->shader_ = source.shader_;
+	material->mainTexture_ = source.mainTexture_;
+	material->renderQueue_ = source.renderQueue_;
+	material->renderStateOverride_ = source.renderStateOverride_;
+	material->uvOffset_ = source.uvOffset_;
+	material->uvScale_ = source.uvScale_;
+	material->uvRotation_ = source.uvRotation_;
+	material->color_ = source.color_;
+	material->lightingMode_ = source.lightingMode_;
+
+	return material;
+}
+
+
 Material::PerMaterial ou::Material::MakePerMaterial() const {
 	PerMaterial constants{};
 	constants.uvTransform = Matrix4x4::SRT(

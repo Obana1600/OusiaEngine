@@ -28,27 +28,47 @@ int ou::Renderer::GetRenderQueue() const {
 }
 
 
-void ou::Renderer::SetMaterial(std::shared_ptr<Material> material) {
+void ou::Renderer::SetSharedMaterial(std::shared_ptr<Material> material) {
 	if (materials_.empty()) {
 		materials_.push_back(std::move(material));
+		isInstanced_.push_back(false);
 	} else {
 		materials_[0] = std::move(material);
+		isInstanced_[0] = false;
 	}
 }
 
 
-const std::shared_ptr<Material> &ou::Renderer::GetMaterial() const {
+const std::shared_ptr<Material> &ou::Renderer::GetSharedMaterial() const {
 	static const std::shared_ptr<Material> kNull = nullptr;
 	return materials_.empty() ? kNull : materials_[0];
 }
 
 
-void ou::Renderer::SetMaterials(std::vector<std::shared_ptr<Material>> materials) {
+void ou::Renderer::SetSharedMaterials(std::vector<std::shared_ptr<Material>> materials) {
 	materials_ = std::move(materials);
+	isInstanced_.assign(materials_.size(), false);
 }
 
 
-const std::vector<std::shared_ptr<Material>> &ou::Renderer::GetMaterials() const {
+const std::vector<std::shared_ptr<Material>> &ou::Renderer::GetSharedMaterials() const {
+	return materials_;
+}
+
+
+const std::shared_ptr<Material> &ou::Renderer::GetMaterial() {
+	static const std::shared_ptr<Material> kNull = nullptr;
+	if (materials_.empty()) { return kNull; }
+
+	InstantiateMaterial(0);
+	return materials_[0];
+}
+
+
+const std::vector<std::shared_ptr<Material>> &ou::Renderer::GetMaterials() {
+	for (size_t i = 0; i < materials_.size(); i++) {
+		InstantiateMaterial(i);
+	}
 	return materials_;
 }
 
@@ -69,4 +89,14 @@ Material *ou::Renderer::FindMaterialForSubMesh(uint32_t subMeshIndex) const {
 		return materials_[subMeshIndex].get();
 	}
 	return materials_.back().get(); // TODO: ログとかに出す
+}
+
+
+void ou::Renderer::InstantiateMaterial(size_t index) {
+	if (isInstanced_[index] || !materials_[index]) { return; }
+
+	auto instance = Material::Create(*materials_[index]);
+	instance->SetName(materials_[index]->GetName() + " (Instance)");
+	materials_[index] = std::move(instance);
+	isInstanced_[index] = true;
 }

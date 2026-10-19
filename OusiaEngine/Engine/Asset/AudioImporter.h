@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <string>
 
 
 namespace ou {
@@ -15,7 +16,7 @@ class AudioClip;
 class AudioImporter: public AssetImporter {
 public: // メンバ関数
 
-	explicit AudioImporter(std::filesystem::path assetPath);
+	explicit AudioImporter(std::string assetPath, std::filesystem::path fullPath);
 
 	std::shared_ptr<Object> Import() override;
 	std::shared_ptr<AudioClip> ImportAudioClip();

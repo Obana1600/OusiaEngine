@@ -16,6 +16,9 @@
 
 namespace ou {
 
+// 前方宣言
+class Material;
+
 class ParticleSystemRenderer final: public Renderer {
 public: // インナークラス
 
@@ -73,6 +76,7 @@ public: // メンバ関数
 private: // 静的メンバ変数
 
 	static inline std::shared_ptr<Shader> sShader_;
+	static inline std::shared_ptr<Material> sDefaultMaterial_;
 	static inline std::shared_ptr<Texture> sWhiteTexture_;
 
 

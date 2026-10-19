@@ -247,7 +247,7 @@ Matrix4x4 ou::Matrix4x4::Rotate(const Vector3 &v) {
 
 
 Matrix4x4 ou::Matrix4x4::Rotate(const Quaternion &q) {
-	const auto n = Quaternion::Normalize(q);
+	const auto n = q.Normalize();
 	const auto xx = n.x * n.x;
 	const auto yy = n.y * n.y;
 	const auto zz = n.z * n.z;

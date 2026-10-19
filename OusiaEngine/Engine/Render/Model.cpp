@@ -169,7 +169,7 @@ GameObject *ou::Model::Instantiate(Scene *scene) const {
 
 		auto *renderer = child->AddComponent<MeshRenderer>();
 		renderer->SetMesh(node.mesh);
-		renderer->SetMaterials(node.materials);
+		renderer->SetSharedMaterials(node.materials);
 	}
 
 	return root;

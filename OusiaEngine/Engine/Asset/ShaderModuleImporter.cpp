@@ -56,8 +56,8 @@ Graphics::ShaderStage InferStage(const std::filesystem::path &path) {
 
 
 
-ou::ShaderModuleImporter::ShaderModuleImporter(std::filesystem::path assetPath)
-	: AssetImporter(std::move(assetPath)),
+ou::ShaderModuleImporter::ShaderModuleImporter(std::string assetPath, std::filesystem::path fullPath)
+	: AssetImporter(std::move(assetPath), std::move(fullPath)),
 	  stage_(InferStage(GetAssetPath())) {}
 
 

@@ -57,6 +57,8 @@ void ou::ParticleSystemRenderer::StaticInitialize() {
 	if (!sShader_) {
 		FatalError("パーティクルのシェーダの読み込みに失敗しました");
 	}
+	sDefaultMaterial_ = Material::Create(sShader_);
+	sDefaultMaterial_->SetName("Default-ParticleSystem");
 
 	sWhiteTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/white1x1.png");
 	if (!sWhiteTexture_) {
@@ -67,6 +69,7 @@ void ou::ParticleSystemRenderer::StaticInitialize() {
 
 void ou::ParticleSystemRenderer::StaticFinalize() {
 	sShader_ = nullptr;
+	sDefaultMaterial_ = nullptr;
 	sWhiteTexture_ = nullptr;
 }
 
@@ -81,9 +84,8 @@ void ou::ParticleSystemRenderer::Awake() {
 	}
 
 	// マテリアルがなければ新しく作る
-	if (!GetMaterial()) {
-		SetMaterial(Material::Create(sShader_));
-		SetBlendMode(blendMode_);
+	if (!GetSharedMaterial()) {
+		SetSharedMaterial(sDefaultMaterial_);
 	}
 }
 
@@ -128,7 +130,7 @@ void ou::ParticleSystemRenderer::LateUpdate() {
 void ou::ParticleSystemRenderer::Draw(Graphics::CommandList cmd) const {
 	if (particleCount_ == 0) { return; }
 
-	const auto &material = GetMaterial();
+	const auto &material = GetSharedMaterial();
 	if (!material || !material->GetShader()) { return; }
 
 	auto *device = Graphics::GetDevice();

@@ -16,13 +16,18 @@ public: // メンバ変数
 	float w;
 
 
+public: // 静的メンバ変数
+
+	static const Quaternion Identity;
+
+
 public: // コンストラクタ
 
 	Quaternion() = default;
 
 	Quaternion(float x, float y, float z, float w);
 
-	Quaternion(const Vector3 &axis, float r);
+	Quaternion(const Vector3 &axis, float angle);
 
 
 public: // メンバ関数
@@ -31,44 +36,39 @@ public: // メンバ関数
 
 	float LengthSquared() const;
 
-	void Normalize();
+	Quaternion Normalize() const;
 
-	Vector3 ToEulerAngles() const;
+	Vector3 EulerAngles() const;
 
-	void ToAxisAngle(Vector3 *axis, float *r) const;
+	void ToAngleAxis(Vector3 *outAxis, float *outAngle) const;
 
-	bool IsIdentity() const;
-
-
-public: // 静的メンバ変数
-
-	static const Quaternion Identity;
+	std::string ToString() const;
 
 
 public: // 静的メンバ関数
 
-	static Quaternion Normalize(const Quaternion &q);
-
-	static float Dot(const Quaternion &q1, const Quaternion &q2);
-
-	static float Angle(const Quaternion &q1, const Quaternion &q2);
+	static float Angle(const Quaternion &a, const Quaternion &b);
 
 	static Quaternion AngleAxis(const Vector3 &axis, float angle);
 
+	static float Dot(const Quaternion &a, const Quaternion &b);
+
+	static Quaternion Euler(float x, float y, float z);
+	static Quaternion Euler(const Vector3 &eulerAngles);
+
 	static Quaternion Inverse(const Quaternion &q);
 
-	static Quaternion Euler(const Vector3 &eulerAngles);
+	static Quaternion Normalize(Quaternion &q);
 
 
 public: // オペレータ
 
-	// TODO: 加算減算も追加していいかも
-
-	friend Quaternion operator*(const Quaternion &q1, const Quaternion &q2);
+	friend Quaternion operator*(const Quaternion &a, const Quaternion &b);
+	friend bool operator==(const Quaternion &a, const Quaternion &b);
 
 	Quaternion &operator*=(const Quaternion &q);
 	float &operator[](int index);
 	float operator[](int index) const;
 };
 
-} // namespace ou
+} // namespace ou

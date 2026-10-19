@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <string>
 
 
 namespace ou {
@@ -14,7 +15,7 @@ class Shader;
 class ShaderImporter final: public AssetImporter {
 public: // メンバ関数
 
-	explicit ShaderImporter(std::filesystem::path path);
+	explicit ShaderImporter(std::string assetPath, std::filesystem::path fullPath);
 
 	std::shared_ptr<Object> Import() override;
 	std::shared_ptr<Shader> ImportShader();

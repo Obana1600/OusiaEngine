@@ -1,9 +1,8 @@
 #include "Quaternion.h"
+#include "Core/Assert.h"
 #include "Math/Mathf.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cmath>
+#include <format>
 
 using namespace ou;
 
@@ -18,150 +17,179 @@ ou::Quaternion::Quaternion(float x, float y, float z, float w)
 	  w(w) {}
 
 
-ou::Quaternion::Quaternion(const Vector3 &axis, float r)
-	: Quaternion(AngleAxis(axis, r)) {}
+ou::Quaternion::Quaternion(const Vector3 &axis, float angle)
+	: Quaternion(AngleAxis(axis, angle)) {}
 
 
 float ou::Quaternion::Length() const {
-	return std::sqrt(LengthSquared());
+	return Mathf::Sqrt((x * x) + (y * y) + (z * z) + (w * w));
 }
 
 
 float ou::Quaternion::LengthSquared() const {
-	return Dot(*this, *this);
+	return (x * x) + (y * y) + (z * z) + (w * w);
 }
 
 
-void ou::Quaternion::Normalize() {
-	float length = Length();
-	if (length == 0.0f) { return; }
-	x /= length;
-	y /= length;
-	z /= length;
-	w /= length;
-}
-
-
-ou::Vector3 ou::Quaternion::ToEulerAngles() const {
-	const Quaternion q = Normalize(*this);
-
-	// Matrix4x4::Rotate と同じ Rx * Ry * Rz (行ベクトル) の回転行列の成分から逆算する
-	const float m11 = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
-	const float m12 = 2.0f * (q.x * q.y + q.w * q.z);
-	const float m13 = 2.0f * (q.x * q.z - q.w * q.y);
-	const float m22 = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);
-	const float m23 = 2.0f * (q.y * q.z + q.w * q.x);
-	const float m32 = 2.0f * (q.y * q.z - q.w * q.x);
-	const float m33 = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
-
-	const float sinY = std::clamp(-m13, -1.0f, 1.0f);
-	const float angleY = std::asin(sinY);
-
-	// ジンバルロック時は x と z の回転を区別できないので z を 0 とみなす
-	constexpr float kGimbalLockThreshold = 0.9999f;
-	if (std::abs(sinY) < kGimbalLockThreshold) {
-		return {std::atan2(m23, m33), angleY, std::atan2(m12, m11)};
+Quaternion ou::Quaternion::Normalize() const {
+	float len = Length();
+	if (len < Mathf::Epsilon) {
+		return Identity;
 	}
-	return {std::atan2(-m32, m22), angleY, 0.0f};
+
+	Quaternion q{};
+	q.x = x / len;
+	q.y = y / len;
+	q.z = z / len;
+	q.w = w / len;
+	return q;
 }
 
 
-void ou::Quaternion::ToAxisAngle(Vector3 *axis, float *r) const {
-	assert(axis && r);
+Vector3 ou::Quaternion::EulerAngles() const {
+	const auto n = Normalize();
 
-	const Quaternion q = Normalize(*this);
-	const float cosHalf = std::clamp(q.w, -1.0f, 1.0f);
-	*r = 2.0f * std::acos(cosHalf);
+	const auto m11 = 1.0f - 2.0f * (n.y * n.y + n.z * n.z);
+	const auto m12 = 2.0f * (n.x + n.y + n.w * n.z);
+	const auto m13 = 2.0f * (n.x * n.z - n.w * n.y);
+	const auto m22 = 1.0f - 2.0f * (n.x * n.x + n.z * n.z);
+	const auto m23 = 2.0f * (n.y * n.z + n.w * n.x);
+	const auto m32 = 2.0f * (n.y * n.z - n.w * n.x);
+	const auto m33 = 1.0f - 2.0f * (n.x * n.x + n.y * n.y);
 
-	const float sinHalf = std::sqrt(1.0f - cosHalf * cosHalf);
-	if (sinHalf < Mathf::Epsilon) {
-		// 回転していないので軸はどれでもよい
-		*axis = Vector3::Right;
-		return;
+	const auto sinY = Mathf::Clamp(-m13, -1.0f, 1.0f);
+	const auto angleY = Mathf::Asin(sinY);
+
+	if (Mathf::Abs(sinY) > 1.0f - Mathf::Epsilon) {
+		return {Mathf::Atan2(-m32, m22), angleY, 0.0f};
 	}
-	*axis = {q.x / sinHalf, q.y / sinHalf, q.z / sinHalf};
+	return {Mathf::Atan2(m23, m33), angleY, Mathf::Atan2(m12, m11)};
 }
 
 
-bool ou::Quaternion::IsIdentity() const {
-	// q と -q は同じ回転を表すので w の符号は問わない
-	return std::abs(x) <= Mathf::Epsilon &&
-		   std::abs(y) <= Mathf::Epsilon &&
-		   std::abs(z) <= Mathf::Epsilon &&
-		   std::abs(std::abs(w) - 1.0f) <= Mathf::Epsilon;
+void ou::Quaternion::ToAngleAxis(Vector3 *outAxis, float *outAngle) const {
+	const auto cw = Mathf::Clamp(w, -1.0f, 1.0f);
+	const float angle = 2.0f * Mathf::Acos(cw);
+	const float s = Mathf::Sin(angle * 0.5f);
+
+	Vector3 axis{};
+	if (s > Mathf::Epsilon) {
+		axis = {x / s, y / s, z / s};
+	} else {
+		axis = Vector3::Right;
+	}
+
+	if (outAxis) { *outAxis = axis; }
+	if (outAngle) { *outAngle = angle; }
 }
 
 
-ou::Quaternion ou::Quaternion::Normalize(const Quaternion &q) {
-	auto result = q;
-	result.Normalize();
-	return result;
+std::string ou::Quaternion::ToString() const {
+	return std::format("({:.2f} {:.2f} {:.2f} {:.2f})", x, y, z, w);
 }
 
 
-float ou::Quaternion::Dot(const Quaternion &q1, const Quaternion &q2) {
-	return q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w;
+float ou::Quaternion::Angle(const Quaternion &a, const Quaternion &b) {
+	const auto dot = Mathf::Abs(Dot(a, b));
+	return 2.0f * Mathf::Acos(Mathf::Min(dot, 1.0f));
 }
 
 
-float ou::Quaternion::Angle(const Quaternion &q1, const Quaternion &q2) {
-	const float dot = std::min(std::abs(Dot(q1, q2)), 1.0f);
-	return 2.0f * std::acos(dot);
+Quaternion ou::Quaternion::AngleAxis(const Vector3 &axis, float angle) {
+	const auto n = axis.Normalize();
+	const auto s = Mathf::Sin(angle * 0.5f);
+	return {n.x * s, n.y * s, n.z * s, Mathf::Cos(angle * 0.5f)};
 }
 
 
-ou::Quaternion ou::Quaternion::AngleAxis(const Vector3 &axis, float angle) {
-	const Vector3 n = axis.Normalize();
-	const float s = std::sin(angle * 0.5f);
-	return {n.x * s, n.y * s, n.z * s, std::cos(angle * 0.5f)};
+float ou::Quaternion::Dot(const Quaternion &a, const Quaternion &b) {
+	return (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w);
 }
 
 
-ou::Quaternion ou::Quaternion::Inverse(const Quaternion &q) {
-	const float length2 = q.LengthSquared();
-	assert(length2 > 0.0f);
-	return {-q.x / length2, -q.y / length2, -q.z / length2, q.w / length2};
+Quaternion ou::Quaternion::Euler(float x, float y, float z) {
+	const auto cx = Mathf::Cos(x * 0.5f);
+	const auto cy = Mathf::Cos(y * 0.5f);
+	const auto cz = Mathf::Cos(z * 0.5f);
+	const auto sx = Mathf::Sin(x * 0.5f);
+	const auto sy = Mathf::Sin(y * 0.5f);
+	const auto sz = Mathf::Sin(z * 0.5f);
+
+	return {sx * cy * cz - cx * sy * sz,
+			cx * sy * cz + sx * cy * sz,
+			cx * cy * sz - sx * sy * cz,
+			cx * cy * cz + sx * sy * sz};
 }
 
 
 Quaternion ou::Quaternion::Euler(const Vector3 &eulerAngles) {
-	const auto qx = AngleAxis({1.0f, 0.0f, 0.0f}, eulerAngles.x);
-	const auto qy = AngleAxis({0.0f, 1.0f, 0.0f}, eulerAngles.y);
-	const auto qz = AngleAxis({0.0f, 0.0f, 1.0f}, eulerAngles.z);
+	return Euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+}
 
-	return qx * qy * qz;
+
+Quaternion ou::Quaternion::Inverse(const Quaternion &q) {
+	const auto len2 = q.LengthSquared();
+	ASSERT(len2 > 0.0f, "長さの 2 乗が 0 のクォータニオンです");
+	return {-q.x / len2, -q.y / len2, -q.z / len2, q.w / len2};
+}
+
+
+Quaternion ou::Quaternion::Normalize(Quaternion &q) {
+	return q = q.Normalize();
 }
 
 
 namespace ou {
 
-Quaternion operator*(const Quaternion &q1, const Quaternion &q2) {
-	// q1 を先に適用するため、ハミルトン積 q2 * q1 を計算する
-	const Quaternion &a = q2;
-	const Quaternion &b = q1;
-	return {
-		a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
-		a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
-		a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
-		a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
-	};
+Quaternion operator*(const Quaternion &a, const Quaternion &b) {
+	return {a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+			a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+			a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+			a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z};
+}
+
+
+bool operator==(const Quaternion &a, const Quaternion &b) {
+	return Quaternion::Dot(a, b) > 1.0f - Mathf::Epsilon;
 }
 
 } // namespace ou
 
 
-ou::Quaternion &ou::Quaternion::operator*=(const Quaternion &q) {
+Quaternion &ou::Quaternion::operator*=(const Quaternion &q) {
 	return *this = *this * q;
 }
 
 
 float &ou::Quaternion::operator[](int index) {
-	assert(0 <= index && index < 4);
-	return (&x)[index];
+	switch (index) {
+		case 0:
+			return x;
+		case 1:
+			return y;
+		case 2:
+			return z;
+		case 3:
+			return w;
+		default:
+			ASSERT(false, "範囲外のインデックスです: {}", index);
+			return x;
+	}
 }
 
 
 float ou::Quaternion::operator[](int index) const {
-	assert(0 <= index && index < 4);
-	return (&x)[index];
+	switch (index) {
+		case 0:
+			return x;
+		case 1:
+			return y;
+		case 2:
+			return z;
+		case 3:
+			return w;
+		default:
+			ASSERT(false, "範囲外のインデックスです: {}", index);
+			return x;
+	}
 }

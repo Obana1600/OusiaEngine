@@ -25,6 +25,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Asset\AssetJson.h" />
     <ClInclude Include="Asset\AssetDatabase.h" />
     <ClInclude Include="Asset\AudioClip.h" />
     <ClInclude Include="Asset\AudioImporter.h" />
@@ -33,7 +34,9 @@
     <ClInclude Include="Audio\Audio.h" />
     <ClInclude Include="Editor\ImGuiManager.h" />
     <ClInclude Include="Core\Time.h" />
+    <ClInclude Include="Asset\MaterialImporter.h" />
     <ClInclude Include="Math\Random.h" />
+    <ClInclude Include="ModelImporter.h" />
     <ClInclude Include="Particle\ParticleSystemRenderer.h" />
     <ClInclude Include="Particle\ParticleSystem.h" />
     <ClInclude Include="Asset\Shader.h" />
@@ -86,6 +89,7 @@
     <ClInclude Include="Asset\Sprite.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Asset\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Sprite.cpp" />
     <ClCompile Include="Asset\AudioClip.cpp" />
@@ -95,7 +99,9 @@
     <ClCompile Include="Audio\Audio.cpp" />
     <ClCompile Include="Editor\ImGuiManager.cpp" />
     <ClCompile Include="Core\Time.cpp" />
+    <ClCompile Include="Asset\MaterialImporter.cpp" />
     <ClCompile Include="Math\Random.cpp" />
+    <ClCompile Include="ModelImporter.cpp" />
     <ClCompile Include="Particle\ParticleSystemRenderer.cpp" />
     <ClCompile Include="Particle\ParticleSystem.cpp" />
     <ClCompile Include="Asset\Shader.cpp" />

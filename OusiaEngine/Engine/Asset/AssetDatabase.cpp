@@ -1,9 +1,9 @@
 #include "AssetDatabase.h"
 #include "Asset/AssetImporter.h"
 #include "Asset/AudioImporter.h"
-#include "Asset/ShaderModuleImporter.h"
-#include "Asset/Shader.h"
+#include "Asset/MaterialImporter.h"
 #include "Asset/ShaderImporter.h"
+#include "Asset/ShaderModuleImporter.h"
 #include "Asset/TextureImporter.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
@@ -60,16 +60,16 @@ std::optional<std::filesystem::path> ToFullPath(std::string_view assetPath) {
 
 // T へ派生させたインポーターを返す
 template <typename T>
-std::unique_ptr<AssetImporter> MakeImporter(std::filesystem::path fullPath) {
-	return std::make_unique<T>(std::move(fullPath));
+std::unique_ptr<AssetImporter> MakeImporter(std::string assetPath, std::filesystem::path fullPath) {
+	return std::make_unique<T>(std::move(assetPath), std::move(fullPath));
 }
 
 // 拡張子からインポーターを作る
-std::unique_ptr<AssetImporter> CreateImporter(const std::filesystem::path &fullPath) {
+std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, const std::filesystem::path &fullPath) {
 	// 拡張子とファクトリのテーブル
 	struct ImporterEntry {
 		std::wstring_view extension;
-		std::function<std::unique_ptr<AssetImporter>(std::filesystem::path)> factory;
+		std::function<std::unique_ptr<AssetImporter>(std::string, std::filesystem::path)> factory;
 	};
 	static const ImporterEntry kImporters[] = {
 		{L".hlsl", &MakeImporter<ShaderModuleImporter>},
@@ -79,6 +79,7 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::filesystem::path &fullP
 		{L".wav", &MakeImporter<AudioImporter>},
 		{L".mp3", &MakeImporter<AudioImporter>},
 		{L".shader", &MakeImporter<ShaderImporter>},
+		{L".mat", &MakeImporter<MaterialImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる
@@ -89,7 +90,7 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::filesystem::path &fullP
 
 	for (const auto &entry : kImporters) {
 		if (extension == entry.extension) {
-			return entry.factory(fullPath);
+			return entry.factory(assetPath, fullPath);
 		}
 	}
 	return nullptr;
@@ -108,7 +109,7 @@ AssetEntry *FindOrCreateEntry(const std::string &key) {
 		return nullptr;
 	}
 
-	auto importer = CreateImporter(*fullPath);
+	auto importer = CreateImporter(key, *fullPath);
 	if (!importer) {
 		Log::Error("この拡張子のアセットは対応していません: {}", key);
 		return nullptr;

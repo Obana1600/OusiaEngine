@@ -4,6 +4,8 @@
 
 #include <filesystem>
 #include <memory>
+#include <string>
+#include <string_view>
 
 // TODO: API 名を Unity に合わせる
 
@@ -16,17 +18,21 @@ public: // メンバ関数
 
 	virtual std::shared_ptr<Object> Import() = 0;
 
-	const std::filesystem::path &GetAssetPath() const;
+	const std::string &GetAssetPath() const;
+	const std::filesystem::path &GetFullPath() const;
+
+	std::string ResolveAssetPath(std::string_view relativePath) const;
 
 
 protected: // メンバ関数
 
-	explicit AssetImporter(std::filesystem::path assetPath);
+	explicit AssetImporter(std::string assetPath, std::filesystem::path fullPath);
 
 
 private: // メンバ変数
 
-	std::filesystem::path assetPath_;
+	std::string assetPath_;
+	std::filesystem::path fullPath_;
 };
 
 } // namespace ou

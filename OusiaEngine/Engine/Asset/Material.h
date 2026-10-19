@@ -40,6 +40,7 @@ public: // 静的メンバ関数
 	static void StaticFinalize();
 
 	static std::shared_ptr<Material> Create(std::shared_ptr<Shader> shader = nullptr);
+	static std::shared_ptr<Material> Create(const Material &source);
 
 
 public: // メンバ関数

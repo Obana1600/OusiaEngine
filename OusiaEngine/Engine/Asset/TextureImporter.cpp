@@ -67,8 +67,8 @@ std::optional<DirectX::ScratchImage> LoadScratchImage(
 
 
 
-ou::TextureImporter::TextureImporter(std::filesystem::path assetPath)
-	: AssetImporter(std::move(assetPath)) {}
+ou::TextureImporter::TextureImporter(std::string assetPath, std::filesystem::path fullPath)
+	: AssetImporter(std::move(assetPath), std::move(fullPath)) {}
 
 
 std::shared_ptr<Object> ou::TextureImporter::Import() {

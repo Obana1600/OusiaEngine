@@ -14,7 +14,7 @@ class Texture;
 class TextureImporter: public AssetImporter {
 public: // メンバ関数
 
-	explicit TextureImporter(std::filesystem::path assetPath);
+	explicit TextureImporter(std::string assetPath, std::filesystem::path fullPath);
 
 	std::shared_ptr<Object> Import() override;
 	std::shared_ptr<Texture> ImportTexture();

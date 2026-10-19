@@ -9,8 +9,8 @@
 using namespace ou;
 
 
-ou::AudioImporter::AudioImporter(std::filesystem::path assetPath)
-	: AssetImporter(std::move(assetPath)) {}
+ou::AudioImporter::AudioImporter(std::string assetPath, std::filesystem::path fullPath)
+	: AssetImporter(std::move(assetPath), std::move(fullPath)) {}
 
 
 std::shared_ptr<Object> ou::AudioImporter::Import() {

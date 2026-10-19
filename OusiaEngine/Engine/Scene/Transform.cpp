@@ -26,7 +26,7 @@ const Vector3 &ou::Transform::GetLocalPosition() const {
 
 
 void ou::Transform::SetLocalRotation(const Quaternion &rotation) {
-	localRotation_ = Quaternion::Normalize(rotation);
+	localRotation_ = rotation.Normalize();
 	MarkDirty();
 }
 
@@ -42,7 +42,7 @@ void ou::Transform::SetLocalEulerAngles(const Vector3 &eulerAngles) {
 
 
 Vector3 ou::Transform::GetLocalEulerAngles() const {
-	return localRotation_.ToEulerAngles();
+	return localRotation_.EulerAngles();
 }
 
 
