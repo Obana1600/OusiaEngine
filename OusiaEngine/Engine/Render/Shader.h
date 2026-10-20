@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Core/Object.h"
 #include "Graphics/GraphicsTypes.h"
-#include "Scene/Object.h"
 
 #include <deque>
 #include <optional>
@@ -77,7 +77,7 @@ private: // メンバ変数
 
 	std::vector<Pass> passes_;
 	int renderQueue_ = RenderQueue::Geometry;
-	
+
 	mutable std::vector<std::deque<CachedPipeline>> pipelineCaches_;
 };
 

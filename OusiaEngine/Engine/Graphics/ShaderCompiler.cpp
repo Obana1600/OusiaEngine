@@ -5,7 +5,6 @@
 #include <wrl/client.h>
 #include <dxcapi.h> // wrl/client.h より後ろに置く
 // clang-format on
-#include <format>
 
 #pragma comment(lib, "dxcompiler.lib")
 

@@ -1,12 +1,12 @@
 #pragma once
 
+#include "Core/Object.h"
 #include "Math/Color.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
 #include "Render/Shader.h"
 #include "Render/Texture.h"
-#include "Scene/Object.h"
 
 #include <cstdint>
 #include <memory>

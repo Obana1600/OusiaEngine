@@ -1,7 +1,7 @@
 #include "Image.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Render/Texture.h"
-#include "Scene/RectTransform.h"
+#include "UI/RectTransform.h"
 #include "UI/Sprite.h"
 
 #include <utility>

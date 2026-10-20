@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Audio/XAudio2/Audio.h"
-#include "Scene/Object.h"
+#include "Core/Object.h"
 
 #include <cstdint>
 

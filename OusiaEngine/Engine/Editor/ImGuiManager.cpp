@@ -1,8 +1,8 @@
 #include "ImGuiManager.h"
 
 #ifdef USE_IMGUI
-#include "Graphics/GraphicsDevice_DX12.h"
 #include "Core/Paths.h"
+#include "Graphics/DirectX12/GraphicsDevice_DX12.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_dx12.h>

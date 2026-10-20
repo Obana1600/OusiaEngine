@@ -4,7 +4,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Render/Shader.h"
 #include "Scene/GameObject.h"
-#include "Scene/RectTransform.h"
+#include "UI/RectTransform.h"
 
 #include <utility>
 

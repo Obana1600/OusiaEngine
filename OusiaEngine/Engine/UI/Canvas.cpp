@@ -1,10 +1,10 @@
 #include "Canvas.h"
 #include "Core/Screen.h"
 #include "Scene/GameObject.h"
-#include "Scene/RectTransform.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"
 #include "UI/Graphic.h"
+#include "UI/RectTransform.h"
 
 using namespace ou;
 

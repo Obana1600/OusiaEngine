@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Graphics/DirectX12/GraphicsAllocators_DX12.h"
+#include "Graphics/DirectX12/GraphicsCommands_DX12.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/GraphicsTypes.h"
 
@@ -15,43 +17,6 @@
 namespace ou::Graphics {
 
 class GraphicsDevice_DX12 final: public GraphicsDevice {
-public: // インナークラス
-
-	struct DescriptorAllocator {
-		ID3D12Device *device = nullptr;
-		std::mutex locker;
-		D3D12_DESCRIPTOR_HEAP_DESC desc{};
-		uint32_t descriptorSize = 0;
-
-		std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> heaps;
-		std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> freeList;
-
-		void Initialize(ID3D12Device *d3dDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorHeapBlock);
-		D3D12_CPU_DESCRIPTOR_HANDLE Allocate();
-		void Free(D3D12_CPU_DESCRIPTOR_HANDLE handle);
-
-	private:
-		void BlockAllocate();
-	};
-
-	struct AllocationHandler {
-		std::mutex destroyLocker;
-		uint64_t frameCount = 0;
-
-		DescriptorAllocator descriptorRtv;
-		DescriptorAllocator descriptorDsv;
-
-		std::deque<std::pair<Microsoft::WRL::ComPtr<ID3D12Resource>, uint64_t>> destroyerResources;
-		std::deque<std::pair<Microsoft::WRL::ComPtr<ID3D12PipelineState>, uint64_t>> destroyerPipelines;
-
-		std::vector<int> freeBindlessRes;
-		std::deque<std::pair<int, uint64_t>> destroyBindlessRes;
-
-		void Update(uint64_t currentFrameCount, uint32_t bufferCount);
-		int AllocateResourceIndex();
-	};
-
-
 public: // メンバ関数
 
 	// コンストラクタ / デストラクタ
@@ -115,62 +80,6 @@ public: // メンバ関数
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetBindlessCpuHandle(int index) const;
 	D3D12_GPU_DESCRIPTOR_HANDLE GetBindlessGpuHandle(int index) const;
-
-
-private: // インナークラス
-
-	struct CommandQueue {
-		D3D12_COMMAND_QUEUE_DESC desc{};
-		Microsoft::WRL::ComPtr<ID3D12CommandQueue> queue;
-
-		std::vector<ID3D12CommandList *> submitCmds;
-
-		void Submit();
-	};
-
-	struct CommandList_DX12 {
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocators[BUFFER_COUNT][QUEUE_COUNT];
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lists[QUEUE_COUNT];
-
-		uint32_t bufferIndex = 0;
-		QueueType queue = QUEUE_GRAPHICS;
-		uint32_t id = 0;
-
-		GpuLinearAllocator frameAllocators[BUFFER_COUNT];
-
-		std::vector<const SwapChain *> swapChains;
-		std::vector<D3D12_RESOURCE_BARRIER> renderPassBarriersEnd;
-
-		const PipelineState *activePso = nullptr;
-		RenderPassInfo renderPassInfo;
-		bool isPsoDirty = false;
-
-		void Reset(uint32_t newBufferIndex);
-		ID3D12CommandAllocator *GetCommandAllocator() const;
-		ID3D12GraphicsCommandList *GetGraphicsCommandList() const;
-	};
-
-	struct CopyAllocator {
-		GraphicsDevice_DX12 *device = nullptr;
-		std::mutex locker;
-
-		struct CopyCMD {
-			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
-			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list;
-			Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-			GpuBuffer uploadBuffer;
-
-			bool IsValid() const {
-				return list != nullptr;
-			}
-		};
-
-		std::vector<CopyCMD> freeList;
-
-		void Initialize(GraphicsDevice_DX12 *owner);
-		CopyCMD Allocate(uint64_t stagingSize);
-		void Submit(CopyCMD cmd);
-	};
 
 
 private: // メンバ変数

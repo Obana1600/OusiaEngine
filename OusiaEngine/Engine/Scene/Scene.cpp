@@ -1,10 +1,10 @@
 #include "Scene.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Render/Camera.h"
+#include "Render/DirectionalLight.h"
 #include "Render/Material.h"
 #include "Render/Renderer.h"
-#include "Scene/Camera.h"
 #include "Scene/Component.h"
-#include "Scene/DirectionalLight.h"
 #include "Scene/Transform.h"
 #include "UI/Canvas.h"
 #include <algorithm>

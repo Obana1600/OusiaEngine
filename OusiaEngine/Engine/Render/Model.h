@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Core/Object.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
-#include "Scene/Object.h"
 
 #include <memory>
 #include <string>

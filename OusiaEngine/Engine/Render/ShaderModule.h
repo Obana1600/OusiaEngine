@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Core/Object.h"
 #include "Graphics/GraphicsTypes.h"
-#include "Scene/Object.h"
 
 
 namespace ou {

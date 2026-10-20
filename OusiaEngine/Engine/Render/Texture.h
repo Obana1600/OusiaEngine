@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Core/Object.h"
 #include "Graphics/GraphicsTypes.h"
-#include "Scene/Object.h"
 
 #include <cstdint>
 
@@ -10,7 +10,7 @@
 namespace ou {
 
 class Texture: public Object {
-public:	 // メンバ関数
+public: // メンバ関数
 
 	explicit Texture(Graphics::Texture graphicsTexture);
 

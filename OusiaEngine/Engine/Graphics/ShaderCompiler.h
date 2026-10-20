@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/GraphicsTypes.h"
+#include "Types/GraphicsEnums.h"
 
 #include <cstdint>
 #include <memory>

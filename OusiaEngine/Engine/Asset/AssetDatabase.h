@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Object.h"
+#include "Core/Object.h"
 
 #include <memory>
 #include <string_view>

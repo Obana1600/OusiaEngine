@@ -16,22 +16,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core\Assert.h">
+    <ClInclude Include="Diagnostics\Assert.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Core\BuildInfo.h">
+    <ClInclude Include="Diagnostics\BuildInfo.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Core\CrashHandler.h">
+    <ClInclude Include="Diagnostics\CrashHandler.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Fatal.h">
+    <ClInclude Include="Diagnostics\Fatal.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Log.h">
+    <ClInclude Include="Diagnostics\Log.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Paths.h">
+    <ClInclude Include="Platform\Paths.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Engine.h">
@@ -40,7 +40,7 @@
     <ClInclude Include="Graphics\GraphicsDevice.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\GraphicsDevice_DX12.h">
+    <ClInclude Include="Graphics\DirectX12\GraphicsDevice_DX12.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GraphicsTypes.h">
@@ -70,7 +70,7 @@
     <ClInclude Include="Platform\Window.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Object.h">
+    <ClInclude Include="Core\Object.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Component.h">
@@ -85,7 +85,7 @@
     <ClInclude Include="Scene\Scene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Camera.h">
+    <ClInclude Include="Render\Camera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Render\Mesh.h">
@@ -100,7 +100,7 @@
     <ClInclude Include="Render\MeshRenderer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\DirectionalLight.h">
+    <ClInclude Include="Render\DirectionalLight.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Render\Model.h">
@@ -133,13 +133,13 @@
     <ClInclude Include="UI\Sprite.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\RectTransform.h">
+    <ClInclude Include="UI\RectTransform.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="UI\Canvas.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Screen.h">
+    <ClInclude Include="Platform\Screen.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="UI\Graphic.h">
@@ -205,24 +205,54 @@
     <ClInclude Include="Asset\Format\GltfModelReader.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Types\GraphicsEnums.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Types\GraphicsDescs.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Types\GraphicsResources.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Types\GraphicsCommands.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\EnumFlags.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DirectX12\GraphicsConvert_DX12.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DirectX12\GraphicsResources_DX12.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DirectX12\GraphicsAllocators_DX12.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DirectX12\GraphicsCommands_DX12.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\StringUtil.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Core\CrashHandler.cpp">
+    <ClCompile Include="Diagnostics\CrashHandler.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Fatal.cpp">
+    <ClCompile Include="Diagnostics\Fatal.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Log.cpp">
+    <ClCompile Include="Diagnostics\Log.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Paths.cpp">
+    <ClCompile Include="Platform\Paths.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Engine.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\GraphicsDevice_DX12.cpp">
+    <ClCompile Include="Graphics\DirectX12\GraphicsDevice_DX12.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Input\InputSystem.cpp">
@@ -249,7 +279,7 @@
     <ClCompile Include="Platform\Window.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Object.cpp">
+    <ClCompile Include="Core\Object.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Component.cpp">
@@ -264,7 +294,7 @@
     <ClCompile Include="Scene\Scene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Camera.cpp">
+    <ClCompile Include="Render\Camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Render\Mesh.cpp">
@@ -279,7 +309,7 @@
     <ClCompile Include="Render\MeshRenderer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\DirectionalLight.cpp">
+    <ClCompile Include="Render\DirectionalLight.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Render\Model.cpp">
@@ -312,13 +342,13 @@
     <ClCompile Include="UI\Sprite.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\RectTransform.cpp">
+    <ClCompile Include="UI\RectTransform.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="UI\Canvas.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Screen.cpp">
+    <ClCompile Include="Platform\Screen.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="UI\Graphic.cpp">
@@ -379,6 +409,27 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Asset\Format\GltfModelReader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Types\GraphicsCommands.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsDevice.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\DirectX12\GraphicsConvert_DX12.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\DirectX12\GraphicsCommands_DX12.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\DirectX12\GraphicsAllocators_DX12.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\DirectX12\GraphicsResources_DX12.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\StringUtil.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
