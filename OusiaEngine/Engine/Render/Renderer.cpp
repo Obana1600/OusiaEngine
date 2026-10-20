@@ -1,6 +1,6 @@
 #include "Renderer.h"
-#include "Render/Material.h"
-#include "Render/Shader.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Shader.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"

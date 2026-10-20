@@ -6,7 +6,7 @@
 #include "Graphics/GraphicsTypes.h"
 #include "Input/InputSystem.h"
 #include "Platform/Window.h"
-#include "Render/ShaderModule.h"
+#include "Render/Asset/ShaderModule.h"
 
 #include <chrono>
 #include <cstdint>

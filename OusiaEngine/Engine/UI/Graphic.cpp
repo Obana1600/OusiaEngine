@@ -2,7 +2,7 @@
 #include "Asset/AssetDatabase.h"
 #include "Diagnostics/Fatal.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Render/Shader.h"
+#include "Render/Asset/Shader.h"
 #include "Scene/GameObject.h"
 #include "UI/RectTransform.h"
 

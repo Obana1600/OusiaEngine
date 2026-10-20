@@ -5,8 +5,8 @@
 #include "Math/Matrix4x4.h"
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
-#include "Render/Shader.h"
-#include "Render/Texture.h"
+#include "Render/Asset/Shader.h"
+#include "Render/Asset/Texture.h"
 
 #include <cstdint>
 #include <memory>

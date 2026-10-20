@@ -52,7 +52,7 @@
     <ClInclude Include="Asset\Format\ObjModelReader.h" />
     <ClInclude Include="Particle\ParticleSystemRenderer.h" />
     <ClInclude Include="Particle\ParticleSystem.h" />
-    <ClInclude Include="Render\Shader.h" />
+    <ClInclude Include="Render\Asset\Shader.h" />
     <ClInclude Include="Asset\Importer\ShaderImporter.h" />
     <ClInclude Include="UI\Image.h" />
     <ClInclude Include="Math\Color.h" />
@@ -61,10 +61,10 @@
     <ClInclude Include="UI\Canvas.h" />
     <ClInclude Include="Math\Rect.h" />
     <ClInclude Include="UI\RectTransform.h" />
-    <ClInclude Include="Render\Model.h" />
+    <ClInclude Include="Render\Asset\Model.h" />
     <ClInclude Include="Render\DirectionalLight.h" />
-    <ClInclude Include="Render\Mesh.h" />
-    <ClInclude Include="Render\Material.h" />
+    <ClInclude Include="Render\Asset\Mesh.h" />
+    <ClInclude Include="Render\Asset\Material.h" />
     <ClInclude Include="Render\MeshRenderer.h" />
     <ClInclude Include="Render\Renderer.h" />
     <ClInclude Include="Render\Camera.h" />
@@ -91,12 +91,12 @@
     <ClInclude Include="Core\Object.h" />
     <ClInclude Include="Platform\Window.h" />
     <ClInclude Include="Scene\Transform.h" />
-    <ClInclude Include="Render\ShaderModule.h" />
+    <ClInclude Include="Render\Asset\ShaderModule.h" />
     <ClInclude Include="Graphics\ShaderCompiler.h" />
     <ClInclude Include="Asset\AssetImporter.h" />
     <ClInclude Include="Asset\Importer\ShaderModuleImporter.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
-    <ClInclude Include="Render\Texture.h" />
+    <ClInclude Include="Render\Asset\Texture.h" />
     <ClInclude Include="UI\Sprite.h" />
   </ItemGroup>
   <ItemGroup>
@@ -124,7 +124,7 @@
     <ClCompile Include="Asset\Format\ObjModelReader.cpp" />
     <ClCompile Include="Particle\ParticleSystemRenderer.cpp" />
     <ClCompile Include="Particle\ParticleSystem.cpp" />
-    <ClCompile Include="Render\Shader.cpp" />
+    <ClCompile Include="Render\Asset\Shader.cpp" />
     <ClCompile Include="Asset\Importer\ShaderImporter.cpp" />
     <ClCompile Include="UI\Image.cpp" />
     <ClCompile Include="Math\Color.cpp" />
@@ -133,10 +133,10 @@
     <ClCompile Include="UI\Canvas.cpp" />
     <ClCompile Include="Math\Rect.cpp" />
     <ClCompile Include="UI\RectTransform.cpp" />
-    <ClCompile Include="Render\Model.cpp" />
+    <ClCompile Include="Render\Asset\Model.cpp" />
     <ClCompile Include="Render\DirectionalLight.cpp" />
-    <ClCompile Include="Render\Mesh.cpp" />
-    <ClCompile Include="Render\Material.cpp" />
+    <ClCompile Include="Render\Asset\Mesh.cpp" />
+    <ClCompile Include="Render\Asset\Material.cpp" />
     <ClCompile Include="Render\MeshRenderer.cpp" />
     <ClCompile Include="Render\Renderer.cpp" />
     <ClCompile Include="Render\Camera.cpp" />
@@ -159,12 +159,12 @@
     <ClCompile Include="Core\Object.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
     <ClCompile Include="Scene\Transform.cpp" />
-    <ClCompile Include="Render\ShaderModule.cpp" />
+    <ClCompile Include="Render\Asset\ShaderModule.cpp" />
     <ClCompile Include="Graphics\ShaderCompiler.cpp" />
     <ClCompile Include="Asset\AssetImporter.cpp" />
     <ClCompile Include="Asset\Importer\ShaderModuleImporter.cpp" />
     <ClCompile Include="Asset\Importer\TextureImporter.cpp" />
-    <ClCompile Include="Render\Texture.cpp" />
+    <ClCompile Include="Render\Asset\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli" />

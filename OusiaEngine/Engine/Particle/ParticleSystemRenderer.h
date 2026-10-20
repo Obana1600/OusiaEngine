@@ -5,9 +5,9 @@
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
 #include "Particle/ParticleSystem.h"
+#include "Render/Asset/Shader.h"
+#include "Render/Asset/Texture.h"
 #include "Render/Renderer.h"
-#include "Render/Shader.h"
-#include "Render/Texture.h"
 
 #include <cstdint>
 #include <memory>

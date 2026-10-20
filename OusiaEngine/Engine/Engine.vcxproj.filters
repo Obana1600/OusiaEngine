@@ -88,10 +88,10 @@
     <ClInclude Include="Render\Camera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\Mesh.h">
+    <ClInclude Include="Render\Asset\Mesh.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\Material.h">
+    <ClInclude Include="Render\Asset\Material.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Render\Renderer.h">
@@ -103,7 +103,7 @@
     <ClInclude Include="Render\DirectionalLight.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\Model.h">
+    <ClInclude Include="Render\Asset\Model.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\ShaderCompiler.h">
@@ -118,10 +118,10 @@
     <ClInclude Include="Asset\Importer\ShaderModuleImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\ShaderModule.h">
+    <ClInclude Include="Render\Asset\ShaderModule.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\Texture.h">
+    <ClInclude Include="Render\Asset\Texture.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Asset\AssetDatabase.h">
@@ -181,7 +181,7 @@
     <ClInclude Include="Audio\AudioListener.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\Shader.h">
+    <ClInclude Include="Render\Asset\Shader.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Asset\Importer\ShaderImporter.h">
@@ -297,10 +297,10 @@
     <ClCompile Include="Render\Camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Mesh.cpp">
+    <ClCompile Include="Render\Asset\Mesh.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Material.cpp">
+    <ClCompile Include="Render\Asset\Material.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Render\Renderer.cpp">
@@ -312,7 +312,7 @@
     <ClCompile Include="Render\DirectionalLight.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Model.cpp">
+    <ClCompile Include="Render\Asset\Model.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\ShaderCompiler.cpp">
@@ -327,10 +327,10 @@
     <ClCompile Include="Asset\Importer\ShaderModuleImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\ShaderModule.cpp">
+    <ClCompile Include="Render\Asset\ShaderModule.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Texture.cpp">
+    <ClCompile Include="Render\Asset\Texture.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Asset\AssetDatabase.cpp">
@@ -390,7 +390,7 @@
     <ClCompile Include="Audio\AudioListener.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Shader.cpp">
+    <ClCompile Include="Render\Asset\Shader.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Asset\Importer\ShaderImporter.cpp">

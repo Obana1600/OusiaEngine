@@ -6,7 +6,7 @@
 #include "Particle/ParticleSystemRenderer.h"
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
-#include "Render/Material.h"
+#include "Render/Asset/Material.h"
 #include "UI/Graphic.h"
 
 #include <filesystem>
