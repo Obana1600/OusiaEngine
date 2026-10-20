@@ -1,6 +1,6 @@
 #include "GraphicsResources_DX12.h"
-#include "Core/Fatal.h"
-#include "Core/Log.h"
+#include "Diagnostics/Fatal.h"
+#include "Diagnostics/Log.h"
 #include "Graphics/DirectX12/GraphicsConvert_DX12.h"
 
 using namespace ou;

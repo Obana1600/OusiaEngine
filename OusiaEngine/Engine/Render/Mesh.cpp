@@ -1,6 +1,6 @@
 #include "Mesh.h"
-#include "Core/Assert.h"
-#include "Core/Fatal.h"
+#include "Diagnostics/Assert.h"
+#include "Diagnostics/Fatal.h"
 #include "Graphics/GraphicsDevice.h"
 
 #include <utility>

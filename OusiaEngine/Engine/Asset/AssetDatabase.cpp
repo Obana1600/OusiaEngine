@@ -6,8 +6,9 @@
 #include "Asset/Importer/ShaderImporter.h"
 #include "Asset/Importer/ShaderModuleImporter.h"
 #include "Asset/Importer/TextureImporter.h"
-#include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
+#include "Platform/Paths.h"
 
 #include <cwctype>
 #include <filesystem>

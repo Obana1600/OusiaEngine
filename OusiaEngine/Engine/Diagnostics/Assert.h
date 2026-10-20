@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Log.h"
+#include "Diagnostics/Log.h"
+
 #include <format>
 #include <source_location>
 #include <utility>

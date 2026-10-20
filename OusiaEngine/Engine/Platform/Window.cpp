@@ -1,6 +1,6 @@
 #include "Window.h"
-#include "Core/Paths.h"
-#include "Core/Log.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
 
 using namespace ou;
 
@@ -188,30 +188,30 @@ LRESULT Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 			return 0;
 
 		case WM_GETMINMAXINFO: // ウィンドウの最小サイズの設定
-			{
-				const auto dpi = static_cast<int>(GetDpiForWindow(hwnd));
-				RECT rect{
-					0, 0,
-					MulDiv(kMinClientWidth, dpi, kBaseDpi),
-					MulDiv(kMinClientHeight, dpi, kBaseDpi)};
-				AdjustWindowRectExForDpi(&rect, kStyle, FALSE, 0, static_cast<UINT>(dpi));
+		{
+			const auto dpi = static_cast<int>(GetDpiForWindow(hwnd));
+			RECT rect{
+				0, 0,
+				MulDiv(kMinClientWidth, dpi, kBaseDpi),
+				MulDiv(kMinClientHeight, dpi, kBaseDpi)};
+			AdjustWindowRectExForDpi(&rect, kStyle, FALSE, 0, static_cast<UINT>(dpi));
 
-				auto *info = reinterpret_cast<MINMAXINFO *>(lparam);
-				info->ptMinTrackSize.x = rect.right - rect.left;
-				info->ptMinTrackSize.y = rect.bottom - rect.top;
-				return 0;
-			}
+			auto *info = reinterpret_cast<MINMAXINFO *>(lparam);
+			info->ptMinTrackSize.x = rect.right - rect.left;
+			info->ptMinTrackSize.y = rect.bottom - rect.top;
+			return 0;
+		}
 
 		case WM_DPICHANGED: // ウィンドウの DPI 変更時
-			{
-				const auto *suggested = reinterpret_cast<RECT *>(lparam);
-				SetWindowPos(
-					hwnd, nullptr,
-					suggested->left, suggested->top,
-					suggested->right - suggested->left, suggested->bottom - suggested->top,
-					SWP_NOZORDER | SWP_NOACTIVATE);
-				return 0;
-			}
+		{
+			const auto *suggested = reinterpret_cast<RECT *>(lparam);
+			SetWindowPos(
+				hwnd, nullptr,
+				suggested->left, suggested->top,
+				suggested->right - suggested->left, suggested->bottom - suggested->top,
+				SWP_NOZORDER | SWP_NOACTIVATE);
+			return 0;
+		}
 
 		case WM_ENTERSIZEMOVE: // ウィンドウのサイズ変更/移動を開始時
 			inSizeMove_ = true;

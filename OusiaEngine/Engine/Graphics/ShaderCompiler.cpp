@@ -1,5 +1,5 @@
 #include "ShaderCompiler.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
 
 // clang-format off
 #include <wrl/client.h>

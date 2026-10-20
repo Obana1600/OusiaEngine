@@ -1,5 +1,5 @@
 #include "Vector2.h"
-#include "Core/Assert.h"
+#include "Diagnostics/Assert.h"
 #include "Math/Mathf.h"
 #include "Math/Vector3.h"
 

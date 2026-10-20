@@ -1,12 +1,14 @@
 #include "CrashHandler.h"
-#include "Log.h"
-#include "Paths.h"
+#include "Diagnostics/Log.h"
+#include "Platform/Paths.h"
 
+// clang-format off
 #include <Windows.h>
 #include <DbgHelp.h> // Windows.h より後ろに置く
 #include <crtdbg.h>
 #include <csignal>
 #include <string>
+// clang-format on
 
 #pragma comment(lib, "dbghelp.lib")
 

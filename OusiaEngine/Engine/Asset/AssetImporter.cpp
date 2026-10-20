@@ -1,5 +1,5 @@
 #include "AssetImporter.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
 
 #include <utility>
 

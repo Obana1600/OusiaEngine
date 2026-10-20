@@ -1,6 +1,6 @@
 #include "Shader.h"
-#include "Core/Assert.h"
-#include "Core/Log.h"
+#include "Diagnostics/Assert.h"
+#include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 
 #include <utility>

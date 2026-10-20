@@ -1,6 +1,6 @@
 #include "ShaderModuleImporter.h"
-#include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ShaderCompiler.h"
 #include "Render/ShaderModule.h"

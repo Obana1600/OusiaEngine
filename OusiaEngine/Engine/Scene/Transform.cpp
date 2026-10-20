@@ -1,5 +1,5 @@
 #include "Transform.h"
-#include "Core/Assert.h"
+#include "Diagnostics/Assert.h"
 
 #include <algorithm>
 

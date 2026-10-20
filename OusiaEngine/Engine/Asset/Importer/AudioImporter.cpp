@@ -1,8 +1,8 @@
 #include "AudioImporter.h"
 #include "Audio/AudioClip.h"
 #include "Audio/XAudio2/Audio.h"
-#include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
 
 #include <utility>
 

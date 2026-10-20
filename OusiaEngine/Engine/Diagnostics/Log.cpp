@@ -1,6 +1,7 @@
 #include "Log.h"
-#include "Core/BuildInfo.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/BuildInfo.h"
+#include "Platform/Paths.h"
 
 #include <Windows.h>
 #include <chrono>

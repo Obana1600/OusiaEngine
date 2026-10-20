@@ -1,6 +1,6 @@
 #include "ParticleSystemRenderer.h"
 #include "Asset/AssetDatabase.h"
-#include "Core/Fatal.h"
+#include "Diagnostics/Fatal.h"
 #include "Particle/ParticleSystem.h"
 #include "Render/Camera.h"
 #include "Render/Material.h"

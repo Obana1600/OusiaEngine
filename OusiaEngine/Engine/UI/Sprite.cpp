@@ -1,5 +1,5 @@
 #include "Sprite.h"
-#include "Core/Log.h"
+#include "Diagnostics/Log.h"
 #include "Render/Texture.h"
 
 #include <utility>

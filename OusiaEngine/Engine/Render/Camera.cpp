@@ -1,6 +1,6 @@
 #include "Camera.h"
-#include "Core/Screen.h"
 #include "Math/Mathf.h"
+#include "Platform/Screen.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"

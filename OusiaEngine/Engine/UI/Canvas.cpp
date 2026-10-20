@@ -1,5 +1,5 @@
 #include "Canvas.h"
-#include "Core/Screen.h"
+#include "Platform/Screen.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"

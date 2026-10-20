@@ -1,5 +1,5 @@
 #include "GraphicsAllocators_DX12.h"
-#include "Core/Fatal.h"
+#include "Diagnostics/Fatal.h"
 #include "Graphics/DirectX12/GraphicsDevice_DX12.h"
 
 #include <bit>

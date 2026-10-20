@@ -1,6 +1,6 @@
 #include "Material.h"
 #include "Asset/AssetDatabase.h"
-#include "Core/Fatal.h"
+#include "Diagnostics/Fatal.h"
 
 #include <utility>
 

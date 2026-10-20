@@ -1,6 +1,6 @@
 #include "ObjModelReader.h"
-#include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
 
 #include <unordered_map>
 #include <utility>

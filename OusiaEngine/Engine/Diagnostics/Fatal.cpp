@@ -1,6 +1,6 @@
 #include "Fatal.h"
-#include "Log.h"
-#include "Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
 
 #include <format>
 
@@ -30,8 +30,7 @@ std::string ou::DescribeHResult(HRESULT hr) {
 	// HRESULTからエラーメッセージを取りだす
 	const auto length = FormatMessageW(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		nullptr, static_cast<DWORD>(hr), 0, reinterpret_cast<LPWSTR>(&buffer), 0, nullptr
-	);
+		nullptr, static_cast<DWORD>(hr), 0, reinterpret_cast<LPWSTR>(&buffer), 0, nullptr);
 
 	auto text = (length > 0) ? WideToUtf8(std::wstring_view(buffer, length)) : "(説明なし)";
 	LocalFree(buffer);

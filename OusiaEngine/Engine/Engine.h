@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Log.h"
+#include "Diagnostics/Log.h"
 #include "Editor/ImGuiManager.h"
 #include "Graphics/DirectX12/GraphicsDevice_DX12.h"
 #include "Graphics/GraphicsTypes.h"

@@ -1,18 +1,18 @@
 #include "Audio.h"
-#include "Core/Fatal.h"
-#include "Core/Log.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Fatal.h"
+#include "Diagnostics/Log.h"
 #include "Math/Mathf.h"
-#include "Core/Paths.h"
+
+#include <algorithm>
+#include <array>
+#include <vector>
 
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
 #include <wrl/client.h>
 #include <xaudio2.h>
-
-#include <algorithm>
-#include <array>
-#include <vector>
 
 #pragma comment(lib, "xaudio2.lib")
 #pragma comment(lib, "mfplat.lib")

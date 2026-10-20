@@ -1,8 +1,8 @@
 #include "GraphicsDevice_DX12.h"
-#include "Core/Assert.h"
-#include "Core/Fatal.h"
-#include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Assert.h"
+#include "Diagnostics/Fatal.h"
+#include "Diagnostics/Log.h"
 #include "Graphics/DirectX12/GraphicsConvert_DX12.h"
 #include "Graphics/DirectX12/GraphicsResources_DX12.h"
 

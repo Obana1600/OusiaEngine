@@ -1,6 +1,6 @@
 #include "AssetJson.h"
-#include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
 #include "Render/Shader.h"
 
 #include <algorithm>
