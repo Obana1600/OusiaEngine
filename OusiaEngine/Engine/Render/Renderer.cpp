@@ -1,9 +1,9 @@
 #include "Renderer.h"
+#include "Render/Material.h"
+#include "Render/Shader.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/Transform.h"
-#include "Asset/Shader.h"
-#include "Asset/Material.h"
 
 #include <utility>
 

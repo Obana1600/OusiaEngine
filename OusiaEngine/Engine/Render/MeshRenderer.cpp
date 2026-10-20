@@ -1,7 +1,7 @@
 #include "MeshRenderer.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Asset/Material.h"
-#include "Asset/Mesh.h"
+#include "Render/Material.h"
+#include "Render/Mesh.h"
 
 #include <utility>
 

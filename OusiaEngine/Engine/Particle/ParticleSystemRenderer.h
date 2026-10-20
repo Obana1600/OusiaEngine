@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Asset/Shader.h"
-#include "Asset/Texture.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Math/Color.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
 #include "Particle/ParticleSystem.h"
 #include "Render/Renderer.h"
+#include "Render/Shader.h"
+#include "Render/Texture.h"
 
 #include <cstdint>
 #include <memory>

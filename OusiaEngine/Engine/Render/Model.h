@@ -1,10 +1,11 @@
 #pragma once
 
+#include "Math/Quaternion.h"
+#include "Math/Vector3.h"
 #include "Scene/Object.h"
 
 #include <memory>
 #include <string>
-#include <string_view>
 #include <vector>
 
 
@@ -21,17 +22,18 @@ public: // インナークラス
 
 	struct Node {
 		std::string name;
+		Vector3 position = Vector3::Zero;
+		Quaternion rotation = Quaternion::Identity;
+		Vector3 scale = Vector3::One;
+		int parent = -1;
 		std::shared_ptr<Mesh> mesh;
 		std::vector<std::shared_ptr<Material>> materials;
 	};
 
 
-public: // 静的メンバ関数
-
-	static std::shared_ptr<Model> LoadObj(std::string_view fileName);
-
-
 public: // メンバ関数
+
+	explicit Model(std::vector<Node> nodes);
 
 	GameObject *Instantiate(Scene *scene) const;
 

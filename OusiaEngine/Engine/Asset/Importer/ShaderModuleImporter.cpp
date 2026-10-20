@@ -1,9 +1,9 @@
 #include "ShaderModuleImporter.h"
-#include "Asset/ShaderModule.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ShaderCompiler.h"
+#include "Render/ShaderModule.h"
 
 #include <string_view>
 #include <utility>
@@ -58,7 +58,7 @@ Graphics::ShaderStage InferStage(const std::filesystem::path &path) {
 
 ou::ShaderModuleImporter::ShaderModuleImporter(std::string assetPath, std::filesystem::path fullPath)
 	: AssetImporter(std::move(assetPath), std::move(fullPath)),
-	  stage_(InferStage(GetAssetPath())) {}
+	  stage_(InferStage(GetFullPath())) {}
 
 
 std::shared_ptr<Object> ou::ShaderModuleImporter::Import() {
@@ -67,7 +67,7 @@ std::shared_ptr<Object> ou::ShaderModuleImporter::Import() {
 
 
 std::shared_ptr<ShaderModule> ou::ShaderModuleImporter::ImportShaderModule() {
-	const auto path = ToUtf8(GetAssetPath());
+	const auto path = ToUtf8(GetFullPath());
 
 	if (stage_ == Graphics::ShaderStage::Count) {
 		Log::Error("シェーダステージが分かりません (ファイル名を X.VS.hlsl の形にするか SetStage で直接指定してください)");

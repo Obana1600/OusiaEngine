@@ -1,17 +1,17 @@
 #include "ShaderImporter.h"
-#include "Asset/Shader.h"
-#include "Asset/ShaderModule.h"
-#include "Asset/ShaderModuleImporter.h"
+#include "Asset/AssetDatabase.h"
+#include "Asset/Format/AssetJson.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
-#include "Asset/AssetJson.h"
-
-#include <nlohmann/json.hpp>
+#include "Render/Shader.h"
+#include "Render/ShaderModule.h"
 
 #include <format>
 #include <string>
 #include <string_view>
 #include <utility>
+
+#include <nlohmann/json.hpp>
 
 using namespace ou;
 using ou::AssetJson::Json;
@@ -40,7 +40,7 @@ constexpr std::string_view kPassKeys[] = {
 };
 
 Graphics::Shader ImportStage(
-	const std::filesystem::path &folder,
+	const AssetImporter &importer,
 	const Json &pass,
 	const char *key,
 	Graphics::ShaderStage stage,
@@ -56,7 +56,7 @@ Graphics::Shader ImportStage(
 
 	// シェーダーアセットを作る
 	const auto fileName = it->get<std::string>();
-	const auto module = ShaderModuleImporter(folder / Utf8ToWide(fileName)).ImportShaderModule();
+	const auto module = AssetDatabase::LoadAssetAtPath<ShaderModule>(importer.ResolveAssetPath(fileName));
 	if (!module) {
 		throw AssetJson::FormatError(std::format("\"{}\" の HLSL をコンパイルできませんでした: {}", key, fileName));
 	}
@@ -69,20 +69,20 @@ Graphics::Shader ImportStage(
 	return module->GetGraphicsShader();
 }
 
-Shader::Pass ParsePass(const std::filesystem::path &folder, const Json &json) {
+Shader::Pass ParsePass(const AssetImporter &importer, const Json &json) {
 	Shader::Pass pass{};
 	pass.name = json.value("name", std::string());
 
 	// シェーダー
-	pass.vertexShader = ImportStage(folder, json, "vertex", Graphics::ShaderStage::VS, true);
-	pass.pixelShader = ImportStage(folder, json, "pixel", Graphics::ShaderStage::PS, true);
-	pass.hullShader = ImportStage(folder, json, "hull", Graphics::ShaderStage::HS, false);
-	pass.domainShader = ImportStage(folder, json, "domain", Graphics::ShaderStage::DS, false);
-	pass.geometryShader = ImportStage(folder, json, "geometry", Graphics::ShaderStage::GS, false);
+	pass.vertexShader = ImportStage(importer, json, "vertex", Graphics::ShaderStage::VS, true);
+	pass.pixelShader = ImportStage(importer, json, "pixel", Graphics::ShaderStage::PS, true);
+	pass.hullShader = ImportStage(importer, json, "hull", Graphics::ShaderStage::HS, false);
+	pass.domainShader = ImportStage(importer, json, "domain", Graphics::ShaderStage::DS, false);
+	pass.geometryShader = ImportStage(importer, json, "geometry", Graphics::ShaderStage::GS, false);
 
 	// ブレンド
 	auto &target = pass.blend.renderTarget[0];
-	target.srcBlend = AssetJson::ToBlend(json.value("srcBlend", std::string("One")) , "srcBlend");
+	target.srcBlend = AssetJson::ToBlend(json.value("srcBlend", std::string("One")), "srcBlend");
 	target.destBlend = AssetJson::ToBlend(json.value("dstBlend", std::string("Zero")), "dstBlend");
 	target.blendOp = AssetJson::ToBlendOp(json.value("blendOp", std::string("Add")), "blendOp");
 	target.blendEnable = !(target.srcBlend == Graphics::Blend::ONE &&
@@ -115,7 +115,7 @@ std::shared_ptr<Object> ou::ShaderImporter::Import() {
 
 
 std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
-	const auto &path = GetAssetPath();
+	const auto &path = GetFullPath();
 	const auto pathUtf8 = ToUtf8(path);
 
 	const auto json = AssetJson::Load(path);
@@ -136,14 +136,13 @@ std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
 			throw AssetJson::FormatError("\"passes\" には Pass を 1 つ以上、配列で書いてください");
 		}
 
-		const auto folder = path.parent_path();
 		std::vector<Shader::Pass> passes;
 		for (const auto &passJson : passesJson) {
 			if (!passJson.is_object()) {
 				throw AssetJson::FormatError("\"passes\" の中身は {...} と書いてください");
 			}
 			AssetJson::WarnUnknownKeys(passJson, kPassKeys, pathUtf8);
-			passes.push_back(ParsePass(folder, passJson));
+			passes.push_back(ParsePass(*this, passJson));
 		}
 
 		auto shader = std::make_shared<Shader>(std::move(passes), renderQueue);

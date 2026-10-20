@@ -1,6 +1,6 @@
 #include "Sprite.h"
-#include "Asset/Texture.h"
 #include "Core/Log.h"
+#include "Render/Texture.h"
 
 #include <utility>
 

@@ -1,13 +1,12 @@
 #include "Engine.h"
 #include "Asset/AssetDatabase.h"
-#include "Asset/Material.h"
-#include "Audio/Audio.h"
+#include "Audio/XAudio2/Audio.h"
 #include "Core/Fatal.h"
 #include "Core/Paths.h"
 #include "Core/Screen.h"
 #include "Core/Time.h"
 #include "Particle/ParticleSystemRenderer.h"
-#include "Render/ModelManager.h"
+#include "Render/Material.h"
 #include "UI/Graphic.h"
 
 #include <filesystem>
@@ -110,7 +109,6 @@ void ou::Engine::Finalize() {
 
 	imGuiManager_.reset();
 
-	ModelManager::GetInstance()->Finalize();
 	Graphic::StaticFinalize();
 	Material::StaticFinalize();
 	ParticleSystemRenderer::StaticFinalize();

@@ -1,10 +1,11 @@
 #include "AssetDatabase.h"
 #include "Asset/AssetImporter.h"
-#include "Asset/AudioImporter.h"
-#include "Asset/MaterialImporter.h"
-#include "Asset/ShaderImporter.h"
-#include "Asset/ShaderModuleImporter.h"
-#include "Asset/TextureImporter.h"
+#include "Asset/Importer/AudioImporter.h"
+#include "Asset/Importer/MaterialImporter.h"
+#include "Asset/Importer/ModelImporter.h"
+#include "Asset/Importer/ShaderImporter.h"
+#include "Asset/Importer/ShaderModuleImporter.h"
+#include "Asset/Importer/TextureImporter.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 
@@ -80,6 +81,9 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, cons
 		{L".mp3", &MakeImporter<AudioImporter>},
 		{L".shader", &MakeImporter<ShaderImporter>},
 		{L".mat", &MakeImporter<MaterialImporter>},
+		{L".obj", &MakeImporter<ModelImporter>},
+		{L".gltf", &MakeImporter<ModelImporter>},
+		{L".glb", &MakeImporter<ModelImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる

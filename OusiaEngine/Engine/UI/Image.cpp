@@ -1,8 +1,8 @@
 #include "Image.h"
-#include "Asset/Sprite.h"
-#include "Asset/Texture.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Render/Texture.h"
 #include "Scene/RectTransform.h"
+#include "UI/Sprite.h"
 
 #include <utility>
 

@@ -19,7 +19,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			gameScene.Update();
 
 			// 最小化中は無効なハンドルが返るので、描画を飛ばす
-			Graphics::CommandList cmd = engine.BeginDraw();
+			auto cmd = engine.BeginDraw();
 			if (!cmd.IsValid()) { continue; }
 
 			gameScene.Draw(cmd);

@@ -1,8 +1,8 @@
 #include "TextureImporter.h"
-#include "Asset/Texture.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Render/Texture.h"
 
 #include <DirectXTex/DirectXTex.h>
 #include <optional>
@@ -77,7 +77,7 @@ std::shared_ptr<Object> ou::TextureImporter::Import() {
 
 
 std::shared_ptr<Texture> ou::TextureImporter::ImportTexture() {
-	const auto image = LoadScratchImage(GetAssetPath(), srgb_, mipmapEnabled_);
+	const auto image = LoadScratchImage(GetFullPath(), srgb_, mipmapEnabled_);
 	if (!image) { return nullptr; }
 
 	const auto &meta = image->GetMetadata();
@@ -104,7 +104,7 @@ std::shared_ptr<Texture> ou::TextureImporter::ImportTexture() {
 	// グラフィクス層のテクスチャの作成
 	Graphics::Texture graphicsTexture;
 	if (!Graphics::GetDevice()->CreateTexture(&desc, subresources.data(), &graphicsTexture)) {
-		Log::Error("テクスチャの作成に失敗しました: {}", ToUtf8(GetAssetPath()));
+		Log::Error("テクスチャの作成に失敗しました: {}", ToUtf8(GetFullPath()));
 		return nullptr;
 	}
 	Graphics::GetDevice()->SetName(&graphicsTexture, GetName());

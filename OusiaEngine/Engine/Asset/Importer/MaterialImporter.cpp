@@ -1,14 +1,14 @@
 #include "MaterialImporter.h"
 #include "Asset/AssetDatabase.h"
-#include "Asset/AssetJson.h"
-#include "Asset/Material.h"
-#include "Asset/Shader.h"
-#include "Asset/Texture.h"
+#include "Asset/Format/AssetJson.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Math/Color.h"
 #include "Math/Mathf.h"
 #include "Math/Vector2.h"
+#include "Render/Material.h"
+#include "Render/Shader.h"
+#include "Render/Texture.h"
 
 #include <format>
 #include <string>
@@ -95,8 +95,8 @@ Shader::RenderStateOverride ParseRenderStateOverride(const Json &json) {
 
 
 
-ou::MaterialImporter::MaterialImporter(std::string assetPath, std::filesystem::path fullPass)
-	: AssetImporter(std::move(assetPath), std::move(fullPass)) {}
+ou::MaterialImporter::MaterialImporter(std::string assetPath, std::filesystem::path fullPath)
+	: AssetImporter(std::move(assetPath), std::move(fullPath)) {}
 
 
 std::shared_ptr<Object> ou::MaterialImporter::Import() {
@@ -105,7 +105,7 @@ std::shared_ptr<Object> ou::MaterialImporter::Import() {
 
 
 std::shared_ptr<Material> ou::MaterialImporter::ImportMaterial() {
-	const auto &path = GetAssetPath();
+	const auto &path = GetFullPath();
 	const auto pathUtf8 = ToUtf8(path);
 
 	const auto json = AssetJson::Load(path);

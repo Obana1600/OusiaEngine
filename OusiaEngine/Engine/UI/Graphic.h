@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Asset/Material.h"
-#include "Asset/Texture.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Color.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector4.h"
+#include "Render/Material.h"
+#include "Render/Texture.h"
 #include "Scene/Component.h"
 
 #include <cstdint>

@@ -88,10 +88,10 @@
     <ClInclude Include="Scene\Camera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\Mesh.h">
+    <ClInclude Include="Render\Mesh.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\Material.h">
+    <ClInclude Include="Render\Material.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Render\Renderer.h">
@@ -103,13 +103,7 @@
     <ClInclude Include="Scene\DirectionalLight.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\ObjParser.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Render\Model.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Render\ModelManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\ShaderCompiler.h">
@@ -118,16 +112,16 @@
     <ClInclude Include="Asset\AssetImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\TextureImporter.h">
+    <ClInclude Include="Asset\Importer\TextureImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\ShaderModuleImporter.h">
+    <ClInclude Include="Asset\Importer\ShaderModuleImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\ShaderModule.h">
+    <ClInclude Include="Render\ShaderModule.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\Texture.h">
+    <ClInclude Include="Render\Texture.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Asset\AssetDatabase.h">
@@ -136,7 +130,7 @@
     <ClInclude Include="Math\Rect.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\Sprite.h">
+    <ClInclude Include="UI\Sprite.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Scene\RectTransform.h">
@@ -172,13 +166,13 @@
     <ClInclude Include="Particle\ParticleSystemRenderer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Audio.h">
+    <ClInclude Include="Audio\XAudio2\Audio.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\AudioClip.h">
+    <ClInclude Include="Audio\AudioClip.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\AudioImporter.h">
+    <ClInclude Include="Asset\Importer\AudioImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Audio\AudioSource.h">
@@ -187,19 +181,28 @@
     <ClInclude Include="Audio\AudioListener.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\Shader.h">
+    <ClInclude Include="Render\Shader.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\ShaderImporter.h">
+    <ClInclude Include="Asset\Importer\ShaderImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\AssetJson.h">
+    <ClInclude Include="Asset\Format\AssetJson.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Asset\MaterialImporter.h">
+    <ClInclude Include="Asset\Importer\MaterialImporter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ModelImporter.h">
+    <ClInclude Include="Asset\Importer\ModelImporter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Format\ModelData.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Format\ObjModelReader.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Format\GltfModelReader.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -264,10 +267,10 @@
     <ClCompile Include="Scene\Camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\Mesh.cpp">
+    <ClCompile Include="Render\Mesh.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\Material.cpp">
+    <ClCompile Include="Render\Material.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Render\Renderer.cpp">
@@ -279,13 +282,7 @@
     <ClCompile Include="Scene\DirectionalLight.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\ObjParser.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Model.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\ModelManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\ShaderCompiler.cpp">
@@ -294,16 +291,16 @@
     <ClCompile Include="Asset\AssetImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\TextureImporter.cpp">
+    <ClCompile Include="Asset\Importer\TextureImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\ShaderModuleImporter.cpp">
+    <ClCompile Include="Asset\Importer\ShaderModuleImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\ShaderModule.cpp">
+    <ClCompile Include="Render\ShaderModule.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\Texture.cpp">
+    <ClCompile Include="Render\Texture.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Asset\AssetDatabase.cpp">
@@ -312,7 +309,7 @@
     <ClCompile Include="Math\Rect.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\Sprite.cpp">
+    <ClCompile Include="UI\Sprite.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Scene\RectTransform.cpp">
@@ -348,13 +345,13 @@
     <ClCompile Include="Particle\ParticleSystemRenderer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Audio.cpp">
+    <ClCompile Include="Audio\XAudio2\Audio.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\AudioClip.cpp">
+    <ClCompile Include="Audio\AudioClip.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\AudioImporter.cpp">
+    <ClCompile Include="Asset\Importer\AudioImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Audio\AudioSource.cpp">
@@ -363,19 +360,25 @@
     <ClCompile Include="Audio\AudioListener.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\Shader.cpp">
+    <ClCompile Include="Render\Shader.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\ShaderImporter.cpp">
+    <ClCompile Include="Asset\Importer\ShaderImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\AssetJson.cpp">
+    <ClCompile Include="Asset\Format\AssetJson.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\MaterialImporter.cpp">
+    <ClCompile Include="Asset\Importer\MaterialImporter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="ModelImporter.cpp">
+    <ClCompile Include="Asset\Importer\ModelImporter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Format\ObjModelReader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Format\GltfModelReader.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

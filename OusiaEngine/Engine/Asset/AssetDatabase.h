@@ -12,9 +12,10 @@ class AssetImporter;
 } // namespace ou
 
 
+// ファイルから読み込んだリソースをキャッシュする
 namespace ou::AssetDatabase {
 
-// アセットの読み込み (ex: "Assets/..." or "EngineAssets/...")  
+// アセットの読み込み (ex: "Assets/..." or "EngineAssets/...")
 std::shared_ptr<Object> LoadMainAssetAtPath(std::string_view assetPath);
 
 // 読み込んだアセットを T にキャストする

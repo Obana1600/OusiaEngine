@@ -1,6 +1,6 @@
 #include "Scene.h"
-#include "Asset/Material.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Render/Material.h"
 #include "Render/Renderer.h"
 #include "Scene/Camera.h"
 #include "Scene/Component.h"
