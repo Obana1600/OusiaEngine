@@ -1,19 +1,18 @@
 #include "DirectionalLight.h"
 #include "Scene/Transform.h"
-#include "Scene/GameObject.h"
-#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 
 using namespace ou;
 
 
 
 void ou::DirectionalLight::Awake() {
-	GetGameObject()->GetScene()->RegisterLight(this);
+	SceneManager::RegisterLight(this);
 }
 
 
 void ou::DirectionalLight::OnDestroy() {
-	GetGameObject()->GetScene()->UnregisterLight(this);
+	SceneManager::UnregisterLight(this);
 }
 
 

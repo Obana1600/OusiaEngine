@@ -1,5 +1,6 @@
 #include "Transform.h"
 #include "Diagnostics/Assert.h"
+#include "Scene/GameObject.h"
 
 #include <algorithm>
 
@@ -7,7 +8,10 @@ using namespace ou;
 
 
 ou::Transform::~Transform() {
-	SetParent(nullptr);
+	if (parent_) {
+		std::erase(parent_->children_, this);
+	}
+
 	for (auto *child : children_) {
 		child->parent_ = nullptr;
 		child->MarkDirty();
@@ -76,6 +80,20 @@ Vector3 ou::Transform::GetWorldPosition() const {
 }
 
 
+Quaternion ou::Transform::GetWorldRotation() const {
+	return parent_ ? parent_->GetWorldRotation() * localRotation_
+				   : localRotation_;
+}
+
+
+Vector3 ou::Transform::GetLossyScale() const {
+	const auto &m = GetLocalToWorldMatrix();
+	return {Vector3(m.m11, m.m12, m.m13).Length(),
+			Vector3(m.m21, m.m22, m.m23).Length(),
+			Vector3(m.m31, m.m32, m.m33).Length()};
+}
+
+
 Vector3 ou::Transform::GetForward() const {
 	const auto &m = GetLocalToWorldMatrix();
 	return Vector3(m.m31, m.m32, m.m33).Normalize();
@@ -103,6 +121,10 @@ void ou::Transform::SetParent(Transform *parent) {
 	if (parent_) { parent_->children_.push_back(this); }
 	MarkDirty();
 	OnTransformParentChanged();
+
+	if (auto *gameObject = GetGameObject()) {
+		gameObject->RefreshActiveInHierarchy();
+	}
 }
 
 

@@ -12,6 +12,8 @@ public: // 静的メンバ関数
 
 	static void Destroy(Object *obj);
 
+	static void DontDestroyOnLoad(Object *obj);
+
 
 public: // メンバ関数
 

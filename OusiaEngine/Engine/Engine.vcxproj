@@ -33,7 +33,13 @@
     <ClInclude Include="Audio\AudioListener.h" />
     <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\XAudio2\Audio.h" />
+    <ClInclude Include="Math\Bounds.h" />
+    <ClInclude Include="Physics\Physics.h" />
+    <ClInclude Include="Physics\BoxCollider.h" />
+    <ClInclude Include="Physics\Collider.h" />
+    <ClInclude Include="Scene\Behaviour.h" />
     <ClInclude Include="Core\EnumFlags.h" />
+    <ClInclude Include="Core\Event.h" />
     <ClInclude Include="Core\StringUtil.h" />
     <ClInclude Include="Editor\ImGuiManager.h" />
     <ClInclude Include="Core\Time.h" />
@@ -54,6 +60,8 @@
     <ClInclude Include="Particle\ParticleSystem.h" />
     <ClInclude Include="Render\Asset\Shader.h" />
     <ClInclude Include="Asset\Importer\ShaderImporter.h" />
+    <ClInclude Include="Scene\SceneManager.h" />
+    <ClInclude Include="Physics\SphereCollider.h" />
     <ClInclude Include="UI\Image.h" />
     <ClInclude Include="Math\Color.h" />
     <ClInclude Include="Platform\Screen.h" />
@@ -102,6 +110,11 @@
   <ItemGroup>
     <ClCompile Include="Asset\Format\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
+    <ClCompile Include="Math\Bounds.cpp" />
+    <ClCompile Include="Physics\Physics.cpp" />
+    <ClCompile Include="Physics\BoxCollider.cpp" />
+    <ClCompile Include="Physics\Collider.cpp" />
+    <ClCompile Include="Scene\Behaviour.cpp" />
     <ClCompile Include="Core\StringUtil.cpp" />
     <ClCompile Include="Graphics\DirectX12\GraphicsAllocators_DX12.cpp" />
     <ClCompile Include="Graphics\DirectX12\GraphicsCommands_DX12.cpp" />
@@ -109,6 +122,8 @@
     <ClCompile Include="Graphics\DirectX12\GraphicsResources_DX12.cpp" />
     <ClCompile Include="Graphics\Types\GraphicsCommands.cpp" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
+    <ClCompile Include="Scene\SceneManager.cpp" />
+    <ClCompile Include="Physics\SphereCollider.cpp" />
     <ClCompile Include="UI\Sprite.cpp" />
     <ClCompile Include="Audio\AudioClip.cpp" />
     <ClCompile Include="Asset\Importer\AudioImporter.cpp" />

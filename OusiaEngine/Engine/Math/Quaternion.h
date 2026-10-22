@@ -64,6 +64,7 @@ public: // 静的メンバ関数
 public: // オペレータ
 
 	friend Quaternion operator*(const Quaternion &a, const Quaternion &b);
+	friend Vector3 operator*(const Quaternion &rotation, const Vector3 &point);
 	friend bool operator==(const Quaternion &a, const Quaternion &b);
 
 	Quaternion &operator*=(const Quaternion &q);

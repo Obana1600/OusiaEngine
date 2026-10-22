@@ -11,3 +11,8 @@ GameObject *ou::Component::GetGameObject() const {
 Transform *ou::Component::GetTransform() const {
 	return transform_;
 }
+
+
+bool ou::Component::IsEnabledSelf() const {
+	return true;
+}

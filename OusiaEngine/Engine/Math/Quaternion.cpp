@@ -149,6 +149,27 @@ Quaternion operator*(const Quaternion &a, const Quaternion &b) {
 }
 
 
+Vector3 operator*(const Quaternion &rotation, const Vector3 &point) {
+	const auto x2 = rotation.x * 2.0f;
+	const auto y2 = rotation.y * 2.0f;
+	const auto z2 = rotation.z * 2.0f;
+
+	const auto xx = rotation.x * x2;
+	const auto yy = rotation.y * y2;
+	const auto zz = rotation.z * z2;
+	const auto xy = rotation.x * y2;
+	const auto xz = rotation.x * z2;
+	const auto yz = rotation.y * z2;
+	const auto wx = rotation.w * x2;
+	const auto wy = rotation.w * y2;
+	const auto wz = rotation.w * z2;
+
+	return {(1.0f - (yy + zz)) * point.x + (xy - wz) * point.y + (xz + wy) * point.z,
+			(xy + wz) * point.x + (1.0f - (xx + zz)) * point.y + (yz - wx) * point.z,
+			(xz - wy) * point.x + (yz + wx) * point.y + (1.0f - (xx + yy)) * point.z};
+}
+
+
 bool operator==(const Quaternion &a, const Quaternion &b) {
 	return Quaternion::Dot(a, b) > 1.0f - Mathf::Epsilon;
 }

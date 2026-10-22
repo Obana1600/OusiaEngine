@@ -135,6 +135,11 @@ Vector3 ou::Vector3::LerpUnclamped(const Vector3 &a, const Vector3 &b, float t) 
 }
 
 
+Vector3 ou::Vector3::Scale(const Vector3 &a, const Vector3 &b) {
+	return {a.x * b.x, a.y * b.y, a.z * b.z};
+}
+
+
 namespace ou {
 
 Vector3 operator+(const Vector3 &v1, const Vector3 &v2) {

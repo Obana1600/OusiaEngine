@@ -1,5 +1,6 @@
 #include "GameObject.h"
 #include "Diagnostics/Assert.h"
+#include "Scene/Behaviour.h"
 
 using namespace ou;
 
@@ -35,10 +36,46 @@ Scene *ou::GameObject::GetScene() const {
 }
 
 
-void ou::GameObject::StartComponents() {
+void ou::GameObject::SetActive(bool value) {
+	if (isActiveSelf_ == value) { return; }
+
+	isActiveSelf_ = value;
+	RefreshActiveInHierarchy();
+}
+
+
+bool ou::GameObject::IsActiveSelf() const {
+	return isActiveSelf_;
+}
+
+
+bool ou::GameObject::IsActiveInHierarchy() const {
+	if (!isActiveSelf_) { return false; }
+
+	const auto *parent = transform_->GetParent();
+	return !parent || parent->GetGameObject()->IsActiveInHierarchy();
+}
+
+
+void ou::GameObject::AwakeComponents() {
 	const auto count = components_.size();
 	for (size_t i = 0; i < count; i++) {
-		if (components_[i]->isStarted_ || components_[i]->IsDestroyed()) { continue; }
+		if (components_[i]->isAwoken_) { continue; }
+
+		components_[i]->isAwoken_ = true;
+		components_[i]->Awake();
+	}
+}
+
+
+void ou::GameObject::StartComponents() {
+	if (!IsActiveInHierarchy()) { return; }
+
+	const auto count = components_.size();
+	for (size_t i = 0; i < count; i++) {
+		if (components_[i]->isStarted_ ||
+			components_[i]->IsDestroyed() ||
+			!components_[i]->IsEnabledSelf()) { continue; }
 		components_[i]->isStarted_ = true;
 		components_[i]->Start();
 	}
@@ -46,18 +83,26 @@ void ou::GameObject::StartComponents() {
 
 
 void ou::GameObject::UpdateComponents() {
+	if (!IsActiveInHierarchy()) { return; }
+
 	const auto count = components_.size();
 	for (size_t i = 0; i < count; i++) {
-		if (!components_[i]->isStarted_ || components_[i]->IsDestroyed()) { continue; }
+		if (!components_[i]->isStarted_ ||
+			components_[i]->IsDestroyed() ||
+			!components_[i]->IsEnabledSelf()) { continue; }
 		components_[i]->Update();
 	}
 }
 
 
 void ou::GameObject::LateUpdateComponents() {
+	if (!IsActiveInHierarchy()) { return; }
+
 	const auto count = components_.size();
 	for (size_t i = 0; i < count; i++) {
-		if (!components_[i]->isStarted_ || components_[i]->IsDestroyed()) { continue; }
+		if (!components_[i]->isStarted_ ||
+			components_[i]->IsDestroyed() ||
+			!components_[i]->IsEnabledSelf()) { continue; }
 		components_[i]->LateUpdate();
 	}
 }
@@ -68,7 +113,10 @@ void ou::GameObject::DestroyMarkedComponents() {
 
 	for (const auto &comp : components_) {
 		if (comp->IsDestroyed() && comp.get() != transform_) {
-			comp->OnDestroy();
+			if (comp->isAwoken_) {
+				DisableBeheviorForDestroy(comp.get());
+				comp->OnDestroy();
+			}
 		}
 	}
 
@@ -80,9 +128,13 @@ void ou::GameObject::DestroyMarkedComponents() {
 
 void ou::GameObject::NotifyDestroyToAllComponents() {
 	for (auto it = components_.rbegin(); it != components_.rend(); it++) {
-		(*it)->OnDestroy();
+		if ((*it)->isAwoken_) {
+			DisableBeheviorForDestroy((*it).get());
+			(*it)->OnDestroy();
+		}
 	}
 }
+
 
 void ou::GameObject::ReplaceTransform(std::unique_ptr<Transform> newTransform) {
 	auto *old = transform_;
@@ -115,5 +167,36 @@ void ou::GameObject::ReplaceTransform(std::unique_ptr<Transform> newTransform) {
 	transform_ = next;
 	components_.front() = std::move(newTransform);
 
-	next->Awake();
+	if (IsActiveInHierarchy()) {
+		next->isAwoken_ = true;
+		next->Awake();
+	}
+}
+
+
+void ou::GameObject::RefreshActiveInHierarchy() {
+	if (IsActiveInHierarchy()) { AwakeComponents(); }
+
+	for (size_t i = 0; i < components_.size(); i++) {
+		RefreshBehavior(components_[i].get());
+	}
+
+	const auto children = transform_->GetChildren();
+	for (auto *child : children) {
+		child->GetGameObject()->RefreshActiveInHierarchy();
+	}
+}
+
+
+void ou::GameObject::RefreshBehavior(Component *component) {
+	if (auto *behavior = dynamic_cast<Behaviour *>(component)) {
+		behavior->RefreshActiveAndEnabled();
+	}
+}
+
+
+void ou::GameObject::DisableBeheviorForDestroy(Component *component) {
+	if (auto *behavior = dynamic_cast<Behaviour *>(component)) {
+		behavior->DisableForDestroy();
+	}
 }

@@ -1,20 +1,19 @@
 #include "Camera.h"
 #include "Math/Mathf.h"
 #include "Platform/Screen.h"
-#include "Scene/GameObject.h"
-#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
 using namespace ou;
 
 
 void ou::Camera::Awake() {
-	GetGameObject()->GetScene()->RegisterCamera(this);
+	SceneManager::RegisterCamera(this);
 }
 
 
 void ou::Camera::OnDestroy() {
-	GetGameObject()->GetScene()->UnregisterCamera(this);
+	SceneManager::UnregisterCamera(this);
 }
 
 

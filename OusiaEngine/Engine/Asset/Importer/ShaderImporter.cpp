@@ -3,8 +3,8 @@
 #include "Asset/Format/AssetJson.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
-#include "Render/Shader.h"
-#include "Render/ShaderModule.h"
+#include "Render/Asset/Shader.h"
+#include "Render/Asset/ShaderModule.h"
 
 #include <format>
 #include <string>

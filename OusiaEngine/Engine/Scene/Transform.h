@@ -30,6 +30,8 @@ public: // メンバ関数
 
 	const Matrix4x4 &GetLocalToWorldMatrix() const;
 	Vector3 GetWorldPosition() const;
+	Quaternion GetWorldRotation() const;
+	Vector3 GetLossyScale() const;
 	Vector3 GetForward() const;
 
 	Transform *GetParent() const;

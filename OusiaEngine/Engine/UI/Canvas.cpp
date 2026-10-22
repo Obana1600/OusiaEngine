@@ -1,7 +1,7 @@
 #include "Canvas.h"
 #include "Platform/Screen.h"
 #include "Scene/GameObject.h"
-#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 #include "UI/Graphic.h"
 #include "UI/RectTransform.h"
@@ -16,7 +16,7 @@ void ou::Canvas::Awake() {
 	}
 	FitToScreen();
 
-	GetGameObject()->GetScene()->RegisterCanvas(this);
+	SceneManager::RegisterCanvas(this);
 }
 
 
@@ -26,7 +26,7 @@ void ou::Canvas::LateUpdate() {
 
 
 void ou::Canvas::OnDestroy() {
-	GetGameObject()->GetScene()->UnregisterCanvas(this);
+	SceneManager::UnregisterCanvas(this);
 }
 
 
@@ -55,7 +55,8 @@ void ou::Canvas::FitToScreen() {
 
 
 void ou::Canvas::CollectGraphics(const Transform *transform, std::vector<const Graphic *> &graphics) {
-	if (const auto *graphic = transform->GetGameObject()->GetComponent<Graphic>()) {
+	const auto *graphic = transform->GetGameObject()->GetComponent<Graphic>();
+	if (graphic && graphic->IsActiveAndEnabled()) {
 		graphics.push_back(graphic);
 	}
 

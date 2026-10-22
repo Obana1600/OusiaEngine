@@ -3,7 +3,7 @@
 #include "Math/Color.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
-#include "Render/Mesh.h"
+#include "Render/Asset/Mesh.h"
 
 #include <cstdint>
 #include <string>

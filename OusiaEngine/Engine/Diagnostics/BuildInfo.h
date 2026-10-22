@@ -5,14 +5,13 @@
 
 namespace ou {
 
-// TODO: 仮実装。Develop 構成専用のマクロができたら判定を差し替える
 constexpr std::string_view BuildConfigurationName() {
-#if defined(_DEBUG)
+#ifdef _DEBUG
 	return "Debug";
-#elif defined(_RELEASE)
-	return "Release";
-#else
+#elif _DEVELOP
 	return "Develop";
+#else
+	return "Release";
 #endif
 }
 

@@ -3,7 +3,7 @@
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ShaderCompiler.h"
-#include "Render/ShaderModule.h"
+#include "Render/Asset/ShaderModule.h"
 
 #include <string_view>
 #include <utility>

@@ -5,10 +5,10 @@
 #include "Asset/Format/ObjModelReader.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
-#include "Render/Material.h"
-#include "Render/Mesh.h"
-#include "Render/Model.h"
-#include "Render/Texture.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Mesh.h"
+#include "Render/Asset/Model.h"
+#include "Render/Asset/Texture.h"
 
 #include <cwctype>
 #include <optional>

@@ -1,7 +1,7 @@
 #include "AssetJson.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
-#include "Render/Shader.h"
+#include "Render/Asset/Shader.h"
 
 #include <algorithm>
 #include <format>

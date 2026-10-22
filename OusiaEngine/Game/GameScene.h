@@ -1,35 +1,58 @@
 #pragma once
 
-#include "Graphics/GraphicsTypes.h"
+#include "Audio/AudioClip.h"
+#include "Audio/AudioSource.h"
+#include "Particle/ParticleSystem.h"
+#include "Particle/ParticleSystemRenderer.h"
+#include "Physics/BoxCollider.h"
+#include "Physics/SphereCollider.h"
+#include "Render/Asset/Texture.h"
+#include "Scene/Component.h"
 #include "Scene/GameObject.h"
-#include "Scene/Scene.h"
 
 #include <memory>
+#include <string>
+#include <vector>
 
 
 namespace ou {
 
-// 前方宣言
-class AudioClip;
-class AudioSource;
-class ParticleSystem;
-class ParticleSystemRenderer;
-class Texture;
+void BuildGameScene(Scene &scene);
 
-class GameScene {
+// 受け取ったトリガーのイベントを記録する（Physics の動作確認用）
+class TriggerLogger final: public Component {
 public: // メンバ関数
 
-	void Initialize();
+	void OnTriggerEnter(Collider *other) override;
+	void OnTriggerStay(Collider *other) override;
+	void OnTriggerExit(Collider *other) override;
 
-	void Update();
+	const std::vector<std::string> &GetEvents() const;
+	void ClearEvents();
 
-	void Draw(Graphics::CommandList cmd) const;
-	void DrawOverlay(Graphics::CommandList cmd) const;
+	// 最後に Stay を受け取ったフレーム。今フレームなら重なっている
+	uint64_t GetLastStayFrame() const;
 
 
 private: // メンバ変数
 
-	std::unique_ptr<Scene> scene_;
+	std::vector<std::string> events_;
+	uint64_t lastStayFrame_ = 0;
+
+
+private: // メンバ関数
+
+	void RecordEvent(const char *message, const Collider *other);
+};
+
+class GameSceneController final: public Component {
+public: // メンバ関数
+
+	void Awake() override;
+	void Update() override;
+
+
+private: // メンバ変数
 
 	GameObject *emitter_ = nullptr;
 	ParticleSystem *particleSystem_ = nullptr;
@@ -48,8 +71,25 @@ private: // メンバ変数
 	AudioSource *seSource_ = nullptr;
 	std::shared_ptr<AudioClip> seClip_; // PlayOneShot で鳴らす
 
+	// GameScene.h の private: に追加
+	// DontDestroyOnLoad のシーンに残した BGM。読み込み直したときは、作らずにこれを使う
+	static inline AudioSource *sBgmSource_ = nullptr;
+
+	// トリガーの確認用。boxA だけがトリガーで、boxB と sphere が触れると Enter / Stay / Exit が来る
+	struct PhysicsTarget {
+		GameObject *gameObject = nullptr;
+		Collider *collider = nullptr;
+		TriggerLogger *logger = nullptr;
+	};
+	PhysicsTarget physicsTargets_[3];
 
 private: // メンバ関数
+
+	void CreatePhysicsTargets();
+
+	// コライダーの位置や設定を ImGui で操作し、届いたイベントを表示する
+	void ShowPhysicsWindow();
+
 
 	void UpdateEmitterMotion();
 

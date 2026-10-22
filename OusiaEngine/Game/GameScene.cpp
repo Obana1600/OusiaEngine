@@ -1,19 +1,18 @@
 #include "GameScene.h"
 #include "Asset/AssetDatabase.h"
-#include "Audio/AudioClip.h"
 #include "Audio/AudioListener.h"
-#include "Audio/AudioSource.h"
 #include "Audio/XAudio2/Audio.h"
 #include "Core/Time.h"
+#include "Diagnostics/Log.h"
 #include "Math/Mathf.h"
-#include "Particle/ParticleSystem.h"
-#include "Particle/ParticleSystemRenderer.h"
 #include "Render/Asset/Material.h"
-#include "Render/Asset/Texture.h"
 #include "Render/Camera.h"
+#include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
 #include <imgui/imgui.h>
+
+#include <format>
 
 using namespace ou;
 
@@ -96,13 +95,58 @@ bool EditAudioSource(const char *label, AudioSource &source) {
 
 #endif
 
+// 残しておくイベントの数。古いものから消す
+constexpr size_t kMaxTriggerEvents = 20;
+
 } // namespace
 
 
-void GameScene::Initialize() {
-	scene_ = std::make_unique<Scene>();
+void ou::TriggerLogger::OnTriggerEnter(Collider *other) {
+	RecordEvent("Enter", other);
+}
 
-	auto *cameraObject = scene_->CreateGameObject("Main Camera");
+
+void ou::TriggerLogger::OnTriggerStay(Collider *) {
+	// 毎フレーム来るので、記録せずにフレームだけ覚えておく
+	lastStayFrame_ = Time::GetFrameCount();
+}
+
+
+void ou::TriggerLogger::OnTriggerExit(Collider *other) {
+	RecordEvent("Exit", other);
+}
+
+
+const std::vector<std::string> &ou::TriggerLogger::GetEvents() const {
+	return events_;
+}
+
+
+void ou::TriggerLogger::ClearEvents() {
+	events_.clear();
+}
+
+
+uint64_t ou::TriggerLogger::GetLastStayFrame() const {
+	return lastStayFrame_;
+}
+
+
+void ou::TriggerLogger::RecordEvent(const char *message, const Collider *other) {
+	auto text = std::format("[{}] {} <- {}", Time::GetFrameCount(), message, other->GetGameObject()->GetName());
+	Log::Info("{}: {}", GetGameObject()->GetName(), text);
+
+	events_.push_back(std::move(text));
+	if (events_.size() > kMaxTriggerEvents) {
+		events_.erase(events_.begin());
+	}
+}
+
+
+void GameSceneController::Awake() {
+	auto *scene = GetGameObject()->GetScene();
+
+	auto *cameraObject = scene->CreateGameObject("Main Camera");
 	cameraObject->AddComponent<Camera>();
 	cameraObject->GetTransform()->SetLocalPosition({0.0f, 3.0f, -12.0f});
 	cameraObject->GetTransform()->SetLocalEulerAngles({10.0f * Mathf::Deg2Rad, 0.0f, 0.0f});
@@ -112,7 +156,7 @@ void GameScene::Initialize() {
 	softCircleTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("Assets/Particle/soft_circle.png");
 
 	// エミッタ: 円錐で上に出して、寿命の終わりに向かって薄く・小さくする
-	emitter_ = scene_->CreateGameObject("Particle Emitter");
+	emitter_ = scene->CreateGameObject("Particle Emitter");
 	particleRenderer_ = emitter_->AddComponent<ParticleSystemRenderer>();
 	particleRenderer_->GetMaterial()->SetMainTexture(softCircleTexture_); // テクスチャはマテリアルが持つ（Unity と同じ）
 	particleSystem_ = emitter_->GetComponent<ParticleSystem>();
@@ -137,43 +181,48 @@ void GameScene::Initialize() {
 	sizeOverLifetime.start = 1.0f;
 	sizeOverLifetime.end = 0.2f;
 
-	// BGM: ループで、シーンの開始と同時に鳴らす（playOnAwake）
-	auto *bgmObject = scene_->CreateGameObject("BGM");
-	bgmSource_ = bgmObject->AddComponent<AudioSource>();
-	bgmSource_->SetSubmixType(Audio::SubmixType::Music); // clip より先に決めると、インスタンスを作り直さずに済む
-	bgmSource_->SetClip(AssetDatabase::LoadAssetAtPath<AudioClip>("Assets/Bgm/maou_14_shining_star.mp3"));
-	bgmSource_->SetLoop(true);
-	bgmSource_->SetVolume(0.5f);
+	// BGM: 初回だけ作り、DontDestroyOnLoad でシーンを読み込み直しても鳴り続けるようにする
+	if (!sBgmSource_) {
+		auto *bgmObject = scene->CreateGameObject("BGM");
+		sBgmSource_ = bgmObject->AddComponent<AudioSource>();
+		sBgmSource_->SetSubmixType(Audio::SubmixType::Music);
+		sBgmSource_->SetClip(AssetDatabase::LoadAssetAtPath<AudioClip>("Assets/Bgm/maou_14_shining_star.mp3"));
+		sBgmSource_->SetLoop(true);
+		sBgmSource_->SetVolume(0.5f);
+		Object::DontDestroyOnLoad(bgmObject);
+	}
+	bgmSource_ = sBgmSource_;
 
 	// 効果音: ボタンで鳴らす
 	seClip_ = AssetDatabase::LoadAssetAtPath<AudioClip>("Assets/Alarm01.wav");
-	auto *seObject = scene_->CreateGameObject("SE");
+	auto *seObject = scene->CreateGameObject("SE");
 	seSource_ = seObject->AddComponent<AudioSource>();
 	seSource_->SetClip(seClip_);
 	seSource_->SetPlayOnAwake(false);
+
+	CreatePhysicsTargets();
 }
 
 
-void GameScene::Update() {
+void GameSceneController::Update() {
 	UpdateEmitterMotion();
 	ShowParticleWindow();
 	ShowAudioWindow();
+	ShowPhysicsWindow();
 
-	scene_->Update();
+#ifdef USE_IMGUI
+	ImGui::Begin("Scene");
+	const auto *active = SceneManager::GetActiveScene();
+	ImGui::Text("%s (build index %d)", active->GetName().c_str(), active->GetBuildIndex());
+	if (ImGui::Button("読み込み直す")) {
+		SceneManager::LoadScene(active->GetBuildIndex());
+	}
+	ImGui::End();
+#endif
 }
 
 
-void ou::GameScene::Draw(Graphics::CommandList cmd) const {
-	scene_->Render(cmd);
-}
-
-
-void ou::GameScene::DrawOverlay(Graphics::CommandList cmd) const {
-	scene_->RenderOverlay(cmd);
-}
-
-
-void ou::GameScene::UpdateEmitterMotion() {
+void ou::GameSceneController::UpdateEmitterMotion() {
 	auto *transform = emitter_->GetTransform();
 	if (!isEmitterMoving_) {
 		transform->SetLocalPosition(Vector3::Zero);
@@ -186,7 +235,7 @@ void ou::GameScene::UpdateEmitterMotion() {
 }
 
 
-void ou::GameScene::ShowParticleWindow() {
+void ou::GameSceneController::ShowParticleWindow() {
 #ifdef USE_IMGUI
 	ImGui::SetNextWindowPos({20.0f, 20.0f}, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize({420.0f, 640.0f}, ImGuiCond_FirstUseEver);
@@ -202,6 +251,14 @@ void ou::GameScene::ShowParticleWindow() {
 	if (ImGui::Button("30 個出す")) { particleSystem_->Emit(30); }
 	ImGui::Text("粒の数: %zu  %s", particleSystem_->GetParticles().size(), particleSystem_->IsPlaying() ? "再生中" : "停止中");
 	ImGui::Checkbox("エミッタを円を描くように動かす", &isEmitterMoving_);
+	auto isEmitterActive = emitter_->IsActiveSelf();
+	if (ImGui::Checkbox("エミッタをアクティブにする", &isEmitterActive)) {
+		emitter_->SetActive(isEmitterActive);
+	}
+	auto isRendererEnabled = particleRenderer_->IsEnabled();
+	if (ImGui::Checkbox("Renderer を有効にする", &isRendererEnabled)) {
+		particleRenderer_->SetEnabled(isRendererEnabled);
+	}
 
 	// Main
 	if (ImGui::CollapsingHeader("Main", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -315,7 +372,7 @@ void ou::GameScene::ShowParticleWindow() {
 }
 
 
-void ou::GameScene::ShowAudioWindow() {
+void ou::GameSceneController::ShowAudioWindow() {
 #ifdef USE_IMGUI
 	ImGui::SetNextWindowPos({460.0f, 20.0f}, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize({400.0f, 500.0f}, ImGuiCond_FirstUseEver);
@@ -350,4 +407,98 @@ void ou::GameScene::ShowAudioWindow() {
 
 	ImGui::End();
 #endif
+}
+
+
+void ou::GameSceneController::CreatePhysicsTargets() {
+	auto *scene = GetGameObject()->GetScene();
+
+	auto createTarget = [scene](std::string_view name, const Vector3 &position, auto colliderTag) {
+		using ColliderType = typename decltype(colliderTag)::type;
+
+		PhysicsTarget target;
+		target.gameObject = scene->CreateGameObject(name);
+		target.gameObject->GetTransform()->SetLocalPosition(position);
+		target.collider = target.gameObject->AddComponent<ColliderType>();
+		target.logger = target.gameObject->AddComponent<TriggerLogger>();
+		return target;
+	};
+
+	physicsTargets_[0] = createTarget("Box A (Trigger)", Vector3::Zero, std::type_identity<BoxCollider>{});
+	physicsTargets_[1] = createTarget("Box B", {3.0f, 0.0f, 0.0f}, std::type_identity<BoxCollider>{});
+	physicsTargets_[2] = createTarget("Sphere", {-3.0f, 0.0f, 0.0f}, std::type_identity<SphereCollider>{});
+
+	physicsTargets_[0].collider->SetIsTrigger(true);
+}
+
+
+void ou::GameSceneController::ShowPhysicsWindow() {
+#ifdef USE_IMGUI
+	ImGui::SetNextWindowPos({880.0f, 20.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({380.0f, 640.0f}, ImGuiCond_FirstUseEver);
+	ImGui::Begin("Physics");
+	ImGui::TextWrapped("Box A だけがトリガー。Box B と Sphere を動かして Box A に重ねると、両方に Enter / Stay / Exit が届く");
+
+	for (int i = 0; i < static_cast<int>(std::size(physicsTargets_)); i++) {
+		auto &target = physicsTargets_[i];
+		auto *gameObject = target.gameObject;
+		auto *transform = gameObject->GetTransform();
+
+		ImGui::PushID(i);
+		if (!ImGui::CollapsingHeader(gameObject->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::PopID();
+			continue;
+		}
+
+		// 無効にしたときに Exit が来ないのは Unity と同じ
+		auto isActive = gameObject->IsActiveSelf();
+		if (ImGui::Checkbox("active", &isActive)) { gameObject->SetActive(isActive); }
+		ImGui::SameLine();
+		auto isEnabled = target.collider->IsEnabled();
+		if (ImGui::Checkbox("collider.enabled", &isEnabled)) { target.collider->SetEnabled(isEnabled); }
+		ImGui::SameLine();
+		auto isTrigger = target.collider->IsTrigger();
+		if (ImGui::Checkbox("isTrigger", &isTrigger)) { target.collider->SetIsTrigger(isTrigger); }
+
+		auto position = transform->GetLocalPosition();
+		if (ImGui::DragFloat3("position", &position.x, 0.02f)) { transform->SetLocalPosition(position); }
+		auto eulerAngles = transform->GetLocalEulerAngles() * Mathf::Rad2Deg;
+		if (ImGui::DragFloat3("rotation", &eulerAngles.x, 0.5f)) { transform->SetLocalEulerAngles(eulerAngles * Mathf::Deg2Rad); }
+		auto scale = transform->GetLocalScale();
+		if (ImGui::DragFloat3("scale", &scale.x, 0.01f)) { transform->SetLocalScale(scale); }
+
+		if (target.collider->GetShape() == ColliderShape::Box) {
+			auto *box = static_cast<BoxCollider *>(target.collider);
+			auto size = box->GetSize();
+			if (ImGui::DragFloat3("size", &size.x, 0.01f, 0.0f, 100.0f)) { box->SetSize(size); }
+		} else {
+			auto *sphere = static_cast<SphereCollider *>(target.collider);
+			auto radius = sphere->GetRadius();
+			if (ImGui::DragFloat("radius", &radius, 0.01f, 0.0f, 100.0f)) { sphere->SetRadius(radius); }
+		}
+
+		const auto bounds = target.collider->GetBounds();
+		ImGui::Text("bounds center (%.2f, %.2f, %.2f)", bounds.center.x, bounds.center.y, bounds.center.z);
+		ImGui::Text("bounds extents (%.2f, %.2f, %.2f)", bounds.extents.x, bounds.extents.y, bounds.extents.z);
+
+		const auto isStaying = target.logger->GetLastStayFrame() == Time::GetFrameCount();
+		ImGui::TextColored(isStaying ? ImVec4(0.4f, 1.0f, 0.4f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
+						   isStaying ? "Stay 中" : "接触なし");
+		ImGui::SameLine();
+		if (ImGui::Button("ログを消す")) { target.logger->ClearEvents(); }
+		for (const auto &event : target.logger->GetEvents()) {
+			ImGui::BulletText("%s", event.c_str());
+		}
+
+		ImGui::PopID();
+	}
+
+	ImGui::End();
+#endif
+}
+
+
+void ou::BuildGameScene(Scene &scene) {
+	auto *controller = scene.CreateGameObject("Game Scene Controller");
+	controller->AddComponent<GameSceneController>();
 }

@@ -5,7 +5,7 @@
 #include "Render/Asset/Material.h"
 #include "Render/Camera.h"
 #include "Scene/GameObject.h"
-#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
 #include <algorithm>
@@ -207,7 +207,7 @@ void ou::ParticleSystemRenderer::EnsureCapacity(uint32_t count) {
 
 
 void ou::ParticleSystemRenderer::SortByDistance(const std::vector<ParticleSystem::Particle> &particles) {
-	const auto *camera = GetGameObject()->GetScene()->GetMainCamera();
+	const auto *camera = SceneManager::GetMainCamera();
 	if (!camera) { return; }
 
 	const auto cameraPosition = camera->GetTransform()->GetWorldPosition();

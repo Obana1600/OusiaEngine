@@ -7,6 +7,7 @@
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
 #include "Render/Asset/Material.h"
+#include "Scene/SceneManager.h"
 #include "UI/Graphic.h"
 
 #include <filesystem>
@@ -108,6 +109,7 @@ void ou::Engine::Finalize() {
 	device_->WaitForGpu();
 
 	imGuiManager_.reset();
+	SceneManager::Finalize();
 
 	Graphic::StaticFinalize();
 	Material::StaticFinalize();

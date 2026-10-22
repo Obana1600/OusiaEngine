@@ -2,13 +2,12 @@
 
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
-#include "Scene/Component.h"
+#include "Scene/Behaviour.h"
 
-// TODO: Behavior を継承させる
 
 namespace ou {
 
-class DirectionalLight: public Component {
+class DirectionalLight: public Behaviour {
 public: // インナークラス
 
 	// 定数バッファ: b3

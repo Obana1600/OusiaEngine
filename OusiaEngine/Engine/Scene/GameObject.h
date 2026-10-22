@@ -18,6 +18,9 @@ class Scene;
 
 class GameObject final: public Object {
 	friend class Scene;
+	friend class SceneManager;
+	friend class Transform;
+	friend class Physics;
 
 public: // メンバ関数
 
@@ -33,26 +36,37 @@ public: // メンバ関数
 	Transform *GetTransform() const;
 	Scene *GetScene() const;
 
+	void SetActive(bool value);
+	bool IsActiveSelf() const;
+	bool IsActiveInHierarchy() const;
+
 
 private: // メンバ変数
 
-	Transform *transform_ = nullptr;
 	std::vector<std::unique_ptr<Component>> components_;
 
+	bool isActiveSelf_ = true;
+
+	Transform *transform_ = nullptr;
 	Scene *scene_ = nullptr;
 
 
 private: // メンバ関数
 
+	void AwakeComponents();
 	void StartComponents();
 	void UpdateComponents();
 	void LateUpdateComponents();
 
 	void DestroyMarkedComponents();
-
 	void NotifyDestroyToAllComponents();
 
 	void ReplaceTransform(std::unique_ptr<Transform> newTransform);
+
+	void RefreshActiveInHierarchy();
+
+	static void RefreshBehavior(Component *component);
+	static void DisableBeheviorForDestroy(Component *component);
 };
 
 
@@ -76,7 +90,11 @@ inline T *GameObject::AddComponent(Args &&...args) {
 		ptr->transform_ = transform_;
 		components_.push_back(std::move(component));
 
-		ptr->Awake();
+		if (IsActiveInHierarchy()) {
+			ptr->isAwoken_ = true;
+			ptr->Awake();
+			RefreshBehavior(ptr);
+		}
 		return ptr;
 	}
 }

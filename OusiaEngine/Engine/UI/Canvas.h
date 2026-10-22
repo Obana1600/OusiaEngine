@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics/GraphicsTypes.h"
-#include "Scene/Component.h"
+#include "Scene/Behaviour.h"
 
 
 namespace ou {
@@ -11,7 +11,7 @@ class Graphic;
 class RectTransform;
 class Transform;
 
-class Canvas final: public Component {
+class Canvas final: public Behaviour {
 public: // メンバ関数
 
 	void Awake() override;

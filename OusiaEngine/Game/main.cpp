@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "GameScene.h"
+#include "Scene/SceneManager.h"
 
 #include <Windows.h>
 
@@ -10,26 +11,23 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	Engine engine;
 	engine.Initialize({.title = "OusiaEngine"});
-	
-	{
-		GameScene gameScene;
-		gameScene.Initialize();
 
-		while (!engine.Update()) {
-			gameScene.Update();
+	SceneManager::AddScene("Game", BuildGameScene);
+	SceneManager::LoadScene("Game");
 
-			// 最小化中は無効なハンドルが返るので、描画を飛ばす
-			auto cmd = engine.BeginDraw();
-			if (!cmd.IsValid()) { continue; }
+	while (!engine.Update()) {
+		SceneManager::Update();
 
-			gameScene.Draw(cmd);
+		auto cmd = engine.BeginDraw();
+		if (!cmd.IsValid()) { continue; }
 
-			engine.BeginOverlay(cmd);
-			gameScene.DrawOverlay(cmd);
+		SceneManager::Render(cmd);
 
-			engine.EndDraw(cmd);
-		}
-	} // GameScene が持つリソースは、デバイス（Engine）より先に手放す
+		engine.BeginOverlay(cmd);
+		SceneManager::RenderOverlay(cmd);
+
+		engine.EndDraw(cmd);
+	}
 
 	engine.Finalize();
 

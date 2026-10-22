@@ -106,6 +106,8 @@ public: // TODO: API の追加 / コメント書く
 
 	static Vector3 LerpUnclamped(const Vector3 &a, const Vector3 &b, float t);
 
+	static Vector3 Scale(const Vector3 &a, const Vector3 &b);
+
 	// TODO: Projectを追加
 
 

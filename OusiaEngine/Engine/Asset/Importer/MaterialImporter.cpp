@@ -6,9 +6,9 @@
 #include "Math/Color.h"
 #include "Math/Mathf.h"
 #include "Math/Vector2.h"
-#include "Render/Material.h"
-#include "Render/Shader.h"
-#include "Render/Texture.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Shader.h"
+#include "Render/Asset/Texture.h"
 
 #include <format>
 #include <string>

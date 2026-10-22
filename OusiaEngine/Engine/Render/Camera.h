@@ -2,13 +2,13 @@
 
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
-#include "Scene/Component.h"
+#include "Scene/Behaviour.h"
 
 // TODO: API 名を Unity にそろえる
 
 namespace ou {
 
-class Camera final: public Component {
+class Camera final: public Behaviour {
 public: // インナークラス
 
 	// 定数バッファ: b2

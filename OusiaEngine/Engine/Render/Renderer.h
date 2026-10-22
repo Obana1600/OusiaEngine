@@ -2,7 +2,7 @@
 
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Matrix4x4.h"
-#include "Scene/Component.h"
+#include "Scene/Behaviour.h"
 
 #include <memory>
 #include <vector>
@@ -13,7 +13,7 @@ namespace ou {
 // 前方宣言
 class Material;
 
-class Renderer: public Component {
+class Renderer: public Behaviour {
 public: // インナークラス
 
 	// 定数バッファ: b0

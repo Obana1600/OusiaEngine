@@ -2,7 +2,7 @@
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Render/Texture.h"
+#include "Render/Asset/Texture.h"
 
 #include <DirectXTex/DirectXTex.h>
 #include <optional>

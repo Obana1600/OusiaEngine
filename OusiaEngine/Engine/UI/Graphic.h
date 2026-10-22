@@ -6,7 +6,7 @@
 #include "Math/Vector4.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Texture.h"
-#include "Scene/Component.h"
+#include "Scene/Behaviour.h"
 
 #include <cstdint>
 #include <memory>
@@ -17,7 +17,7 @@ namespace ou {
 // 前方宣言
 class RectTransform;
 
-class Graphic: public Component {
+class Graphic: public Behaviour {
 public: // インナークラス
 
 	// 定数バッファ: b0

@@ -1,8 +1,7 @@
 #include "Renderer.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
-#include "Scene/GameObject.h"
-#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
 #include <utility>
@@ -11,12 +10,12 @@ using namespace ou;
 
 
 void ou::Renderer::Awake() {
-	GetGameObject()->GetScene()->RegisterRenderer(this);
+	SceneManager::RegisterRenderer(this);
 }
 
 
 void ou::Renderer::OnDestroy() {
-	GetGameObject()->GetScene()->UnregisterRenderer(this);
+	SceneManager::UnregisterRenderer(this);
 }
 
 
