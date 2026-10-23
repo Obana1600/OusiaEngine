@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 
 namespace ou {
@@ -45,6 +46,31 @@ private: // メンバ関数
 
 	void ApplyTransform();
 	void ShowTextWindow();
+};
+
+// 入力の確認: Down / Up・マウスを TEST のログに出し、ImGui の「Input」ウィンドウに今の状態を出す
+class InputPlayground final: public Component {
+public: // メンバ関数
+
+	void Update() override;
+
+
+private: // メンバ変数
+
+	std::vector<std::string> events_; // 最近の Down / Up（新しいものが後ろ）
+	Vector2 deltaTotal_{};
+	Vector2 scrollTotal_{};
+
+	bool hasCheckedRange_ = false; // 範囲外の player の確認を 1 回だけする
+	bool wasConnected_[4] = {};
+	float lowMotor_ = 0.0f;  // ImGui の振動のスライダー（player 0）
+	float highMotor_ = 0.0f;
+
+
+private: // メンバ関数
+
+	void AddEvent(std::string text);
+	void UpdateGamepads(uint64_t frame);
 };
 
 } // namespace ou

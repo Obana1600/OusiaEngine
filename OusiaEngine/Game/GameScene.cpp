@@ -1,10 +1,12 @@
 #include "GameScene.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/Time.h"
+#include "Diagnostics/Log.h"
+#include "Input/Input.h"
 #include "Math/Mathf.h"
 #include "Scene/GameObject.h"
+#include "UI/Asset/FontAsset.h"
 #include "UI/Canvas.h"
-#include "UI/FontAsset.h"
 #include "UI/Image.h"
 #include "UI/RectTransform.h"
 #include "UI/Text.h"
@@ -325,4 +327,190 @@ void ou::BuildGameScene(Scene &scene) {
 
 	auto *playground = scene.CreateGameObject("Text Playground")->AddComponent<TextPlayground>();
 	playground->SetTargets(playgroundBox.text, playgroundBox.frame, counter);
+
+	scene.CreateGameObject("Input Playground")->AddComponent<InputPlayground>();
+}
+
+
+// ----- 入力の確認 -----
+
+namespace {
+
+struct KeyName {
+	KeyCode key;
+	const char *name;
+};
+
+constexpr KeyName kKeyNames[] = {
+	{KeyCode::Backspace, "Backspace"}, {KeyCode::Tab, "Tab"}, {KeyCode::Return, "Return"},
+	{KeyCode::Pause, "Pause"}, {KeyCode::CapsLock, "CapsLock"}, {KeyCode::Escape, "Escape"},
+	{KeyCode::Space, "Space"}, {KeyCode::PageUp, "PageUp"}, {KeyCode::PageDown, "PageDown"},
+	{KeyCode::End, "End"}, {KeyCode::Home, "Home"}, {KeyCode::LeftArrow, "LeftArrow"},
+	{KeyCode::UpArrow, "UpArrow"}, {KeyCode::RightArrow, "RightArrow"}, {KeyCode::DownArrow, "DownArrow"},
+	{KeyCode::Insert, "Insert"}, {KeyCode::Delete, "Delete"},
+	{KeyCode::LeftWindows, "LeftWindows"}, {KeyCode::RightWindows, "RightWindows"},
+	{KeyCode::KeypadMultiply, "KeypadMultiply"}, {KeyCode::KeypadPlus, "KeypadPlus"},
+	{KeyCode::KeypadMinus, "KeypadMinus"}, {KeyCode::KeypadPeriod, "KeypadPeriod"},
+	{KeyCode::KeypadDivide, "KeypadDivide"}, {KeyCode::Numlock, "Numlock"}, {KeyCode::ScrollLock, "ScrollLock"},
+	{KeyCode::LeftShift, "LeftShift"}, {KeyCode::RightShift, "RightShift"},
+	{KeyCode::LeftControl, "LeftControl"}, {KeyCode::RightControl, "RightControl"},
+	{KeyCode::LeftAlt, "LeftAlt"}, {KeyCode::RightAlt, "RightAlt"},
+};
+
+struct GamepadButtonName {
+	GamepadButton button;
+	const char *name;
+};
+
+constexpr GamepadButtonName kGamepadButtonNames[] = {
+	{GamepadButton::DpadUp, "DpadUp"}, {GamepadButton::DpadDown, "DpadDown"},
+	{GamepadButton::DpadLeft, "DpadLeft"}, {GamepadButton::DpadRight, "DpadRight"},
+	{GamepadButton::Start, "Start"}, {GamepadButton::Select, "Select"},
+	{GamepadButton::LeftStick, "LeftStick"}, {GamepadButton::RightStick, "RightStick"},
+	{GamepadButton::LeftShoulder, "LeftShoulder"}, {GamepadButton::RightShoulder, "RightShoulder"},
+	{GamepadButton::South, "South"}, {GamepadButton::East, "East"},
+	{GamepadButton::West, "West"}, {GamepadButton::North, "North"},
+};
+
+// KeyCode の名前（連番のものは計算し、表にないものは VK の番号）
+std::string FormatKey(uint8_t vk) {
+	if ('0' <= vk && vk <= '9') { return std::format("Alpha{}", static_cast<char>(vk)); }
+	if ('A' <= vk && vk <= 'Z') { return std::string(1, static_cast<char>(vk)); }
+	if (0x60 <= vk && vk <= 0x69) { return std::format("Keypad{}", vk - 0x60); }
+	if (0x70 <= vk && vk <= 0x7B) { return std::format("F{}", vk - 0x70 + 1); }
+	for (const auto &entry : kKeyNames) {
+		if (static_cast<uint8_t>(entry.key) == vk) { return entry.name; }
+	}
+	return std::format("VK 0x{:02X}", vk);
+}
+
+} // namespace
+
+
+void ou::InputPlayground::Update() {
+	const auto frame = Time::GetFrameCount();
+
+	// キー: Down / Up をログに出す
+	std::string held;
+	for (int i = 1; i < 255; ++i) {
+		const auto key = static_cast<KeyCode>(i);
+		const auto name = FormatKey(static_cast<uint8_t>(i));
+		if (Input::GetKeyDown(key)) {
+			Log::Info("TEST frame {} KeyDown {}", frame, name);
+			AddEvent(std::format("{} KeyDown {}", frame, name));
+		}
+		if (Input::GetKeyUp(key)) {
+			Log::Info("TEST frame {} KeyUp {}", frame, name);
+			AddEvent(std::format("{} KeyUp {}", frame, name));
+		}
+		if (Input::GetKey(key)) { held += name + " "; }
+	}
+
+	// マウスのボタン（範囲外の 5 と -1 は false のはず）
+	const auto position = Input::GetMousePosition();
+	for (int button = -1; button <= 5; ++button) {
+		if (Input::GetMouseButtonDown(button)) {
+			Log::Info("TEST frame {} MouseDown {} at ({}, {})", frame, button, position.x, position.y);
+			AddEvent(std::format("{} MouseDown {}", frame, button));
+		}
+		if (Input::GetMouseButtonUp(button)) {
+			Log::Info("TEST frame {} MouseUp {} at ({}, {})", frame, button, position.x, position.y);
+			AddEvent(std::format("{} MouseUp {}", frame, button));
+		}
+	}
+
+	// 移動量とホイール: 動いたフレームだけ出す
+	const auto delta = Input::GetMouseDelta();
+	const auto scroll = Input::GetMouseScrollDelta();
+	if (delta.x != 0.0f || delta.y != 0.0f) {
+		Log::Info("TEST frame {} MouseDelta ({}, {}) position ({}, {})", frame, delta.x, delta.y, position.x, position.y);
+	}
+	if (scroll.x != 0.0f || scroll.y != 0.0f) {
+		Log::Info("TEST frame {} Scroll ({}, {})", frame, scroll.x, scroll.y);
+	}
+	deltaTotal_ = {deltaTotal_.x + delta.x, deltaTotal_.y + delta.y};
+	scrollTotal_ = {scrollTotal_.x + scroll.x, scrollTotal_.y + scroll.y};
+
+	UpdateGamepads(frame);
+
+#ifdef USE_IMGUI
+	ImGui::SetNextWindowPos({920.0f, 20.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({340.0f, 420.0f}, ImGuiCond_FirstUseEver);
+	if (ImGui::Begin("Input")) {
+		ImGui::TextWrapped("Held: %s", held.c_str());
+		ImGui::Text("Mouse buttons: %d %d %d %d %d",
+			Input::GetMouseButton(0), Input::GetMouseButton(1), Input::GetMouseButton(2),
+			Input::GetMouseButton(3), Input::GetMouseButton(4));
+		ImGui::Text("Position: (%.0f, %.0f)", position.x, position.y);
+		ImGui::Text("Delta: (%.0f, %.0f)  total (%.0f, %.0f)", delta.x, delta.y, deltaTotal_.x, deltaTotal_.y);
+		ImGui::Text("Scroll total: (%.1f, %.1f)", scrollTotal_.x, scrollTotal_.y);
+		ImGui::Separator();
+		for (int player = 0; player < 4; ++player) {
+			if (!Input::IsGamepadConnected(player)) {
+				ImGui::Text("Pad %d: not connected", player);
+				continue;
+			}
+			std::string buttons;
+			for (const auto &entry : kGamepadButtonNames) {
+				if (Input::GetGamepadButton(entry.button, player)) { buttons += std::string(entry.name) + " "; }
+			}
+			const auto left = Input::GetGamepadLeftStick(player);
+			const auto right = Input::GetGamepadRightStick(player);
+			ImGui::Text("Pad %d: L (%.2f, %.2f)  R (%.2f, %.2f)", player, left.x, left.y, right.x, right.y);
+			ImGui::Text("  Trigger L %.2f  R %.2f", Input::GetGamepadLeftTrigger(player), Input::GetGamepadRightTrigger(player));
+			ImGui::TextWrapped("  Buttons: %s", buttons.c_str());
+		}
+		ImGui::SliderFloat("Pad 0 low motor", &lowMotor_, 0.0f, 1.0f);
+		ImGui::SliderFloat("Pad 0 high motor", &highMotor_, 0.0f, 1.0f);
+		ImGui::Separator();
+		for (auto it = events_.rbegin(); it != events_.rend(); ++it) {
+			ImGui::TextUnformatted(it->c_str());
+		}
+	}
+	ImGui::End();
+#endif
+}
+
+
+void ou::InputPlayground::UpdateGamepads(uint64_t frame) {
+	// 範囲外の player は、つながっていない・0 と同じに返る
+	if (!hasCheckedRange_) {
+		hasCheckedRange_ = true;
+		for (int player : {-1, 4, 100}) {
+			const auto stick = Input::GetGamepadLeftStick(player);
+			Log::Info("TEST player {} connected {} button {} down {} stick ({}, {}) trigger {}",
+				player, Input::IsGamepadConnected(player), Input::GetGamepadButton(GamepadButton::South, player),
+				Input::GetGamepadButtonDown(GamepadButton::South, player), stick.x, stick.y,
+				Input::GetGamepadRightTrigger(player));
+			Input::SetGamepadMotorSpeeds(1.0f, 1.0f, player); // 落ちないこと
+		}
+	}
+
+	for (int player = 0; player < 4; ++player) {
+		const bool isConnected = Input::IsGamepadConnected(player);
+		if (isConnected != wasConnected_[player]) {
+			Log::Info("TEST frame {} Pad {} connected {}", frame, player, isConnected);
+			wasConnected_[player] = isConnected;
+		}
+
+		for (const auto &entry : kGamepadButtonNames) {
+			if (Input::GetGamepadButtonDown(entry.button, player)) {
+				Log::Info("TEST frame {} Pad {} ButtonDown {}", frame, player, entry.name);
+				AddEvent(std::format("{} Pad {} Down {}", frame, player, entry.name));
+			}
+			if (Input::GetGamepadButtonUp(entry.button, player)) {
+				Log::Info("TEST frame {} Pad {} ButtonUp {}", frame, player, entry.name);
+				AddEvent(std::format("{} Pad {} Up {}", frame, player, entry.name));
+			}
+		}
+	}
+
+	Input::SetGamepadMotorSpeeds(lowMotor_, highMotor_, 0);
+}
+
+
+void ou::InputPlayground::AddEvent(std::string text) {
+	constexpr size_t kMaxEvents = 16;
+	events_.push_back(std::move(text));
+	if (events_.size() > kMaxEvents) { events_.erase(events_.begin()); }
 }

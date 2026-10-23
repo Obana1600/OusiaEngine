@@ -37,8 +37,12 @@
     <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\XAudio2\Audio.h" />
     <ClInclude Include="Asset\Importer\FontImporter.h" />
+    <ClInclude Include="Input\GamepadButton.h" />
+    <ClInclude Include="Input\Input.h" />
+    <ClInclude Include="Input\KeyCode.h" />
+    <ClInclude Include="Input\Windows\RawInput.h" />
     <ClInclude Include="UI\Text.h" />
-    <ClInclude Include="UI\FontAsset.h" />
+    <ClInclude Include="UI\Asset\FontAsset.h" />
     <ClInclude Include="Math\Bounds.h" />
     <ClInclude Include="Physics\Physics.h" />
     <ClInclude Include="Physics\BoxCollider.h" />
@@ -95,7 +99,6 @@
     <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\DirectX12\GraphicsDevice_DX12.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
-    <ClInclude Include="Input\InputSystem.h" />
     <ClInclude Include="Math\Mathf.h" />
     <ClInclude Include="Math\Matrix4x4.h" />
     <ClInclude Include="Math\Quaternion.h" />
@@ -111,14 +114,17 @@
     <ClInclude Include="Asset\Importer\ShaderModuleImporter.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
     <ClInclude Include="Render\Asset\Texture.h" />
-    <ClInclude Include="UI\Sprite.h" />
+    <ClInclude Include="UI\Asset\Sprite.h" />
+    <ClInclude Include="Input\Windows\XInput.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset\Format\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Importer\FontImporter.cpp" />
+    <ClCompile Include="Input\Input.cpp" />
+    <ClCompile Include="Input\Windows\RawInput.cpp" />
     <ClCompile Include="UI\Text.cpp" />
-    <ClCompile Include="UI\FontAsset.cpp" />
+    <ClCompile Include="UI\Asset\FontAsset.cpp" />
     <ClCompile Include="Math\Bounds.cpp" />
     <ClCompile Include="Physics\Physics.cpp" />
     <ClCompile Include="Physics\BoxCollider.cpp" />
@@ -133,7 +139,7 @@
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
     <ClCompile Include="Scene\SceneManager.cpp" />
     <ClCompile Include="Physics\SphereCollider.cpp" />
-    <ClCompile Include="UI\Sprite.cpp" />
+    <ClCompile Include="UI\Asset\Sprite.cpp" />
     <ClCompile Include="Audio\AudioClip.cpp" />
     <ClCompile Include="Asset\Importer\AudioImporter.cpp" />
     <ClCompile Include="Audio\AudioListener.cpp" />
@@ -173,7 +179,6 @@
     <ClCompile Include="Platform\Paths.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Graphics\DirectX12\GraphicsDevice_DX12.cpp" />
-    <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Math\Mathf.cpp" />
     <ClCompile Include="Math\Matrix4x4.cpp" />
     <ClCompile Include="Math\Quaternion.cpp" />
@@ -189,6 +194,7 @@
     <ClCompile Include="Asset\Importer\ShaderModuleImporter.cpp" />
     <ClCompile Include="Asset\Importer\TextureImporter.cpp" />
     <ClCompile Include="Render\Asset\Texture.cpp" />
+    <ClCompile Include="Input\Windows\XInput.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli" />

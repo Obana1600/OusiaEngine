@@ -29,7 +29,7 @@ namespace {
 constexpr float kMaxPitch = 4.0f;
 constexpr float kMinPitch = XAUDIO2_MIN_FREQ_RATIO;
 
-// グローバスなインスタンス
+// グローバルなインスタンス
 ComPtr<IXAudio2> sXAudio;
 IXAudio2MasteringVoice *sMasteringVoice = nullptr;
 std::array<IXAudio2SubmixVoice *, static_cast<size_t>(Audio::SubmixType::Count)> sSubmixVoices{};

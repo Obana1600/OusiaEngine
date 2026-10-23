@@ -6,7 +6,7 @@
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
-#include "UI/FontAsset.h"
+#include "UI/Asset/FontAsset.h"
 #include "UI/RectTransform.h"
 
 #include <algorithm>

@@ -2,7 +2,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Render/Asset/Texture.h"
 #include "UI/RectTransform.h"
-#include "UI/Sprite.h"
+#include "UI/Asset/Sprite.h"
 
 #include <utility>
 

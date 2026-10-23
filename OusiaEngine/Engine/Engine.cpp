@@ -3,6 +3,7 @@
 #include "Audio/XAudio2/Audio.h"
 #include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
+#include "Input/Input.h"
 #include "Particle/ParticleSystemRenderer.h"
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
@@ -95,8 +96,10 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	Text::StaticInitialize();
 	ParticleSystemRenderer::StaticInitialize();
 
-	// その他
-	InputSystem::GetInstance()->Initialize(window_->Hwnd());
+	// 入力
+	if (!Input::Initialize(window_.get())) {
+		Log::Error("入力の初期化に失敗しました");
+	}
 
 	// 固定 FPS
 	reference_ = std::chrono::steady_clock::now();
@@ -120,6 +123,8 @@ void ou::Engine::Finalize() {
 	AssetDatabase::UnloadAllAssets();
 
 	Audio::Finalize();
+
+	Input::Finalize();
 
 	timeEndPeriod(1);
 
@@ -145,7 +150,7 @@ bool ou::Engine::Update() {
 	lastUpdateTime_ = now;
 
 	window_->PumpMessages();
-	InputSystem::GetInstance()->Update();
+	Input::Update();
 	imGuiManager_->NewFrame();
 	return window_->IsCloseRequested();
 }

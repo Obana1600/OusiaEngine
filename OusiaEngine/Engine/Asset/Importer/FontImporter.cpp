@@ -1,7 +1,7 @@
 #include "FontImporter.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
-#include "UI/FontAsset.h"
+#include "UI/Asset/FontAsset.h"
 
 #include <fstream>
 #include <optional>

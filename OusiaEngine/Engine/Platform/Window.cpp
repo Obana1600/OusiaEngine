@@ -220,6 +220,12 @@ LRESULT Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 		case WM_EXITSIZEMOVE: // ウィンドウのサイズ変更/移動を終了時
 			inSizeMove_ = false;
 			return 0;
+
+		case WM_SYSCOMMAND: // システムコマンドの実行時
+			if ((wparam & 0xFFF0) == SC_KEYMENU) {
+				return 0;
+			}
+			break;
 	}
 
 	// 残りのメッセージは標準のプロシージャに任せる
