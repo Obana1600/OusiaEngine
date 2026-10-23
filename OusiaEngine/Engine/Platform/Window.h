@@ -19,6 +19,13 @@ struct WindowDesc {
 
 
 class Window {
+private: // パスキー
+
+	struct Passkey {
+		explicit Passkey() = default;
+	};
+
+
 public: // 静的ファクトリ
 
 	static std::unique_ptr<Window> Create(const WindowDesc &desc);
@@ -32,6 +39,7 @@ public: // メッセージエイリアス
 
 public: // メンバ関数
 
+	explicit Window(Passkey) {}
 	~Window();
 
 	void PumpMessages();
@@ -78,8 +86,6 @@ private: // プロシージャ
 
 
 private: // コンストラクタ
-
-	Window() = default;
 
 	Window(const Window &) = delete;
 	Window &operator=(const Window &) = delete;

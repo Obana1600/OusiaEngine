@@ -57,6 +57,13 @@ struct Glyph {
 };
 
 class FontAsset final: public Object {
+private: // パスキー
+
+	struct Passkey {
+		explicit Passkey() = default;
+	};
+
+
 public: // 静的メンバ関数
 
 	static std::shared_ptr<FontAsset> Create(std::vector<uint8_t> fontData,
@@ -67,6 +74,7 @@ public: // 静的メンバ関数
 
 public: // メンバ関数
 
+	explicit FontAsset(Passkey) {}
 	~FontAsset() override;
 
 	const Glyph *FindOrAddGlyph(char32_t unicode);
@@ -115,11 +123,6 @@ private: // メンバ関数
 
 	bool ReserveAtlasRect(uint32_t width, uint32_t height, uint32_t *outAtlasIndex, Rect *outRect);
 	void AddAtlasPage();
-
-
-private: // コンストラクタ
-
-	FontAsset() = default;
 };
 
 } // namespace ou

@@ -47,7 +47,7 @@ std::shared_ptr<FontAsset> ou::FontAsset::Create(
 		return nullptr;
 	}
 
-	auto font = std::shared_ptr<FontAsset>(new FontAsset());
+	auto font = std::make_shared<FontAsset>(Passkey{});
 	font->fontData_ = std::move(fontData);
 	font->samplingPointSize_ = samplingPointSize;
 	font->padding_ = padding;

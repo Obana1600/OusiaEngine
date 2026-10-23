@@ -13,6 +13,13 @@ namespace ou {
 class Texture;
 
 class Sprite final: public Object {
+private: // パスキー
+
+	struct Passkey {
+		explicit Passkey() = default;
+	};
+
+
 public: // 静的メンバ関数
 
 	static std::shared_ptr<Sprite> Create(std::shared_ptr<Texture> texture);
@@ -23,6 +30,11 @@ public: // 静的メンバ関数
 
 
 public: // メンバ関数
+
+	Sprite(Passkey,
+		   std::shared_ptr<Texture> texture,
+		   const Rect &rect,
+		   const Vector2 &pivot);
 
 	const std::shared_ptr<Texture> &GetTexture() const;
 	const Rect &GetRect() const;
@@ -36,13 +48,6 @@ private: // メンバ変数
 	std::shared_ptr<Texture> texture_;
 	Rect rect_{};
 	Vector2 pivot_{};
-
-
-private: // コンストラクタ
-
-	Sprite(std::shared_ptr<Texture> texture,
-		   const Rect &rect,
-		   const Vector2 &pivot);
 };
 
 } // namespace ou

@@ -27,7 +27,7 @@ std::shared_ptr<Sprite> ou::Sprite::Create(std::shared_ptr<Texture> texture, con
 		return nullptr;
 	}
 
-	auto sprite = std::shared_ptr<Sprite>(new Sprite(texture, rect, pivot));
+	auto sprite = std::make_shared<Sprite>(Passkey{}, texture, rect, pivot);
 	sprite->SetName(texture->GetName());
 	return sprite;
 }
@@ -57,7 +57,7 @@ Rect ou::Sprite::MakeUvRect() const {
 }
 
 
-ou::Sprite::Sprite(std::shared_ptr<Texture> texture, const Rect &rect, const Vector2 &pivot)
+ou::Sprite::Sprite(Passkey, std::shared_ptr<Texture> texture, const Rect &rect, const Vector2 &pivot)
 	: texture_(std::move(texture)),
 	  rect_(rect),
 	  pivot_(pivot) {}

@@ -26,7 +26,7 @@ constexpr int kBaseDpi = 96;
 
 
 std::unique_ptr<Window> Window::Create(const WindowDesc &desc) {
-	std::unique_ptr<Window> w(new Window());
+	auto w = std::make_unique<Window>(Passkey{});
 
 	// 可変 DPI に対応させる
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
