@@ -96,6 +96,7 @@
     <ClInclude Include="Diagnostics\Log.h" />
     <ClInclude Include="Platform\Paths.h" />
     <ClInclude Include="Engine.h" />
+    <ClInclude Include="Framework.h" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\DirectX12\GraphicsDevice_DX12.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
@@ -178,6 +179,7 @@
     <ClCompile Include="Diagnostics\Log.cpp" />
     <ClCompile Include="Platform\Paths.cpp" />
     <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Graphics\DirectX12\GraphicsDevice_DX12.cpp" />
     <ClCompile Include="Math\Mathf.cpp" />
     <ClCompile Include="Math\Matrix4x4.cpp" />
