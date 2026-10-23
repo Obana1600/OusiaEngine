@@ -53,7 +53,12 @@ void ou::Graphic::SetMaterial(std::shared_ptr<Material> material) {
 
 
 const std::shared_ptr<Material> &ou::Graphic::GetMaterial() const {
-	return material_ ? material_ : sDefaultMaterial_;
+	return material_ ? material_ : GetDefaultMaterial();
+}
+
+
+const std::shared_ptr<Material> &ou::Graphic::GetDefaultMaterial() const {
+	return sDefaultMaterial_;
 }
 
 
@@ -77,7 +82,7 @@ RectTransform *ou::Graphic::GetRectTransform() const {
 }
 
 
-void ou::Graphic::DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount) const {
+void ou::Graphic::DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount, uint32_t instanceCount) const {
 	const auto &material = GetMaterial();
 	if (!material || !material->GetShader()) { return; }
 
@@ -89,6 +94,6 @@ void ou::Graphic::DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCou
 		if (!pso) { continue; }
 
 		device->BindPipelineState(pso, cmd);
-		device->Draw(vertexCount, 0, cmd);
+		device->DrawInstanced(vertexCount, instanceCount, 0, 0, cmd);
 	}
 }

@@ -36,6 +36,9 @@
     <ClInclude Include="Audio\AudioListener.h" />
     <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\XAudio2\Audio.h" />
+    <ClInclude Include="Asset\Importer\FontImporter.h" />
+    <ClInclude Include="UI\Text.h" />
+    <ClInclude Include="UI\FontAsset.h" />
     <ClInclude Include="Math\Bounds.h" />
     <ClInclude Include="Physics\Physics.h" />
     <ClInclude Include="Physics\BoxCollider.h" />
@@ -113,6 +116,9 @@
   <ItemGroup>
     <ClCompile Include="Asset\Format\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
+    <ClCompile Include="Asset\Importer\FontImporter.cpp" />
+    <ClCompile Include="UI\Text.cpp" />
+    <ClCompile Include="UI\FontAsset.cpp" />
     <ClCompile Include="Math\Bounds.cpp" />
     <ClCompile Include="Physics\Physics.cpp" />
     <ClCompile Include="Physics\BoxCollider.cpp" />
@@ -191,6 +197,10 @@
     <None Include="EngineAssets\Shader\Particle.hlsli" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
     <None Include="EngineAssets\Shader\Standard.hlsli" />
+    <None Include="EngineAssets\Shader\Text.hlsli" />
+    <Text Include="EngineAssets\Shader\Text.shader">
+      <FileType>Document</FileType>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Sprite.PS.hlsl">
@@ -245,6 +255,26 @@
     <None Include="EngineAssets\Shader\Particle.VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\Text.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\Text.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>

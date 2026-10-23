@@ -45,6 +45,7 @@ public: // メンバ関数
 
 	void SetMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> &GetMaterial() const;
+	virtual const std::shared_ptr<Material> &GetDefaultMaterial() const;
 
 	void SetColor(const Color &color);
 	const Color &GetColor() const;
@@ -61,7 +62,7 @@ protected: // メンバ関数
 
 	RectTransform *GetRectTransform() const;
 
-	void DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount) const;
+	void DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount, uint32_t instanceCount = 1) const;
 
 
 private: // メンバ変数

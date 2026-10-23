@@ -3,11 +3,8 @@
 
     <!-- パス -->
     <PropertyGroup Label="UserMacros">
-        <!-- ソリューションとソースのフォルダ（Engine / Game / External がある場所） -->
         <SourceRoot>$(MSBuildThisFileDirectory)..\</SourceRoot>
-        <!-- リポジトリのルート（.git がある場所）。ビルド出力の Generated はここに置く -->
         <RepoRoot>$(SourceRoot)..\</RepoRoot>
-        <!-- C++ に埋め込む SourceRoot（絶対パス・末尾の区切りなし・区切りは / ） -->
         <SourceDir>$([System.IO.Path]::GetFullPath('$(SourceRoot)').TrimEnd('\').Replace('\', '/'))</SourceDir>
     </PropertyGroup>
 
@@ -15,7 +12,7 @@
     <PropertyGroup>
         <OutDir>$(RepoRoot)Generated\Outputs\$(Configuration)\</OutDir>
         <IntDir>$(RepoRoot)Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
-        <ExternalIncludePath>$(SourceRoot)External;$(ExternalIncludePath)</ExternalIncludePath>
+        <ExternalIncludePath>$(SourceRoot)External;$(SourceRoot)External\freetype\include;$(ExternalIncludePath)</ExternalIncludePath>
     </PropertyGroup>
 
     <!-- 共通設定-->
@@ -29,7 +26,6 @@
             <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
             <MultiProcessorCompilation>true</MultiProcessorCompilation>
             <AdditionalOptions>/utf-8 /Zc:preprocessor %(AdditionalOptions)</AdditionalOptions>
-            <!-- SOURCE_DIR: エディタ版（WITH_EDITOR）がアセットを探すときの基準（Core/Paths.cpp） -->
             <PreprocessorDefinitions>NOMINMAX;SPDLOG_WCHAR_FILENAMES;SOURCE_DIR="$(SourceDir)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <AdditionalIncludeDirectories>$(SourceRoot)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
         </ClCompile>

@@ -18,6 +18,8 @@ DXGI_FORMAT ou::Graphics::ConvertFormat(Format format) {
 			return DXGI_FORMAT_R32_UINT;
 		case Format::R16_UINT:
 			return DXGI_FORMAT_R16_UINT;
+		case Format::R8_UNORM:
+			return DXGI_FORMAT_R8_UNORM;
 
 		case Format::R8G8B8A8_UNORM:
 			return DXGI_FORMAT_R8G8B8A8_UNORM;

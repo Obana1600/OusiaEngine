@@ -177,6 +177,7 @@ enum class Format : uint8_t {
 	R32_FLOAT,			// float
 	R32_UINT,			//
 	R16_UINT,			//
+	R8_UNORM,			//
 
 	R8G8B8A8_UNORM,		 // 8 ビットカラー
 	R8G8B8A8_UNORM_SRGB, // 8 ビットカラー + ガンマ補正

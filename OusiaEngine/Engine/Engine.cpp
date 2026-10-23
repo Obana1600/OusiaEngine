@@ -9,6 +9,7 @@
 #include "Render/Asset/Material.h"
 #include "Scene/SceneManager.h"
 #include "UI/Graphic.h"
+#include "UI/Text.h"
 
 #include <filesystem>
 #include <thread>
@@ -89,8 +90,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	imGuiManager_ = std::make_unique<ImGuiManager>(window_.get());
 
 	// 初期化
-	Graphic::StaticInitialize();
 	Material::StaticInitialize();
+	Graphic::StaticInitialize();
+	Text::StaticInitialize();
 	ParticleSystemRenderer::StaticInitialize();
 
 	// その他
@@ -111,8 +113,9 @@ void ou::Engine::Finalize() {
 	imGuiManager_.reset();
 	SceneManager::Finalize();
 
-	Graphic::StaticFinalize();
 	Material::StaticFinalize();
+	Graphic::StaticFinalize();
+	Text::StaticFinalize();
 	ParticleSystemRenderer::StaticFinalize();
 	AssetDatabase::UnloadAllAssets();
 

@@ -259,6 +259,15 @@
     <ClInclude Include="Math\Bounds.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="UI\FontAsset.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Importer\FontImporter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\Text.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Diagnostics\CrashHandler.cpp">
@@ -477,6 +486,15 @@
     <ClCompile Include="Math\Bounds.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="UI\FontAsset.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Importer\FontImporter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\Text.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli">
@@ -515,5 +533,17 @@
     <None Include="EngineAssets\Shader\Particle.VS.hlsl">
       <Filter>リソース ファイル</Filter>
     </None>
+    <None Include="EngineAssets\Shader\Text.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Text.PS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Text.VS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="EngineAssets\Shader\Text.shader" />
   </ItemGroup>
 </Project>
