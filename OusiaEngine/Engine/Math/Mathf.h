@@ -37,6 +37,8 @@ float Clamp(float value, float min, float max);
 
 float Clamp01(float f);
 
+float ClampN1P1(float f);
+
 float Cos(float f);
 
 float Exp(float f);

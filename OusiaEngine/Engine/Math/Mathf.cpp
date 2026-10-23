@@ -52,6 +52,11 @@ float ou::Mathf::Clamp01(float f) {
 }
 
 
+float ou::Mathf::ClampN1P1(float f) {
+	return std::clamp(f, -1.0f, 1.0f);
+}
+
+
 float ou::Mathf::Cos(float f) {
 	return std::cos(f);
 }
