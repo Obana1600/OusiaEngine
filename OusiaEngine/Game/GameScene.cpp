@@ -85,15 +85,40 @@ void CreateSamples(Scene &scene, Transform *canvas) {
 	bigBox.text->SetFontSize(120.0f);
 	bigBox.text->SetAlignment(TextAlignment::Center);
 
-	auto smallBox = CreateTextBox(scene, canvas, "Size 12", {-510.0f, -215.0f}, {500.0f, 80.0f});
-	smallBox.text->SetText("12 px: The quick brown fox jumps over the lazy dog. 吾輩は猫である。名前はまだ無い。どこで生れたかとんと見当がつかぬ。");
-	smallBox.text->SetFontSize(12.0f);
+	bigBox.text->SetOutlineWidth(0.25f);
+	bigBox.text->SetOutlineColor({0.8f, 0.1f, 0.2f, 1.0f});
 
-	auto spacingBox = CreateTextBox(scene, canvas, "Spacing", {-510.0f, -330.0f}, {500.0f, 130.0f});
-	spacingBox.text->SetText("行間 50・文字間 20\nline 2");
-	spacingBox.text->SetFontSize(24.0f);
-	spacingBox.text->SetLineSpacing(50.0f);
-	spacingBox.text->SetCharacterSpacing(20.0f);
+	// 左下: SDF の効果（2 x 2）
+	const auto createEffectBox = [&](const char *name, const Vector2 &position, const char *text) {
+		auto box = CreateTextBox(scene, canvas, name, position, {245.0f, 105.0f});
+		box.text->SetText(text);
+		box.text->SetFontSize(40.0f);
+		box.text->SetAlignment(TextAlignment::Center);
+		return box.text;
+	};
+
+	auto *outline = createEffectBox("Outline", {-637.0f, -225.0f}, "縁取り\nOutline");
+	outline->SetOutlineWidth(0.4f);
+	outline->SetOutlineColor(Color::Black);
+
+	// 一番大きくずらす。隣の文字の欠片が映り込まないかも見る
+	auto *shadow = createEffectBox("Underlay", {-383.0f, -225.0f}, "影 Underlay\n右下へ 1");
+	shadow->SetUnderlayColor({0.0f, 0.0f, 0.0f, 0.8f});
+	shadow->SetUnderlayOffset({1.0f, -1.0f});
+
+	auto *glow = createEffectBox("Soft Underlay", {-637.0f, -340.0f}, "ぼかし\nSoftness");
+	glow->SetColor({0.1f, 0.1f, 0.3f, 1.0f});
+	glow->SetUnderlayColor({1.0f, 0.9f, 0.3f, 1.0f});
+	glow->SetUnderlayDilate(0.3f);
+	glow->SetUnderlaySoftness(0.5f);
+
+	auto *dilate = createEffectBox("Face Dilate", {-383.0f, -340.0f}, "太く +0.8\n");
+	dilate->SetFaceDilate(0.8f);
+	auto *thin = CreateTextBox(scene, canvas, "Face Dilate Thin", {-383.0f, -362.0f}, {245.0f, 50.0f}).text;
+	thin->SetText("細く -0.4");
+	thin->SetFontSize(40.0f);
+	thin->SetAlignment(TextAlignment::Center);
+	thin->SetFaceDilate(-0.4f);
 
 	// 右下: 英語の折り返し・ない文字と壊れた UTF-8・回転と拡大
 	auto englishBox = CreateTextBox(scene, canvas, "English Wrap", {-30.0f, -225.0f}, {420.0f, 90.0f});
@@ -212,6 +237,36 @@ void ou::TextPlayground::ShowTextWindow() {
 	Color color = text_->GetColor();
 	if (ImGui::ColorEdit4("color", &color.r)) {
 		text_->SetColor(color);
+	}
+
+	// SDF の効果（値の範囲は TMP と同じ）
+	ImGui::SeparatorText("SDF");
+	float faceDilate = text_->GetFaceDilate();
+	if (ImGui::SliderFloat("faceDilate", &faceDilate, -1.0f, 1.0f)) {
+		text_->SetFaceDilate(faceDilate);
+	}
+	float outlineWidth = text_->GetOutlineWidth();
+	if (ImGui::SliderFloat("outlineWidth", &outlineWidth, 0.0f, 1.0f)) {
+		text_->SetOutlineWidth(outlineWidth);
+	}
+	Color outlineColor = text_->GetOutlineColor();
+	if (ImGui::ColorEdit4("outlineColor", &outlineColor.r)) {
+		text_->SetOutlineColor(outlineColor);
+	}
+	Color underlayColor = text_->GetUnderlayColor();
+	if (ImGui::ColorEdit4("underlayColor", &underlayColor.r)) {
+		text_->SetUnderlayColor(underlayColor);
+	}
+	if (ImGui::SliderFloat2("underlayOffset", &underlayOffset_.x, -1.0f, 1.0f)) {
+		text_->SetUnderlayOffset(underlayOffset_);
+	}
+	float underlayDilate = text_->GetUnderlayDilate();
+	if (ImGui::SliderFloat("underlayDilate", &underlayDilate, -1.0f, 1.0f)) {
+		text_->SetUnderlayDilate(underlayDilate);
+	}
+	float underlaySoftness = text_->GetUnderlaySoftness();
+	if (ImGui::SliderFloat("underlaySoftness", &underlaySoftness, 0.0f, 1.0f)) {
+		text_->SetUnderlaySoftness(underlaySoftness);
 	}
 
 	// RectTransform

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Math/Vector2.h"
 #include "Scene/Component.h"
 #include "Scene/Scene.h"
 
@@ -37,6 +38,7 @@ private: // メンバ変数
 	float rotation_ = 0.0f;
 	float scale_ = 1.0f;
 	bool isCounterRunning_ = true;
+	Vector2 underlayOffset_{}; // ImGui で編集する値（Text 側は範囲に丸めて持つ）
 
 
 private: // メンバ関数

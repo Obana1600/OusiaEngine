@@ -4,6 +4,7 @@
 #include "Math/Color.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Rect.h"
+#include "Math/Vector2.h"
 #include "Math/Vector4.h"
 #include "UI/Graphic.h"
 
@@ -38,6 +39,14 @@ public: // インナークラス
 	struct PerText {
 		Matrix4x4 worldViewProj;
 		Color color;
+		Color outlineColor;
+		Color underlayColor;
+		float faceDilate;
+		float outlineWidth;
+		float padding[2];
+		float underlayDilate;
+		float underlaySoftness;
+		Vector2 underlayUvOffset;
 		uint32_t glyphBufferIndex;
 	};
 
@@ -85,6 +94,27 @@ public: // メンバ関数
 	void SetCharacterSpacing(float characterSpacing);
 	float GetCharacterSpacing() const;
 
+	void SetFaceDilate(float faceDilate);
+	float GetFaceDilate() const;
+
+	void SetOutlineColor(const Color &outlineColor);
+	const Color &GetOutlineColor() const;
+
+	void SetOutlineWidth(float outlineWidth);
+	float GetOutlineWidth() const;
+
+	void SetUnderlayColor(const Color &underlayColor);
+	const Color &GetUnderlayColor() const;
+
+	void SetUnderlayOffset(const Vector2 &underlayOffset);
+	const Vector2 &GetUnderlayOffset() const;
+
+	void SetUnderlayDilate(float underlayDilate);
+	float GetUnderlayDilate() const;
+
+	void SetUnderlaySoftness(float underlaySoftness);
+	float GetUnderlaySoftness() const;
+
 
 private: // 静的メンバ変数
 
@@ -110,6 +140,14 @@ private: // メンバ変数
 	bool wordWrappingEnabled_ = true;
 	float lineSpacing_ = 0.0f;
 	float characterSpacing_ = 0.0f;
+
+	float faceDilate_ = 0.0f;
+	float outlineWidth_ = 0.0f;
+	Color outlineColor_ = Color::Black;
+	float underlayDilate_ = 0.0f;
+	float underlaySoftness_ = 0.0f;
+	Vector2 underlayOffset_{};
+	Color underlayColor_ = Color::Clear;
 
 	std::vector<PlacedGlyph> placedGlyphs_;
 	Rect layoutRect_{};

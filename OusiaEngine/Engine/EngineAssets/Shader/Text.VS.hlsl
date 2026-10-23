@@ -21,5 +21,6 @@ VSOutput main(uint vid : SV_VertexID, uint iid : SV_InstanceID)
     output.position = mul(float4(position, 0.0f, 1.0f), gWorldViewProj);
     output.texcoord = texcoord;
     output.textureIndex = quad.textureIndex;
+    output.texcoordRect = quad.texcoordRect;
 	return output;
 }

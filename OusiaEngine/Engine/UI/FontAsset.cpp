@@ -247,14 +247,14 @@ std::optional<GlyphBitmap> ou::FontAsset::RenderGlyph(char32_t unicode) const {
 	// 輪郭のない文字
 	if (slot->outline.n_points == 0) { return glyph; }
 
-	// SDF 変換
+	// SDF 変換 (NORMAL -> SDF)
 	error = FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
 	if (!error) {
 		error = FT_Render_Glyph(slot, FT_RENDER_MODE_SDF);
-		if (error) {
-			Log::Error("文字の SDF 変換に失敗しました: U+{:04X} (error = {})", static_cast<uint32_t>(unicode), error);
-			return std::nullopt;
-		}
+	}
+	if (error) {
+		Log::Error("文字の SDF 変換に失敗しました: U+{:04X} (error = {})", static_cast<uint32_t>(unicode), error);
+		return std::nullopt;
 	}
 
 	// 1 画素 1 バイトの形式で出力されているか

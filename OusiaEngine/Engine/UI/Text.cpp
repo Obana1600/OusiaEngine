@@ -2,6 +2,7 @@
 #include "Asset/AssetDatabase.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Fatal.h"
+#include "Math/Mathf.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
@@ -110,8 +111,18 @@ void ou::Text::Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const 
 	PerText constants{};
 	constants.worldViewProj = GetRectTransform()->GetLocalToWorldMatrix() * viewProj;
 	constants.color = GetColor().Linear();
+	constants.outlineColor = outlineColor_.Linear();
+	constants.underlayColor = underlayColor_.Linear();
+	constants.faceDilate = faceDilate_;
+	constants.outlineWidth = outlineWidth_;
+	constants.underlayDilate = underlayDilate_;
+	constants.underlaySoftness = underlaySoftness_;
 	constants.glyphBufferIndex =
 		static_cast<uint32_t>(device->GetDescriptorIndex(&buffer, Graphics::ViewType::SRV));
+
+	const auto &font = FindFont();
+	const auto uvPerOffset = static_cast<float>(font->GetPadding()) / static_cast<float>(font->GetAtlasSize());
+	constants.underlayUvOffset = {-underlayOffset_.x * uvPerOffset, underlayOffset_.y * uvPerOffset};
 
 	device->BindDynamicConstantBuffer(constants, 0, cmd);
 	DrawWithMaterial(cmd, 4, quadCount_);
@@ -198,6 +209,77 @@ void ou::Text::SetCharacterSpacing(float characterSpacing) {
 
 float ou::Text::GetCharacterSpacing() const {
 	return characterSpacing_;
+}
+
+
+void ou::Text::SetFaceDilate(float faceDilate) {
+	faceDilate_ = Mathf::Clamp(faceDilate, -1.0f, 1.0f);
+}
+
+
+float ou::Text::GetFaceDilate() const {
+	return faceDilate_;
+}
+
+
+void ou::Text::SetOutlineWidth(float outlineWidth) {
+	outlineWidth_ = Mathf::Clamp01(outlineWidth);
+}
+
+
+float ou::Text::GetOutlineWidth() const {
+	return outlineWidth_;
+}
+
+
+void ou::Text::SetOutlineColor(const Color &outlineColor) {
+	outlineColor_ = outlineColor;
+}
+
+
+const Color &ou::Text::GetOutlineColor() const {
+	return outlineColor_;
+}
+
+
+void ou::Text::SetUnderlayDilate(float underlayDilate) {
+	underlayDilate_ = Mathf::Clamp(underlayDilate, -1.0f, 1.0f);
+}
+
+
+float ou::Text::GetUnderlayDilate() const {
+	return underlayDilate_;
+}
+
+
+void ou::Text::SetUnderlaySoftness(float underlaySoftness) {
+	underlaySoftness_ = Mathf::Clamp01(underlaySoftness);
+}
+
+
+float ou::Text::GetUnderlaySoftness() const {
+	return underlaySoftness_;
+}
+
+
+void ou::Text::SetUnderlayOffset(const Vector2 &underlayOffset) {
+	underlayOffset_ = {Mathf::Clamp(underlayOffset.x, -1.0f, 1.0f),
+					   Mathf::Clamp(underlayOffset.y, -1.0f, 1.0f)};
+}
+
+
+const Vector2 &ou::Text::GetUnderlayOffset() const {
+	return underlayOffset_;
+}
+
+
+void ou::Text::SetUnderlayColor(const Color &underlayColor) {
+	underlayColor_ = underlayColor;
+}
+
+
+const Color &ou::Text::GetUnderlayColor() const {
+	return underlayColor_;
 }
 
 
