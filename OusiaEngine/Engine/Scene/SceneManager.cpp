@@ -9,31 +9,41 @@
 #include "Scene/Transform.h"
 #include "UI/Canvas.h"
 
+#ifdef USE_IMGUI
+#include <imgui/imgui.h>
+#endif
+
 #include <algorithm>
 #include <utility>
 
 using namespace ou;
 
 
-void ou::SceneManager::AddScene(std::string_view name, SceneBuilder builder) {
-	sBuildScenes_.push_back({std::string(name), std::move(builder)});
+void ou::SceneManager::SetSceneFactory(std::unique_ptr<AbstractSceneFactory> factory) {
+	sSceneFactory_ = std::move(factory);
 }
 
 
 int32_t ou::SceneManager::GetSceneCountInBuildSettings() {
-	return static_cast<int32_t>(sBuildScenes_.size());
+	if (!sSceneFactory_) { return 0; }
+	return static_cast<int32_t>(sSceneFactory_->ListSceneNames().size());
 }
 
 
 void ou::SceneManager::LoadScene(std::string_view name) {
-	for (size_t i = 0; i < sBuildScenes_.size(); i++) {
-		if (sBuildScenes_[i].name == name) {
-			sPendingBuildIndex_ = static_cast<int32_t>(i);
-			return;
-		}
+	if (!sSceneFactory_) {
+		Log::Error("SceneFactory が設定されていないため、シーン \"{}\" を読み込めません", name);
+		return;
 	}
 
-	Log::Error("シーン \"{}\" は登録されていません", name);
+	const auto names = sSceneFactory_->ListSceneNames();
+	const auto it = std::find(names.begin(), names.end(), name);
+	if (it == names.end()) {
+		Log::Error("シーン \"{}\" は登録されていません", name);
+		return;
+	}
+
+	sPendingBuildIndex_ = static_cast<int32_t>(std::distance(names.begin(), it));
 }
 
 
@@ -64,6 +74,8 @@ void ou::SceneManager::MoveGameObjectToScene(GameObject *gameObject, Scene *scen
 
 
 void ou::SceneManager::Update() {
+	ShowSceneSwitcher();
+
 	if (sPendingBuildIndex_ >= 0) {
 		LoadPendingScene();
 	}
@@ -77,6 +89,7 @@ void ou::SceneManager::Update() {
 	for (auto *scene : scenes) {
 		if (scene) { scene->UpdateGameObjects(); }
 	}
+	if (sActiveState_) { sActiveState_->Update(); }
 	for (auto *scene : scenes) {
 		if (scene) { scene->LateUpdateGameObjects(); }
 	}
@@ -87,9 +100,9 @@ void ou::SceneManager::Update() {
 
 
 void ou::SceneManager::Finalize() {
-	sActiveScene_.reset();
+	UnloadActiveScene();
 	sDontDestroyOnLoadScene_.reset();
-	sBuildScenes_.clear();
+	sSceneFactory_.reset();
 	sPendingBuildIndex_ = -1;
 
 	sceneLoaded_.RemoveAllListeners();
@@ -189,18 +202,58 @@ void ou::SceneManager::UnregisterCanvas(Canvas *canvas) {
 
 void ou::SceneManager::LoadPendingScene() {
 	const auto buildIndex = std::exchange(sPendingBuildIndex_, -1);
+	const auto name = sSceneFactory_->ListSceneNames()[buildIndex];
+
+	auto state = sSceneFactory_->CreateScene(name);
+	if (!state) {
+		Log::Error("SceneFactory がシーン \"{}\" を作れませんでした", name);
+		return;
+	}
+
+	UnloadActiveScene();
+
+	sActiveScene_ = std::make_unique<Scene>(name, buildIndex);
+	sActiveState_ = std::move(state);
+	sActiveState_->Initialize(*sActiveScene_);
+
+	activeSceneChanged_.Invoke(nullptr, sActiveScene_.get());
+	sceneLoaded_.Invoke(sActiveScene_.get());
+}
+
+
+void ou::SceneManager::UnloadActiveScene() {
+	if (sActiveState_) {
+		sActiveState_->Finalize();
+	}
 
 	if (auto oldScene = std::move(sActiveScene_)) {
 		oldScene->DestroyAllGameObjects();
 		sceneUnloaded_.Invoke(oldScene.get());
 	}
 
-	const auto &buildScene = sBuildScenes_[buildIndex];
-	sActiveScene_ = std::make_unique<Scene>(buildScene.name, buildIndex);
-	buildScene.builder(*sActiveScene_);
+	sActiveState_.reset();
+}
 
-	activeSceneChanged_.Invoke(nullptr, sActiveScene_.get());
-	sceneLoaded_.Invoke(sActiveScene_.get());
+
+void ou::SceneManager::ShowSceneSwitcher() {
+#ifdef USE_IMGUI
+	if (!sSceneFactory_) { return; }
+
+	if (ImGui::Begin("Scenes")) {
+		const auto names = sSceneFactory_->ListSceneNames();
+		const auto activeIndex = sActiveScene_ ? sActiveScene_->GetBuildIndex() : -1;
+
+		for (size_t i = 0; i < names.size(); i++) {
+			const auto buildIndex = static_cast<int32_t>(i);
+			const std::string label(names[i]);
+
+			if (ImGui::Selectable(label.c_str(), buildIndex == activeIndex)) {
+				sPendingBuildIndex_ = buildIndex;
+			}
+		}
+	}
+	ImGui::End();
+#endif
 }
 
 

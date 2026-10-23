@@ -2,12 +2,12 @@
 
 #include "Core/Event.h"
 #include "Graphics/GraphicsTypes.h"
+#include "Scene/AbstractSceneFactory.h"
 #include "Scene/Scene.h"
+#include "Scene/SceneState.h"
 
 #include <cstdint>
-#include <functional>
 #include <memory>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -24,11 +24,6 @@ class Canvas;
 class SceneManager final {
 	friend class Object;
 
-public: // エイリアス
-
-	using SceneBuilder = std::function<void(Scene &)>;
-
-
 public: // 静的メンバ変数
 
 	static inline Event<Scene *> sceneLoaded_;
@@ -38,7 +33,7 @@ public: // 静的メンバ変数
 
 public: // 静的メンバ関数
 
-	static void AddScene(std::string_view name, SceneBuilder builder);
+	static void SetSceneFactory(std::unique_ptr<AbstractSceneFactory> factory);
 	static int32_t GetSceneCountInBuildSettings();
 
 	static void LoadScene(std::string_view name);
@@ -67,19 +62,12 @@ public: // 静的メンバ関数
 	static void UnregisterCanvas(Canvas *canvas);
 
 
-private: // インナークラス
-
-	struct BuildScene {
-		std::string name;
-		SceneBuilder builder;
-	};
-
-
 private: // 静的メンバ変数
 
 	static inline std::unique_ptr<Scene> sActiveScene_;
+	static inline std::unique_ptr<SceneState> sActiveState_;
 	static inline std::unique_ptr<Scene> sDontDestroyOnLoadScene_;
-	static inline std::vector<BuildScene> sBuildScenes_;
+	static inline std::unique_ptr<AbstractSceneFactory> sSceneFactory_;
 	static inline int32_t sPendingBuildIndex_ = -1;
 
 	static inline std::vector<Camera *> sCameras_;
@@ -91,6 +79,8 @@ private: // 静的メンバ変数
 private: // 静的メンバ関数
 
 	static void LoadPendingScene();
+	static void UnloadActiveScene();
+	static void ShowSceneSwitcher();
 
 	static Scene *GetDontDestroyOnLoadScene();
 	static void MoveHierarchy(GameObject *gameObject, Scene *scene);
