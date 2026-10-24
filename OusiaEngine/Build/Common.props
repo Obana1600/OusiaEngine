@@ -12,7 +12,7 @@
     <PropertyGroup>
         <OutDir>$(RepoRoot)Generated\Outputs\$(Configuration)\</OutDir>
         <IntDir>$(RepoRoot)Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
-        <ExternalIncludePath>$(SourceRoot)External;$(SourceRoot)External\freetype\include;$(ExternalIncludePath)</ExternalIncludePath>
+        <ExternalIncludePath>$(SourceRoot)External;$(SourceRoot)External\freetype\include;$(SourceRoot)External\JoltPhysics;$(ExternalIncludePath)</ExternalIncludePath>
     </PropertyGroup>
 
     <!-- 共通設定-->
@@ -34,7 +34,7 @@
     <!-- Debug -->
     <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
         <ClCompile>
-            <PreprocessorDefinitions>_DEBUG;WITH_EDITOR;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>_DEBUG;WITH_EDITOR;USE_IMGUI;JPH_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
             <Optimization>Disabled</Optimization>
         </ClCompile>
@@ -43,7 +43,7 @@
     <!-- Develop -->
     <ItemDefinitionGroup Condition="'$(Configuration)'=='Develop'">
         <ClCompile>
-            <PreprocessorDefinitions>_DEVELOP;WITH_EDITOR;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>_DEVELOP;WITH_EDITOR;USE_IMGUI;JPH_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
             <Optimization>MaxSpeed</Optimization>
         </ClCompile>

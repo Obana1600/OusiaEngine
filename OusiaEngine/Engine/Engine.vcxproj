@@ -21,6 +21,9 @@
     <ProjectReference Include="..\External\freetype\freetype.vcxproj">
       <Project>{6f340305-fe44-4c76-bc50-93767f3c7245}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\External\JoltPhysics\JoltPhysics.vcxproj">
+      <Project>{75e6c89e-d1c1-49d1-ac3d-228a11d79c47}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'!='Release'">
     <ProjectReference Include="..\External\imgui\imgui.vcxproj">
