@@ -19,6 +19,13 @@ uint64_t GetFrameCount();
 void SetTimeScale(float timeScale);
 float GetTimeScale();
 
+void SetFixedDeltaTime(float fixedDeltaTime);
+float GetFixedDeltaTime();
+
+float GetFixedTime();
+bool IsInFixedTimeStep();
+
 void Advance(float unscaledDeltaTime);
+bool AdvanceFixedTime();
 
 } // namespace ou::Time

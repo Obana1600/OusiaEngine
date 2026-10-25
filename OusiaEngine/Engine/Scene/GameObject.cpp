@@ -82,6 +82,19 @@ void ou::GameObject::StartComponents() {
 }
 
 
+void ou::GameObject::FixedUpdateComponents() {
+	if (!IsActiveInHierarchy()) { return; }
+
+	const auto count = components_.size();
+	for (size_t i = 0; i < count; i++) {
+		if (!components_[i]->isStarted_ ||
+			components_[i]->IsDestroyed() ||
+			!components_[i]->IsEnabledSelf()) { continue; }
+		components_[i]->FixedUpdate();
+	}
+}
+
+
 void ou::GameObject::UpdateComponents() {
 	if (!IsActiveInHierarchy()) { return; }
 

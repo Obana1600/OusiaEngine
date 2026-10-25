@@ -36,11 +36,6 @@ Bounds ou::BoxCollider::GetBounds() const {
 }
 
 
-ColliderShape ou::BoxCollider::GetShape() const {
-	return ColliderShape::Box;
-}
-
-
 void ou::BoxCollider::SetCenter(const Vector3 &center) {
 	center_ = center;
 }
@@ -53,11 +48,22 @@ const Vector3 &ou::BoxCollider::GetCenter() const {
 
 void ou::BoxCollider::SetSize(const Vector3 &size) {
 	size_ = size;
+	PhysicsWorld::SetBoxHalfExtents(GetShapeId(), size_ * 0.5f);
 }
 
 
 const Vector3 &ou::BoxCollider::GetSize() const {
 	return size_;
+}
+
+
+PhysicsWorld::ShapeId ou::BoxCollider::CreateShape() const {
+	return PhysicsWorld::CreateBoxShape(size_ * 0.5f);
+}
+
+
+Vector3 ou::BoxCollider::GetShapeCenter() const {
+	return center_;
 }
 
 

@@ -1,11 +1,14 @@
 #pragma once
 
 #include "Math/Vector2.h"
+#include "Scene/Behaviour.h"
 #include "Scene/Component.h"
 #include "Scene/Scene.h"
 
+#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 
@@ -71,6 +74,71 @@ private: // メンバ関数
 
 	void AddEvent(std::string text);
 	void UpdateGamepads(uint64_t frame);
+};
+
+// FixedUpdate の確認: 呼ばれる順番と、1 秒あたりの回数を TEST のログに出す
+class FixedUpdateProbe final: public Component {
+public: // メンバ関数
+
+	void Start() override;
+	void FixedUpdate() override;
+	void Update() override;
+	void LateUpdate() override;
+
+
+private: // メンバ変数
+
+	float realTime_ = 0.0f;     // timeScale に関係ない経過時間
+	float secondTimer_ = 0.0f;
+	int fixedCount_ = 0;        // この 1 秒の FixedUpdate の回数
+	int frameFixedCount_ = 0;   // このフレームの FixedUpdate の回数
+	int maxFixedPerFrame_ = 0;
+	int phase_ = -1;
+
+
+private: // メンバ関数
+
+	void ChangePhase(int phase);
+};
+
+// 物理のイベントを TEST のログに出す（Enter / Exit は毎回、Stay は回数だけ）
+class ContactLogger final: public Behaviour {
+public: // メンバ関数
+
+	void OnTriggerEnter(Collider *other) override;
+	void OnTriggerStay(Collider *other) override;
+	void OnTriggerExit(Collider *other) override;
+
+	void OnCollisionEnter(const Collision &collision) override;
+	void OnCollisionStay(const Collision &collision) override;
+	void OnCollisionExit(const Collision &collision) override;
+
+	void FlushStays();
+
+
+private: // メンバ変数
+
+	std::map<std::string, int> stayCounts_;
+};
+
+// OnTrigger* / OnCollision* の確認: GameObject で組み、決まった歩で無効にしたり消したりする
+class PhysicsEventProbe final: public Component {
+public: // メンバ関数
+
+	void Start() override;
+	void FixedUpdate() override;
+
+
+private: // メンバ変数
+
+	std::vector<ContactLogger *> loggers_;
+	GameObject *disabler_ = nullptr; // 触れている最中にコライダーを無効にする
+	GameObject *doomed_ = nullptr;   // 触れている最中に消す
+
+
+private: // メンバ関数
+
+	GameObject *CreateObject(const char *name, const Vector3 &position, Transform *parent = nullptr);
 };
 
 } // namespace ou

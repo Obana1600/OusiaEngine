@@ -40,6 +40,7 @@ private: // メンバ変数
 private: // メンバ関数
 
 	void StartGameObjects();
+	void FixedUpdateGameObjects();
 	void UpdateGameObjects();
 	void LateUpdateGameObjects();
 	void DestroyMarkedObjects();

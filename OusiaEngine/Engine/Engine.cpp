@@ -5,6 +5,7 @@
 #include "Diagnostics/Fatal.h"
 #include "Input/Input.h"
 #include "Particle/ParticleSystemRenderer.h"
+#include "Physics/Jolt/PhysicsWorld.h"
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
 #include "Render/Asset/Material.h"
@@ -48,6 +49,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	if (!Audio::Initialize()) {
 		Log::Error("オーディオを初期化できませんでした。音は鳴りません");
 	}
+
+	// 物理
+	PhysicsWorld::Initialize();
 
 	// ウィンドウ
 	window_ = Window::Create({.title = desc.title, .width = desc.width, .height = desc.height});
@@ -115,6 +119,8 @@ void ou::Engine::Finalize() {
 
 	imGuiManager_.reset();
 	SceneManager::Finalize();
+
+	PhysicsWorld::Finalize();
 
 	Material::StaticFinalize();
 	Graphic::StaticFinalize();

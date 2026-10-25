@@ -7,14 +7,11 @@
 
 namespace ou {
 
-class SphereCollider: public Collider {
-	friend class Physics;
-
+class SphereCollider final: public Collider {
 public: // メンバ関数
 
 	Vector3 ClosestPoint(const Vector3 &position) const override;
 	Bounds GetBounds() const override;
-	ColliderShape GetShape() const override;
 
 	void SetCenter(const Vector3 &center);
 	const Vector3 &GetCenter() const;
@@ -31,6 +28,10 @@ private: // メンバ変数
 
 private: // メンバ関数
 
+	PhysicsWorld::ShapeId CreateShape() const override;
+	Vector3 GetShapeCenter() const override;
+
+	// TODO: 消す
 	Vector3 CalculateWorldCenter() const;
 	float CalculateWorldRadius() const;
 };

@@ -55,6 +55,7 @@ private: // メンバ関数
 
 	void AwakeComponents();
 	void StartComponents();
+	void FixedUpdateComponents();
 	void UpdateComponents();
 	void LateUpdateComponents();
 

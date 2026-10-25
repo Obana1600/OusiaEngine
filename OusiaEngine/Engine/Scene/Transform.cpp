@@ -74,9 +74,21 @@ const Matrix4x4 &ou::Transform::GetLocalToWorldMatrix() const {
 }
 
 
+void ou::Transform::SetWorldPosition(const Vector3 &position) {
+	SetLocalPosition(parent_ ? parent_->GetLocalToWorldMatrix().Inverse().MultiplyPoint3x4(position)
+							 : position);
+}
+
+
 Vector3 ou::Transform::GetWorldPosition() const {
 	const auto &m = GetLocalToWorldMatrix();
 	return {m.m41, m.m42, m.m43};
+}
+
+
+void ou::Transform::SetWorldRotation(const Quaternion &rotation) {
+	SetLocalRotation(parent_ ? Quaternion::Inverse(parent_->GetWorldRotation()) * rotation
+							 : rotation);
 }
 
 

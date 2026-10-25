@@ -2,11 +2,10 @@
 #include "Diagnostics/Log.h"
 #include "Math/Mathf.h"
 
+#include <Windows.h>
 #include <algorithm>
 #include <array>
-#include <cmath>
 
-#include <Windows.h>
 #include <Xinput.h>
 
 #pragma comment(lib, "xinput.lib")

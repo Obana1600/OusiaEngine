@@ -22,11 +22,6 @@ Bounds ou::SphereCollider::GetBounds() const {
 }
 
 
-ColliderShape ou::SphereCollider::GetShape() const {
-	return ColliderShape::Sphere;
-}
-
-
 void ou::SphereCollider::SetCenter(const Vector3 &center) {
 	center_ = center;
 }
@@ -39,11 +34,22 @@ const Vector3 &ou::SphereCollider::GetCenter() const {
 
 void ou::SphereCollider::SetRadius(float radius) {
 	radius_ = radius;
+	PhysicsWorld::SetSphereRadius(GetShapeId(), radius_);
 }
 
 
 float ou::SphereCollider::GetRadius() const {
 	return radius_;
+}
+
+
+PhysicsWorld::ShapeId ou::SphereCollider::CreateShape() const {
+	return PhysicsWorld::CreateSphereShape(radius_);
+}
+
+
+Vector3 ou::SphereCollider::GetShapeCenter() const {
+	return center_;
 }
 
 

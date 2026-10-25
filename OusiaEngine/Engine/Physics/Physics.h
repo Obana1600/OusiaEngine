@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
 
@@ -8,31 +9,23 @@ namespace ou {
 // 前方宣言
 class Component;
 class Collider;
-class BoxCollider;
-class SphereCollider;
+class Rigidbody;
 
 class Physics final {
 	friend class Collider;
+	friend class Rigidbody;
 
 public: // 静的メンバ関数
 
 	static void Simulate();
 
-
-public: // インナークラス
-
-	struct ContactPair {
-		Collider *a = nullptr;
-		Collider *b = nullptr;
-
-		bool operator==(const ContactPair &) const = default;
-	};
+	static void SyncTransform();
 
 
 private: // 静的メンバ変数
 
 	static inline std::vector<Collider *> sColliders_;
-	static inline std::vector<ContactPair> sContacts_;
+	static inline std::vector<Rigidbody *> sRigidbodies_;
 
 
 private: // 静的メンバ関数
@@ -40,13 +33,11 @@ private: // 静的メンバ関数
 	static void RegisterCollider(Collider *collider);
 	static void UnregisterCollider(Collider *collider);
 
-	using Message = void (Component::*)(Collider *);
-	static void SendTriggerMessage(const ContactPair &pair, Message message);
+	static void RegisterRigidbody(Rigidbody *rigidbody);
+	static void UnregisterRigidbody(Rigidbody *rigidbody);
 
-	static bool Intersects(const Collider *a, const Collider *b);
-	static bool IntersectsBoxBox(const BoxCollider *a, const BoxCollider *b);
-	static bool IntersectsSphereSphere(const SphereCollider *a, const SphereCollider *b);
-	static bool IntersectsSphere(const SphereCollider *a, const Collider *b);
+	static void DispatchContactEvents();
+	static void SendToReceivers(Collider *collider, const std::function<void(Component *)> &send);
 };
 
 } // namespace ou

@@ -57,6 +57,17 @@ void ou::Scene::StartGameObjects() {
 }
 
 
+void ou::Scene::FixedUpdateGameObjects() {
+	const auto count = gameObjects_.size();
+
+	for (size_t i = 0; i < count; i++) {
+		if (gameObjects_[i] && !gameObjects_[i]->IsDestroyed()) {
+			gameObjects_[i]->FixedUpdateComponents();
+		}
+	}
+}
+
+
 void ou::Scene::UpdateGameObjects() {
 	const auto count = gameObjects_.size();
 

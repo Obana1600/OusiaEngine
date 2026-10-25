@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Physics/Physics.h"
@@ -73,7 +74,14 @@ void ou::SceneManager::Update() {
 	for (auto *scene : scenes) {
 		if (scene) { scene->StartGameObjects(); }
 	}
-	Physics::Simulate();
+
+	while (Time::AdvanceFixedTime()) {
+		for (auto *scene : scenes) {
+			if (scene) { scene->FixedUpdateGameObjects(); }
+		}
+		Physics::Simulate();
+	}
+
 	for (auto *scene : scenes) {
 		if (scene) { scene->UpdateGameObjects(); }
 	}

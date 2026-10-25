@@ -10,6 +10,7 @@ namespace ou {
 class GameObject;
 class Transform;
 class Collider;
+class Collision;
 
 class Component: public Object {
 	friend class GameObject;
@@ -18,6 +19,7 @@ public: // メンバ関数
 
 	virtual void Awake() {};
 	virtual void Start() {};
+	virtual void FixedUpdate() {};
 	virtual void Update() {};
 	virtual void LateUpdate() {};
 	virtual void OnDestroy() {};
@@ -25,6 +27,10 @@ public: // メンバ関数
 	virtual void OnTriggerEnter(Collider *) {};
 	virtual void OnTriggerStay(Collider *) {};
 	virtual void OnTriggerExit(Collider *) {};
+
+	virtual void OnCollisionEnter(const Collision &) {};
+	virtual void OnCollisionStay(const Collision &) {};
+	virtual void OnCollisionExit(const Collision &) {};
 
 	GameObject *GetGameObject() const;
 	Transform *GetTransform() const;

@@ -8,13 +8,10 @@
 namespace ou {
 
 class BoxCollider: public Collider {
-	friend class Physics;
-
 public: // メンバ関数
 
 	Vector3 ClosestPoint(const Vector3 &position) const override;
 	Bounds GetBounds() const override;
-	ColliderShape GetShape() const override;
 
 	void SetCenter(const Vector3 &center);
 	const Vector3 &GetCenter() const;
@@ -25,6 +22,7 @@ public: // メンバ関数
 
 private: // インナークラス
 
+	// 消す
 	struct WorldBox {
 		Vector3 center;
 		Vector3 axes[3];
@@ -40,6 +38,10 @@ private: // メンバ変数
 
 private: // メンバ関数
 
+	PhysicsWorld::ShapeId CreateShape() const override;
+	Vector3 GetShapeCenter() const override;
+
+	// TODO: 消す
 	WorldBox CalculateWorldBox() const;
 };
 

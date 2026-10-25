@@ -29,8 +29,13 @@ public: // メンバ関数
 	const Vector3 &GetLocalScale() const;
 
 	const Matrix4x4 &GetLocalToWorldMatrix() const;
+
+	void SetWorldPosition(const Vector3 &position); 
 	Vector3 GetWorldPosition() const;
+
+	void SetWorldRotation(const Quaternion &rotation);
 	Quaternion GetWorldRotation() const;
+
 	Vector3 GetLossyScale() const;
 	Vector3 GetForward() const;
 

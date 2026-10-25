@@ -4,6 +4,10 @@
 #include "Diagnostics/Log.h"
 #include "Input/Input.h"
 #include "Math/Mathf.h"
+#include "Physics/BoxCollider.h"
+#include "Physics/Collision.h"
+#include "Physics/Rigidbody.h"
+#include "Physics/SphereCollider.h"
 #include "Scene/GameObject.h"
 #include "UI/Asset/FontAsset.h"
 #include "UI/Canvas.h"
@@ -329,6 +333,7 @@ void ou::BuildGameScene(Scene &scene) {
 	playground->SetTargets(playgroundBox.text, playgroundBox.frame, counter);
 
 	scene.CreateGameObject("Input Playground")->AddComponent<InputPlayground>();
+	scene.CreateGameObject("Physics Event Probe")->AddComponent<PhysicsEventProbe>();
 }
 
 
@@ -513,4 +518,216 @@ void ou::InputPlayground::AddEvent(std::string text) {
 	constexpr size_t kMaxEvents = 16;
 	events_.push_back(std::move(text));
 	if (events_.size() > kMaxEvents) { events_.erase(events_.begin()); }
+}
+
+
+// ----- FixedUpdate の確認 -----
+
+void ou::FixedUpdateProbe::Start() {
+	Log::Info("TEST frame {} Start", Time::GetFrameCount());
+	ChangePhase(0);
+}
+
+
+void ou::FixedUpdateProbe::FixedUpdate() {
+	++fixedCount_;
+	++frameFixedCount_;
+
+	// 最初の数フレームだけ、順番と FixedUpdate の中の時間を出す
+	if (Time::GetFrameCount() <= 4) {
+		Log::Info("TEST frame {} FixedUpdate deltaTime {} time {:.4f} fixedTime {:.4f} inFixed {}",
+			Time::GetFrameCount(), Time::GetDeltaTime(), Time::GetTime(), Time::GetFixedTime(), Time::IsInFixedTimeStep());
+	}
+}
+
+
+void ou::FixedUpdateProbe::Update() {
+	if (Time::GetFrameCount() <= 4) {
+		Log::Info("TEST frame {} Update deltaTime {} time {:.4f} inFixed {} fixedInFrame {}",
+			Time::GetFrameCount(), Time::GetDeltaTime(), Time::GetTime(), Time::IsInFixedTimeStep(), frameFixedCount_);
+	}
+
+	// 1 秒ごとに、その 1 秒の回数を出す
+	realTime_ += Time::GetUnscaledDeltaTime();
+	secondTimer_ += Time::GetUnscaledDeltaTime();
+	if (secondTimer_ >= 1.0f) {
+		Log::Info("TEST phase {} fixedDeltaTime {} timeScale {} -> FixedUpdate {} / {:.2f}s, max {} per frame",
+			phase_, Time::GetFixedDeltaTime(), Time::GetTimeScale(), fixedCount_, secondTimer_, maxFixedPerFrame_);
+		secondTimer_ = 0.0f;
+		fixedCount_ = 0;
+		maxFixedPerFrame_ = 0;
+	}
+
+	// 3 秒ごとに設定を変える
+	const int phase = static_cast<int>(realTime_ / 3.0f);
+	if (phase != phase_) { ChangePhase(phase); }
+}
+
+
+void ou::FixedUpdateProbe::LateUpdate() {
+	if (Time::GetFrameCount() <= 4) {
+		Log::Info("TEST frame {} LateUpdate", Time::GetFrameCount());
+	}
+	if (frameFixedCount_ > maxFixedPerFrame_) { maxFixedPerFrame_ = frameFixedCount_; }
+	frameFixedCount_ = 0;
+}
+
+
+void ou::FixedUpdateProbe::ChangePhase(int phase) {
+	phase_ = phase;
+	switch (phase) {
+		case 0: // 既定
+			Time::SetFixedDeltaTime(0.02f);
+			Time::SetTimeScale(1.0f);
+			break;
+		case 1: // 1 秒に 120 回
+			Time::SetFixedDeltaTime(1.0f / 120.0f);
+			break;
+		case 2: // timeScale 0.5 → 25 回
+			Time::SetFixedDeltaTime(0.02f);
+			Time::SetTimeScale(0.5f);
+			break;
+		case 3: // timeScale 0 → 0 回
+			Time::SetTimeScale(0.0f);
+			break;
+		case 4: // 0 を入れても下限で止まらない
+			Time::SetTimeScale(1.0f);
+			Time::SetFixedDeltaTime(0.0f);
+			break;
+		default: // 元に戻す
+			Time::SetFixedDeltaTime(0.02f);
+			Time::SetTimeScale(1.0f);
+			break;
+	}
+	Log::Info("TEST phase {} start: fixedDeltaTime {} timeScale {}", phase_, Time::GetFixedDeltaTime(), Time::GetTimeScale());
+}
+
+
+// ----- OnTrigger* / OnCollision* の確認 -----
+
+namespace {
+
+int sPhysicsStep = 0;
+
+std::string FormatVector(const Vector3 &v) {
+	return std::format("({:.2f}, {:.2f}, {:.2f})", v.x, v.y, v.z);
+}
+
+} // namespace
+
+
+void ou::ContactLogger::OnTriggerEnter(Collider *other) {
+	Log::Info("TEST step {} [{}] OnTriggerEnter other {}", sPhysicsStep, GetGameObject()->GetName(), other->GetGameObject()->GetName());
+}
+
+
+void ou::ContactLogger::OnTriggerStay(Collider *other) {
+	stayCounts_[std::format("OnTriggerStay {}", other->GetGameObject()->GetName())]++;
+}
+
+
+void ou::ContactLogger::OnTriggerExit(Collider *other) {
+	Log::Info("TEST step {} [{}] OnTriggerExit other {}", sPhysicsStep, GetGameObject()->GetName(), other->GetGameObject()->GetName());
+}
+
+
+void ou::ContactLogger::OnCollisionEnter(const Collision &collision) {
+	const auto &contact = collision.GetContactPoint(0);
+	Log::Info("TEST step {} [{}] OnCollisionEnter this {} other {} gameObject {} rigidbody {} normal {} contacts {}",
+		sPhysicsStep, GetGameObject()->GetName(), contact.thisCollider->GetGameObject()->GetName(),
+		collision.GetCollider()->GetGameObject()->GetName(), collision.GetGameObject()->GetName(),
+		collision.GetRigidbody() != nullptr, FormatVector(contact.normal), collision.GetContactCount());
+}
+
+
+void ou::ContactLogger::OnCollisionStay(const Collision &collision) {
+	stayCounts_[std::format("OnCollisionStay {}", collision.GetCollider()->GetGameObject()->GetName())]++;
+}
+
+
+void ou::ContactLogger::OnCollisionExit(const Collision &collision) {
+	Log::Info("TEST step {} [{}] OnCollisionExit other {} contacts {}",
+		sPhysicsStep, GetGameObject()->GetName(), collision.GetCollider()->GetGameObject()->GetName(), collision.GetContactCount());
+}
+
+
+void ou::ContactLogger::FlushStays() {
+	for (const auto &[message, count] : stayCounts_) {
+		Log::Info("TEST step {} [{}] {} x{}", sPhysicsStep, GetGameObject()->GetName(), message, count);
+	}
+	stayCounts_.clear();
+}
+
+
+GameObject *ou::PhysicsEventProbe::CreateObject(const char *name, const Vector3 &position, Transform *parent) {
+	auto *object = GetGameObject()->GetScene()->CreateGameObject(name);
+	object->GetTransform()->SetParent(parent);
+	object->GetTransform()->SetLocalPosition(position);
+	loggers_.push_back(object->AddComponent<ContactLogger>());
+	return object;
+}
+
+
+void ou::PhysicsEventProbe::Start() {
+	// 床: 上の面が y = 0.5
+	CreateObject("Floor", Vector3::Zero)->AddComponent<BoxCollider>()->SetSize({40.0f, 1.0f, 40.0f});
+
+	// 箱: Enter（箱から見て法線は上、床から見て下）→ Stay → 眠ると止まり、Exit は来ない
+	auto *box = CreateObject("Box", {0.0f, 3.0f, 0.0f});
+	box->AddComponent<Rigidbody>();
+	box->AddComponent<BoxCollider>();
+
+	// 子の球のコライダーの接触は、子と Rigidbody の親の両方に届く
+	auto *parent = CreateObject("Parent", {4.0f, 3.0f, 0.0f});
+	parent->AddComponent<Rigidbody>();
+	parent->AddComponent<BoxCollider>();
+	CreateObject("Child", {1.5f, 0.0f, 0.0f}, parent->GetTransform())->AddComponent<SphereCollider>();
+
+	// Static のトリガーを Rigidbody が通る。Ghost のスクリプトは無効にしておく（無効でも届く）
+	auto *gate = CreateObject("Gate", {12.0f, 2.0f, 0.0f})->AddComponent<BoxCollider>();
+	gate->SetSize({2.0f, 0.2f, 2.0f});
+	gate->SetIsTrigger(true);
+	auto *ghost = CreateObject("Ghost", {12.0f, 6.0f, 0.0f});
+	ghost->AddComponent<Rigidbody>();
+	ghost->AddComponent<SphereCollider>()->SetRadius(0.3f);
+	ghost->GetComponent<ContactLogger>()->SetEnabled(false);
+
+	// Rigidbody に付いたトリガー（半径 1）: 自分の Rigidbody の箱には反応せず、床に反応する
+	auto *carrier = CreateObject("Carrier", {-4.0f, 3.0f, 0.0f});
+	carrier->AddComponent<Rigidbody>();
+	carrier->AddComponent<BoxCollider>();
+	auto *sensor = CreateObject("Sensor", Vector3::Zero, carrier->GetTransform())->AddComponent<SphereCollider>();
+	sensor->SetRadius(1.0f);
+	sensor->SetIsTrigger(true);
+
+	// Rigidbody のないトリガーが床に重なっている: どちらにも Rigidbody がないので何も届かない
+	auto *lonely = CreateObject("Lonely", {-8.0f, 0.8f, 0.0f})->AddComponent<BoxCollider>();
+	lonely->SetIsTrigger(true);
+
+	// 床に乗った直後（起きている間）に、コライダーを無効にする・GameObject を消す: Exit は来ない
+	disabler_ = CreateObject("Disabler", {8.0f, 3.0f, 0.0f});
+	disabler_->AddComponent<Rigidbody>();
+	disabler_->AddComponent<BoxCollider>();
+	doomed_ = CreateObject("Doomed", {16.0f, 3.0f, 0.0f});
+	doomed_->AddComponent<Rigidbody>();
+	doomed_->AddComponent<BoxCollider>();
+}
+
+
+void ou::PhysicsEventProbe::FixedUpdate() {
+	// この後の Simulate で送られるイベントは、この歩の番号で出る
+	sPhysicsStep++;
+
+	if (sPhysicsStep == 40) {
+		Log::Info("TEST step {} disable Disabler collider, destroy Doomed", sPhysicsStep);
+		disabler_->GetComponent<BoxCollider>()->SetEnabled(false);
+		std::erase(loggers_, doomed_->GetComponent<ContactLogger>()); // フレームの終わりに消える
+		Object::Destroy(doomed_);
+	}
+
+	if (sPhysicsStep % 25 == 0) {
+		for (auto *logger : loggers_) {
+			logger->FlushStays();
+		}
+	}
 }
