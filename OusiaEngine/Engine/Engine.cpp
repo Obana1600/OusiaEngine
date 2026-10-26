@@ -12,6 +12,7 @@
 #include "Scene/SceneManager.h"
 #include "UI/Graphic.h"
 #include "UI/Text.h"
+#include "Render/LineRenderer.h"
 
 #include <filesystem>
 #include <thread>
@@ -99,6 +100,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	Graphic::StaticInitialize();
 	Text::StaticInitialize();
 	ParticleSystemRenderer::StaticInitialize();
+	LineRenderer::StaticInitialize();
 
 	// 入力
 	if (!Input::Initialize(window_.get())) {
@@ -126,6 +128,8 @@ void ou::Engine::Finalize() {
 	Graphic::StaticFinalize();
 	Text::StaticFinalize();
 	ParticleSystemRenderer::StaticFinalize();
+	LineRenderer::StaticFinalize();
+
 	AssetDatabase::UnloadAllAssets();
 
 	Audio::Finalize();

@@ -20,9 +20,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FilledRing.h" />
     <ClInclude Include="GameScene.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FilledRing.cpp" />
     <ClCompile Include="GameScene.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
