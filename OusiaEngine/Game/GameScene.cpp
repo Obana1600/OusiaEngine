@@ -1,714 +1,834 @@
 #include "GameScene.h"
-#include "Asset/AssetDatabase.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Input/Input.h"
 #include "Math/Mathf.h"
+#include "Math/Quaternion.h"
 #include "Physics/BoxCollider.h"
 #include "Physics/Collision.h"
 #include "Physics/Physics.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
+#include "Platform/Screen.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Mesh.h"
+#include "Render/Camera.h"
+#include "Render/DirectionalLight.h"
+#include "Render/MeshRenderer.h"
 #include "Scene/GameObject.h"
-#include "UI/Asset/FontAsset.h"
-#include "UI/Canvas.h"
-#include "UI/Image.h"
-#include "UI/RectTransform.h"
-#include "UI/Text.h"
 
+#ifdef USE_IMGUI
 #include <imgui/imgui.h>
 #include <imgui/imgui_stdlib.h>
+#endif
 
+#include <cmath>
+#include <cstdint>
 #include <format>
 #include <iterator>
+#include <utility>
 
 using namespace ou;
 
 
 namespace {
 
-constexpr const char *kFontWeights[] = {
-	"Thin", "ExtraLight", "Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold", "Black"};
+constexpr size_t kMaxEventLogLines = 200;
+constexpr size_t kMaxProjectiles = 100;
 
-constexpr const char *kAlignmentNames[] = {
-	"TopLeft", "Top", "TopRight", "Left", "Center", "Right", "BottomLeft", "Bottom", "BottomRight"};
+// ContactReporter が書き、PhysicsEditor が出す
+std::vector<std::string> sEventLog;
 
-struct Preset {
-	const char *name;
-	const char *text;
-};
-
-constexpr Preset kPresets[] = {
-	{"日本語", "吾輩は猫である。名前はまだ無い。\nどこで生れたかとんと見当がつかぬ。何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。"},
-	{"English", "The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs."},
-	{"混在", "Unity と同じ Text を作る。TextMeshPro 風の SDF で、拡大しても縁がなめらか。"},
-	{"絵文字・壊れた UTF-8", "絵文字: 😀 / 壊れた UTF-8: \xFF\xFE / ここは出る"},
-	{"空", ""},
-};
-
-std::shared_ptr<FontAsset> LoadFontWeight(int index) {
-	return AssetDatabase::LoadAssetAtPath<FontAsset>(
-		std::format("EngineAssets/Font/NotoSansJP-{}.ttf", kFontWeights[index]));
+void AddEventLog(std::string text) {
+	Log::Info("EVENT {}", text);
+	sEventLog.push_back(std::move(text));
+	if (sEventLog.size() > kMaxEventLogLines) { sEventLog.erase(sEventLog.begin()); }
 }
 
-RectTransform *PlaceOnCanvas(GameObject *object, Transform *canvas, const Vector2 &position, const Vector2 &size) {
-	auto *rect = dynamic_cast<RectTransform *>(object->GetTransform());
-	rect->SetParent(canvas);
-	rect->SetAnchoredPosition(position);
-	rect->SetSizeDelta(size);
-	return rect;
-}
+const char *const kPresetNames[] = {"いろいろ", "ピラミッド", "ドミノ", "床だけ"};
+const char *const kShapeNames[] = {"Box", "Sphere"};
+const char *const kBodyTypeNames[] = {"Static（Rigidbody なし）", "Dynamic", "Kinematic"};
+const char *const kFreezeNames[] = {"位置 X", "位置 Y", "位置 Z", "回転 X", "回転 Y", "回転 Z"};
 
-struct TextBox {
-	Image *frame;
-	Text *text;
-};
-
-// 薄い枠（RectTransform の範囲）と、同じ範囲の Text
-TextBox CreateTextBox(Scene &scene, Transform *canvas, std::string_view name, const Vector2 &position, const Vector2 &size) {
-	auto *frameObject = scene.CreateGameObject(std::format("{} Frame", name));
-	auto *frame = frameObject->AddComponent<Image>();
-	frame->SetColor({1.0f, 1.0f, 1.0f, 0.15f});
-	PlaceOnCanvas(frameObject, canvas, position, size);
-
-	auto *textObject = scene.CreateGameObject(name);
-	auto *text = textObject->AddComponent<Text>();
-	PlaceOnCanvas(textObject, canvas, position, size);
-	return {frame, text};
-}
-
-// 見本: 9 つの揃え・大きさ・間隔・ない文字を並べて、一度に見られるようにする
-void CreateSamples(Scene &scene, Transform *canvas) {
-	for (int i = 0; i < 9; i++) {
-		const Vector2 position = {-680.0f + static_cast<float>(i % 3) * 170.0f, 320.0f - static_cast<float>(i / 3) * 120.0f};
-		auto box = CreateTextBox(scene, canvas, kAlignmentNames[i], position, {160.0f, 110.0f});
-		box.text->SetText(std::format("揃え\n{}", kAlignmentNames[i]));
-		box.text->SetFontSize(20.0f);
-		box.text->SetAlignment(static_cast<TextAlignment>(i));
+// Unity の Sphere と同じ半径 0.5 の球
+std::shared_ptr<Mesh> CreateSphereMesh(int slices, int stacks) {
+	std::vector<Mesh::Vertex> vertices;
+	for (int i = 0; i <= stacks; i++) {
+		const auto theta = Mathf::PI * static_cast<float>(i) / static_cast<float>(stacks);
+		for (int j = 0; j <= slices; j++) {
+			const auto phi = 2.0f * Mathf::PI * static_cast<float>(j) / static_cast<float>(slices);
+			const Vector3 normal = {std::sin(theta) * std::cos(phi), std::cos(theta), std::sin(theta) * std::sin(phi)};
+			vertices.push_back({normal * 0.5f, normal,
+								{static_cast<float>(j) / static_cast<float>(slices), static_cast<float>(i) / static_cast<float>(stacks)}});
+		}
 	}
 
-	auto bigBox = CreateTextBox(scene, canvas, "Size 120", {-510.0f, -90.0f}, {500.0f, 150.0f});
-	bigBox.text->SetText("永Ag");
-	bigBox.text->SetFontSize(120.0f);
-	bigBox.text->SetAlignment(TextAlignment::Center);
-
-	bigBox.text->SetOutlineWidth(0.25f);
-	bigBox.text->SetOutlineColor({0.8f, 0.1f, 0.2f, 1.0f});
-
-	// 左下: SDF の効果（2 x 2）
-	const auto createEffectBox = [&](const char *name, const Vector2 &position, const char *text) {
-		auto box = CreateTextBox(scene, canvas, name, position, {245.0f, 105.0f});
-		box.text->SetText(text);
-		box.text->SetFontSize(40.0f);
-		box.text->SetAlignment(TextAlignment::Center);
-		return box.text;
-	};
-
-	auto *outline = createEffectBox("Outline", {-637.0f, -225.0f}, "縁取り\nOutline");
-	outline->SetOutlineWidth(0.4f);
-	outline->SetOutlineColor(Color::Black);
-
-	// 一番大きくずらす。隣の文字の欠片が映り込まないかも見る
-	auto *shadow = createEffectBox("Underlay", {-383.0f, -225.0f}, "影 Underlay\n右下へ 1");
-	shadow->SetUnderlayColor({0.0f, 0.0f, 0.0f, 0.8f});
-	shadow->SetUnderlayOffset({1.0f, -1.0f});
-
-	auto *glow = createEffectBox("Soft Underlay", {-637.0f, -340.0f}, "ぼかし\nSoftness");
-	glow->SetColor({0.1f, 0.1f, 0.3f, 1.0f});
-	glow->SetUnderlayColor({1.0f, 0.9f, 0.3f, 1.0f});
-	glow->SetUnderlayDilate(0.3f);
-	glow->SetUnderlaySoftness(0.5f);
-
-	auto *dilate = createEffectBox("Face Dilate", {-383.0f, -340.0f}, "太く +0.8\n");
-	dilate->SetFaceDilate(0.8f);
-	auto *thin = CreateTextBox(scene, canvas, "Face Dilate Thin", {-383.0f, -362.0f}, {245.0f, 50.0f}).text;
-	thin->SetText("細く -0.4");
-	thin->SetFontSize(40.0f);
-	thin->SetAlignment(TextAlignment::Center);
-	thin->SetFaceDilate(-0.4f);
-
-	// 右下: 英語の折り返し・ない文字と壊れた UTF-8・回転と拡大
-	auto englishBox = CreateTextBox(scene, canvas, "English Wrap", {-30.0f, -225.0f}, {420.0f, 90.0f});
-	englishBox.text->SetText(kPresets[1].text);
-	englishBox.text->SetFontSize(22.0f);
-
-	auto brokenBox = CreateTextBox(scene, canvas, "Missing", {-30.0f, -310.0f}, {420.0f, 50.0f});
-	brokenBox.text->SetText(kPresets[3].text);
-	brokenBox.text->SetFontSize(22.0f);
-	brokenBox.text->SetColor({1.0f, 0.6f, 0.6f, 1.0f});
-
-	auto rotatedBox = CreateTextBox(scene, canvas, "Rotated", {400.0f, -360.0f}, {220.0f, 40.0f});
-	rotatedBox.text->SetText("回転 20° × 1.5");
-	rotatedBox.text->SetFontSize(24.0f);
-	rotatedBox.text->SetAlignment(TextAlignment::Center);
-	for (auto *transform : {rotatedBox.text->GetTransform(), rotatedBox.frame->GetTransform()}) {
-		transform->SetLocalEulerAngles({0.0f, 0.0f, 20.0f * Mathf::Deg2Rad});
-		transform->SetLocalScale({1.5f, 1.5f, 1.0f});
+	// Mesh::CreateCube と同じく、外から見て時計回り
+	std::vector<uint32_t> indices;
+	for (int i = 0; i < stacks; i++) {
+		for (int j = 0; j < slices; j++) {
+			const auto a = static_cast<uint32_t>(i * (slices + 1) + j);
+			const auto b = a + static_cast<uint32_t>(slices + 1);
+			indices.insert(indices.end(), {a, a + 1, b + 1, a, b + 1, b});
+		}
 	}
+
+	auto mesh = std::make_shared<Mesh>();
+	mesh->SetName("Sphere");
+	mesh->SetVertices(std::move(vertices));
+	mesh->SetIndices(std::move(indices));
+	mesh->Upload();
+	return mesh;
+}
+
+Color LerpColor(const Color &a, const Color &b, float t) {
+	return {Mathf::Lerp(a.r, b.r, t), Mathf::Lerp(a.g, b.g, t), Mathf::Lerp(a.b, b.b, t), Mathf::Lerp(a.a, b.a, t)};
+}
+
+PhysicsEditor::BodySpec MakeFloor() {
+	PhysicsEditor::BodySpec spec;
+	spec.name = "Floor";
+	spec.bodyType = PhysicsEditor::BodyType::Static;
+	spec.position = {0.0f, -0.5f, 0.0f};
+	spec.scale = {40.0f, 1.0f, 40.0f};
+	spec.color = {0.45f, 0.47f, 0.5f, 1.0f};
+	return spec;
+}
+
+PhysicsEditor::BodySpec MakeBox(std::string name, const Vector3 &position, const Vector3 &scale, const Color &color) {
+	PhysicsEditor::BodySpec spec;
+	spec.name = std::move(name);
+	spec.position = position;
+	spec.scale = scale;
+	spec.color = color;
+	return spec;
+}
+
+PhysicsEditor::BodySpec MakeSphere(std::string name, const Vector3 &position, float diameter, const Color &color) {
+	auto spec = MakeBox(std::move(name), position, Vector3::One * diameter, color);
+	spec.shape = PhysicsEditor::ShapeType::Sphere;
+	return spec;
+}
+
+std::string FormatVector(const Vector3 &v) {
+	return std::format("({:.2f}, {:.2f}, {:.2f})", v.x, v.y, v.z);
 }
 
 } // namespace
 
 
 
-void ou::TextPlayground::Start() {
-	editingText_ = kPresets[0].text;
-	text_->SetText(editingText_);
-	ApplyTransform();
+void ou::BuildGameScene(Scene &scene) {
+	auto *light = scene.CreateGameObject("Directional Light");
+	light->AddComponent<DirectionalLight>();
+	light->GetTransform()->SetLocalEulerAngles(Vector3{50.0f, -30.0f, 0.0f} * Mathf::Deg2Rad);
+
+	scene.CreateGameObject("Physics Editor")->AddComponent<PhysicsEditor>();
 }
 
 
-void ou::TextPlayground::Update() {
-	if (isCounterRunning_) {
-		counter_->SetText(std::format("frame {}  time {:.2f}", Time::GetFrameCount(), Time::GetTime()));
-	}
+// ----- PhysicsEditor -----
 
-#ifdef USE_IMGUI
-	ShowTextWindow();
+void ou::PhysicsEditor::Start() {
+	auto *cameraObject = GetGameObject()->GetScene()->CreateGameObject("Main Camera");
+	camera_ = cameraObject->AddComponent<Camera>();
+
+	cubeMesh_ = Mesh::CreateCube();
+	sphereMesh_ = CreateSphereMesh(32, 16);
+
+	LoadPreset(0);
+	UpdateCamera();
+
+#ifndef USE_IMGUI
+	// Release は操作の画面がないので、すぐ動かす
+	Play();
 #endif
 }
 
 
-void ou::TextPlayground::SetTargets(Text *text, Image *frame, Text *counter) {
-	text_ = text;
-	frame_ = frame;
-	counter_ = counter;
+void ou::PhysicsEditor::Update() {
+	UpdateCamera();
+	HandleMouseAndKeys();
+
+#ifdef USE_IMGUI
+	ShowToolbar();
+	ShowHierarchy();
+	ShowInspector();
+	ShowSettings();
+	ShowEventLog();
+#endif
+
+	if (isDirty_ && !isPlaying_) {
+		isDirty_ = false;
+		Rebuild();
+	}
+
+	UpdateHighlight();
+	UpdateTimeScale();
 }
 
 
-void ou::TextPlayground::ApplyTransform() {
-	// 枠も同じ形にして、Text の範囲が見えるようにする
-	for (auto *transform : {text_->GetTransform(), frame_->GetTransform()}) {
-		transform->SetLocalEulerAngles({0.0f, 0.0f, rotation_ * Mathf::Deg2Rad});
-		transform->SetLocalScale({scale_, scale_, 1.0f});
+void ou::PhysicsEditor::LoadPreset(int index) {
+	presetIndex_ = index;
+	specs_.clear();
+	specs_.push_back(MakeFloor());
+
+	switch (index) {
+		case 0: {
+			// 斜面を転がる球・積んだ箱に落ちる重い箱・トリガー・往復する Kinematic
+			auto ramp = MakeBox("Ramp", {-7.0f, 2.0f, 0.0f}, {9.0f, 0.4f, 4.0f}, {0.55f, 0.5f, 0.45f, 1.0f});
+			ramp.bodyType = BodyType::Static;
+			ramp.rotation = {0.0f, 0.0f, -25.0f};
+			specs_.push_back(ramp);
+			for (int i = 0; i < 3; i++) {
+				specs_.push_back(MakeSphere(std::format("Ball {}", i), {-10.0f, 6.0f + static_cast<float>(i) * 1.5f, -1.0f + static_cast<float>(i)}, 0.8f,
+											{0.9f, 0.45f, 0.2f, 1.0f}));
+			}
+			for (int i = 0; i < 5; i++) {
+				specs_.push_back(MakeBox(std::format("Stack {}", i), {4.0f, 0.5f + static_cast<float>(i), 0.0f}, Vector3::One, {0.3f, 0.6f, 0.9f, 1.0f}));
+			}
+			auto heavy = MakeBox("Heavy", {4.2f, 12.0f, 0.0f}, {1.5f, 1.5f, 1.5f}, {0.8f, 0.2f, 0.25f, 1.0f});
+			heavy.mass = 20.0f;
+			specs_.push_back(heavy);
+
+			auto trigger = MakeBox("Trigger Zone", {0.0f, 1.0f, -6.0f}, {4.0f, 2.0f, 4.0f}, {0.3f, 0.85f, 0.4f, 1.0f});
+			trigger.bodyType = BodyType::Static;
+			trigger.isTrigger = true;
+			specs_.push_back(trigger);
+			auto visitor = MakeSphere("Visitor", {0.0f, 8.0f, -6.0f}, 1.0f, {0.95f, 0.85f, 0.3f, 1.0f});
+			specs_.push_back(visitor);
+
+			auto paddle = MakeBox("Paddle", {0.0f, 0.5f, 6.0f}, {1.0f, 1.0f, 3.0f}, {0.6f, 0.4f, 0.8f, 1.0f});
+			paddle.bodyType = BodyType::Kinematic;
+			paddle.isMoving = true;
+			specs_.push_back(paddle);
+			for (int i = 0; i < 4; i++) {
+				specs_.push_back(MakeBox(std::format("Pushed {}", i), {-3.0f + static_cast<float>(i) * 2.0f, 0.4f, 6.0f}, {0.8f, 0.8f, 0.8f},
+										 {0.85f, 0.85f, 0.85f, 1.0f}));
+			}
+			break;
+		}
+
+		case 1: {
+			// 箱のピラミッド
+			constexpr int kLayers = 7;
+			for (int layer = 0; layer < kLayers; layer++) {
+				for (int i = 0; i < kLayers - layer; i++) {
+					const auto x = (static_cast<float>(i) - static_cast<float>(kLayers - layer - 1) * 0.5f) * 1.02f;
+					const auto hue = static_cast<float>(layer) / static_cast<float>(kLayers);
+					specs_.push_back(MakeBox(std::format("Box {}-{}", layer, i), {x, 0.5f + static_cast<float>(layer), 0.0f}, Vector3::One,
+											 {0.3f + hue * 0.6f, 0.5f, 0.9f - hue * 0.6f, 1.0f}));
+				}
+			}
+			break;
+		}
+
+		case 2: {
+			// ドミノ: 最初の 1 枚を傾けておく
+			for (int i = 0; i < 16; i++) {
+				auto domino = MakeBox(std::format("Domino {}", i), {-12.0f + static_cast<float>(i) * 1.2f, 1.0f, 0.0f}, {0.25f, 2.0f, 1.2f},
+									  {0.95f, 0.95f - static_cast<float>(i) * 0.04f, 0.5f, 1.0f});
+				if (i == 0) {
+					domino.rotation = {0.0f, 0.0f, -20.0f};
+					domino.position.y = 1.05f;
+				}
+				specs_.push_back(domino);
+			}
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	selected_ = -1;
+	Rebuild();
+}
+
+
+void ou::PhysicsEditor::Rebuild() {
+	// GameObject はフレームの終わりに消える。編集中は物理が止まっているので、新しいものと重なっても困らない
+	for (auto *object : objects_) {
+		Object::Destroy(object);
+	}
+	objects_.clear();
+
+	for (const auto &spec : specs_) {
+		objects_.push_back(Spawn(spec));
+	}
+}
+
+
+GameObject *ou::PhysicsEditor::Spawn(const BodySpec &spec) {
+	auto *object = GetGameObject()->GetScene()->CreateGameObject(spec.name);
+	auto *transform = object->GetTransform();
+	transform->SetLocalPosition(spec.position);
+	transform->SetLocalEulerAngles(spec.rotation * Mathf::Deg2Rad);
+	// 球はコライダーが一番大きい軸を使うので、見た目もそろえる
+	transform->SetLocalScale(spec.shape == ShapeType::Sphere ? Vector3::One * spec.scale.x : spec.scale);
+
+	auto *renderer = object->AddComponent<MeshRenderer>();
+	renderer->SetMesh(spec.shape == ShapeType::Sphere ? sphereMesh_ : cubeMesh_);
+	auto material = Material::Create();
+	material->SetColor(spec.color);
+	renderer->SetSharedMaterial(material);
+
+	// Unity の Cube（大きさ 1）・Sphere（半径 0.5）と同じ大きさなので、Transform のスケールで大きさを決める
+	Collider *collider = nullptr;
+	if (spec.shape == ShapeType::Sphere) {
+		collider = object->AddComponent<SphereCollider>();
+	} else {
+		collider = object->AddComponent<BoxCollider>();
+	}
+	collider->SetIsTrigger(spec.isTrigger);
+
+	if (spec.bodyType != BodyType::Static) {
+		auto *rigidbody = object->AddComponent<Rigidbody>();
+		rigidbody->SetMass(spec.mass);
+		rigidbody->SetUseGravity(spec.useGravity);
+		rigidbody->SetLinearDamping(spec.linearDamping);
+		rigidbody->SetAngularDamping(spec.angularDamping);
+		rigidbody->SetIsKinematic(spec.bodyType == BodyType::Kinematic);
+
+		// RigidbodyConstraints は FreezePositionX が 1 << 1 から並ぶ
+		uint8_t constraints = 0;
+		for (int i = 0; i < 6; i++) {
+			if (spec.freeze[i]) { constraints |= static_cast<uint8_t>(1 << (i + 1)); }
+		}
+		rigidbody->SetConstraints(static_cast<RigidbodyConstraints>(constraints));
+
+		if (spec.bodyType == BodyType::Kinematic && spec.isMoving) {
+			object->AddComponent<KinematicMover>();
+		}
+	}
+
+	object->AddComponent<ContactReporter>();
+	return object;
+}
+
+
+void ou::PhysicsEditor::Play() {
+	if (isPlaying_) { return; }
+
+	// 置いたときの状態から始める
+	Rebuild();
+	isDirty_ = false;
+	isPlaying_ = true;
+	isPaused_ = false;
+
+	for (size_t i = 0; i < specs_.size(); i++) {
+		if (auto *rigidbody = objects_[i]->GetComponent<Rigidbody>()) {
+			rigidbody->SetLinearVelocity(specs_[i].initialVelocity);
+		}
+	}
+	AddEventLog("----- Play -----");
+}
+
+
+void ou::PhysicsEditor::Stop() {
+	if (!isPlaying_) { return; }
+
+	isPlaying_ = false;
+	isPaused_ = false;
+	for (auto *projectile : projectiles_) {
+		Object::Destroy(projectile);
+	}
+	projectiles_.clear();
+
+	// 動いた物体を捨てて、仕様から作り直す
+	Rebuild();
+	AddEventLog("----- Stop -----");
+}
+
+
+void ou::PhysicsEditor::UpdateTimeScale() {
+	// timeScale が 0 の間は FixedUpdate も物理の 1 歩も回らない
+	if (!isPlaying_ || (isPaused_ && !isStepRequested_)) {
+		Time::SetTimeScale(0.0f);
+		return;
+	}
+
+	if (isStepRequested_) {
+		// 次のフレームの経過時間がこのフレームと同じくらいなら、ちょうど 1 歩ぶん進む
+		isStepRequested_ = false;
+		Time::SetTimeScale(Time::GetFixedDeltaTime() / Mathf::Max(Time::GetUnscaledDeltaTime(), 0.001f));
+		return;
+	}
+
+	Time::SetTimeScale(playSpeed_);
+}
+
+
+void ou::PhysicsEditor::UpdateCamera() {
+	const auto rotation = Quaternion::Euler(Vector3{cameraPitch_, cameraYaw_, 0.0f} * Mathf::Deg2Rad);
+	auto *transform = camera_->GetTransform();
+	transform->SetLocalRotation(rotation);
+	transform->SetLocalPosition(cameraTarget_ - rotation * Vector3::Forward * cameraDistance_);
+}
+
+
+void ou::PhysicsEditor::HandleMouseAndKeys() {
+#ifdef USE_IMGUI
+	const auto &io = ImGui::GetIO();
+	const auto isMouseFree = !io.WantCaptureMouse;
+	const auto isKeyboardFree = !io.WantCaptureKeyboard;
+#else
+	const auto isMouseFree = true;
+	const auto isKeyboardFree = true;
+#endif
+
+	const auto delta = Input::GetMouseDelta();
+	if (isMouseFree) {
+		// 右ドラッグ: 回す
+		if (Input::GetMouseButton(1)) {
+			cameraYaw_ += delta.x * 0.3f;
+			cameraPitch_ = Mathf::Clamp(cameraPitch_ + delta.y * 0.3f, -89.0f, 89.0f);
+		}
+
+		// 中ドラッグ: 注視点を動かす
+		if (Input::GetMouseButton(2)) {
+			const auto rotation = camera_->GetTransform()->GetWorldRotation();
+			const auto speed = cameraDistance_ * 0.0015f;
+			cameraTarget_ += (rotation * Vector3::Left) * (delta.x * speed) + (rotation * Vector3::Up) * (delta.y * speed);
+		}
+
+		// ホイール: 近づく・離れる
+		const auto scroll = Input::GetMouseScrollDelta();
+		if (scroll.y != 0.0f) {
+			cameraDistance_ = Mathf::Clamp(cameraDistance_ * (1.0f - scroll.y * 0.1f), 2.0f, 200.0f);
+		}
+
+		// 左クリック: Raycast で選ぶ
+		if (Input::GetMouseButtonDown(0)) {
+			SelectByRaycast(Input::GetMousePosition());
+		}
+	}
+
+	if (!isKeyboardFree) { return; }
+
+	// Space（Play 中）: マウスの向きに球を撃つ
+	if (isPlaying_ && Input::GetKeyDown(KeyCode::Space)) {
+		Vector3 origin;
+		Vector3 direction;
+		if (ScreenPointToRay(Input::GetMousePosition(), &origin, &direction)) {
+			ShootBall(origin + direction, direction);
+		}
+	}
+
+	if (Input::GetKeyDown(KeyCode::Return)) {
+		isPlaying_ ? Stop() : Play();
+	}
+	if (Input::GetKeyDown(KeyCode::Delete) && !isPlaying_ && selected_ >= 0) {
+		specs_.erase(specs_.begin() + selected_);
+		selected_ = -1;
+		isDirty_ = true;
+	}
+}
+
+
+void ou::PhysicsEditor::ShootBall(const Vector3 &origin, const Vector3 &direction) {
+	auto spec = MakeSphere("Projectile", origin, 0.6f, {1.0f, 0.55f, 0.15f, 1.0f});
+	spec.mass = 2.0f;
+
+	auto *object = Spawn(spec);
+	object->GetComponent<Rigidbody>()->SetLinearVelocity(direction * shootSpeed_);
+	projectiles_.push_back(object);
+
+	if (projectiles_.size() > kMaxProjectiles) {
+		Object::Destroy(projectiles_.front());
+		projectiles_.erase(projectiles_.begin());
+	}
+}
+
+
+bool ou::PhysicsEditor::ScreenPointToRay(const Vector2 &screenPoint, Vector3 *origin, Vector3 *direction) const {
+	const auto width = static_cast<float>(Screen::GetWidth());
+	const auto height = static_cast<float>(Screen::GetHeight());
+	if (width <= 0.0f || height <= 0.0f) { return false; }
+
+	// 画面の点を、カメラの近い面（z = 0）と遠い面（z = 1）の点に戻す
+	const auto x = screenPoint.x / width * 2.0f - 1.0f;
+	const auto y = 1.0f - screenPoint.y / height * 2.0f;
+	const auto inverse = camera_->MakePerCamera().viewProjection.Inverse();
+	const auto nearPoint = inverse.MultiplyPoint({x, y, 0.0f});
+	const auto farPoint = inverse.MultiplyPoint({x, y, 1.0f});
+
+	*origin = nearPoint;
+	*direction = (farPoint - nearPoint).Normalize();
+	return true;
+}
+
+
+void ou::PhysicsEditor::SelectByRaycast(const Vector2 &screenPoint) {
+	Vector3 origin;
+	Vector3 direction;
+	if (!ScreenPointToRay(screenPoint, &origin, &direction)) { return; }
+
+	// 編集中は物理が止まっていて形がまだないことがあるので、先に Transform を渡す
+	Physics::SyncTransform();
+
+	RaycastHit hit;
+	selected_ = -1;
+	if (!Physics::Raycast(origin, direction, &hit, Mathf::Infinity, QueryTriggerInteracation::Collide)) { return; }
+
+	const auto *hitObject = hit.collider->GetGameObject();
+	for (size_t i = 0; i < objects_.size(); i++) {
+		if (objects_[i] == hitObject) {
+			selected_ = static_cast<int>(i);
+			return;
+		}
+	}
+}
+
+
+void ou::PhysicsEditor::UpdateHighlight() {
+	// 選んでいる物体は白に寄せて明るくする
+	for (size_t i = 0; i < objects_.size() && i < specs_.size(); i++) {
+		const auto &material = objects_[i]->GetComponent<MeshRenderer>()->GetSharedMaterial();
+		const auto isSelected = (static_cast<int>(i) == selected_);
+		material->SetColor(isSelected ? LerpColor(specs_[i].color, Color::White, 0.5f) : specs_[i].color);
 	}
 }
 
 
 #ifdef USE_IMGUI
-void ou::TextPlayground::ShowTextWindow() {
-	ImGui::SetNextWindowPos({1120.0f, 30.0f}, ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize({460.0f, 700.0f}, ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Text")) {
+
+void ou::PhysicsEditor::ShowToolbar() {
+	ImGui::SetNextWindowPos({10.0f, 10.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({640.0f, 110.0f}, ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Physics Editor")) {
 		ImGui::End();
 		return;
 	}
 
-	// 文字列
-	ImGui::SeparatorText("text");
-	for (const auto &preset : kPresets) {
-		if (ImGui::Button(preset.name)) {
-			editingText_ = preset.text;
-		}
-		ImGui::SameLine();
+	if (!isPlaying_) {
+		if (ImGui::Button("▶ Play")) { Play(); }
+	} else if (ImGui::Button("■ Stop")) {
+		Stop();
 	}
-	ImGui::NewLine();
-	ImGui::InputTextMultiline("##text", &editingText_, {-1.0f, 120.0f});
-	text_->SetText(editingText_);
+	ImGui::SameLine();
+	ImGui::BeginDisabled(!isPlaying_);
+	if (ImGui::Button(isPaused_ ? "再開" : "一時停止")) { isPaused_ = !isPaused_; }
+	ImGui::SameLine();
+	ImGui::BeginDisabled(!isPaused_);
+	if (ImGui::Button("1 歩")) { isStepRequested_ = true; }
+	ImGui::EndDisabled();
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(140.0f);
+	ImGui::SliderFloat("速さ", &playSpeed_, 0.05f, 2.0f, "%.2f 倍");
 
-	// フォント
-	ImGui::SeparatorText("font");
-	if (ImGui::Combo("weight", &fontIndex_, kFontWeights, static_cast<int>(std::size(kFontWeights)))) {
-		text_->SetFont(LoadFontWeight(fontIndex_));
+	ImGui::BeginDisabled(isPlaying_);
+	ImGui::SetNextItemWidth(160.0f);
+	if (ImGui::Combo("##preset", &presetIndex_, kPresetNames, static_cast<int>(std::size(kPresetNames)))) {
+		LoadPreset(presetIndex_);
 	}
-	if (const auto &font = text_->GetFont()) {
-		ImGui::Text("atlas pages: %u (%u x %u)", font->GetAtlasTextureCount(), font->GetAtlasSize(), font->GetAtlasSize());
+	ImGui::SameLine();
+	if (ImGui::Button("配置を読み直す")) { LoadPreset(presetIndex_); }
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::Text("%s  物体 %zu  弾 %zu  %.0f FPS", isPlaying_ ? (isPaused_ ? "一時停止中" : "再生中") : "編集中",
+				objects_.size(), projectiles_.size(), ImGui::GetIO().Framerate);
+
+	ImGui::TextDisabled("左クリック: 選ぶ  右ドラッグ: 回す  中ドラッグ: 動かす  ホイール: 近づく  Enter: Play / Stop  Space（Play 中）: 球を撃つ");
+	ImGui::End();
+}
+
+
+void ou::PhysicsEditor::ShowHierarchy() {
+	ImGui::SetNextWindowPos({10.0f, 130.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({260.0f, 420.0f}, ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Hierarchy")) {
+		ImGui::End();
+		return;
+	}
+
+	// 置くのは編集中だけ
+	ImGui::BeginDisabled(isPlaying_);
+	const auto spawnPosition = cameraTarget_ + Vector3{0.0f, 4.0f, 0.0f};
+	if (ImGui::Button("+ 箱")) {
+		specs_.push_back(MakeBox("Box", spawnPosition, Vector3::One, {0.3f, 0.6f, 0.9f, 1.0f}));
+		selected_ = static_cast<int>(specs_.size()) - 1;
+		isDirty_ = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("+ 球")) {
+		specs_.push_back(MakeSphere("Sphere", spawnPosition, 1.0f, {0.9f, 0.45f, 0.2f, 1.0f}));
+		selected_ = static_cast<int>(specs_.size()) - 1;
+		isDirty_ = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("+ 壁")) {
+		auto wall = MakeBox("Wall", cameraTarget_ + Vector3{0.0f, 1.0f, 0.0f}, {6.0f, 2.0f, 0.5f}, {0.5f, 0.5f, 0.55f, 1.0f});
+		wall.bodyType = BodyType::Static;
+		specs_.push_back(wall);
+		selected_ = static_cast<int>(specs_.size()) - 1;
+		isDirty_ = true;
+	}
+
+	const auto hasSelection = (selected_ >= 0 && selected_ < static_cast<int>(specs_.size()));
+	ImGui::BeginDisabled(!hasSelection);
+	if (ImGui::Button("複製") && hasSelection) {
+		auto copy = specs_[selected_];
+		copy.name += " (copy)";
+		copy.position += Vector3{1.0f, 1.0f, 0.0f};
+		specs_.push_back(copy);
+		selected_ = static_cast<int>(specs_.size()) - 1;
+		isDirty_ = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("削除") && hasSelection) {
+		specs_.erase(specs_.begin() + selected_);
+		selected_ = -1;
+		isDirty_ = true;
+	}
+	ImGui::EndDisabled();
+	ImGui::EndDisabled();
+
+	ImGui::Separator();
+	for (size_t i = 0; i < specs_.size(); i++) {
+		ImGui::PushID(static_cast<int>(i));
+		const auto &spec = specs_[i];
+		const auto label = std::format("{} [{}{}]", spec.name, spec.bodyType == BodyType::Static ? "S" : spec.bodyType == BodyType::Dynamic ? "D" : "K",
+									   spec.isTrigger ? " T" : "");
+		if (ImGui::Selectable(label.c_str(), selected_ == static_cast<int>(i))) {
+			selected_ = static_cast<int>(i);
+		}
+		ImGui::PopID();
+	}
+
+	ImGui::End();
+}
+
+
+void ou::PhysicsEditor::ShowInspector() {
+	ImGui::SetNextWindowPos({static_cast<float>(Screen::GetWidth()) - 380.0f, 10.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({370.0f, 620.0f}, ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Inspector")) {
+		ImGui::End();
+		return;
+	}
+
+	if (selected_ < 0 || selected_ >= static_cast<int>(specs_.size())) {
+		ImGui::TextDisabled("物体を選んでください（左クリックか Hierarchy）");
+		ImGui::End();
+		return;
+	}
+
+	if (isPlaying_) {
+		ShowLiveState(objects_[selected_]);
+	} else if (EditSpec(specs_[selected_])) {
+		isDirty_ = true;
+	}
+
+	ImGui::End();
+}
+
+
+bool ou::PhysicsEditor::EditSpec(BodySpec &spec) {
+	auto isChanged = false;
+
+	isChanged |= ImGui::InputText("名前", &spec.name);
+
+	auto shape = static_cast<int>(spec.shape);
+	if (ImGui::Combo("形", &shape, kShapeNames, static_cast<int>(std::size(kShapeNames)))) {
+		spec.shape = static_cast<ShapeType>(shape);
+		isChanged = true;
+	}
+	auto bodyType = static_cast<int>(spec.bodyType);
+	if (ImGui::Combo("種類", &bodyType, kBodyTypeNames, static_cast<int>(std::size(kBodyTypeNames)))) {
+		spec.bodyType = static_cast<BodyType>(bodyType);
+		isChanged = true;
+	}
+	isChanged |= ImGui::Checkbox("isTrigger", &spec.isTrigger);
+
+	ImGui::SeparatorText("Transform");
+	isChanged |= ImGui::DragFloat3("位置", &spec.position.x, 0.05f);
+	isChanged |= ImGui::DragFloat3("回転（度）", &spec.rotation.x, 0.5f);
+	if (spec.shape == ShapeType::Sphere) {
+		isChanged |= ImGui::DragFloat("直径", &spec.scale.x, 0.02f, 0.05f, 50.0f);
 	} else {
-		ImGui::Text("既定のフォント (Regular)");
+		isChanged |= ImGui::DragFloat3("大きさ", &spec.scale.x, 0.02f, 0.05f, 100.0f);
+	}
+	isChanged |= ImGui::ColorEdit3("色", &spec.color.r);
+
+	if (spec.bodyType != BodyType::Static) {
+		ImGui::SeparatorText("Rigidbody");
+		isChanged |= ImGui::DragFloat("mass", &spec.mass, 0.05f, 0.01f, 1000.0f);
+		isChanged |= ImGui::Checkbox("useGravity", &spec.useGravity);
+		isChanged |= ImGui::DragFloat("linearDamping", &spec.linearDamping, 0.01f, 0.0f, 50.0f);
+		isChanged |= ImGui::DragFloat("angularDamping", &spec.angularDamping, 0.01f, 0.0f, 50.0f);
+		isChanged |= ImGui::DragFloat3("初速", &spec.initialVelocity.x, 0.1f);
+
+		ImGui::Text("constraints");
+		for (int i = 0; i < 6; i++) {
+			if (i % 3 != 0) { ImGui::SameLine(); }
+			isChanged |= ImGui::Checkbox(kFreezeNames[i], &spec.freeze[i]);
+		}
+
+		if (spec.bodyType == BodyType::Kinematic) {
+			isChanged |= ImGui::Checkbox("左右に往復（MovePosition）", &spec.isMoving);
+		}
 	}
 
-	float fontSize = text_->GetFontSize();
-	if (ImGui::SliderFloat("fontSize", &fontSize, 4.0f, 240.0f)) {
-		text_->SetFontSize(fontSize);
+	return isChanged;
+}
+
+
+void ou::PhysicsEditor::ShowLiveState(GameObject *object) {
+	const auto &spec = specs_[selected_];
+	ImGui::Text("%s（再生中は見るだけ。Stop で元に戻る）", spec.name.c_str());
+
+	const auto *transform = object->GetTransform();
+	ImGui::Text("位置 %s", FormatVector(transform->GetWorldPosition()).c_str());
+	ImGui::Text("回転 %s 度", FormatVector(transform->GetWorldRotation().EulerAngles() * Mathf::Rad2Deg).c_str());
+
+	if (const auto *reporter = object->GetComponent<ContactReporter>()) {
+		ImGui::Text("触れている数 %d", reporter->GetTouchingCount());
 	}
 
-	// 並べ方
-	ImGui::SeparatorText("layout");
-	int alignment = static_cast<int>(text_->GetAlignment());
-	if (ImGui::Combo("alignment", &alignment, kAlignmentNames, static_cast<int>(std::size(kAlignmentNames)))) {
-		text_->SetAlignment(static_cast<TextAlignment>(alignment));
-	}
-	bool wordWrapping = text_->IsWordWrappingEnabled();
-	if (ImGui::Checkbox("wordWrapping", &wordWrapping)) {
-		text_->SetWordWrappingEnabled(wordWrapping);
-	}
-	float lineSpacing = text_->GetLineSpacing();
-	if (ImGui::SliderFloat("lineSpacing", &lineSpacing, -50.0f, 150.0f)) {
-		text_->SetLineSpacing(lineSpacing);
-	}
-	float characterSpacing = text_->GetCharacterSpacing();
-	if (ImGui::SliderFloat("characterSpacing", &characterSpacing, -30.0f, 100.0f)) {
-		text_->SetCharacterSpacing(characterSpacing);
+	auto *rigidbody = object->GetComponent<Rigidbody>();
+	if (!rigidbody) {
+		ImGui::TextDisabled("Rigidbody なし（Static）");
+		return;
 	}
 
-	Color color = text_->GetColor();
-	if (ImGui::ColorEdit4("color", &color.r)) {
-		text_->SetColor(color);
+	ImGui::SeparatorText("Rigidbody");
+	ImGui::Text("linearVelocity %s", FormatVector(rigidbody->GetLinearVelocity()).c_str());
+	ImGui::Text("angularVelocity %s", FormatVector(rigidbody->GetAngularVelocity()).c_str());
+	ImGui::Text("isKinematic %s  mass %.2f", rigidbody->IsKinematic() ? "true" : "false", rigidbody->GetMass());
+
+	ImGui::SeparatorText("力を加える（VelocityChange）");
+	if (ImGui::Button("上に跳ねる")) { rigidbody->AddForce({0.0f, 6.0f, 0.0f}, ForceMode::VelocityChange); }
+	ImGui::SameLine();
+	if (ImGui::Button("奥へ押す")) {
+		auto forward = camera_->GetTransform()->GetForward();
+		forward.y = 0.0f;
+		rigidbody->AddForce(forward.Normalize() * 6.0f, ForceMode::VelocityChange);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("回す")) { rigidbody->AddTorque({0.0f, 10.0f, 0.0f}, ForceMode::VelocityChange); }
+}
+
+
+void ou::PhysicsEditor::ShowSettings() {
+	ImGui::SetNextWindowPos({10.0f, 560.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({260.0f, 170.0f}, ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Physics Settings")) {
+		ImGui::End();
+		return;
 	}
 
-	// SDF の効果（値の範囲は TMP と同じ）
-	ImGui::SeparatorText("SDF");
-	float faceDilate = text_->GetFaceDilate();
-	if (ImGui::SliderFloat("faceDilate", &faceDilate, -1.0f, 1.0f)) {
-		text_->SetFaceDilate(faceDilate);
-	}
-	float outlineWidth = text_->GetOutlineWidth();
-	if (ImGui::SliderFloat("outlineWidth", &outlineWidth, 0.0f, 1.0f)) {
-		text_->SetOutlineWidth(outlineWidth);
-	}
-	Color outlineColor = text_->GetOutlineColor();
-	if (ImGui::ColorEdit4("outlineColor", &outlineColor.r)) {
-		text_->SetOutlineColor(outlineColor);
-	}
-	Color underlayColor = text_->GetUnderlayColor();
-	if (ImGui::ColorEdit4("underlayColor", &underlayColor.r)) {
-		text_->SetUnderlayColor(underlayColor);
-	}
-	if (ImGui::SliderFloat2("underlayOffset", &underlayOffset_.x, -1.0f, 1.0f)) {
-		text_->SetUnderlayOffset(underlayOffset_);
-	}
-	float underlayDilate = text_->GetUnderlayDilate();
-	if (ImGui::SliderFloat("underlayDilate", &underlayDilate, -1.0f, 1.0f)) {
-		text_->SetUnderlayDilate(underlayDilate);
-	}
-	float underlaySoftness = text_->GetUnderlaySoftness();
-	if (ImGui::SliderFloat("underlaySoftness", &underlaySoftness, 0.0f, 1.0f)) {
-		text_->SetUnderlaySoftness(underlaySoftness);
+	auto gravity = Physics::GetGravity();
+	if (ImGui::DragFloat3("gravity", &gravity.x, 0.05f)) { Physics::SetGravity(gravity); }
+	if (ImGui::Button("重力を戻す")) { Physics::SetGravity({0.0f, -9.81f, 0.0f}); }
+
+	auto fixedDeltaTime = Time::GetFixedDeltaTime();
+	if (ImGui::DragFloat("fixedDeltaTime", &fixedDeltaTime, 0.001f, 0.002f, 0.1f, "%.3f")) {
+		Time::SetFixedDeltaTime(fixedDeltaTime);
 	}
 
-	// RectTransform
-	ImGui::SeparatorText("RectTransform");
-	auto *textRect = dynamic_cast<RectTransform *>(text_->GetTransform());
-	auto *frameRect = dynamic_cast<RectTransform *>(frame_->GetTransform());
-	Vector2 position = textRect->GetAnchoredPosition();
-	if (ImGui::DragFloat2("anchoredPosition", &position.x)) {
-		textRect->SetAnchoredPosition(position);
-		frameRect->SetAnchoredPosition(position);
-	}
-	Vector2 size = textRect->GetSizeDelta();
-	if (ImGui::DragFloat2("sizeDelta", &size.x, 1.0f, 0.0f, 2000.0f)) {
-		textRect->SetSizeDelta(size);
-		frameRect->SetSizeDelta(size);
-	}
-	const bool isRotationChanged = ImGui::SliderFloat("rotation", &rotation_, -180.0f, 180.0f);
-	const bool isScaleChanged = ImGui::SliderFloat("scale", &scale_, 0.1f, 5.0f);
-	if (isRotationChanged || isScaleChanged) {
-		ApplyTransform();
-	}
-	bool isFrameVisible = frame_->IsEnabled();
-	if (ImGui::Checkbox("frame", &isFrameVisible)) {
-		frame_->SetEnabled(isFrameVisible);
+	auto queriesHitTriggers = Physics::GetQueriesHitTriggers();
+	if (ImGui::Checkbox("queriesHitTriggers", &queriesHitTriggers)) {
+		Physics::SetQueriesHitTriggers(queriesHitTriggers);
 	}
 
-	// 毎フレームの書き換え
-	ImGui::SeparatorText("counter");
-	ImGui::Checkbox("running", &isCounterRunning_);
+	ImGui::DragFloat("弾の速さ", &shootSpeed_, 0.5f, 1.0f, 100.0f);
+	ImGui::End();
+}
+
+
+void ou::PhysicsEditor::ShowEventLog() {
+	ImGui::SetNextWindowPos({static_cast<float>(Screen::GetWidth()) - 380.0f, 640.0f}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({370.0f, 240.0f}, ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Event Log")) {
+		ImGui::End();
+		return;
+	}
+
+	if (ImGui::Button("消す")) { sEventLog.clear(); }
+	ImGui::Separator();
+
+	ImGui::BeginChild("##log");
+	for (const auto &line : sEventLog) {
+		ImGui::TextUnformatted(line.c_str());
+	}
+	// 一番下を見ているときは、新しい行に付いていく
+	if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) { ImGui::SetScrollHereY(1.0f); }
+	ImGui::EndChild();
 
 	ImGui::End();
 }
+
+#else
+
+void ou::PhysicsEditor::ShowToolbar() {}
+void ou::PhysicsEditor::ShowHierarchy() {}
+void ou::PhysicsEditor::ShowInspector() {}
+void ou::PhysicsEditor::ShowLiveState(GameObject *) {}
+void ou::PhysicsEditor::ShowSettings() {}
+void ou::PhysicsEditor::ShowEventLog() {}
+bool ou::PhysicsEditor::EditSpec(BodySpec &) { return false; }
+
 #endif
 
 
-void ou::BuildGameScene(Scene &scene) {
-	auto *canvasObject = scene.CreateGameObject("Canvas");
-	canvasObject->AddComponent<Canvas>();
-	auto *canvas = canvasObject->GetTransform();
+// ----- ContactReporter -----
 
-	CreateSamples(scene, canvas);
+void ou::ContactReporter::OnCollisionEnter(const Collision &collision) {
+	touchingCount_++;
 
-	// ImGui で触る Text
-	auto playgroundBox = CreateTextBox(scene, canvas, "Playground", {130.0f, 60.0f}, {560.0f, 360.0f});
-	playgroundBox.text->SetFontSize(32.0f);
+	// 両方に届くので、片方だけが書く
+	const auto *other = collision.GetCollider()->GetGameObject();
+	if (GetGameObject()->GetInstanceId() > other->GetInstanceId()) { return; }
 
-	// 左上に固定したカウンター（アンカーの確認も兼ねる）
-	auto *counterObject = scene.CreateGameObject("Counter");
-	auto *counter = counterObject->AddComponent<Text>();
-	auto *counterRect = PlaceOnCanvas(counterObject, canvas, {16.0f, -8.0f}, {600.0f, 40.0f});
-	counterRect->SetAnchorMin({0.0f, 1.0f});
-	counterRect->SetAnchorMax({0.0f, 1.0f});
-	counterRect->SetPivot({0.0f, 1.0f});
-	counter->SetFontSize(24.0f);
-	counter->SetColor({1.0f, 0.9f, 0.3f, 1.0f});
-
-	auto *playground = scene.CreateGameObject("Text Playground")->AddComponent<TextPlayground>();
-	playground->SetTargets(playgroundBox.text, playgroundBox.frame, counter);
-
-	scene.CreateGameObject("Input Playground")->AddComponent<InputPlayground>();
-	scene.CreateGameObject("Query Probe")->AddComponent<QueryProbe>();
+	const auto &contact = collision.GetContactPoint(0);
+	AddEventLog(std::format("{:6.2f} OnCollisionEnter {} - {}  法線 {}", Time::GetTime(), GetGameObject()->GetName(), other->GetName(),
+							FormatVector(contact.normal)));
 }
 
 
-// ----- 入力の確認 -----
+void ou::ContactReporter::OnCollisionExit(const Collision &collision) {
+	touchingCount_--;
 
-namespace {
-
-struct KeyName {
-	KeyCode key;
-	const char *name;
-};
-
-constexpr KeyName kKeyNames[] = {
-	{KeyCode::Backspace, "Backspace"}, {KeyCode::Tab, "Tab"}, {KeyCode::Return, "Return"},
-	{KeyCode::Pause, "Pause"}, {KeyCode::CapsLock, "CapsLock"}, {KeyCode::Escape, "Escape"},
-	{KeyCode::Space, "Space"}, {KeyCode::PageUp, "PageUp"}, {KeyCode::PageDown, "PageDown"},
-	{KeyCode::End, "End"}, {KeyCode::Home, "Home"}, {KeyCode::LeftArrow, "LeftArrow"},
-	{KeyCode::UpArrow, "UpArrow"}, {KeyCode::RightArrow, "RightArrow"}, {KeyCode::DownArrow, "DownArrow"},
-	{KeyCode::Insert, "Insert"}, {KeyCode::Delete, "Delete"},
-	{KeyCode::LeftWindows, "LeftWindows"}, {KeyCode::RightWindows, "RightWindows"},
-	{KeyCode::KeypadMultiply, "KeypadMultiply"}, {KeyCode::KeypadPlus, "KeypadPlus"},
-	{KeyCode::KeypadMinus, "KeypadMinus"}, {KeyCode::KeypadPeriod, "KeypadPeriod"},
-	{KeyCode::KeypadDivide, "KeypadDivide"}, {KeyCode::Numlock, "Numlock"}, {KeyCode::ScrollLock, "ScrollLock"},
-	{KeyCode::LeftShift, "LeftShift"}, {KeyCode::RightShift, "RightShift"},
-	{KeyCode::LeftControl, "LeftControl"}, {KeyCode::RightControl, "RightControl"},
-	{KeyCode::LeftAlt, "LeftAlt"}, {KeyCode::RightAlt, "RightAlt"},
-};
-
-struct GamepadButtonName {
-	GamepadButton button;
-	const char *name;
-};
-
-constexpr GamepadButtonName kGamepadButtonNames[] = {
-	{GamepadButton::DpadUp, "DpadUp"}, {GamepadButton::DpadDown, "DpadDown"},
-	{GamepadButton::DpadLeft, "DpadLeft"}, {GamepadButton::DpadRight, "DpadRight"},
-	{GamepadButton::Start, "Start"}, {GamepadButton::Select, "Select"},
-	{GamepadButton::LeftStick, "LeftStick"}, {GamepadButton::RightStick, "RightStick"},
-	{GamepadButton::LeftShoulder, "LeftShoulder"}, {GamepadButton::RightShoulder, "RightShoulder"},
-	{GamepadButton::South, "South"}, {GamepadButton::East, "East"},
-	{GamepadButton::West, "West"}, {GamepadButton::North, "North"},
-};
-
-// KeyCode の名前（連番のものは計算し、表にないものは VK の番号）
-std::string FormatKey(uint8_t vk) {
-	if ('0' <= vk && vk <= '9') { return std::format("Alpha{}", static_cast<char>(vk)); }
-	if ('A' <= vk && vk <= 'Z') { return std::string(1, static_cast<char>(vk)); }
-	if (0x60 <= vk && vk <= 0x69) { return std::format("Keypad{}", vk - 0x60); }
-	if (0x70 <= vk && vk <= 0x7B) { return std::format("F{}", vk - 0x70 + 1); }
-	for (const auto &entry : kKeyNames) {
-		if (static_cast<uint8_t>(entry.key) == vk) { return entry.name; }
-	}
-	return std::format("VK 0x{:02X}", vk);
-}
-
-} // namespace
-
-
-void ou::InputPlayground::Update() {
-	const auto frame = Time::GetFrameCount();
-
-	// キー: Down / Up をログに出す
-	std::string held;
-	for (int i = 1; i < 255; ++i) {
-		const auto key = static_cast<KeyCode>(i);
-		const auto name = FormatKey(static_cast<uint8_t>(i));
-		if (Input::GetKeyDown(key)) {
-			Log::Info("TEST frame {} KeyDown {}", frame, name);
-			AddEvent(std::format("{} KeyDown {}", frame, name));
-		}
-		if (Input::GetKeyUp(key)) {
-			Log::Info("TEST frame {} KeyUp {}", frame, name);
-			AddEvent(std::format("{} KeyUp {}", frame, name));
-		}
-		if (Input::GetKey(key)) { held += name + " "; }
-	}
-
-	// マウスのボタン（範囲外の 5 と -1 は false のはず）
-	const auto position = Input::GetMousePosition();
-	for (int button = -1; button <= 5; ++button) {
-		if (Input::GetMouseButtonDown(button)) {
-			Log::Info("TEST frame {} MouseDown {} at ({}, {})", frame, button, position.x, position.y);
-			AddEvent(std::format("{} MouseDown {}", frame, button));
-		}
-		if (Input::GetMouseButtonUp(button)) {
-			Log::Info("TEST frame {} MouseUp {} at ({}, {})", frame, button, position.x, position.y);
-			AddEvent(std::format("{} MouseUp {}", frame, button));
-		}
-	}
-
-	// 移動量とホイール: 動いたフレームだけ出す
-	const auto delta = Input::GetMouseDelta();
-	const auto scroll = Input::GetMouseScrollDelta();
-	if (delta.x != 0.0f || delta.y != 0.0f) {
-		Log::Info("TEST frame {} MouseDelta ({}, {}) position ({}, {})", frame, delta.x, delta.y, position.x, position.y);
-	}
-	if (scroll.x != 0.0f || scroll.y != 0.0f) {
-		Log::Info("TEST frame {} Scroll ({}, {})", frame, scroll.x, scroll.y);
-	}
-	deltaTotal_ = {deltaTotal_.x + delta.x, deltaTotal_.y + delta.y};
-	scrollTotal_ = {scrollTotal_.x + scroll.x, scrollTotal_.y + scroll.y};
-
-	UpdateGamepads(frame);
-
-#ifdef USE_IMGUI
-	ImGui::SetNextWindowPos({920.0f, 20.0f}, ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize({340.0f, 420.0f}, ImGuiCond_FirstUseEver);
-	if (ImGui::Begin("Input")) {
-		ImGui::TextWrapped("Held: %s", held.c_str());
-		ImGui::Text("Mouse buttons: %d %d %d %d %d",
-			Input::GetMouseButton(0), Input::GetMouseButton(1), Input::GetMouseButton(2),
-			Input::GetMouseButton(3), Input::GetMouseButton(4));
-		ImGui::Text("Position: (%.0f, %.0f)", position.x, position.y);
-		ImGui::Text("Delta: (%.0f, %.0f)  total (%.0f, %.0f)", delta.x, delta.y, deltaTotal_.x, deltaTotal_.y);
-		ImGui::Text("Scroll total: (%.1f, %.1f)", scrollTotal_.x, scrollTotal_.y);
-		ImGui::Separator();
-		for (int player = 0; player < 4; ++player) {
-			if (!Input::IsGamepadConnected(player)) {
-				ImGui::Text("Pad %d: not connected", player);
-				continue;
-			}
-			std::string buttons;
-			for (const auto &entry : kGamepadButtonNames) {
-				if (Input::GetGamepadButton(entry.button, player)) { buttons += std::string(entry.name) + " "; }
-			}
-			const auto left = Input::GetGamepadLeftStick(player);
-			const auto right = Input::GetGamepadRightStick(player);
-			ImGui::Text("Pad %d: L (%.2f, %.2f)  R (%.2f, %.2f)", player, left.x, left.y, right.x, right.y);
-			ImGui::Text("  Trigger L %.2f  R %.2f", Input::GetGamepadLeftTrigger(player), Input::GetGamepadRightTrigger(player));
-			ImGui::TextWrapped("  Buttons: %s", buttons.c_str());
-		}
-		ImGui::SliderFloat("Pad 0 low motor", &lowMotor_, 0.0f, 1.0f);
-		ImGui::SliderFloat("Pad 0 high motor", &highMotor_, 0.0f, 1.0f);
-		ImGui::Separator();
-		for (auto it = events_.rbegin(); it != events_.rend(); ++it) {
-			ImGui::TextUnformatted(it->c_str());
-		}
-	}
-	ImGui::End();
-#endif
+	const auto *other = collision.GetCollider()->GetGameObject();
+	if (GetGameObject()->GetInstanceId() > other->GetInstanceId()) { return; }
+	AddEventLog(std::format("{:6.2f} OnCollisionExit  {} - {}", Time::GetTime(), GetGameObject()->GetName(), other->GetName()));
 }
 
 
-void ou::InputPlayground::UpdateGamepads(uint64_t frame) {
-	// 範囲外の player は、つながっていない・0 と同じに返る
-	if (!hasCheckedRange_) {
-		hasCheckedRange_ = true;
-		for (int player : {-1, 4, 100}) {
-			const auto stick = Input::GetGamepadLeftStick(player);
-			Log::Info("TEST player {} connected {} button {} down {} stick ({}, {}) trigger {}",
-				player, Input::IsGamepadConnected(player), Input::GetGamepadButton(GamepadButton::South, player),
-				Input::GetGamepadButtonDown(GamepadButton::South, player), stick.x, stick.y,
-				Input::GetGamepadRightTrigger(player));
-			Input::SetGamepadMotorSpeeds(1.0f, 1.0f, player); // 落ちないこと
-		}
-	}
+void ou::ContactReporter::OnTriggerEnter(Collider *other) {
+	touchingCount_++;
 
-	for (int player = 0; player < 4; ++player) {
-		const bool isConnected = Input::IsGamepadConnected(player);
-		if (isConnected != wasConnected_[player]) {
-			Log::Info("TEST frame {} Pad {} connected {}", frame, player, isConnected);
-			wasConnected_[player] = isConnected;
-		}
-
-		for (const auto &entry : kGamepadButtonNames) {
-			if (Input::GetGamepadButtonDown(entry.button, player)) {
-				Log::Info("TEST frame {} Pad {} ButtonDown {}", frame, player, entry.name);
-				AddEvent(std::format("{} Pad {} Down {}", frame, player, entry.name));
-			}
-			if (Input::GetGamepadButtonUp(entry.button, player)) {
-				Log::Info("TEST frame {} Pad {} ButtonUp {}", frame, player, entry.name);
-				AddEvent(std::format("{} Pad {} Up {}", frame, player, entry.name));
-			}
-		}
-	}
-
-	Input::SetGamepadMotorSpeeds(lowMotor_, highMotor_, 0);
+	if (GetGameObject()->GetInstanceId() > other->GetGameObject()->GetInstanceId()) { return; }
+	AddEventLog(std::format("{:6.2f} OnTriggerEnter   {} - {}", Time::GetTime(), GetGameObject()->GetName(), other->GetGameObject()->GetName()));
 }
 
 
-void ou::InputPlayground::AddEvent(std::string text) {
-	constexpr size_t kMaxEvents = 16;
-	events_.push_back(std::move(text));
-	if (events_.size() > kMaxEvents) { events_.erase(events_.begin()); }
+void ou::ContactReporter::OnTriggerExit(Collider *other) {
+	touchingCount_--;
+
+	if (GetGameObject()->GetInstanceId() > other->GetGameObject()->GetInstanceId()) { return; }
+	AddEventLog(std::format("{:6.2f} OnTriggerExit    {} - {}", Time::GetTime(), GetGameObject()->GetName(), other->GetGameObject()->GetName()));
 }
 
 
-// ----- FixedUpdate の確認 -----
-
-void ou::FixedUpdateProbe::Start() {
-	Log::Info("TEST frame {} Start", Time::GetFrameCount());
-	ChangePhase(0);
+int ou::ContactReporter::GetTouchingCount() const {
+	return touchingCount_;
 }
 
 
-void ou::FixedUpdateProbe::FixedUpdate() {
-	++fixedCount_;
-	++frameFixedCount_;
+// ----- KinematicMover -----
 
-	// 最初の数フレームだけ、順番と FixedUpdate の中の時間を出す
-	if (Time::GetFrameCount() <= 4) {
-		Log::Info("TEST frame {} FixedUpdate deltaTime {} time {:.4f} fixedTime {:.4f} inFixed {}",
-			Time::GetFrameCount(), Time::GetDeltaTime(), Time::GetTime(), Time::GetFixedTime(), Time::IsInFixedTimeStep());
-	}
+void ou::KinematicMover::Start() {
+	origin_ = GetTransform()->GetWorldPosition();
 }
 
 
-void ou::FixedUpdateProbe::Update() {
-	if (Time::GetFrameCount() <= 4) {
-		Log::Info("TEST frame {} Update deltaTime {} time {:.4f} inFixed {} fixedInFrame {}",
-			Time::GetFrameCount(), Time::GetDeltaTime(), Time::GetTime(), Time::IsInFixedTimeStep(), frameFixedCount_);
-	}
+void ou::KinematicMover::FixedUpdate() {
+	auto *rigidbody = GetGameObject()->GetComponent<Rigidbody>();
+	if (!rigidbody) { return; }
 
-	// 1 秒ごとに、その 1 秒の回数を出す
-	realTime_ += Time::GetUnscaledDeltaTime();
-	secondTimer_ += Time::GetUnscaledDeltaTime();
-	if (secondTimer_ >= 1.0f) {
-		Log::Info("TEST phase {} fixedDeltaTime {} timeScale {} -> FixedUpdate {} / {:.2f}s, max {} per frame",
-			phase_, Time::GetFixedDeltaTime(), Time::GetTimeScale(), fixedCount_, secondTimer_, maxFixedPerFrame_);
-		secondTimer_ = 0.0f;
-		fixedCount_ = 0;
-		maxFixedPerFrame_ = 0;
-	}
-
-	// 3 秒ごとに設定を変える
-	const int phase = static_cast<int>(realTime_ / 3.0f);
-	if (phase != phase_) { ChangePhase(phase); }
-}
-
-
-void ou::FixedUpdateProbe::LateUpdate() {
-	if (Time::GetFrameCount() <= 4) {
-		Log::Info("TEST frame {} LateUpdate", Time::GetFrameCount());
-	}
-	if (frameFixedCount_ > maxFixedPerFrame_) { maxFixedPerFrame_ = frameFixedCount_; }
-	frameFixedCount_ = 0;
-}
-
-
-void ou::FixedUpdateProbe::ChangePhase(int phase) {
-	phase_ = phase;
-	switch (phase) {
-		case 0: // 既定
-			Time::SetFixedDeltaTime(0.02f);
-			Time::SetTimeScale(1.0f);
-			break;
-		case 1: // 1 秒に 120 回
-			Time::SetFixedDeltaTime(1.0f / 120.0f);
-			break;
-		case 2: // timeScale 0.5 → 25 回
-			Time::SetFixedDeltaTime(0.02f);
-			Time::SetTimeScale(0.5f);
-			break;
-		case 3: // timeScale 0 → 0 回
-			Time::SetTimeScale(0.0f);
-			break;
-		case 4: // 0 を入れても下限で止まらない
-			Time::SetTimeScale(1.0f);
-			Time::SetFixedDeltaTime(0.0f);
-			break;
-		default: // 元に戻す
-			Time::SetFixedDeltaTime(0.02f);
-			Time::SetTimeScale(1.0f);
-			break;
-	}
-	Log::Info("TEST phase {} start: fixedDeltaTime {} timeScale {}", phase_, Time::GetFixedDeltaTime(), Time::GetTimeScale());
-}
-
-
-// ----- 調べものの確認 -----
-
-namespace {
-
-std::string FormatVector(const Vector3 &v) {
-	return std::format("({:.3f}, {:.3f}, {:.3f})", v.x, v.y, v.z);
-}
-
-} // namespace
-
-
-BoxCollider *ou::QueryProbe::CreateBox(const char *name, const Vector3 &position, const Vector3 &size, Transform *parent) {
-	auto *object = GetGameObject()->GetScene()->CreateGameObject(name);
-	object->GetTransform()->SetParent(parent);
-	object->GetTransform()->SetLocalPosition(position);
-	auto *box = object->AddComponent<BoxCollider>();
-	box->SetSize(size);
-	return box;
-}
-
-
-void ou::QueryProbe::Start() {
-	// x = 0 の柱: 上から Trigger（上の面 7.1）・BoxB（4.5）・BoxA（2.5）・Floor（0.5）
-	CreateBox("Floor", Vector3::Zero, {40.0f, 1.0f, 40.0f});
-	CreateBox("BoxA", {0.0f, 2.0f, 0.0f}, Vector3::One);
-	CreateBox("BoxB", {0.0f, 4.0f, 0.0f}, Vector3::One);
-	CreateBox("Trigger", {0.0f, 7.0f, 0.0f}, {2.0f, 0.2f, 2.0f})->SetIsTrigger(true);
-
-	// Rigidbody（重力なし）の子のコライダー: GetTransform は Parent を返す
-	auto *parent = GetGameObject()->GetScene()->CreateGameObject("Parent");
-	parent->GetTransform()->SetLocalPosition({5.0f, 3.0f, 0.0f});
-	parent->AddComponent<Rigidbody>()->SetUseGravity(false);
-	CreateBox("ChildBox", Vector3::Zero, Vector3::One, parent->GetTransform());
-
-	// 2 歩目に無効にする: 当たらなくなる
-	disabled_ = CreateBox("Disabled", {10.0f, 2.0f, 0.0f}, Vector3::One);
-}
-
-
-void ou::QueryProbe::FixedUpdate() {
-	step_++;
-
-	// 形は 1 歩目の SyncTransform で作られる
-	if (step_ == 2) { disabled_->SetEnabled(false); }
-	if (step_ != 3) { return; }
-
-	const Vector3 down = {0.0f, -1.0f, 0.0f};
-
-	// 1 本目の当たり
-	RaycastHit hit;
-	const auto isHit = Physics::Raycast({0.0f, 10.0f, 0.0f}, down * 5.0f, &hit); // 長さ 5 の向きでもよい
-	Log::Info("TEST Raycast down: hit {} collider {} point {} normal {} distance {:.3f}", isHit,
-		hit.collider ? hit.collider->GetGameObject()->GetName() : "none", FormatVector(hit.point), FormatVector(hit.normal), hit.distance);
-
-	// 近い順・トリガー・届く距離
-	LogRaycastAll("all UseGlobal", {0.0f, 10.0f, 0.0f}, down, Mathf::Infinity);
-	LogRaycastAll("all Ignore", {0.0f, 10.0f, 0.0f}, down, Mathf::Infinity, QueryTriggerInteracation::Ignore);
-	LogRaycastAll("all Collide", {0.0f, 10.0f, 0.0f}, down, Mathf::Infinity, QueryTriggerInteracation::Collide);
-	Physics::SetQueriesHitTriggers(false);
-	LogRaycastAll("all UseGlobal (queriesHitTriggers false)", {0.0f, 10.0f, 0.0f}, down, Mathf::Infinity);
-	Physics::SetQueriesHitTriggers(true);
-	LogRaycastAll("maxDistance 3 Ignore", {0.0f, 10.0f, 0.0f}, down, 3.0f, QueryTriggerInteracation::Ignore);
-	LogRaycastAll("maxDistance 6 Ignore", {0.0f, 10.0f, 0.0f}, down, 6.0f, QueryTriggerInteracation::Ignore);
-
-	// 始点が BoxB の中: BoxB には当たらず BoxA から
-	LogRaycastAll("inside BoxB", {0.0f, 4.0f, 0.0f}, down, Mathf::Infinity);
-
-	// 横から: BoxA の左の面（x = -0.5）、法線 (-1, 0, 0)、距離 4.5
-	LogRaycastAll("side", {-5.0f, 2.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, Mathf::Infinity);
-
-	// Rigidbody の子: transform は Parent
-	if (Physics::Raycast({5.0f, 10.0f, 0.0f}, down, &hit)) {
-		Log::Info("TEST Raycast child: collider {} rigidbody {} transform {}", hit.collider->GetGameObject()->GetName(),
-			hit.GetRigidbody() != nullptr, hit.GetTransform()->GetGameObject()->GetName());
-	}
-
-	// 無効にしたコライダー: Floor にだけ当たる
-	LogRaycastAll("disabled", {10.0f, 10.0f, 0.0f}, down, Mathf::Infinity);
-
-	// 重なり
-	LogColliders("OverlapSphere (0, 2, 0) r 0.6", Physics::OverlapSphere({0.0f, 2.0f, 0.0f}, 0.6f));
-	LogColliders("OverlapSphere (0, 3, 0) r 0.6", Physics::OverlapSphere({0.0f, 3.0f, 0.0f}, 0.6f));
-	LogColliders("OverlapSphere trigger Ignore", Physics::OverlapSphere({0.0f, 7.0f, 0.0f}, 0.5f, QueryTriggerInteracation::Ignore));
-	LogColliders("OverlapSphere trigger Collide", Physics::OverlapSphere({0.0f, 7.0f, 0.0f}, 0.5f, QueryTriggerInteracation::Collide));
-	LogColliders("OverlapBox long z", Physics::OverlapBox({1.2f, 2.0f, 0.0f}, {0.05f, 0.05f, 1.0f}));
-	LogColliders("OverlapBox long z rotated 90 around y", Physics::OverlapBox({1.2f, 2.0f, 0.0f}, {0.05f, 0.05f, 1.0f},
-		Quaternion::AngleAxis(Vector3::Up, 90.0f * Mathf::Deg2Rad)));
-}
-
-
-void ou::QueryProbe::LogRaycastAll(const char *label, const Vector3 &origin, const Vector3 &direction, float maxDistance,
-								   QueryTriggerInteracation queryTriggerInteraction) {
-	std::string text;
-	for (const auto &hit : Physics::RaycastAll(origin, direction, maxDistance, queryTriggerInteraction)) {
-		text += std::format(" [{} point {} normal {} distance {:.3f}]", hit.collider->GetGameObject()->GetName(),
-			FormatVector(hit.point), FormatVector(hit.normal), hit.distance);
-	}
-	Log::Info("TEST RaycastAll {}:{}", label, text.empty() ? " none" : text);
-}
-
-
-void ou::QueryProbe::LogColliders(const char *label, const std::vector<Collider *> &colliders) {
-	std::string text;
-	for (const auto *collider : colliders) {
-		text += " " + collider->GetGameObject()->GetName();
-	}
-	Log::Info("TEST {}:{}", label, text.empty() ? " none" : text);
+	time_ += Time::GetDeltaTime();
+	rigidbody->MovePosition(origin_ + Vector3{std::sin(time_) * 5.0f, 0.0f, 0.0f});
 }
