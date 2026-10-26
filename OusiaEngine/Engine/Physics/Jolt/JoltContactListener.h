@@ -27,6 +27,11 @@ public: // インナークラス
 	};
 
 
+public: // 静的メンバ関数
+
+	static PhysicsWorld::ShapeId FindShapeId(const JPH::Body &body, const JPH::SubShapeID &subShapeId);
+
+
 public: // メンバ関数
 
 	void OnContactAdded(const JPH::Body &body1, const JPH::Body &body2,

@@ -3,6 +3,7 @@
 #include "Math/Mathf.h"
 #include "Physics/Jolt/JoltContactListener.h"
 #include "Physics/Jolt/JoltLayers.h"
+#include "Physics/Jolt/JoltQueryFilters.h"
 
 #include <Windows.h>
 #include <algorithm>
@@ -11,7 +12,6 @@
 #include <cstdio>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 #include <Jolt/Core/Factory.h>
@@ -19,6 +19,10 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollideShape.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/EmptyShape.h>
 #include <Jolt/Physics/Collision/Shape/MutableCompoundShape.h>
@@ -51,6 +55,9 @@ constexpr float kMinShapeExtent = 0.001f;
 // 動かした Body の周りで起こす範囲の余白
 constexpr float kWakeMargin = 0.1f;
 
+// RayCast の距離上限
+constexpr float kMaxRaycastDistance = 100000.0f;
+
 // Shape 1 つぶん
 struct ShapeEntry {
 	JPH::RefConst<JPH::Shape> shape;
@@ -64,6 +71,7 @@ struct ShapeEntry {
 struct BodyEntry {
 	std::vector<PhysicsWorld::ShapeId> shapeIds;
 	float mass = 1.0f;
+	uint8_t allowedDofs = PhysicsWorld::DOF::All;
 };
 
 // Collision 1 つぶん
@@ -171,7 +179,8 @@ void UpdateMassProperties(PhysicsWorld::BodyId id) {
 	auto &body = lock.GetBody();
 	auto massProperties = body.GetShape()->GetMassProperties();
 	massProperties.ScaleToMass(it->second.mass);
-	body.GetMotionPropertiesUnchecked()->SetMassProperties(JPH::EAllowedDOFs::All, massProperties);
+	body.GetMotionPropertiesUnchecked()->SetMassProperties(
+		static_cast<JPH::EAllowedDOFs>(it->second.allowedDofs), massProperties);
 }
 
 void RebuildBodyShape(PhysicsWorld::BodyId id) {
@@ -284,6 +293,25 @@ void CollectContactEvents() {
 		if (AreBodiesAdded(key)) { PushExitEvent(state); }
 		return true;
 	});
+}
+
+std::vector<PhysicsWorld::ShapeId> CollectOverlaps(const JPH::Shape *shape, JPH::RMat44Arg transform, bool hitsSensors) {
+	JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+	sPhysicsSystem->GetNarrowPhaseQuery().CollideShape(
+		shape, JPH::Vec3::sOne(), transform, JPH::CollideShapeSettings(),
+		JPH::RVec3::sZero(), collector, {}, {}, JoltQueryFilters::SelectBodyFilter(hitsSensors));
+
+	std::vector<PhysicsWorld::ShapeId> shapeIds;
+	for (const auto &hit : collector.mHits) {
+		JPH::BodyLockRead lock(sPhysicsSystem->GetBodyLockInterface(), hit.mBodyID2);
+		if (!lock.Succeeded()) { continue; }
+
+		const auto shapeId = JoltContactListener::FindShapeId(lock.GetBody(), hit.mSubShapeID2);
+		if (shapeId != PhysicsWorld::kInvalidShapeId && std::ranges::find(shapeIds, shapeId) == shapeIds.end()) {
+			shapeIds.push_back(shapeId);
+		}
+	}
+	return shapeIds;
 }
 
 } // namespace
@@ -552,4 +580,146 @@ void ou::PhysicsWorld::SetIsSensor(BodyId id, bool isSensor) {
 
 std::vector<PhysicsWorld::ContactEvent> ou::PhysicsWorld::TakeContactEvents() {
 	return std::exchange(sContactEvents, {});
+}
+
+
+void ou::PhysicsWorld::SetAllowedDOFs(BodyId id, uint8_t dofs) {
+	const auto it = sBodies.find(id);
+	if (it == sBodies.end() || dofs == 0) { return; }
+
+	it->second.allowedDofs = dofs;
+	UpdateMassProperties(id);
+}
+
+
+void ou::PhysicsWorld::SetLinearDamping(BodyId id, float damping) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+
+	JPH::BodyLockWrite lock(sPhysicsSystem->GetBodyLockInterface(), JPH::BodyID(id));
+	if (!lock.Succeeded()) { return; }
+	lock.GetBody().GetMotionPropertiesUnchecked()->SetLinearDamping(Mathf::Max(damping, 0.0f));
+}
+
+
+void ou::PhysicsWorld::SetAngularDamping(BodyId id, float damping) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+
+	JPH::BodyLockWrite lock(sPhysicsSystem->GetBodyLockInterface(), JPH::BodyID(id));
+	if (!lock.Succeeded()) { return; }
+	lock.GetBody().GetMotionPropertiesUnchecked()->SetAngularDamping(Mathf::Max(damping, 0.0f));
+}
+
+
+void ou::PhysicsWorld::SetLinearVelocity(BodyId id, const Vector3 &velocity) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+	sPhysicsSystem->GetBodyInterface().SetLinearVelocity(JPH::BodyID(id), ToJolt(velocity));
+}
+
+
+Vector3 ou::PhysicsWorld::GetLinearVelocity(BodyId id) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return Vector3::Zero; }
+	return ToOu(sPhysicsSystem->GetBodyInterface().GetLinearVelocity(JPH::BodyID(id)));
+}
+
+
+void ou::PhysicsWorld::SetAngularVelocity(BodyId id, const Vector3 &velocity) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+	sPhysicsSystem->GetBodyInterface().SetAngularVelocity(JPH::BodyID(id), ToJolt(velocity));
+}
+
+
+Vector3 ou::PhysicsWorld::GetAngularVelocity(BodyId id) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return Vector3::Zero; }
+	return ToOu(sPhysicsSystem->GetBodyInterface().GetAngularVelocity(JPH::BodyID(id)));
+}
+
+
+void ou::PhysicsWorld::AddForce(BodyId id, const Vector3 &force) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+	sPhysicsSystem->GetBodyInterface().AddForce(JPH::BodyID(id), ToJolt(force));
+}
+
+
+void ou::PhysicsWorld::AddTorque(BodyId id, const Vector3 &torque) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+	sPhysicsSystem->GetBodyInterface().AddTorque(JPH::BodyID(id), ToJolt(torque));
+}
+
+
+void ou::PhysicsWorld::AddImpulse(BodyId id, const Vector3 &impulse) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+	sPhysicsSystem->GetBodyInterface().AddImpulse(JPH::BodyID(id), ToJolt(impulse));
+}
+
+
+void ou::PhysicsWorld::AddAngularImpulse(BodyId id, const Vector3 &impulse) {
+	if (!sPhysicsSystem || id == kInvalidBodyId) { return; }
+	sPhysicsSystem->GetBodyInterface().AddAngularImpulse(JPH::BodyID(id), ToJolt(impulse));
+}
+
+
+void ou::PhysicsWorld::MoveKinematic(BodyId id, const Vector3 &position, const Quaternion &rotation, float deltaTime) {
+	if (!sPhysicsSystem || id == kInvalidBodyId || deltaTime <= 0.0f) { return; }
+	sPhysicsSystem->GetBodyInterface().MoveKinematic(
+		JPH::BodyID(id), JPH::RVec3(ToJolt(position)), ToJolt(rotation), deltaTime);
+}
+
+
+void ou::PhysicsWorld::SetGravity(const Vector3 &gravity) {
+	if (!sPhysicsSystem) { return; }
+	sPhysicsSystem->SetGravity(ToJolt(gravity));
+}
+
+
+Vector3 ou::PhysicsWorld::GetGravity() {
+	if (!sPhysicsSystem) { return Vector3::Zero; }
+	return ToOu(sPhysicsSystem->GetGravity());
+}
+
+
+std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, bool hitsSensors) {
+	std::vector<RaycastHit> hits;
+	const auto length = direction.Length();
+	if (!sPhysicsSystem || length <= 0.0f || maxDistance <= 0.0f) { return hits; }
+
+	const auto distance = Mathf::Min(maxDistance, kMaxRaycastDistance);
+	const JPH::RRayCast ray(JPH::RVec3(ToJolt(origin)), ToJolt(direction / length * distance));
+
+	JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
+	sPhysicsSystem->GetNarrowPhaseQuery().CastRay(
+		ray, JPH::RayCastSettings(), collector, {}, {}, JoltQueryFilters::SelectBodyFilter(hitsSensors));
+	collector.Sort();
+
+	for (const auto &result : collector.mHits) {
+		if (result.mFraction <= 0.0f) { continue; }
+
+		JPH::BodyLockRead lock(sPhysicsSystem->GetBodyLockInterface(), result.mBodyID);
+		if (!lock.Succeeded()) { continue; }
+
+		const auto point = ray.GetPointOnRay(result.mFraction);
+		RaycastHit hit;
+		hit.shapeId = JoltContactListener::FindShapeId(lock.GetBody(), result.mSubShapeID2);
+		hit.point = ToOu(JPH::Vec3(point));
+		hit.normal = ToOu(lock.GetBody().GetWorldSpaceSurfaceNormal(result.mSubShapeID2, point));
+		hit.distance = result.mFraction * distance;
+		hits.push_back(hit);
+	}
+
+	return hits;
+}
+
+
+std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapSphere(const Vector3 &center, float radius, bool hitsSensors) {
+	if (!sPhysicsSystem) { return {}; }
+
+	const auto sphere = CreateJoltSphere(radius);
+	return CollectOverlaps(sphere, JPH::RMat44::sTranslation(JPH::RVec3(ToJolt(center))), hitsSensors);
+}
+
+
+std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, bool hitsSensors) {
+	if (!sPhysicsSystem) { return {}; }
+
+	const auto box = CreateJoltBox(halfExtents);
+	return CollectOverlaps(box, JPH::RMat44::sRotationTranslation(ToJolt(rotation), JPH::RVec3(ToJolt(center))), hitsSensors);
 }

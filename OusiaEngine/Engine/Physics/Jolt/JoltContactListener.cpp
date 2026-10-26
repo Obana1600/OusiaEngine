@@ -8,9 +8,7 @@
 using namespace ou;
 
 
-namespace {
-
-PhysicsWorld::ShapeId FindShapeId(const JPH::Body &body, const JPH::SubShapeID &subShapeId) {
+PhysicsWorld::ShapeId ou::JoltContactListener::FindShapeId(const JPH::Body &body, const JPH::SubShapeID &subShapeId) {
 	const auto *shape = body.GetShape();
 	if (shape->GetSubType() != JPH::EShapeSubType::MutableCompound) { return PhysicsWorld::kInvalidShapeId; }
 
@@ -18,9 +16,6 @@ PhysicsWorld::ShapeId FindShapeId(const JPH::Body &body, const JPH::SubShapeID &
 	JPH::SubShapeID remainder;
 	return compound->GetCompoundUserData(compound->GetSubShapeIndexFromID(subShapeId, remainder));
 }
-
-} // namespace
-
 
 
 void ou::JoltContactListener::OnContactAdded(const JPH::Body &body1, const JPH::Body &body2,

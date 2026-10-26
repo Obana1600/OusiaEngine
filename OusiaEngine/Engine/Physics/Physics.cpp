@@ -63,6 +63,56 @@ void ou::Physics::SyncTransform() {
 }
 
 
+void ou::Physics::SetGravity(const Vector3 &gravity) {
+	PhysicsWorld::SetGravity(gravity);
+}
+
+
+Vector3 ou::Physics::GetGravity() {
+	return PhysicsWorld::GetGravity();
+}
+
+
+void ou::Physics::SetQueriesHitTriggers(bool value) {
+	sQueryHitTriggers_ = value;
+}
+
+
+bool ou::Physics::GetQueriesHitTriggers() {
+	return sQueryHitTriggers_;
+}
+
+
+bool ou::Physics::Raycast(const Vector3 &origin, const Vector3 &direction, RaycastHit *hitInfo, float maxDistance, QueryTriggerInteracation queryTriggerInteraction) {
+	const auto hits = RaycastAll(origin, direction, maxDistance, queryTriggerInteraction);
+	if (hits.empty()) { return false; }
+
+	if (hitInfo) { *hitInfo = hits.front(); }
+	return true;
+}
+
+
+std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, QueryTriggerInteracation queryTriggerInteraction) {
+	std::vector<RaycastHit> hits;
+	for (const auto &result : PhysicsWorld::RaycastAll(origin, direction, maxDistance, HitsTriggers(queryTriggerInteraction))) {
+		if (auto *collider = FindCollider(result.shapeId)) {
+			hits.push_back({result.point, result.normal, result.distance, collider});
+		}
+	}
+	return hits;
+}
+
+
+std::vector<Collider *> ou::Physics::OverlapSphere(const Vector3 &center, float radius, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapSphere(center, radius, HitsTriggers(queryTriggerInteraction)));
+}
+
+
+std::vector<Collider *> ou::Physics::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapBox(center, halfExtents, orientation, HitsTriggers(queryTriggerInteraction)));
+}
+
+
 void ou::Physics::RegisterCollider(Collider *collider) {
 	sColliders_.push_back(collider);
 }
@@ -142,4 +192,33 @@ void ou::Physics::SendToReceivers(Collider *collider, const std::function<void(C
 			send(comp);
 		}
 	}
+}
+
+
+bool ou::Physics::HitsTriggers(QueryTriggerInteracation queryTriggerInteraction) {
+	switch (queryTriggerInteraction) {
+		case QueryTriggerInteracation::Ignore:
+			return false;
+		case QueryTriggerInteracation::Collide:
+			return true;
+		default:
+			return sQueryHitTriggers_;
+	}
+}
+
+
+Collider *ou::Physics::FindCollider(PhysicsWorld::ShapeId id) {
+	for (auto *collider : sColliders_) {
+		if (collider->shapeId_ == id) { return collider; }
+	}
+	return nullptr;
+}
+
+
+std::vector<Collider *> ou::Physics::FindColliders(const std::vector<PhysicsWorld::ShapeId> &ids) {
+	std::vector<Collider *> colliders;
+	for (const auto id : ids) {
+		if (auto *collider = FindCollider(id)) { colliders.push_back(collider); }
+	}
+	return colliders;
 }

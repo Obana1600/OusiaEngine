@@ -77,4 +77,53 @@ struct ContactEvent {
 
 std::vector<ContactEvent> TakeContactEvents();
 
+namespace DOF {
+constexpr uint8_t TranslationX = 1 << 0;
+constexpr uint8_t TranslationY = 1 << 1;
+constexpr uint8_t TranslationZ = 1 << 2;
+constexpr uint8_t RotationX = 1 << 3;
+constexpr uint8_t RotationY = 1 << 4;
+constexpr uint8_t RotationZ = 1 << 5;
+constexpr uint8_t All = 0b111111;
+} // namespace DOF
+
+void SetAllowedDOFs(BodyId id, uint8_t dofs);
+void SetLinearDamping(BodyId id, float damping);
+void SetAngularDamping(BodyId id, float damping);
+
+
+// ----- Force -----
+
+void SetLinearVelocity(BodyId id, const Vector3 &velocity);
+Vector3 GetLinearVelocity(BodyId id);
+void SetAngularVelocity(BodyId id, const Vector3 &velocity);
+Vector3 GetAngularVelocity(BodyId id);
+
+void AddForce(BodyId id, const Vector3 &force);
+void AddTorque(BodyId id, const Vector3 &torque);
+void AddImpulse(BodyId id, const Vector3 &impulse);
+void AddAngularImpulse(BodyId id, const Vector3 &impulse);
+
+void MoveKinematic(BodyId id, const Vector3 &position, const Quaternion &rotation, float deltaTime);
+
+
+// ----- World -----
+
+void SetGravity(const Vector3 &gravity);
+Vector3 GetGravity();
+
+
+// ----- RayCast -----
+
+struct RaycastHit {
+	ShapeId shapeId = kInvalidShapeId;
+	Vector3 point = Vector3::Zero;
+	Vector3 normal = Vector3::Zero;
+	float distance = 0.0f;
+};
+
+std::vector<RaycastHit> RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, bool hitsSensors);
+std::vector<ShapeId> OverlapSphere(const Vector3 &center, float radius, bool hitsSensors);
+std::vector<ShapeId> OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, bool hitsSensors);
+
 } // namespace ou::PhysicsWorld

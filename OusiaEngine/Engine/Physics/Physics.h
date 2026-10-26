@@ -1,5 +1,11 @@
 #pragma once
 
+#include "Math/Mathf.h"
+#include "Math/Quaternion.h"
+#include "Math/Vector3.h"
+#include "Physics/Jolt/PhysicsWorld.h"
+#include "Physics/RaycastHit.h"
+
 #include <functional>
 #include <vector>
 
@@ -11,6 +17,12 @@ class Component;
 class Collider;
 class Rigidbody;
 
+enum class QueryTriggerInteracation {
+	UseGlobal,
+	Ignore,
+	Collide,
+};
+
 class Physics final {
 	friend class Collider;
 	friend class Rigidbody;
@@ -21,11 +33,26 @@ public: // 静的メンバ関数
 
 	static void SyncTransform();
 
+	static void SetGravity(const Vector3 &gravity);
+	static Vector3 GetGravity();
+
+	static void SetQueriesHitTriggers(bool value);
+	static bool GetQueriesHitTriggers();
+
+	static bool Raycast(const Vector3 &origin, const Vector3 &direction, RaycastHit *hitInfo = nullptr,
+						float maxDistance = Mathf::Infinity, QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+	static std::vector<RaycastHit> RaycastAll(const Vector3 &origin, const Vector3 &direction,
+											  float maxDistance = Mathf::Infinity, QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+	static std::vector<Collider *> OverlapSphere(const Vector3 &center, float radius,
+												 QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+	static std::vector<Collider *> OverlapBox(const Vector3 &center, const Vector3 &halfExtents,
+											  const Quaternion &orientation = Quaternion::Identity, QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
 
 private: // 静的メンバ変数
 
 	static inline std::vector<Collider *> sColliders_;
 	static inline std::vector<Rigidbody *> sRigidbodies_;
+	static inline bool sQueryHitTriggers_ = true;
 
 
 private: // 静的メンバ関数
@@ -38,6 +65,10 @@ private: // 静的メンバ関数
 
 	static void DispatchContactEvents();
 	static void SendToReceivers(Collider *collider, const std::function<void(Component *)> &send);
+
+	static bool HitsTriggers(QueryTriggerInteracation queryTriggerInteraction);
+	static Collider *FindCollider(PhysicsWorld::ShapeId id);
+	static std::vector<Collider *> FindColliders(const std::vector<PhysicsWorld::ShapeId> &ids);
 };
 
 } // namespace ou

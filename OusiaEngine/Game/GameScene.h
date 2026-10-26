@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Math/Vector2.h"
+#include "Physics/BoxCollider.h"
+#include "Physics/Physics.h"
+#include "Physics/Rigidbody.h"
 #include "Scene/Behaviour.h"
 #include "Scene/Component.h"
 #include "Scene/Scene.h"
@@ -101,28 +104,8 @@ private: // メンバ関数
 	void ChangePhase(int phase);
 };
 
-// 物理のイベントを TEST のログに出す（Enter / Exit は毎回、Stay は回数だけ）
-class ContactLogger final: public Behaviour {
-public: // メンバ関数
-
-	void OnTriggerEnter(Collider *other) override;
-	void OnTriggerStay(Collider *other) override;
-	void OnTriggerExit(Collider *other) override;
-
-	void OnCollisionEnter(const Collision &collision) override;
-	void OnCollisionStay(const Collision &collision) override;
-	void OnCollisionExit(const Collision &collision) override;
-
-	void FlushStays();
-
-
-private: // メンバ変数
-
-	std::map<std::string, int> stayCounts_;
-};
-
-// OnTrigger* / OnCollision* の確認: GameObject で組み、決まった歩で無効にしたり消したりする
-class PhysicsEventProbe final: public Component {
+// 調べものの確認: Raycast / RaycastAll / OverlapSphere / OverlapBox の結果を TEST のログに出す
+class QueryProbe final: public Component {
 public: // メンバ関数
 
 	void Start() override;
@@ -131,14 +114,16 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	std::vector<ContactLogger *> loggers_;
-	GameObject *disabler_ = nullptr; // 触れている最中にコライダーを無効にする
-	GameObject *doomed_ = nullptr;   // 触れている最中に消す
+	int step_ = 0;
+	BoxCollider *disabled_ = nullptr; // 2 歩目に無効にする
 
 
 private: // メンバ関数
 
-	GameObject *CreateObject(const char *name, const Vector3 &position, Transform *parent = nullptr);
+	BoxCollider *CreateBox(const char *name, const Vector3 &position, const Vector3 &size, Transform *parent = nullptr);
+	void LogRaycastAll(const char *label, const Vector3 &origin, const Vector3 &direction, float maxDistance,
+					   QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+	void LogColliders(const char *label, const std::vector<Collider *> &colliders);
 };
 
 } // namespace ou

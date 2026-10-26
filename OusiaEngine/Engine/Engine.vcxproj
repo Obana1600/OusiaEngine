@@ -40,6 +40,7 @@
     <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\XAudio2\Audio.h" />
     <ClInclude Include="Asset\Importer\FontImporter.h" />
+    <ClInclude Include="Physics\Jolt\JoltQueryFilters.h" />
     <ClInclude Include="Physics\Collision.h" />
     <ClInclude Include="Input\GamepadButton.h" />
     <ClInclude Include="Input\Input.h" />
@@ -49,6 +50,7 @@
     <ClInclude Include="Physics\Jolt\JoltLayers.h" />
     <ClInclude Include="Physics\Jolt\PhysicsWorld.h" />
     <ClInclude Include="Physics\Rigidbody.h" />
+    <ClInclude Include="Physics\RaycastHit.h" />
     <ClInclude Include="UI\Text.h" />
     <ClInclude Include="UI\Asset\FontAsset.h" />
     <ClInclude Include="Math\Bounds.h" />
@@ -129,6 +131,7 @@
     <ClCompile Include="Asset\Format\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Importer\FontImporter.cpp" />
+    <ClCompile Include="Physics\Jolt\JoltQueryFilters.cpp" />
     <ClCompile Include="Physics\Collision.cpp" />
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Input\Windows\RawInput.cpp" />
@@ -136,6 +139,7 @@
     <ClCompile Include="Physics\Jolt\JoltLayers.cpp" />
     <ClCompile Include="Physics\Jolt\PhysicsWorld.cpp" />
     <ClCompile Include="Physics\Rigidbody.cpp" />
+    <ClCompile Include="Physics\RaycastHit.cpp" />
     <ClCompile Include="UI\Text.cpp" />
     <ClCompile Include="UI\Asset\FontAsset.cpp" />
     <ClCompile Include="Math\Bounds.cpp" />
