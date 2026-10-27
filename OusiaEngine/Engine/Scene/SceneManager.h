@@ -18,7 +18,7 @@ namespace ou {
 class GameObject;
 class Camera;
 class Renderer;
-class DirectionalLight;
+class Light;
 class Canvas;
 
 class SceneManager final {
@@ -60,8 +60,8 @@ public: // 静的メンバ関数
 	static void RegisterRenderer(Renderer *renderer);
 	static void UnregisterRenderer(Renderer *renderer);
 
-	static void RegisterLight(DirectionalLight *light);
-	static void UnregisterLight(DirectionalLight *light);
+	static void RegisterLight(Light *light);
+	static void UnregisterLight(Light *light);
 
 	static void RegisterCanvas(Canvas *canvas);
 	static void UnregisterCanvas(Canvas *canvas);
@@ -84,7 +84,7 @@ private: // 静的メンバ変数
 
 	static inline std::vector<Camera *> sCameras_;
 	static inline std::vector<Renderer *> sRenderers_;
-	static inline std::vector<DirectionalLight *> sLights_;
+	static inline std::vector<Light *> sLights_;
 	static inline std::vector<Canvas *> sCanvases_;
 
 

@@ -7,12 +7,11 @@
 namespace ou {
 
 // 前方宣言
-class FilledRing;
 class LineRenderer;
 
 void BuildGameScene(Scene &scene);
 
-// LineRenderer（壁で反射する予測線・予兆線）と FilledRing（範囲の予兆）を試す
+// LineRenderer（壁で反射する予測線・予兆線）を試す
 class LineRingTest final: public Component {
 public: // メンバ関数
 
@@ -24,8 +23,6 @@ private: // メンバ変数
 
 	LineRenderer *predictionLine_ = nullptr;
 	LineRenderer *warningLine_ = nullptr;
-	FilledRing *chargeRing_ = nullptr;
-	FilledRing *growingDisc_ = nullptr;
 	float logTimer_ = 0.0f;
 };
 

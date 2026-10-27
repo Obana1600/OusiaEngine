@@ -4,7 +4,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Physics/Physics.h"
 #include "Render/Camera.h"
-#include "Render/DirectionalLight.h"
+#include "Render/Light.h"
 #include "Render/Renderer.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
@@ -114,13 +114,20 @@ void ou::SceneManager::Render(Graphics::CommandList cmd) {
 	device->BindDynamicConstantBuffer(camera->MakePerCamera(), 2, cmd);
 
 	// ライトのセット
-	DirectionalLight::PerFrame perFrame{};
-	perFrame.direction = Vector3::Down;
+	Light::PerFrame perFrame{};
 	for (const auto *light : sLights_) {
-		if (light->IsActiveAndEnabled()) {
-			perFrame = light->MakePerFrame();
+		if (!light->IsActiveAndEnabled()) { continue; }
+
+		if (perFrame.lightCount >= Light::kMaxLights) {
+			static bool warned = false;
+			if (!warned) {
+				Log::Warning("有効なライトが {} を超えたため、超過分は適用されません", Light::kMaxLights);
+				warned = true;
+			}
 			break;
 		}
+
+		perFrame.lights[perFrame.lightCount++] = light->MakeShaderLight();
 	}
 	device->BindDynamicConstantBuffer(perFrame, 3, cmd);
 
@@ -175,12 +182,12 @@ void ou::SceneManager::UnregisterRenderer(Renderer *renderer) {
 }
 
 
-void ou::SceneManager::RegisterLight(DirectionalLight *light) {
+void ou::SceneManager::RegisterLight(Light *light) {
 	sLights_.push_back(light);
 }
 
 
-void ou::SceneManager::UnregisterLight(DirectionalLight *light) {
+void ou::SceneManager::UnregisterLight(Light *light) {
 	std::erase(sLights_, light);
 }
 

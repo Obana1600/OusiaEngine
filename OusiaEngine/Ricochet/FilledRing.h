@@ -13,7 +13,7 @@ namespace ou {
 class Material;
 class MeshRenderer;
 
-// ゲームだけで使う一時的なリング（エンジンの機能にするかは設計中）
+// Ricochet の範囲表示に使うリング
 // Unity の Image の Filled（Radial360）と同じ名前の設定で、xy 平面に扇形のリングを描く。
 // 設定が変わったフレームだけ、扇形のメッシュを作り直して同じ GameObject の MeshRenderer に渡す
 class FilledRing final: public Component {

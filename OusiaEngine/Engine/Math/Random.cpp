@@ -34,7 +34,7 @@ float ou::Random::Range(float min, float max) {
 
 int ou::Random::Range(int minInclusive, int maxExclusive) {
 	if (maxExclusive <= minInclusive) { return minInclusive; }
-	return std::uniform_int_distribution<int>(minInclusive, maxExclusive)(Engine());
+	return std::uniform_int_distribution<int>(minInclusive, maxExclusive - 1)(Engine());
 }
 
 

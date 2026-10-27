@@ -8,6 +8,7 @@ struct VSInput
 struct VSOutput
 {
     float4 position : SV_POSITION;
+    float3 worldPosition : POSITION0;
     float3 worldNormal : NORMAL0;
     float2 texcoord : TEXCOORD0;
 };
@@ -34,13 +35,30 @@ cbuffer PerCamera : register(b2)
     float3 gCameraPosition;
 }
 
-cbuffer PerFrame : register(b3)
-{
-    float4 gLightColor;
-    float3 gLightDirection;
-    float gLightIntensity;
-}
+static const uint kLightTypeSpot = 0;
+static const uint kLightTypeDirectional = 1;
+static const uint kLightTypePoint = 2;
+static const uint kMaxLights = 16;
 
 static const uint kLightingNone = 0;
 static const uint kLightingLambert = 1;
 static const uint kLightingHalfLambert = 2;
+
+struct ShaderLight
+{
+    float3 position;
+    uint type;
+    float3 direction;
+    float range;
+    float3 color;
+    float spotAngleScale;
+    float spotAngleOffset;
+    float3 padding;
+};
+
+cbuffer PerFrame : register(b3)
+{
+    uint gLightCount;
+    uint3 gPadding;
+    ShaderLight gLights[kMaxLights];
+}

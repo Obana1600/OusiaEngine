@@ -2,6 +2,30 @@
 
 SamplerState gLinearWrap : register(s0);
 
+float Diffuse(float3 normal, float3 toLight)
+{
+    const float nDotL = dot(normal, toLight);
+    if (gLightingMode == kLightingLambert)
+    {
+        return saturate(nDotL);
+    }
+    return pow(nDotL * 0.5f + 0.5f, 2.0f);
+}
+
+float DistanceAttenuation(float distanceSqr, float range)
+{
+    const float factor = distanceSqr / (range * range);
+    float smoothFactor = saturate(1.0f - factor * factor);
+    return smoothFactor * smoothFactor / distanceSqr;
+}
+
+float AngleAttenuation(ShaderLight light, float3 toLight)
+{
+    const float sDotL = dot(light.direction, -toLight);
+    const float attenuation = saturate(sDotL * light.spotAngleScale + light.spotAngleOffset);
+    return attenuation * attenuation;
+}
+
 float4 main(VSOutput input) : SV_TARGET
 {
     Texture2D<float4> texture = ResourceDescriptorHeap[gTextureIndex];
@@ -13,18 +37,31 @@ float4 main(VSOutput input) : SV_TARGET
     }
     
     const float3 normal = normalize(input.worldNormal);
-    const float nDotL = dot(normal, -gLightDirection);
     
-    float diffuse;
-    if (gLightingMode == kLightingLambert)
+    float3 lighting = 0.0f;
+    for (uint i = 0; i < gLightCount; i++)
     {
-        diffuse = saturate(nDotL);
-    }
-    else
-    {
-        diffuse = pow(nDotL * 0.5f + 0.5f, 2.0f);
+        const ShaderLight light = gLights[i];
+        
+        // 平行光源
+        if (light.type == kLightTypeDirectional)
+        {
+            lighting += light.color * Diffuse(normal, -light.direction);
+            continue;
+        }
+        
+        const float3 offset = light.position - input.worldPosition;
+        const float distanceSqr = max(dot(offset, offset), 0.0001f);
+        const float3 toLight = offset * rsqrt(distanceSqr);
+        
+        float attenuation = DistanceAttenuation(distanceSqr, light.range);
+        if (light.type == kLightTypeSpot)
+        {
+            attenuation *= AngleAttenuation(light, toLight);
+        }
+
+        lighting += light.color * Diffuse(normal, toLight) * attenuation;
     }
     
-    const float3 color = baseColor.rgb * gLightColor.rgb * gLightIntensity * diffuse;
-    return float4(color, baseColor.a);
+    return float4(baseColor.rgb * lighting, baseColor.a);
 }

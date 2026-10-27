@@ -6,6 +6,7 @@ VSOutput main(VSInput input)
     
     VSOutput output;
     output.position = mul(worldPosition, gViewProjection);
+    output.worldPosition = worldPosition.xyz;
     output.worldNormal = normalize(mul(input.normal, (float3x3) gWorldInverseTranspose));
     output.texcoord = mul(float4(input.texcoord, 0.0f, 1.0f), gUvTransform).xy;
 	return output;

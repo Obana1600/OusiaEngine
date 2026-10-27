@@ -1,7 +1,6 @@
 #include "GameScene.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
-#include "FilledRing.h"
 #include "Math/Mathf.h"
 #include "Math/Quaternion.h"
 #include "Render/Camera.h"
@@ -33,7 +32,7 @@ std::vector<Vector3> TraceReflection(Vector3 origin, Vector3 direction, float le
 		const auto ty = direction.y > 0.0f ? (kWallHalfHeight - origin.y) / direction.y
 					  : direction.y < 0.0f ? (-kWallHalfHeight - origin.y) / direction.y
 										   : Mathf::Infinity;
-		const auto t = std::min({tx, ty, length});
+		const auto t = Mathf::Min(tx, ty, length);
 
 		origin = origin + direction * t;
 		points.push_back(origin);
@@ -43,16 +42,6 @@ std::vector<Vector3> TraceReflection(Vector3 origin, Vector3 direction, float le
 		if (ty <= tx) { direction.y = -direction.y; }
 	}
 	return points;
-}
-
-FilledRing *CreateRing(Scene &scene, const char *name, const Vector3 &position, float inner, float outer, const Color &color) {
-	auto *object = scene.CreateGameObject(name);
-	object->GetTransform()->SetLocalPosition(position);
-	auto *ring = object->AddComponent<FilledRing>();
-	ring->SetInnerRadius(inner);
-	ring->SetOuterRadius(outer);
-	ring->SetColor(color);
-	return ring;
 }
 
 } // namespace
@@ -102,15 +91,6 @@ void ou::LineRingTest::Start() {
 	warningLine_->SetUseWorldSpace(false);
 	warningLine_->SetWidthMultiplier(0.6f);
 
-	// 範囲の予兆：下地のリングと、時計回りに満ちていくリング
-	CreateRing(scene, "Charge Ring Base", {4.0f, 1.5f, 0.0f}, 2.2f, 2.6f, {1.0f, 0.3f, 0.2f, 0.25f});
-	chargeRing_ = CreateRing(scene, "Charge Ring", {4.0f, 1.5f, 0.0f}, 2.2f, 2.6f, {1.0f, 0.3f, 0.2f, 0.9f});
-
-	// 円盤（innerRadius 0）。左から反時計回りに満ちる
-	growingDisc_ = CreateRing(scene, "Growing Disc", {-4.5f, 2.0f, 0.0f}, 0.0f, 1.8f, {1.0f, 0.85f, 0.2f, 0.6f});
-	growingDisc_->SetFillOrigin(FilledRing::Origin360::Left);
-	growingDisc_->SetFillClockwise(false);
-
 	Log::Info("TEST LineRingTest started");
 }
 
@@ -130,14 +110,9 @@ void ou::LineRingTest::Update() {
 	warningLine_->SetStartColor({1.0f, 0.2f, 0.2f, alpha});
 	warningLine_->SetEndColor({1.0f, 0.2f, 0.2f, 0.0f});
 
-	// 2 秒で満ちる
-	chargeRing_->SetFillAmount(std::fmod(time, 2.0f) / 2.0f);
-	growingDisc_->SetFillAmount(std::fmod(time, 3.0f) / 3.0f);
-
 	logTimer_ += Time::GetDeltaTime();
 	if (logTimer_ >= 1.0f) {
 		logTimer_ = 0.0f;
-		Log::Info("TEST prediction points={} fill={:.2f} disc={:.2f}",
-				  predictionLine_->GetPositionCount(), chargeRing_->GetFillAmount(), growingDisc_->GetFillAmount());
+		Log::Info("TEST prediction points={}", predictionLine_->GetPositionCount());
 	}
 }

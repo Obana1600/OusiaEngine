@@ -243,6 +243,11 @@ Color &ou::Color::operator/=(float c) {
 }
 
 
+ou::Color::operator Vector3() const {
+	return Vector3(r, g, b);
+}
+
+
 ou::Color::operator Vector4() const {
 	return Vector4(r, g, b, a);
 }

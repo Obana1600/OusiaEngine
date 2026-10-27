@@ -40,6 +40,7 @@
     <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\XAudio2\Audio.h" />
     <ClInclude Include="Asset\Importer\FontImporter.h" />
+    <ClInclude Include="Render\Light.h" />
     <ClInclude Include="Render\LineRenderer.h" />
     <ClInclude Include="Physics\Jolt\JoltQueryFilters.h" />
     <ClInclude Include="Physics\Collision.h" />
@@ -91,7 +92,6 @@
     <ClInclude Include="Math\Rect.h" />
     <ClInclude Include="UI\RectTransform.h" />
     <ClInclude Include="Render\Asset\Model.h" />
-    <ClInclude Include="Render\DirectionalLight.h" />
     <ClInclude Include="Render\Asset\Mesh.h" />
     <ClInclude Include="Render\Asset\Material.h" />
     <ClInclude Include="Render\MeshRenderer.h" />
@@ -132,6 +132,7 @@
     <ClCompile Include="Asset\Format\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Importer\FontImporter.cpp" />
+    <ClCompile Include="Render\Light.cpp" />
     <ClCompile Include="Render\LineRenderer.cpp" />
     <ClCompile Include="Physics\Jolt\JoltQueryFilters.cpp" />
     <ClCompile Include="Physics\Collision.cpp" />
@@ -183,7 +184,6 @@
     <ClCompile Include="Math\Rect.cpp" />
     <ClCompile Include="UI\RectTransform.cpp" />
     <ClCompile Include="Render\Asset\Model.cpp" />
-    <ClCompile Include="Render\DirectionalLight.cpp" />
     <ClCompile Include="Render\Asset\Mesh.cpp" />
     <ClCompile Include="Render\Asset\Material.cpp" />
     <ClCompile Include="Render\MeshRenderer.cpp" />

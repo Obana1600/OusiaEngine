@@ -19,15 +19,34 @@ public: // メンバ変数
 
 public: // 静的メンバ変数
 
+	// Color(1, 1, 1, 1)
 	static const Color White;
+
+	// Color(0, 0, 0, 1)
 	static const Color Black;
+
+	// Color(0, 0, 0, 0)
 	static const Color Clear;
+
+	// Color(1, 0, 0, 1)
 	static const Color Red;
+
+	// Color(0, 1, 0, 1)
 	static const Color Green;
+
+	// Color(0, 0, 1, 1)
 	static const Color Blue;
+
+	// Color(1, 0.92, 0.016, 1)
 	static const Color Yellow;
+
+	// Color(0, 1, 1, 1)
 	static const Color Cyan;
+
+	// Color(1, 0, 1, 1)
 	static const Color Magenta;
+
+	// Color(0.5, 0.5, 0, 1)
 	static const Color Gray;
 
 
@@ -83,6 +102,7 @@ public: // オペレータ
 	Color &operator*=(float c);
 	Color &operator/=(float c);
 
+	operator Vector3() const;
 	operator Vector4() const;
 };
 
