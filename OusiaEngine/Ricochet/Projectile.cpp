@@ -1,5 +1,6 @@
 #include "Projectile.h"
 #include "Core/Time.h"
+#include "GameAssets.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
 #include "Tuning.h"
@@ -43,6 +44,10 @@ void ou::Projectile::Update() {
 
 void ou::Projectile::OnDestroy() {
 	std::erase(sAll_, this);
+	if (hasLight_) {
+		hasLight_ = false;
+		sLitCount_--;
+	}
 }
 
 
@@ -62,6 +67,14 @@ void ou::Projectile::Setup(const Vector2 &position, const Vector2 &velocity, flo
 	damage_ = damage;
 	GetTransform()->SetLocalPosition({position_.x, position_.y, 0.0f});
 	GetTransform()->SetLocalScale(Vector3::One * (radius * 2.0f));
+}
+
+
+void ou::Projectile::AttachLight(const Color &color, float intensity, float range) {
+	if (hasLight_ || sLitCount_ >= Tuning::kMaxProjectileLights) { return; }
+	hasLight_ = true;
+	sLitCount_++;
+	CreatePointLight(*GetGameObject()->GetScene(), GetTransform(), color, intensity, range);
 }
 
 

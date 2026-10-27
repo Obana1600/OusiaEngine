@@ -1,36 +1,21 @@
 #pragma once
 
-#include "Graphics/GraphicsTypes.h"
 #include "Math/Color.h"
-#include "Math/Matrix4x4.h"
-#include "Math/Vector4.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Texture.h"
 #include "Scene/Behaviour.h"
 
-#include <cstdint>
 #include <memory>
 
 
 namespace ou {
 
 // 前方宣言
+class CanvasRenderer;
 class RectTransform;
+class VertexHelper;
 
 class Graphic: public Behaviour {
-public: // インナークラス
-
-	// 定数バッファ: b0
-	struct PerGraphic {
-		Matrix4x4 worldViewProj;
-		Matrix4x4 uvTransform;
-		Color color;
-		Vector4 positionRect;
-		Vector4 texcoordRect;
-		uint32_t textureIndex;
-	};
-
-
 public: // 静的メンバ関数
 
 	static void StaticInitialize();
@@ -42,15 +27,34 @@ public: // 静的メンバ関数
 public: // メンバ関数
 
 	void Awake() override;
+	void Update() override;
+	void OnEnable() override;
+	void OnDisable() override;
+	void OnDestroy() override;
+
+	virtual const std::shared_ptr<Material> &GetDefaultMaterial() const;
+	virtual const std::shared_ptr<Texture> &GetMainTexture() const;
 
 	void SetMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> &GetMaterial() const;
-	virtual const std::shared_ptr<Material> &GetDefaultMaterial() const;
 
 	void SetColor(const Color &color);
 	const Color &GetColor() const;
 
-	virtual void Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const = 0;
+	void SetRaycastTarget(bool raycastTarget);
+	bool GetRaycastTarget() const;
+
+	void CrossFadeColor(const Color &targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+
+	CanvasRenderer *GetCanvasRenderer() const;
+
+	void SetAllDirty();
+	void SetVerticesDirty();
+	void SetMaterialDirty();
+
+	void Rebuild();
+
+	void OnRectTransformDimensionsChange();
 
 
 protected: // 静的メンバ関数
@@ -62,7 +66,22 @@ protected: // メンバ関数
 
 	RectTransform *GetRectTransform() const;
 
-	void DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount, uint32_t instanceCount = 1) const;
+	virtual void UpdateGeometry();
+	virtual void UpdateMaterial();
+
+	virtual void OnPopulateMesh(VertexHelper &vh);
+
+
+private: // インナークラス
+
+	// TODO: Twenner を作る 
+	struct ColorTween {
+		Color startColor = Color::White;
+		Color targetColor = Color::White;
+		float duration = 0.0f;
+		float elapsed = 0.0f;
+		bool ignoreTimeScale = false;
+	};
 
 
 private: // メンバ変数
@@ -70,6 +89,14 @@ private: // メンバ変数
 	std::shared_ptr<Material> material_;
 	Color color_ = Color::White;
 	RectTransform *rectTransform_ = nullptr;
+	CanvasRenderer *canvasRenderer_ = nullptr;
+
+	bool raycastTarget_ = true;
+
+	bool isVerticesDirty_ = false;
+	bool isMaterialDirty_ = false;
+
+	ColorTween colorTween_{};
 
 
 private: // 静的メンバ変数

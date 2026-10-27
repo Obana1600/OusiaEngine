@@ -1,5 +1,7 @@
 #include "Player.h"
 #include "Core/Time.h"
+#include "GameColors.h"
+#include "ParticleEffects.h"
 #include "Math/Mathf.h"
 #include "PlayerVisual.h"
 #include "Scene/GameObject.h"
@@ -17,7 +19,6 @@ MotionParams ou::Player::MakeMotionParams() {
 	params.radius = Tuning::kPlayerRadius;
 	params.drag = Tuning::kPlayerDrag;
 	params.restitution = Tuning::kWallRestitution;
-	params.gravityBelowSpeed = Tuning::kDamageSpeed;
 	params.gravity = Tuning::kGravity;
 	return params;
 }
@@ -44,10 +45,16 @@ void ou::Player::Update() {
 		return;
 	}
 
-	// 再発射は速さが再発射閾値以下で、ストックが残っているときだけ
-	const auto canStart = !IsDead() && CanRelaunch(GetBand()) && stock_ > 0;
-	pull_.Update(Time::GetUnscaledDeltaTime(), canStart);
-	if (pull_.IsFired()) { Launch(); }
+	// 自動突進の間は引っ張れない
+	autoDash_.Update(*this, dt);
+	if (autoDash_.IsActive()) {
+		pull_.Cancel();
+	} else {
+		// 再発射は速さが再発射閾値以下で、ストックが残っているときだけ
+		const auto canStart = !IsDead() && CanRelaunch(GetBand()) && stock_ > 0;
+		pull_.Update(Time::GetUnscaledDeltaTime(), canStart);
+		if (pull_.IsFired()) { Launch(); }
+	}
 	TimeControl::SetSlowMotion(pull_.IsCharging());
 
 	// ストックは 1 つずつ自動回復する
@@ -59,8 +66,18 @@ void ou::Player::Update() {
 		}
 	}
 
-	const auto result = Motion2D::Step(motion_, MakeMotionParams(), dt);
-	if (result.bounceCount > 0 && visual_) { visual_->OnImpact(result.lastWallNormal, result.wallImpulse); }
+	auto params = MakeMotionParams();
+	if (!isGravityEnabled_) { params.gravity = 0.0f; }
+	const auto result = Motion2D::Step(motion_, params, dt);
+	if (result.bounceCount > 0) {
+		if (visual_) { visual_->OnImpact(result.lastWallNormal, result.wallImpulse); }
+		// 強く当たったときだけ、壁から火花を散らす
+		const auto impact = result.wallImpulse.Length();
+		if (impact >= Tuning::kDamageSpeed) {
+			const auto contact = motion_.position - result.lastWallNormal * Tuning::kPlayerRadius;
+			ParticleEffects::PlaySparks(contact, result.lastWallNormal, GameColors::ForBand(GetBand()), static_cast<int>(6.0f + impact * 0.3f));
+		}
+	}
 
 	invincibleTimer_ = std::max(invincibleTimer_ - dt, 0.0f);
 
@@ -87,26 +104,32 @@ Vector2 ou::Player::ComputeLaunchVelocity() const {
 
 
 bool ou::Player::TakeHit(float damage, const Vector2 &knockbackDirection) {
-	if (IsInvincible() || IsDead() || isFrozen_) { return false; }
+	// 中速以上と、自動突進の溜め中は無敵
+	if (IsInvincible() || IsDead() || isFrozen_ || IsInvincibleBySpeed(GetBand()) || autoDash_.IsWindingUp()) { return false; }
 
-	if (HasSuperArmor(GetBand())) {
-		// スーパーアーマー：ダメージ軽減＋吹っ飛び無効
-		hp_ -= damage * Tuning::kArmorDamageRatio;
-		invincibleTimer_ = Tuning::kArmorInvincibleTime;
-	} else {
-		// 吹っ飛び速度はダメージ閾値未満にクランプする（被弾中は低速帯）
-		hp_ -= damage;
-		const auto speed = std::min(Tuning::kKnockbackSpeed, Tuning::kDamageSpeed * 0.95f);
-		const auto direction = knockbackDirection.Normalize();
-		const auto velocityBefore = motion_.velocity;
-		motion_.velocity = direction * speed;
-		invincibleTimer_ = Tuning::kHitInvincibleTime;
-		if (visual_) { visual_->OnImpact(direction, motion_.velocity - velocityBefore); }
-	}
+	// 吹っ飛び速度はダメージ閾値未満にクランプする（被弾中は低速帯）
+	hp_ = std::max(hp_ - damage, 0.0f);
+	const auto speed = std::min(Tuning::kKnockbackSpeed, Tuning::kDamageSpeed * 0.95f);
+	const auto direction = knockbackDirection.Normalize();
+	const auto velocityBefore = motion_.velocity;
+	motion_.velocity = direction * speed;
+	invincibleTimer_ = Tuning::kHitInvincibleTime;
+	if (visual_) { visual_->OnImpact(direction, motion_.velocity - velocityBefore); }
 
-	hp_ = std::max(hp_, 0.0f);
 	if (visual_) { visual_->OnHit(); }
+	ParticleEffects::PlayExplosion(motion_.position, GameColors::kPlayerHit, 0.3f);
 	return true;
+}
+
+
+void ou::Player::RequestAutoDash() {
+	if (IsDead() || isFrozen_) { return; }
+	autoDash_.Request();
+}
+
+
+void ou::Player::OnBossHit() {
+	autoDash_.OnBossHit(*this);
 }
 
 
@@ -125,12 +148,17 @@ void ou::Player::Bounce(const Vector2 &normal, float restitution) {
 void ou::Player::Freeze() {
 	isFrozen_ = true;
 	pull_.Cancel();
+	autoDash_.Cancel(*this);
 	TimeControl::SetSlowMotion(false);
 }
 
 
 void ou::Player::Launch() {
 	motion_.velocity = ComputeLaunchVelocity();
+	// 発射した反対側へ、溜めた分だけ火花を噴く
+	const auto ratio = pull_.GetChargeRatio();
+	ParticleEffects::PlayHit(motion_.position, -motion_.velocity.Normalize(), GameColors::ForBand(GetBand()), 0.2f + 0.6f * ratio);
+	ParticleEffects::PlayRing(motion_.position, GameColors::ForBand(GetBand()), 1.0f + 1.5f * ratio);
 	stock_--;
 	stockTimer_ = 0.0f;
 }

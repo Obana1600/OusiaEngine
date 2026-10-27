@@ -11,13 +11,19 @@
 
 namespace {
 
+// プロジェクトのフォルダパス
+std::filesystem::path &ProjectDirectory() {
+	static std::filesystem::path directory;
+	return directory;
+}
+
 // エディタ版はソースフォルダの中を直接、それ以外は exe の隣を見る
-std::optional<std::filesystem::path> FindFolder(const wchar_t *editorRelative, const wchar_t *shippingRelative) {
+std::optional<std::filesystem::path> FindFolder(const std::filesystem::path &editorFolder, const wchar_t *shippingRelative) {
 #ifdef WITH_EDITOR
 	(void)shippingRelative;
-	auto candidate = std::filesystem::path(ou::Utf8ToWide(SOURCE_DIR)) / editorRelative;
+	auto candidate = editorFolder;
 #else
-	(void)editorRelative;
+	(void)editorFolder;
 	auto candidate = ou::ExecutableDirectory() / shippingRelative;
 #endif
 
@@ -51,13 +57,18 @@ std::filesystem::path ou::ExecutableDirectory() {
 }
 
 
+void ou::SetProjectDirectory(const std::filesystem::path &directory) {
+	ProjectDirectory() = directory;
+}
+
+
 std::optional<std::filesystem::path> ou::FindAssetsFolder() {
-	return FindFolder(L"Game/Assets", L"Assets");
+	return FindFolder(ProjectDirectory() / L"Assets", L"Assets");
 }
 
 
 std::optional<std::filesystem::path> ou::FindEngineAssetsFolder() {
-	return FindFolder(L"Engine/EngineAssets", L"EngineAssets");
+	return FindFolder(std::filesystem::path(Utf8ToWide(SOURCE_DIR)) / L"Engine/EngineAssets", L"EngineAssets");
 }
 
 

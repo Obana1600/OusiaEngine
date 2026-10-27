@@ -198,6 +198,16 @@ std::string ou::Matrix4x4::ToString() const {
 }
 
 
+std::string ou::Matrix4x4::ToString(std::string_view format) const {
+	const auto fmt = std::format(
+		"({{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}})\n({{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}})\n({{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}})\n({{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}})", format);
+	return std::vformat(fmt, std::make_format_args(m11, m12, m13, m14,
+												   m21, m22, m23, m24,
+												   m31, m32, m33, m34,
+												   m41, m42, m43, m44));
+}
+
+
 Matrix4x4 ou::Matrix4x4::Translate(const Vector3 &v) {
 	return {
 		1.0f, 0.0f, 0.0f, 0.0f,

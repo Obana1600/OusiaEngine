@@ -5,6 +5,7 @@
 #include "Math/Quaternion.h"
 
 #include <string>
+#include <string_view>
 
 
 namespace ou {
@@ -29,8 +30,10 @@ public:
 
 public:
 
+	// 単位行列
 	static const Matrix4x4 Identity;
 
+	// ゼロ行列
 	static const Matrix4x4 Zero;
 
 
@@ -74,6 +77,7 @@ public: // TODO: API を増やす / コメント書く
 	bool IsIdentity() const;
 
 	std::string ToString() const;
+	std::string ToString(std::string_view format) const;
 
 
 public: // TODO: API を増やす / コメント書く

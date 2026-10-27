@@ -3,16 +3,17 @@
 #include "Scene/Component.h"
 #include "Scene/Scene.h"
 
+#include <vector>
+
 
 namespace ou {
 
-// 前方宣言
-class LineRenderer;
+class Graphic;
 
 void BuildGameScene(Scene &scene);
 
-// LineRenderer（壁で反射する予測線・予兆線）を試す
-class LineRingTest final: public Component {
+// 単位 4: EventSystem と Button を試す
+class UiInputTest final: public Component {
 public: // メンバ関数
 
 	void Start() override;
@@ -21,9 +22,14 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	LineRenderer *predictionLine_ = nullptr;
-	LineRenderer *warningLine_ = nullptr;
-	float logTimer_ = 0.0f;
+	struct Watched {
+		Graphic *graphic = nullptr;
+		const void *vertices = nullptr;
+	};
+
+	std::vector<Watched> watched_;
+	GameObject *lastSelected_ = nullptr;
+	int frame_ = 0;
 };
 
 } // namespace ou

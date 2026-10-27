@@ -21,6 +21,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Arena.h" />
+    <ClInclude Include="AutoDash.h" />
+    <ClInclude Include="BossParticles.h" />
+    <ClInclude Include="GameColors.h" />
+    <ClInclude Include="ParticleEffects.h" />
+    <ClInclude Include="ParticleEmitter.h" />
+    <ClInclude Include="PlayerParticles.h" />
     <ClInclude Include="Boss.h" />
     <ClInclude Include="BossAction.h" />
     <ClInclude Include="BossAreaAttackAction.h" />
@@ -47,14 +53,24 @@
     <ClInclude Include="RicochetScene.h" />
     <ClInclude Include="SmallBullet.h" />
     <ClInclude Include="SpeedBand.h" />
+    <ClInclude Include="StageParticles.h" />
     <ClInclude Include="TimeControl.h" />
     <ClInclude Include="TrajectoryPreview.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="WarningLine.h" />
     <ClInclude Include="FilledRing.h" />
+    <ClInclude Include="MenuUi.h" />
+    <ClInclude Include="ResultMenu.h" />
+    <ClInclude Include="TitleMenu.h" />
+    <ClInclude Include="TitleScene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Arena.cpp" />
+    <ClCompile Include="AutoDash.cpp" />
+    <ClCompile Include="BossParticles.cpp" />
+    <ClCompile Include="ParticleEffects.cpp" />
+    <ClCompile Include="ParticleEmitter.cpp" />
+    <ClCompile Include="PlayerParticles.cpp" />
     <ClCompile Include="Boss.cpp" />
     <ClCompile Include="BossAction.cpp" />
     <ClCompile Include="BossAreaAttackAction.cpp" />
@@ -80,11 +96,16 @@
     <ClCompile Include="PullInput.cpp" />
     <ClCompile Include="RicochetScene.cpp" />
     <ClCompile Include="SmallBullet.cpp" />
+    <ClCompile Include="StageParticles.cpp" />
     <ClCompile Include="TimeControl.cpp" />
     <ClCompile Include="TrajectoryPreview.cpp" />
     <ClCompile Include="WarningLine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="FilledRing.cpp" />
+    <ClCompile Include="MenuUi.cpp" />
+    <ClCompile Include="ResultMenu.cpp" />
+    <ClCompile Include="TitleMenu.cpp" />
+    <ClCompile Include="TitleScene.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
@@ -178,7 +199,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
 xcopy /E /I /Y /Q "$(SourceRoot)Engine\EngineAssets" "$(TargetDir)EngineAssets"
-xcopy /E /I /Y /Q "$(SourceRoot)Game\Assets" "$(TargetDir)Assets"</Command>
+xcopy /E /I /Y /Q "$(ProjectDir)Assets" "$(TargetDir)Assets"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>

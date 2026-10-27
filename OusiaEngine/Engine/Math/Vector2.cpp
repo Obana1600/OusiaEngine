@@ -56,6 +56,12 @@ std::string ou::Vector2::ToString() const {
 }
 
 
+std::string ou::Vector2::ToString(std::string_view format) const {
+	const auto fmt = std::format("({{:{0}}}, {{:{0}}})", format);
+	return std::vformat(fmt, std::make_format_args(x, y));
+}
+
+
 Vector2 ou::Vector2::Normalize(Vector2 &v) {
 	return v = v.Normalize();
 }

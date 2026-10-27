@@ -5,6 +5,7 @@
 #include "Math/Random.h"
 #include "Player.h"
 #include "Render/Asset/Material.h"
+#include "Render/Light.h"
 #include "Render/MeshRenderer.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -56,6 +57,8 @@ void ou::PlayerVisual::Start() {
 	aura_ = auraObject->GetTransform();
 	aura_->SetParent(GetTransform());
 	aura_->SetLocalScale(Vector3::One * (Tuning::kPlayerRadius * 2.6f));
+
+	light_ = CreatePointLight(scene, GetTransform(), kLowColor, 2.0f, 5.0f);
 }
 
 
@@ -68,11 +71,13 @@ void ou::PlayerVisual::LateUpdate() {
 	const auto position = player_->GetPosition();
 	transform->SetLocalPosition({position.x, position.y, 0.0f});
 
-	// 溜め中は引っ張る向きに伸びる
+	// 溜め中（自動突進の溜めも）は引っ張る向きに伸びる
 	const auto &pull = player_->GetPull();
-	if (pull.IsCharging()) {
-		const auto direction = pull.GetPullDirection();
-		const auto stretch = pull.GetChargeRatio() * Tuning::kMaxStretch;
+	const auto &autoDash = player_->GetAutoDash();
+	if (pull.IsCharging() || autoDash.IsWindingUp()) {
+		const auto direction = autoDash.IsWindingUp() ? autoDash.GetPullDirection() : pull.GetPullDirection();
+		const auto ratio = autoDash.IsWindingUp() ? autoDash.GetWindUpRatio() : pull.GetChargeRatio();
+		const auto stretch = ratio * Tuning::kMaxStretch;
 		transform->SetLocalRotation(Quaternion::Euler(0.0f, 0.0f, Mathf::Atan2(direction.y, direction.x)));
 		transform->SetLocalScale({1.0f + stretch, 1.0f - stretch * 0.4f, 1.0f - stretch * 0.4f});
 	} else {
@@ -99,12 +104,19 @@ void ou::PlayerVisual::LateUpdate() {
 	if (hitFlashTimer_ > 0.0f) { color = kHitColor; }
 	bodyMaterial_->SetColor(color);
 
-	// オーラ：攻撃判定とアーマーがある間（中速以上）だけ見える。中速帯に入った瞬間に強く光る
+	// オーラ：攻撃判定と無敵がある間（中速以上）だけ見える。中速帯に入った瞬間に強く光る
 	auto auraColor = band == SpeedBand::High ? kHighColor : kMidColor;
 	auraColor.a = HasAttack(band) ? 0.3f : 0.0f;
 	auraColor.a += flashTimer_ * 2.0f;
 	auraMaterial_->SetColor(auraColor);
 	aura_->SetLocalScale(Vector3::One * (Tuning::kPlayerRadius * (2.6f + flashTimer_ * 4.0f)));
+
+	// 速いほど明るく広く照らす。被弾したら赤く光る
+	auto lightColor = band == SpeedBand::Low ? kLowColor : (band == SpeedBand::High ? kHighColor : kMidColor);
+	if (hitFlashTimer_ > 0.0f) { lightColor = kHitColor; }
+	light_->SetColor(lightColor);
+	light_->SetIntensity((band == SpeedBand::Low ? 1.2f : (band == SpeedBand::Mid ? 3.0f : 5.0f)) + flashTimer_ * 12.0f);
+	light_->SetRange(band == SpeedBand::Low ? 5.0f : 8.0f);
 }
 
 

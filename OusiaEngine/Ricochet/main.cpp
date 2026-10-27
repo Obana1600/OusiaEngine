@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "RicochetScene.h"
 #include "Scene/SceneManager.h"
+#include "TitleScene.h"
 
 #include <Windows.h>
 
@@ -10,10 +11,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	using namespace ou;
 
 	Engine engine;
-	engine.Initialize({.title = "Ricochet"});
+	engine.Initialize({.title = "Ricochet", .productName = "Ricochet", .projectDir = PROJECT_DIR});
 
+	SceneManager::AddScene(kTitleSceneName, BuildTitleScene);
 	SceneManager::AddScene(kRicochetSceneName, BuildRicochetScene);
-	SceneManager::LoadScene(kRicochetSceneName);
+	SceneManager::LoadScene(kTitleSceneName);
 
 	while (!engine.Update()) {
 		SceneManager::Update();

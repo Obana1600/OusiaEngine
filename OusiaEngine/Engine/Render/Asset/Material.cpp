@@ -1,7 +1,10 @@
 #include "Material.h"
 #include "Asset/AssetDatabase.h"
 #include "Diagnostics/Fatal.h"
+#include "Diagnostics/Log.h"
 
+#include <cstddef>
+#include <cstring>
 #include <utility>
 
 using namespace ou;
@@ -48,6 +51,7 @@ std::shared_ptr<Material> ou::Material::Create(const Material &source) {
 	material->uvRotation_ = source.uvRotation_;
 	material->color_ = source.color_;
 	material->lightingMode_ = source.lightingMode_;
+	material->propertyValues_ = source.propertyValues_;
 
 	return material;
 }
@@ -71,6 +75,13 @@ Material::PerMaterial ou::Material::MakePerMaterial() const {
 
 void ou::Material::SetShader(std::shared_ptr<Shader> shader) {
 	shader_ = std::move(shader);
+
+	propertyValues_.clear();
+	if (shader_) {
+		for (const auto &property : shader_->GetProperties()) {
+			propertyValues_.push_back(property.defaultValue);
+		}
+	}
 }
 
 
@@ -157,4 +168,93 @@ void ou::Material::SetLightingMode(LightingMode lightingMode) {
 
 Material::LightingMode ou::Material::GetLightingMode() const {
 	return lightingMode_;
+}
+
+
+bool ou::Material::HasProperty(std::string_view name) const {
+	return shader_ && shader_->FindPropertyIndex(name) >= 0;
+}
+
+
+void ou::Material::SetFloat(std::string_view name, float value) {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Float);
+	if (index < 0) { return; }
+	propertyValues_[index] = {value, 0.0f, 0.0f, 0.0f};
+}
+
+
+float ou::Material::GetFloat(std::string_view name) const {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Float);
+	return (index < 0) ? 0.0f
+					   : propertyValues_[index].x;
+}
+
+
+void ou::Material::SetVector(std::string_view name, const Vector4 &value) {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Vector);
+	if (index < 0) { return; }
+	propertyValues_[index] = value;
+}
+
+
+Vector4 ou::Material::GetVector(std::string_view name) const {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Vector);
+	return (index < 0) ? Vector4::Zero
+					   : propertyValues_[index];
+}
+
+
+void ou::Material::SetColor(std::string_view name, const Color &value) {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Color);
+	if (index < 0) { return; }
+	propertyValues_[index] = value;
+}
+
+
+Color ou::Material::GetColor(std::string_view name) const {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Color);
+	return (index < 0) ? Color::Black
+					   : Color(propertyValues_[index]);
+}
+
+
+void ou::Material::WritePropertyBuffer(void *dst) const {
+	if (!shader_) { return; }
+
+	auto *bytes = static_cast<std::byte *>(dst);
+	const auto &properties = shader_->GetProperties();
+	for (size_t i = 0; i < properties.size(); i++) {
+		const auto &property = properties[i];
+		const auto &value = propertyValues_[i];
+
+		switch (property.type) {
+			case Shader::PropertyType::Float:
+				std::memcpy(bytes + property.offset, &value.x, sizeof(float));
+				break;
+			case Shader::PropertyType::Vector:
+				std::memcpy(bytes + property.offset, &value, sizeof(Vector4));
+				break;
+			case Shader::PropertyType::Color: {
+
+				const Vector4 linear = Color(value).Linear();
+				std::memcpy(bytes + property.offset, &linear, sizeof(Vector4));
+				break;
+			}
+		}
+	}
+}
+
+
+int32_t ou::Material::FindPropertyIndex(std::string_view name, Shader::PropertyType type) const {
+	const auto index = shader_ ? shader_->FindPropertyIndex(name) : -1;
+	if (index < 0) {
+		Log::Error("マテリアル \"{}\" のシェーダにプロパティ \"{}\" はありません", GetName(), name);
+		return -1;
+	}
+	if (shader_->GetProperties()[index].type != type) {
+		Log::Error("マテリアル \"{}\" のプロパティ \"{}\" は、この型では読み書きできません", GetName(), name);
+		return -1;
+	}
+
+	return index;
 }

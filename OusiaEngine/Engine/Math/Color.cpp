@@ -95,7 +95,13 @@ float ou::Color::MinColorComponent() const {
 
 
 std::string ou::Color::ToString() const {
-	return std::format("{} {} {} {}", r, g, b, a);
+	return std::format("{:.3f}, {:.3f}, {:.3f}, {:.3f}", r, g, b, a);
+}
+
+
+std::string ou::Color::ToString(std::string_view format) const {
+	const auto fmt = std::format("{{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}}", format);
+	return std::vformat(fmt, std::make_format_args(r, g, b, a));
 }
 
 

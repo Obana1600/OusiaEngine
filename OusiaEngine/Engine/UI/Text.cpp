@@ -7,7 +7,9 @@
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
 #include "UI/Asset/FontAsset.h"
+#include "UI/CanvasRenderer.h"
 #include "UI/RectTransform.h"
+#include "UI/VertexHelper.h"
 
 #include <algorithm>
 #include <utility>
@@ -62,70 +64,9 @@ void ou::Text::StaticFinalize() {
 
 
 void ou::Text::LateUpdate() {
-	// フォントの取得
-	const auto &font = FindFont();
-	if (!font) {
-		quadCount_ = 0;
-		return;
+	if (IsAtlasTextureChanged()) {
+		SetMaterialDirty();
 	}
-
-	// 描画位置を再計算する必要があるか
-	const auto &rect = GetRectTransform()->GetRect();
-	if (!(rect.position == layoutRect_.position) || !(rect.size == layoutRect_.size)) {
-		isLayoutDirty_ = true;
-	}
-	if (isLayoutDirty_) {
-		RebuildLayout(*font);
-		layoutRect_ = rect;
-		isLayoutDirty_ = false;
-	}
-
-	font->UpdateAtlasTextures();
-
-	// バッファの容量の確保
-	quadCount_ = 0;
-	if (placedGlyphs_.empty()) { return; }
-	EnsureCapacity(static_cast<uint32_t>(placedGlyphs_.size()));
-
-	// 各文字のデータをバッファに書き込む
-	auto &buffer = glyphBuffers_[Graphics::GetDevice()->GetBufferIndex()];
-	auto *data = static_cast<GlyphQuad *>(buffer.mappedData);
-	for (const auto &placed : placedGlyphs_) {
-		const auto texture = font->GetAtlasTexture(placed.atlasIndex);
-		if (!texture) { continue; }
-
-		auto &quad = data[quadCount_++];
-		quad.positionRect = placed.positionRect;
-		quad.texcoordRect = placed.texcoordRect;
-		quad.textureIndex = texture->GetDescriptorIndex();
-	}
-}
-
-
-void ou::Text::Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const {
-	if (quadCount_ == 0) { return; }
-
-	auto *device = Graphics::GetDevice();
-	const auto &buffer = glyphBuffers_[device->GetBufferIndex()];
-
-	PerText constants{};
-	constants.worldViewProj = GetRectTransform()->GetLocalToWorldMatrix() * viewProj;
-	constants.color = GetColor().Linear();
-	constants.outlineColor = outlineColor_.Linear();
-	constants.underlayColor = underlayColor_.Linear();
-	constants.faceDilate = faceDilate_;
-	constants.outlineWidth = outlineWidth_;
-	constants.underlayDilate = underlayDilate_;
-	constants.underlaySoftness = underlaySoftness_;
-	constants.glyphBufferIndex =
-		static_cast<uint32_t>(device->GetDescriptorIndex(&buffer, Graphics::ViewType::SRV));
-
-	const auto &font = FindFont();
-	const auto uvPerOffset = static_cast<float>(font->GetPadding()) / static_cast<float>(font->GetAtlasSize());
-	constants.underlayUvOffset = {-underlayOffset_.x * uvPerOffset, underlayOffset_.y * uvPerOffset};
-
-	device->BindDynamicConstantBuffer(constants, 0, cmd);
-	DrawWithMaterial(cmd, 4, quadCount_);
 }
 
 
@@ -137,7 +78,7 @@ const std::shared_ptr<Material> &ou::Text::GetDefaultMaterial() const {
 void ou::Text::SetText(std::string_view text) {
 	if (text_ == text) { return; }
 	text_ = text;
-	isLayoutDirty_ = true;
+	SetVerticesDirty();
 }
 
 
@@ -148,7 +89,7 @@ const std::string &ou::Text::GetText() const {
 
 void ou::Text::SetFont(std::shared_ptr<FontAsset> font) {
 	font_ = std::move(font);
-	isLayoutDirty_ = true;
+	SetAllDirty();
 }
 
 
@@ -159,7 +100,7 @@ const std::shared_ptr<FontAsset> &ou::Text::GetFont() const {
 
 void ou::Text::SetFontSize(float fontSize) {
 	fontSize_ = fontSize;
-	isLayoutDirty_ = true;
+	SetVerticesDirty();
 }
 
 
@@ -170,7 +111,7 @@ float ou::Text::GetFontSize() const {
 
 void ou::Text::SetAlignment(TextAlignment alignment) {
 	alignment_ = alignment;
-	isLayoutDirty_ = true;
+	SetVerticesDirty();
 }
 
 
@@ -181,7 +122,7 @@ TextAlignment ou::Text::GetAlignment() const {
 
 void ou::Text::SetWordWrappingEnabled(bool wordWrappingEnabled) {
 	wordWrappingEnabled_ = wordWrappingEnabled;
-	isLayoutDirty_ = true;
+	SetVerticesDirty();
 }
 
 
@@ -192,7 +133,7 @@ bool ou::Text::IsWordWrappingEnabled() const {
 
 void ou::Text::SetLineSpacing(float lineSpacing) {
 	lineSpacing_ = lineSpacing;
-	isLayoutDirty_ = true;
+	SetVerticesDirty();
 }
 
 
@@ -203,7 +144,7 @@ float ou::Text::GetLineSpacing() const {
 
 void ou::Text::SetCharacterSpacing(float characterSpacing) {
 	characterSpacing_ = characterSpacing;
-	isLayoutDirty_ = true;
+	SetVerticesDirty();
 }
 
 
@@ -213,7 +154,8 @@ float ou::Text::GetCharacterSpacing() const {
 
 
 void ou::Text::SetFaceDilate(float faceDilate) {
-	faceDilate_ = Mathf::Clamp(faceDilate, -1.0f, 1.0f);
+	faceDilate_ = Mathf::ClampN1P1(faceDilate);
+	SetMaterialDirty();
 }
 
 
@@ -224,6 +166,7 @@ float ou::Text::GetFaceDilate() const {
 
 void ou::Text::SetOutlineWidth(float outlineWidth) {
 	outlineWidth_ = Mathf::Clamp01(outlineWidth);
+	SetMaterialDirty();
 }
 
 
@@ -234,6 +177,7 @@ float ou::Text::GetOutlineWidth() const {
 
 void ou::Text::SetOutlineColor(const Color &outlineColor) {
 	outlineColor_ = outlineColor;
+	SetMaterialDirty();
 }
 
 
@@ -243,7 +187,8 @@ const Color &ou::Text::GetOutlineColor() const {
 
 
 void ou::Text::SetUnderlayDilate(float underlayDilate) {
-	underlayDilate_ = Mathf::Clamp(underlayDilate, -1.0f, 1.0f);
+	underlayDilate_ = Mathf::ClampN1P1(underlayDilate);
+	SetMaterialDirty();
 }
 
 
@@ -254,6 +199,7 @@ float ou::Text::GetUnderlayDilate() const {
 
 void ou::Text::SetUnderlaySoftness(float underlaySoftness) {
 	underlaySoftness_ = Mathf::Clamp01(underlaySoftness);
+	SetMaterialDirty();
 }
 
 
@@ -263,8 +209,9 @@ float ou::Text::GetUnderlaySoftness() const {
 
 
 void ou::Text::SetUnderlayOffset(const Vector2 &underlayOffset) {
-	underlayOffset_ = {Mathf::Clamp(underlayOffset.x, -1.0f, 1.0f),
-					   Mathf::Clamp(underlayOffset.y, -1.0f, 1.0f)};
+	underlayOffset_ = {Mathf::ClampN1P1(underlayOffset.x),
+					   Mathf::ClampN1P1(underlayOffset.y)};
+	SetMaterialDirty();
 }
 
 
@@ -275,11 +222,88 @@ const Vector2 &ou::Text::GetUnderlayOffset() const {
 
 void ou::Text::SetUnderlayColor(const Color &underlayColor) {
 	underlayColor_ = underlayColor;
+	SetMaterialDirty();
 }
 
 
 const Color &ou::Text::GetUnderlayColor() const {
 	return underlayColor_;
+}
+
+
+void ou::Text::UpdateGeometry() {
+	auto *canvasRenderer = GetCanvasRenderer();
+	const auto &font = FindFont();
+	if (!font) {
+		canvasRenderer->Clear();
+		return;
+	}
+
+	RebuildLayout(*font);
+
+	font->UpdateAtlasTextures();
+
+	std::ranges::stable_sort(placedGlyphs_, {}, &PlacedGlyph::atlasIndex);
+
+	VertexHelper vh;
+	std::vector<CanvasRenderer::SubMesh> subMeshes(font->GetAtlasTextureCount());
+	const auto &color = GetColor();
+	for (const auto &placed : placedGlyphs_) {
+		const auto &position = placed.positionRect;
+		const auto &texcoord = placed.texcoordRect;
+		const UIVertex quad[4] = {
+			{{position.x, position.w, 0.0f}, color, {texcoord.x, texcoord.w, 0.0f, 0.0f}, texcoord},
+			{{position.x, position.y, 0.0f}, color, {texcoord.x, texcoord.y, 0.0f, 0.0f}, texcoord},
+			{{position.z, position.y, 0.0f}, color, {texcoord.z, texcoord.y, 0.0f, 0.0f}, texcoord},
+			{{position.z, position.w, 0.0f}, color, {texcoord.z, texcoord.w, 0.0f, 0.0f}, texcoord}};
+		vh.AddUIVertexQuad(quad);
+		subMeshes[placed.atlasIndex].indexCount += 6;
+	}
+	for (size_t i = 1; i < subMeshes.size(); i++) {
+		subMeshes[i].indexStart = subMeshes[i - 1].indexStart + subMeshes[i - 1].indexCount;
+	}
+
+	std::vector<UIVertex> vertices;
+	std::vector<uint32_t> indices;
+	vh.FillMesh(vertices, indices);
+	canvasRenderer->SetMesh(std::move(vertices), std::move(indices), std::move(subMeshes));
+
+	if (IsAtlasTextureChanged()) {
+		UpdateMaterial();
+	}
+}
+
+
+void ou::Text::UpdateMaterial() {
+	auto *canvasRenderer = GetCanvasRenderer();
+	const auto &font = FindFont();
+	if (!font) { return; }
+
+	const auto uvPerOffset = static_cast<float>(font->GetPadding()) / static_cast<float>(font->GetAtlasSize());
+	const Vector4 underlayUvOffset = {-underlayOffset_.x * uvPerOffset,
+									  underlayOffset_.y * uvPerOffset,
+									  0.0f, 0.0f};
+
+	const auto pageCount = font->GetAtlasTextureCount();
+	pageMaterials_.resize(pageCount);
+	canvasRenderer->SetMaterialCount(pageCount);
+	canvasRenderer->SetTexture(nullptr);
+
+	for (uint32_t i = 0; i < pageCount; i++) {
+		auto &material = pageMaterials_[i];
+		material = Material::Create(*GetMaterial());
+		material->SetMainTexture(font->GetAtlasTexture(i));
+
+		material->SetMainTexture(font->GetAtlasTexture(i));
+		material->SetColor("_OutlineColor", outlineColor_);
+		material->SetColor("_UnderlayColor", underlayColor_);
+		material->SetVector("_UnderlayUvOffset", underlayUvOffset);
+		material->SetFloat("_FaceDilate", faceDilate_);
+		material->SetFloat("_OutlineWidth", outlineWidth_);
+		material->SetFloat("_UnderlayDilate", underlayDilate_);
+		material->SetFloat("_UnderlaySoftness", underlaySoftness_);
+		canvasRenderer->SetMaterial(material, i);
+	}
 }
 
 
@@ -354,14 +378,14 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 	const auto ascent = face.ascentLine * scale;
 	const auto descent = face.descentLine * scale;
 	const auto blockHeight = ascent - descent + lineHeight * static_cast<float>(lines.size() - 1);
-	const auto rectTop = rect.position.y + rect.size.y;
+	const auto rectTop = rect.center.y + rect.size.y;
 
 	// 垂直アライメント
 	auto blockTop = rectTop;
 	if (vertical == 1) {
 		blockTop = rectTop - (rect.size.y - blockHeight) * 0.5f;
 	} else if (vertical == 2) {
-		blockTop = rect.position.y + blockHeight;
+		blockTop = rect.center.y + blockHeight;
 	}
 	const auto firstBaseline = blockTop - ascent;
 
@@ -373,7 +397,7 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 		const auto lineWidth = MeasureLineWidth(line);
 
 		// 平行アライメント
-		auto lineLeft = rect.position.x;
+		auto lineLeft = rect.center.x;
 		if (horizontal == 1) {
 			lineLeft += (rect.size.x - lineWidth) * 0.5f;
 		} else if (horizontal == 2) {
@@ -397,10 +421,10 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 				left + glyphRect.size.x * scale,
 				top - glyphRect.size.y * scale};
 			placed.texcoordRect = {
-				glyphRect.position.x / atlasSize,
-				glyphRect.position.y / atlasSize,
-				(glyphRect.position.x + glyphRect.size.x) / atlasSize,
-				(glyphRect.position.y + glyphRect.size.y) / atlasSize};
+				glyphRect.center.x / atlasSize,
+				glyphRect.center.y / atlasSize,
+				(glyphRect.center.x + glyphRect.size.x) / atlasSize,
+				(glyphRect.center.y + glyphRect.size.y) / atlasSize};
 			placed.atlasIndex = lineGlyph.glyph->atlasIndex;
 			placedGlyphs_.push_back(placed);
 		}
@@ -408,25 +432,16 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 }
 
 
-void ou::Text::EnsureCapacity(uint32_t count) {
-	// 容量が足りているか
-	if (count <= capacity_) { return; }
+bool ou::Text::IsAtlasTextureChanged() const {
+	const auto &font = FindFont();
+	if (!font) { return false; }
 
-	// 新しい容量を決める
-	capacity_ = std::max({count, capacity_ * 2, 64u});
+	const auto pageCount = font->GetAtlasTextureCount();
+	if (pageMaterials_.size() != pageCount) { return true; }
 
-	// バッファの設定
-	Graphics::GpuBufferDesc desc{};
-	desc.size = capacity_ * sizeof(GlyphQuad);
-	desc.heapType = Graphics::HeapType::UPLOAD;
-	desc.bindFlags = Graphics::BindFlag::SHADER_RESOURCE;
-	desc.miscFlags = Graphics::ResourceMiscFlag::BUFFER_STRUCTURED;
-	desc.stride = sizeof(GlyphQuad);
-
-	// バッファを作り直す
-	for (auto &buffer : glyphBuffers_) {
-		if (!Graphics::GetDevice()->CreateBuffer(&desc, nullptr, &buffer)) {
-			FatalError("テキストのバッファの作成に失敗しました");
-		}
+	for (uint32_t i = 0; i < pageCount; i++) {
+		if (pageMaterials_[i]->GetMainTexture() != font->GetAtlasTexture(i)) { return true; }
 	}
+
+	return false;
 }

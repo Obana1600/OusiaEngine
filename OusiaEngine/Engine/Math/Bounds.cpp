@@ -99,6 +99,12 @@ void ou::Bounds::Expand(float amount) {
 
 
 std::string ou::Bounds::ToString() const {
-	return std::format("Center: ({:.2f} {:.2f} {:.2f}), Extents: ({:.2f} {:.2f} {:.2f})",
+	return std::format("Center: ({:.2f}, {:.2f}, {:.2f}), Extents: ({:.2f}, {:.2f}, {:.2f})",
 					   center.x, center.y, center.z, extents.x, extents.y, extents.z);
+}
+
+
+std::string ou::Bounds::ToString(std::string_view format) const {
+	const auto fmt = std::format("Center: ({{:{0}}}, {{:{0}}}, {{:{0}}}), Extents: ({{:{0}}}, {{:{0}}}, {{:{0}}})", format);
+	return std::vformat(fmt, std::make_format_args(center.x, center.y, center.z, extents.x, extents.y, extents.z));
 }

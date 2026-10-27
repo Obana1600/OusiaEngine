@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Math/Color.h"
 #include "Math/Vector2.h"
 #include "Scene/Component.h"
 
@@ -54,6 +55,8 @@ protected: // メンバ変数
 protected: // メンバ関数
 
 	void Setup(const Vector2 &position, const Vector2 &velocity, float radius, float damage);
+	// 点光源を付ける。ライトの数には上限があるので、弾に回せる数を超えたら付けない
+	void AttachLight(const Color &color, float intensity, float range);
 	// dt だけ動かす。消えるなら false
 	virtual bool Move(float dt) = 0;
 	bool IsOutsideArena() const;
@@ -62,11 +65,13 @@ protected: // メンバ関数
 private: // 静的メンバ変数
 
 	static inline std::vector<Projectile *> sAll_;
+	static inline int sLitCount_ = 0;
 
 
 private: // メンバ変数
 
 	bool isVanished_ = false;
+	bool hasLight_ = false;
 };
 
 } // namespace ou

@@ -120,7 +120,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
 xcopy /E /I /Y /Q "$(SourceRoot)Engine\EngineAssets" "$(TargetDir)EngineAssets"
-xcopy /E /I /Y /Q "$(SourceRoot)Game\Assets" "$(TargetDir)Assets"</Command>
+xcopy /E /I /Y /Q "$(ProjectDir)Assets" "$(TargetDir)Assets"</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>

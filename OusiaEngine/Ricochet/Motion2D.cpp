@@ -67,15 +67,7 @@ MotionStepResult ou::Motion2D::Step(MotionState &state, const MotionParams &para
 	const auto dragFactor = std::exp(-params.drag * subDt);
 
 	for (int i = 0; i < substeps; i++) {
-		// 重力で加速しても、重力がかかる速度帯からは出ないようにする
-		const auto speedBefore = state.velocity.Length();
-		if (params.gravity > 0.0f && speedBefore < params.gravityBelowSpeed) {
-			state.velocity.y -= params.gravity * subDt;
-			const auto speedAfter = state.velocity.Length();
-			const auto limit = params.gravityBelowSpeed * 0.95f;
-			if (speedAfter > limit) { state.velocity *= limit / speedAfter; }
-		}
-
+		state.velocity.y -= params.gravity * subDt;
 		state.velocity *= dragFactor;
 		state.position += state.velocity * subDt;
 

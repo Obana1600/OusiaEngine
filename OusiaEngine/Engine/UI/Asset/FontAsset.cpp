@@ -137,8 +137,8 @@ const Glyph *ou::FontAsset::FindOrAddGlyph(char32_t unicode) {
 
 		// ページの画像に写す
 		auto &page = atlasPages_[glyph.atlasIndex];
-		const auto x0 = static_cast<size_t>(glyph.glyphRect.position.x);
-		const auto y0 = static_cast<size_t>(glyph.glyphRect.position.y);
+		const auto x0 = static_cast<size_t>(glyph.glyphRect.center.x);
+		const auto y0 = static_cast<size_t>(glyph.glyphRect.center.y);
 		for (uint32_t y = 0; y < bitmap->height; y++) {
 			std::memcpy(page.pixels.data() + (y0 + y) * atlasSize_ + x0,
 						bitmap->pixels.data() + static_cast<size_t>(y) * bitmap->width,

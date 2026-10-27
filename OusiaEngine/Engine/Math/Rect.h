@@ -6,7 +6,7 @@
 namespace ou {
 
 struct Rect {
-	Vector2 position;
+	Vector2 center;
 	Vector2 size;
 };
 

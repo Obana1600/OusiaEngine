@@ -20,6 +20,7 @@ HomingBullet *ou::HomingBullet::Spawn(Scene &scene, const Vector2 &position, con
 	bullet->turnRate_ = turnRate;
 	bullet->homingTime_ = homingTime;
 	bullet->lifetime_ = homingTime + 4.0f;
+	bullet->AttachLight({0.75f, 0.35f, 1.0f, 1.0f}, 1.5f, 3.5f);
 	return bullet;
 }
 

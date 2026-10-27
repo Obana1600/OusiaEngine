@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AutoDash.h"
 #include "Motion2D.h"
 #include "PullInput.h"
 #include "Scene/Component.h"
@@ -36,10 +37,18 @@ public: // メンバ関数
 	const MotionState &GetMotion() const { return motion_; }
 
 	const PullInput &GetPull() const { return pull_; }
+	const AutoDash &GetAutoDash() const { return autoDash_; }
+	// コンボが 5 の倍数になったときに呼ぶ
+	void RequestAutoDash();
+	// ボスに体当たりした（自動突進の終わりの判定に使う）
+	void OnBossHit();
+
+	// 自動突進の間だけ重力を切る
+	void SetGravityEnabled(bool isEnabled) { isGravityEnabled_ = isEnabled; }
 	// 今の溜めで発射したときの速度
 	Vector2 ComputeLaunchVelocity() const;
 
-	// 被弾。無敵中なら false。低速なら吹っ飛び、中速以上ならアーマーで受ける
+	// 被弾。低速なら吹っ飛ぶ。無敵中と中速以上（速さによる無敵）は受けずに false
 	bool TakeHit(float damage, const Vector2 &knockbackDirection);
 	bool IsInvincible() const { return invincibleTimer_ > 0.0f; }
 	bool IsDead() const { return hp_ <= 0.0f; }
@@ -64,6 +73,8 @@ private: // メンバ変数
 
 	MotionState motion_;
 	PullInput pull_;
+	AutoDash autoDash_;
+	bool isGravityEnabled_ = true;
 	PlayerVisual *visual_ = nullptr;
 
 	float hp_ = 0.0f;

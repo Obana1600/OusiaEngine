@@ -9,6 +9,8 @@
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
 #include "UI/Canvas.h"
+#include "UI/CanvasUpdateRegistry.h"
+#include "UI/EventSystem/EventSystem.h"
 
 #include <algorithm>
 #include <utility>
@@ -82,6 +84,10 @@ void ou::SceneManager::Update() {
 		Physics::Simulate();
 	}
 
+	if (auto *eventSystem = EventSystem::GetCurrent()) {
+		eventSystem->Process();
+	}
+
 	for (auto *scene : scenes) {
 		if (scene) { scene->UpdateGameObjects(); }
 	}
@@ -146,6 +152,8 @@ void ou::SceneManager::Render(Graphics::CommandList cmd) {
 
 
 void ou::SceneManager::RenderOverlay(Graphics::CommandList cmd) {
+	CanvasUpdateRegistry::PerformUpdate();
+
 	for (const auto *canvas : sCanvases_) {
 		if (canvas->IsActiveAndEnabled()) {
 			canvas->Render(cmd);

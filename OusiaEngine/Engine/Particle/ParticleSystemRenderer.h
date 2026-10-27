@@ -77,7 +77,7 @@ private: // 静的メンバ変数
 
 	static inline std::shared_ptr<Shader> sShader_;
 	static inline std::shared_ptr<Material> sDefaultMaterial_;
-	static inline std::shared_ptr<Texture> sWhiteTexture_;
+	static inline std::shared_ptr<Texture> sDefaultTexture_;
 
 
 private: // メンバ変数

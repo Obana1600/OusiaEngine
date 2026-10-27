@@ -4,6 +4,7 @@
 #include "Math/Vector4.h"
 
 #include <string>
+#include <string_view>
 
 
 namespace ou {
@@ -73,6 +74,7 @@ public: // メンバ関数
 	float MinColorComponent() const;
 
 	std::string ToString() const;
+	std::string ToString(std::string_view format) const;
 
 
 public: // 静的メンバ関数

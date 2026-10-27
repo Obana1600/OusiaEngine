@@ -3,6 +3,7 @@
 #include "Math/Vector3.h"
 
 #include <string>
+#include <string_view>
 
 
 namespace ou {
@@ -18,6 +19,7 @@ public: // メンバ変数
 
 public: // 静的メンバ変数
 
+	// 単位行列
 	static const Quaternion Identity;
 
 
@@ -43,6 +45,7 @@ public: // メンバ関数
 	void ToAngleAxis(Vector3 *outAxis, float *outAngle) const;
 
 	std::string ToString() const;
+	std::string ToString(std::string_view format) const;
 
 
 public: // 静的メンバ関数

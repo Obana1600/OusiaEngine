@@ -18,7 +18,12 @@ public: // メンバ関数
 
 	void SetNativeSize();
 
-	void Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const override;
+	const std::shared_ptr<Texture> &GetMainTexture() const override;
+
+
+protected: // メンバ関数
+
+	void OnPopulateMesh(VertexHelper &vh) override;
 
 
 private: // メンバ変数

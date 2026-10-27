@@ -60,8 +60,8 @@ void ou::ParticleSystemRenderer::StaticInitialize() {
 	sDefaultMaterial_ = Material::Create(sShader_);
 	sDefaultMaterial_->SetName("Default-ParticleSystem");
 
-	sWhiteTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/white1x1.png");
-	if (!sWhiteTexture_) {
+	sDefaultTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/particle.png");
+	if (!sDefaultTexture_) {
 		FatalError("パーティクルの既定のテクスチャの読み込みに失敗しました");
 	}
 }
@@ -70,7 +70,7 @@ void ou::ParticleSystemRenderer::StaticInitialize() {
 void ou::ParticleSystemRenderer::StaticFinalize() {
 	sShader_ = nullptr;
 	sDefaultMaterial_ = nullptr;
-	sWhiteTexture_ = nullptr;
+	sDefaultTexture_ = nullptr;
 }
 
 
@@ -135,7 +135,7 @@ void ou::ParticleSystemRenderer::Draw(Graphics::CommandList cmd) const {
 
 	auto *device = Graphics::GetDevice();
 	const auto isLocal = particleSystem_->GetMain().simulationSpace == ParticleSystem::SimulationSpace::Local;
-	const auto &texture = material->GetMainTexture() ? material->GetMainTexture() : sWhiteTexture_;
+	const auto &texture = material->GetMainTexture() ? material->GetMainTexture() : sDefaultTexture_;
 	const auto &buffer = particleBuffers_[device->GetBufferIndex()];
 
 	PerParticleSystem constants{};

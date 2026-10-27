@@ -1,9 +1,6 @@
 #pragma once
 
-#include "Graphics/GraphicsDevice.h"
 #include "Math/Color.h"
-#include "Math/Matrix4x4.h"
-#include "Math/Rect.h"
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
 #include "UI/Graphic.h"
@@ -33,32 +30,6 @@ enum class TextAlignment : uint8_t {
 };
 
 class Text final: public Graphic {
-public: // インナークラス
-
-	// 定数バッファ: b0
-	struct PerText {
-		Matrix4x4 worldViewProj;
-		Color color;
-		Color outlineColor;
-		Color underlayColor;
-		float faceDilate;
-		float outlineWidth;
-		float padding[2];
-		float underlayDilate;
-		float underlaySoftness;
-		Vector2 underlayUvOffset;
-		uint32_t glyphBufferIndex;
-	};
-
-	// 1 文字の矩形
-	struct GlyphQuad {
-		Vector4 positionRect;
-		Vector4 texcoordRect;
-		uint32_t textureIndex;
-		uint32_t padding[3];
-	};
-
-
 public: // 静的メンバ関数
 
 	static void StaticInitialize();
@@ -68,8 +39,6 @@ public: // 静的メンバ関数
 public: // メンバ関数
 
 	void LateUpdate() override;
-
-	void Draw(Graphics::CommandList cmd, const Matrix4x4 &viewProj) const override;
 
 	const std::shared_ptr<Material> &GetDefaultMaterial() const override;
 
@@ -116,6 +85,12 @@ public: // メンバ関数
 	float GetUnderlaySoftness() const;
 
 
+protected: // メンバ関数
+
+	void UpdateGeometry() override;
+	void UpdateMaterial() override;
+
+
 private: // 静的メンバ変数
 
 	static inline std::shared_ptr<Material> sDefaultMaterial_;
@@ -150,12 +125,7 @@ private: // メンバ変数
 	Color underlayColor_ = Color::Clear;
 
 	std::vector<PlacedGlyph> placedGlyphs_;
-	Rect layoutRect_{};
-	bool isLayoutDirty_ = true;
-
-	Graphics::GpuBuffer glyphBuffers_[Graphics::GraphicsDevice::BUFFER_COUNT];
-	uint32_t capacity_ = 0;
-	uint32_t quadCount_ = 0;
+	std::vector<std::shared_ptr<Material>> pageMaterials_;
 
 
 private: // メンバ関数
@@ -163,7 +133,8 @@ private: // メンバ関数
 	const std::shared_ptr<FontAsset> &FindFont() const;
 
 	void RebuildLayout(FontAsset &font);
-	void EnsureCapacity(uint32_t count);
+
+	bool IsAtlasTextureChanged() const;
 };
 
 } // namespace ou

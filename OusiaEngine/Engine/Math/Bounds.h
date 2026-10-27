@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Math/Vector3.h"
+
 #include <string>
+#include <string_view>
 
 
 namespace ou {
@@ -43,6 +45,7 @@ public: // メンバ関数
 	void Expand(float amount);
 
 	std::string ToString() const;
+	std::string ToString(std::string_view format) const;
 };
 
 } // namespace ou

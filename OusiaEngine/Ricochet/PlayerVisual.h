@@ -13,6 +13,7 @@
 namespace ou {
 
 // 前方宣言
+class Light;
 class Material;
 class Player;
 class Transform;
@@ -36,6 +37,8 @@ private: // メンバ変数
 	Player *player_ = nullptr;
 	Transform *body_ = nullptr;
 	Transform *aura_ = nullptr;
+	// 速度帯の色で周りを照らす
+	Light *light_ = nullptr;
 	std::shared_ptr<Material> bodyMaterial_;
 	std::shared_ptr<Material> auraMaterial_;
 

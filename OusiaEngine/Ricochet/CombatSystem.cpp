@@ -2,7 +2,9 @@
 #include "Boss.h"
 #include "CameraRig.h"
 #include "ComboCounter.h"
+#include "GameColors.h"
 #include "Math/Mathf.h"
+#include "ParticleEffects.h"
 #include "Player.h"
 #include "Projectile.h"
 #include "TimeControl.h"
@@ -53,25 +55,31 @@ void ou::CombatSystem::ResolvePlayerBoss(Player &player, Boss &boss) {
 
 	const auto band = player.GetBand();
 	const auto speed = player.GetSpeed();
+	const auto contact = boss.GetPosition() + normal * boss.GetRadius();
+	// 弱点に当たったら金色に光らせる
+	const auto color = boss.IsWeakPointHit(normal) ? GameColors::kGold : GameColors::ForBand(band);
 
 	if (boss.IsDashing()) {
 		if (band == SpeedBand::High) {
-			// 突進中のボスと高速のプレイヤー：両方ダメージを受け、両方反射する
+			// 突進中のボスと高速のプレイヤー：両方反射する。プレイヤーは速さによる無敵なので、ダメージはボスだけ
 			boss.TakeDamage(speed * Tuning::kDamagePerSpeed, normal);
 			boss.ReflectDash(-normal);
 			player.Bounce(normal, Tuning::kBossBounceRestitution);
-			player.TakeHit(Tuning::kDashDamage * 0.5f, normal);
-			OnScore(speed);
+			player.OnBossHit();
+			OnScore(speed, contact, normal, color);
+			ParticleEffects::PlayExplosion(contact, GameColors::kBossDanger, 0.8f);
 		} else {
-			player.TakeHit(Tuning::kDashDamage, normal);
+			// 低速なら吹っ飛ぶ。中速は無敵なので押し返されるだけ
+			if (!player.TakeHit(Tuning::kDashDamage, normal)) { player.Bounce(normal, 1.0f); }
 		}
 		return;
 	}
 
 	if (HasAttack(band)) {
 		// 中速以上の体当たり。ダメージは速さに比例し、プレイヤーはボスから跳ね返る
-		if (boss.TakeDamage(speed * Tuning::kDamagePerSpeed, normal) > 0.0f) { OnScore(speed); }
+		if (boss.TakeDamage(speed * Tuning::kDamagePerSpeed, normal) > 0.0f) { OnScore(speed, contact, normal, color); }
 		player.Bounce(normal, Tuning::kBossBounceRestitution);
+		player.OnBossHit();
 		return;
 	}
 
@@ -92,8 +100,9 @@ void ou::CombatSystem::ResolvePlayerProjectile(Player &player, Projectile &proje
 			const auto speed = player.GetSpeed();
 			player.SetPosition(player.GetPosition() + normal * depth);
 			player.Bounce(normal, Tuning::kBossBounceRestitution);
+			ParticleEffects::PlayExplosion(projectile.GetPosition(), GameColors::kGiantBullet, projectile.GetRadius());
 			projectile.Vanish();
-			OnScore(speed);
+			OnScore(speed, projectile.GetPosition() + normal * projectile.GetRadius(), normal, GameColors::kPlayerHigh);
 			return;
 		}
 		// 高速でなければ通常どおり被弾する（巨大弾は残る）
@@ -101,17 +110,21 @@ void ou::CombatSystem::ResolvePlayerProjectile(Player &player, Projectile &proje
 		return;
 	}
 
-	// 小弾・追尾弾は触れると消える
+	// 小弾・追尾弾は触れると消える（無敵中は弾けるだけ）
 	player.TakeHit(projectile.GetDamage(), normal);
+	const auto color = projectile.GetKind() == ProjectileKind::Homing ? GameColors::kHomingBullet : GameColors::kSmallBullet;
+	ParticleEffects::PlaySparks(projectile.GetPosition(), -normal, color, 8);
 	projectile.Vanish();
 }
 
 
-void ou::CombatSystem::OnScore(float speed) {
+void ou::CombatSystem::OnScore(float speed, const Vector2 &position, const Vector2 &direction, const Color &color) {
 	if (auto *combo = ComboCounter::GetInstance()) { combo->Add(); }
 
-	// 速いほど長く止める
+	// 速いほど長く止め、派手にはじける
 	const auto t = Mathf::InverseLerp(Tuning::kDamageSpeed, Tuning::kPlayerMaxSpeed, speed);
 	TimeControl::RequestHitStop(Mathf::Lerp(Tuning::kHitStopMin, Tuning::kHitStopMax, t));
 	if (auto *camera = CameraRig::GetInstance()) { camera->Shake(0.15f + 0.35f * t); }
+	ParticleEffects::PlayHit(position, direction, color, 0.4f + 0.6f * t);
+	ParticleEffects::PlayRing(position, color, 1.5f + 2.5f * t);
 }

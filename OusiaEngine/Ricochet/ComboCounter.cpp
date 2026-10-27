@@ -32,10 +32,14 @@ void ou::ComboCounter::Add() {
 	maxCombo_ = std::max(maxCombo_, combo_);
 	timer_ = Tuning::kComboResetTime;
 
+	auto *player = Player::GetInstance();
+	if (!player) { return; }
+
 	// 10 コンボごとにストックを 1 回復する
-	if (Tuning::kComboRecoversStock && combo_ % Tuning::kComboPerStock == 0) {
-		if (auto *player = Player::GetInstance()) { player->AddStock(1); }
-	}
+	if (Tuning::kComboRecoversStock && combo_ % Tuning::kComboPerStock == 0) { player->AddStock(1); }
+
+	// 5 コンボごとにボスへ自動で突進する
+	if (combo_ % Tuning::kAutoDashComboStep == 0) { player->RequestAutoDash(); }
 }
 
 

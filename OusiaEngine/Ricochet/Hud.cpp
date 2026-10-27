@@ -45,6 +45,8 @@ Text *CreateText(Scene &scene, Transform *canvas, const std::shared_ptr<FontAsse
 	text->SetAlignment(alignment);
 	text->SetOutlineColor(Color::Black);
 	text->SetOutlineWidth(0.2f);
+	// HUD の上でも引っ張りを始められるよう、クリックを受けない
+	text->SetRaycastTarget(false);
 	return text;
 }
 
@@ -55,6 +57,7 @@ Image *CreateBar(Scene &scene, Transform *canvas, const Vector2 &position, const
 	auto *rect = Place(object, canvas, {0.5f, 1.0f}, position, size);
 	rect->SetPivot({0.0f, 1.0f});
 	image->SetColor(color);
+	image->SetRaycastTarget(false);
 	return image;
 }
 
@@ -85,7 +88,7 @@ void ou::Hud::Start() {
 
 	bannerText_ = CreateText(scene, canvas, font, {0.5f, 0.5f}, {0.0f, 60.0f}, {1000.0f, 200.0f}, 64.0f, TextAlignment::Center);
 	helpText_ = CreateText(scene, canvas, font, {0.5f, 0.0f}, {0.0f, 12.0f}, {1200.0f, 36.0f}, 20.0f, TextAlignment::Bottom);
-	helpText_->SetText("WASD / 左スティック: 引っ張って溜める　SPACE / A: 発射（離すと取り消し）　R: リトライ");
+	helpText_->SetText("左ドラッグ: 引っ張る（離すと発射・右クリックで取り消し）");
 }
 
 

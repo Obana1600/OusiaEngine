@@ -124,6 +124,12 @@ std::string ou::Vector4::ToString() const {
 }
 
 
+std::string ou::Vector4::ToString(std::string_view format) const {
+	const auto fmt = std::format("({{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}})", format);
+	return std::vformat(fmt, std::make_format_args(x, y, z, w));
+}
+
+
 float ou::Vector4::Distance(const Vector4 &v1, const Vector4 &v2) {
 	return (v2 - v1).Length();
 }

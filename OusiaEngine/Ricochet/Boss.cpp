@@ -13,6 +13,7 @@
 #include "Math/Random.h"
 #include "Projectile.h"
 #include "Render/Asset/Material.h"
+#include "Render/Light.h"
 #include "Render/MeshRenderer.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
@@ -74,6 +75,7 @@ void ou::Boss::Start() {
 								  Vector3::One * (GetRadius() * 2.0f), kPhase1Color, false);
 	body->GetTransform()->SetParent(GetTransform());
 	bodyMaterial_ = body->GetSharedMaterial();
+	light_ = CreatePointLight(scene, GetTransform(), kPhase1Color, 3.0f, 9.0f);
 
 	weakPoint_ = GetGameObject()->GetComponent<BossWeakPoint>();
 }
@@ -104,6 +106,20 @@ void ou::Boss::Update() {
 void ou::Boss::LateUpdate() {
 	GetTransform()->SetLocalPosition({position_.x, position_.y, 0.0f});
 	if (bodyMaterial_) { bodyMaterial_->SetColor(ComputeBodyColor()); }
+
+	if (light_) {
+		// 予兆では予兆の色で強く、被弾で白く光る。撃破後は消える
+		const auto glow = Mathf::Clamp01(warningGlow_);
+		auto color = LerpColor(phase_ == 1 ? Color{0.5f, 0.6f, 1.0f, 1.0f} : Color{1.0f, 0.3f, 0.35f, 1.0f}, kWarningColor, glow);
+		auto intensity = 3.0f + glow * 9.0f;
+		if (damageFlash_ > 0.0f) {
+			color = Color::White;
+			intensity = 14.0f;
+		}
+		if (state_ == BossState::Defeated) { intensity = 0.0f; }
+		light_->SetColor(color);
+		light_->SetIntensity(intensity);
+	}
 }
 
 

@@ -31,6 +31,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="UI\Button.h" />
+    <ClInclude Include="UI\Selectable.h" />
+    <ClInclude Include="UI\CanvasUpdateRegistry.h" />
+    <ClInclude Include="UI\CanvasRenderer.h" />
+    <ClInclude Include="UI\ColorBlock.h" />
+    <ClInclude Include="UI\GraphicRaycaster.h" />
+    <ClInclude Include="UI\EventSystem\BaseInputModule.h" />
+    <ClInclude Include="Core\Application.h" />
     <ClInclude Include="Asset\Format\AssetJson.h" />
     <ClInclude Include="Asset\AssetDatabase.h" />
     <ClInclude Include="Audio\AudioClip.h" />
@@ -40,6 +48,11 @@
     <ClInclude Include="Audio\AudioSource.h" />
     <ClInclude Include="Audio\XAudio2\Audio.h" />
     <ClInclude Include="Asset\Importer\FontImporter.h" />
+    <ClInclude Include="UI\EventSystem\StandaloneInputModule.h" />
+    <ClInclude Include="UI\EventSystem\EventSystem.h" />
+    <ClInclude Include="UI\EventSystem\ExecuteEvents.h" />
+    <ClInclude Include="UI\EventSystem\EventData.h" />
+    <ClInclude Include="UI\EventSystem\EventInterfaces.h" />
     <ClInclude Include="Render\Light.h" />
     <ClInclude Include="Render\LineRenderer.h" />
     <ClInclude Include="Physics\Jolt\JoltQueryFilters.h" />
@@ -127,11 +140,22 @@
     <ClInclude Include="Render\Asset\Texture.h" />
     <ClInclude Include="UI\Asset\Sprite.h" />
     <ClInclude Include="Input\Windows\XInput.h" />
+    <ClInclude Include="UI\UIVertex.h" />
+    <ClInclude Include="UI\VertexHelper.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="UI\Button.cpp" />
+    <ClCompile Include="UI\Selectable.cpp" />
+    <ClCompile Include="UI\CanvasUpdateRegistry.cpp" />
+    <ClCompile Include="UI\CanvasRenderer.cpp" />
+    <ClCompile Include="UI\GraphicRaycaster.cpp" />
+    <ClCompile Include="UI\EventSystem\BaseInputModule.cpp" />
+    <ClCompile Include="Core\Application.cpp" />
     <ClCompile Include="Asset\Format\AssetJson.cpp" />
     <ClCompile Include="Asset\AssetDatabase.cpp" />
     <ClCompile Include="Asset\Importer\FontImporter.cpp" />
+    <ClCompile Include="UI\EventSystem\StandaloneInputModule.cpp" />
+    <ClCompile Include="UI\EventSystem\EventSystem.cpp" />
     <ClCompile Include="Render\Light.cpp" />
     <ClCompile Include="Render\LineRenderer.cpp" />
     <ClCompile Include="Physics\Jolt\JoltQueryFilters.cpp" />
@@ -214,6 +238,7 @@
     <ClCompile Include="Asset\Importer\TextureImporter.cpp" />
     <ClCompile Include="Render\Asset\Texture.cpp" />
     <ClCompile Include="Input\Windows\XInput.cpp" />
+    <ClCompile Include="UI\VertexHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli" />

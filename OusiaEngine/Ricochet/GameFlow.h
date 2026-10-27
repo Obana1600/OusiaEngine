@@ -7,7 +7,7 @@
 
 namespace ou {
 
-// 勝敗と形態の移行の進行。終わったら R でやり直す
+// 勝敗と形態の移行の進行。決着したらリザルトの画面を出す
 class GameFlow final: public Component {
 public: // メンバ関数
 

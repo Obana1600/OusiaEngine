@@ -4,13 +4,20 @@
 #include "Hud.h"
 #include "Input/Input.h"
 #include "Player.h"
-#include "RicochetScene.h"
-#include "Scene/SceneManager.h"
+#include "ResultMenu.h"
 #include "Tuning.h"
 
 #include <format>
 
 using namespace ou;
+
+
+namespace {
+
+// 勝敗が決まってから、リザルトの画面を出すまでの時間（撃破や被弾の演出を見せる）
+constexpr float kResultDelay = 1.2f;
+
+} // namespace
 
 
 
@@ -20,10 +27,6 @@ void ou::GameFlow::Start() {
 
 
 void ou::GameFlow::Update() {
-	if (Input::GetKeyDown(KeyCode::R)) {
-		SceneManager::LoadScene(kRicochetSceneName);
-		return;
-	}
 	if (state_ != State::Playing) { return; }
 
 	auto *player = Player::GetInstance();
@@ -45,13 +48,13 @@ void ou::GameFlow::Update() {
 		state_ = State::Cleared;
 		player->Freeze();
 		const auto maxCombo = ComboCounter::GetInstance() ? ComboCounter::GetInstance()->GetMaxCombo() : 0;
-		hud->ShowBanner(std::format("CLEAR!\n最大 {} コンボ　R でもう一度", maxCombo), 0.0f);
+		if (auto *menu = ResultMenu::GetInstance()) { menu->Show("クリア", std::format("最大 {} コンボ", maxCombo), kResultDelay); }
 		return;
 	}
 
 	if (player->IsDead()) {
 		state_ = State::GameOver;
 		player->Freeze();
-		hud->ShowBanner("GAME OVER\nR でリトライ", 0.0f);
+		if (auto *menu = ResultMenu::GetInstance()) { menu->Show("ゲームオーバー", "", kResultDelay); }
 	}
 }

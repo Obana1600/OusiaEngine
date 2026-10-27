@@ -22,6 +22,7 @@ namespace {
 constexpr std::string_view kShaderKeys[] = {
 	"queue",
 	"passes",
+	"properties",
 };
 
 constexpr std::string_view kPassKeys[] = {
@@ -37,6 +38,12 @@ constexpr std::string_view kPassKeys[] = {
 	"zWrite",
 	"zTest",
 	"cull",
+};
+
+constexpr std::string_view kPropertyKeys[] = {
+	"name",
+	"type",
+	"default",
 };
 
 Graphics::Shader ImportStage(
@@ -101,6 +108,37 @@ Shader::Pass ParsePass(const AssetImporter &importer, const Json &json) {
 	return pass;
 }
 
+Shader::PropertyType ToPropertyType(const std::string &name) {
+	if (name == "Color") { return Shader::PropertyType::Color; }
+	if (name == "Vector") { return Shader::PropertyType::Vector; }
+	if (name == "Float") { return Shader::PropertyType::Float; }
+	throw AssetJson::FormatError(std::format("\"type\" に \"{}\" は使えません (使えるもの: Color, Vector, Float)", name));
+}
+
+Vector4 ToDefaultValue(const Json &value, Shader::PropertyType type) {
+	if (type == Shader::PropertyType::Float) {
+		if (!value.is_number()) {
+			throw AssetJson::FormatError("\"Float\" の \"default\" は数で書いてください");
+		}
+		return {value.get<float>(), 0.0f, 0.0f, 0.0f};
+	}
+
+	if (!value.is_array() || value.size() != 4) {
+		throw AssetJson::FormatError("\"Color\" と \"Vector\" の \"default\" は [x, y, z, w] と書いてください");
+	}
+	return {value[0].get<float>(), value[1].get<float>(), value[2].get<float>(), value[3].get<float>()};
+}
+
+Shader::Property ParseProperty(const Json &json) {
+	Shader::Property property{};
+	property.name = json.at("name").get<std::string>();
+	property.type = ToPropertyType(json.at("type").get<std::string>());
+	if (const auto it = json.find("default"); it != json.end()) {
+		property.defaultValue = ToDefaultValue(*it, property.type);
+	}
+	return property;
+}
+
 } // namespace
 
 
@@ -145,7 +183,23 @@ std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
 			passes.push_back(ParsePass(*this, passJson));
 		}
 
-		auto shader = std::make_shared<Shader>(std::move(passes), renderQueue);
+		// Property
+		std::vector<Shader::Property> properties;
+		if (const auto it = json->find("properties"); it != json->end()) {
+			if (!it->is_array()) {
+				throw AssetJson::FormatError("\"properties\" は配列で書いてください");
+			}
+
+			for (const auto &propertyJson : *it) {
+				if (!propertyJson.is_object()) {
+					throw AssetJson::FormatError("\"properties\" の中身は {...} と書いてください");
+				}
+				AssetJson::WarnUnknownKeys(propertyJson, kPropertyKeys, pathUtf8);
+				properties.push_back(ParseProperty(propertyJson));
+			}
+		}
+
+		auto shader = std::make_shared<Shader>(std::move(passes), renderQueue, std::move(properties));
 		shader->SetName(GetName());
 		return shader;
 

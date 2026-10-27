@@ -2,10 +2,12 @@
 
 #include "Core/Object.h"
 #include "Graphics/GraphicsTypes.h"
+#include "Math/Vector4.h"
 
 #include <deque>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // TODO: PipelineState を別の場所でキャッシュする
@@ -48,10 +50,23 @@ public: // インナークラス
 		bool operator==(const RenderStateOverride &) const = default;
 	};
 
+	enum class PropertyType: uint8_t {
+		Color,
+		Vector,
+		Float,
+	};
+
+	struct Property {
+		std::string name;
+		PropertyType type = PropertyType::Float;
+		Vector4 defaultValue;
+		uint32_t offset = 0;
+	};
+
 
 public: // メンバ関数
 
-	Shader(std::vector<Pass> passes, int renderQueue);
+	Shader(std::vector<Pass> passes, int renderQueue, std::vector<Property> properties = {});
 
 	const Graphics::PipelineState *GetPipelineState(size_t passIndex,
 													const RenderStateOverride &renderStateOverride,
@@ -61,6 +76,10 @@ public: // メンバ関数
 	const std::vector<Pass> &GetPasses() const;
 	size_t GetPassCount() const;
 	int GetRenderQueue() const;
+
+	const std::vector<Property> &GetProperties() const;
+	int32_t FindPropertyIndex(std::string_view name) const;
+	uint32_t GetPropertyBufferSize() const;
 
 
 private: // インナークラス
@@ -77,6 +96,8 @@ private: // メンバ変数
 
 	std::vector<Pass> passes_;
 	int renderQueue_ = RenderQueue::Geometry;
+	std::vector<Property> properties_;
+	uint32_t propertyBufferSize_ = 0;
 
 	mutable std::vector<std::deque<CachedPipeline>> pipelineCaches_;
 };

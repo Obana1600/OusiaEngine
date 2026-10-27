@@ -82,7 +82,13 @@ Vector3 ou::Vector3::Normalize() const {
 
 
 std::string ou::Vector3::ToString() const {
-	return std::format("({}, {}, {})", x, y, z);
+	return std::format("({:.2f}, {:.2f}, {:.2f})", x, y, z);
+}
+
+
+std::string ou::Vector3::ToString(std::string_view format) const {
+	const auto fmt = std::format("({{:{0}}}, {{:{0}}}, {{:{0}}})", format);
+	return std::vformat(fmt, std::make_format_args(x, y, z));
 }
 
 

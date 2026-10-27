@@ -1,11 +1,16 @@
 #include "Graphic.h"
 #include "Asset/AssetDatabase.h"
+#include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
-#include "Graphics/GraphicsDevice.h"
 #include "Render/Asset/Shader.h"
 #include "Scene/GameObject.h"
+#include "UI/CanvasRenderer.h"
+#include "UI/CanvasUpdateRegistry.h"
+#include "UI/EventSystem/EventSystem.h"
 #include "UI/RectTransform.h"
+#include "UI/VertexHelper.h"
 
+#include <algorithm>
 #include <utility>
 
 using namespace ou;
@@ -44,16 +49,39 @@ void ou::Graphic::Awake() {
 	if (!rectTransform_) {
 		rectTransform_ = GetGameObject()->AddComponent<RectTransform>();
 	}
+
+	canvasRenderer_ = GetGameObject()->GetComponent<CanvasRenderer>();
+	if (!canvasRenderer_) {
+		canvasRenderer_ = GetGameObject()->AddComponent<CanvasRenderer>();
+	}
 }
 
 
-void ou::Graphic::SetMaterial(std::shared_ptr<Material> material) {
-	material_ = std::move(material);
+void ou::Graphic::Update() {
+	auto &tween = colorTween_;
+	if (tween.elapsed >= tween.duration) { return;}
+
+	tween.elapsed += tween.ignoreTimeScale ? Time::GetUnscaledDeltaTime() : Time::GetDeltaTime();
+	const auto t = std::min(tween.elapsed / tween.duration, 1.0f);
+	canvasRenderer_->SetColor(Color::Lerp(tween.startColor, tween.targetColor, t));
 }
 
 
-const std::shared_ptr<Material> &ou::Graphic::GetMaterial() const {
-	return material_ ? material_ : GetDefaultMaterial();
+void ou::Graphic::OnEnable() {
+	SetAllDirty();
+}
+
+
+void ou::Graphic::OnDisable() {
+	CanvasUpdateRegistry::UnRegisterCanvasElementForRebuild(this);
+	canvasRenderer_->Clear();
+}
+
+
+void ou::Graphic::OnDestroy() {
+	if (auto *eventSystem = EventSystem::GetCurrent()) {
+		eventSystem->OnGameObjectDestroyed(GetGameObject());
+	}
 }
 
 
@@ -62,13 +90,105 @@ const std::shared_ptr<Material> &ou::Graphic::GetDefaultMaterial() const {
 }
 
 
+const std::shared_ptr<Texture> &ou::Graphic::GetMainTexture() const {
+	return sWhiteTexture_;
+}
+
+
+void ou::Graphic::SetMaterial(std::shared_ptr<Material> material) {
+	material_ = std::move(material);
+	SetMaterialDirty();
+}
+
+
+const std::shared_ptr<Material> &ou::Graphic::GetMaterial() const {
+	return material_ ? material_ : GetDefaultMaterial();
+}
+
+
 void ou::Graphic::SetColor(const Color &color) {
+	if (color_ == color) { return; }
 	color_ = color;
+	SetVerticesDirty();
 }
 
 
 const Color &ou::Graphic::GetColor() const {
 	return color_;
+}
+
+
+void ou::Graphic::SetRaycastTarget(bool raycastTarget) {
+	raycastTarget_ = raycastTarget;
+}
+
+
+bool ou::Graphic::GetRaycastTarget() const {
+	return raycastTarget_;
+}
+
+
+void ou::Graphic::CrossFadeColor(const Color &targetColor, float duration, bool ignoreTimeScale, bool useAlpha) {
+	const auto &currentColor = canvasRenderer_->GetColor();
+	auto target = targetColor;
+	if (!useAlpha) { target.a = currentColor.a; }
+
+	if (duration <= 0.0f) {
+		canvasRenderer_->SetColor(target);
+		colorTween_ = {};
+		return;
+	}
+
+	colorTween_ = {
+		.startColor = currentColor,
+		.targetColor = target,
+		.duration = duration,
+		.elapsed = 0.0f,
+		.ignoreTimeScale = ignoreTimeScale};
+}
+
+
+CanvasRenderer *ou::Graphic::GetCanvasRenderer() const {
+	return canvasRenderer_;
+}
+
+
+void ou::Graphic::SetAllDirty() {
+	SetVerticesDirty();
+	SetMaterialDirty();
+}
+
+
+void ou::Graphic::SetVerticesDirty() {
+	if (!IsActiveAndEnabled() || !canvasRenderer_) { return; }
+
+	isVerticesDirty_ = true;
+	CanvasUpdateRegistry::RegisterCanvasElementForGraphicRebuild(this);
+}
+
+
+void ou::Graphic::SetMaterialDirty() {
+	if (!IsActiveAndEnabled() || !canvasRenderer_) { return; }
+
+	isMaterialDirty_ = true;
+	CanvasUpdateRegistry::RegisterCanvasElementForGraphicRebuild(this);
+}
+
+
+void ou::Graphic::Rebuild() {
+	if (isVerticesDirty_) {
+		UpdateGeometry();
+		isVerticesDirty_ = false;
+	}
+	if (isMaterialDirty_) {
+		UpdateMaterial();
+		isMaterialDirty_ = false;
+	}
+}
+
+
+void ou::Graphic::OnRectTransformDimensionsChange() {
+	SetVerticesDirty();
 }
 
 
@@ -82,18 +202,36 @@ RectTransform *ou::Graphic::GetRectTransform() const {
 }
 
 
-void ou::Graphic::DrawWithMaterial(Graphics::CommandList cmd, uint32_t vertexCount, uint32_t instanceCount) const {
-	const auto &material = GetMaterial();
-	if (!material || !material->GetShader()) { return; }
+void ou::Graphic::UpdateGeometry() {
+	VertexHelper vh;
+	OnPopulateMesh(vh);
 
-	auto *device = Graphics::GetDevice();
-	const auto &shader = material->GetShader();
-	for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
-		const auto *pso = shader->GetPipelineState(
-			pass, material->GetRenderStateOverride(), nullptr, Graphics::PrimitiveTopology::TRIANGLESTRIP);
-		if (!pso) { continue; }
+	std::vector<UIVertex> vertices;
+	std::vector<uint32_t> indices;
+	vh.FillMesh(vertices, indices);
+	canvasRenderer_->SetMesh(std::move(vertices), std::move(indices));
+}
 
-		device->BindPipelineState(pso, cmd);
-		device->DrawInstanced(vertexCount, instanceCount, 0, 0, cmd);
-	}
+
+void ou::Graphic::UpdateMaterial() {
+	canvasRenderer_->SetMaterialCount(1);
+	canvasRenderer_->SetMaterial(GetMaterial(), 0);
+	canvasRenderer_->SetTexture(GetMainTexture());
+}
+
+
+void ou::Graphic::OnPopulateMesh(VertexHelper &vh) {
+	const auto &rect = rectTransform_->GetRect();
+	const auto left = rect.center.x;
+	const auto bottom = rect.center.y;
+	const auto right = left + rect.size.x;
+	const auto top = bottom + rect.size.y;
+
+	vh.Clear();
+	vh.AddVert({left, bottom, 0.0f}, color_, {0.0f, 1.0f, 0.0f, 0.0f});
+	vh.AddVert({left, top, 0.0f}, color_, {0.0f, 0.0f, 0.0f, 0.0f});
+	vh.AddVert({right, top, 0.0f}, color_, {1.0f, 0.0f, 0.0f, 0.0f});
+	vh.AddVert({right, bottom, 0.0f}, color_, {1.0f, 1.0f, 0.0f, 0.0f});
+	vh.AddTriangle(0, 1, 2);
+	vh.AddTriangle(2, 3, 0);
 }

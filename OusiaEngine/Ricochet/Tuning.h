@@ -18,11 +18,11 @@ inline constexpr float kDamageSpeed = 10.0f;
 inline constexpr float kPlayerDrag = 0.55f;
 // 壁で反射したときに残る速さの割合
 inline constexpr float kWallRestitution = 0.93f;
-// 低速帯だけにかかる重力
+// 常にかかる重力
 inline constexpr float kGravity = 14.0f;
 
 // ----- 引っ張り（溜め）-----
-// 実時間で数える（スローの影響を受けない）
+// パッド：実時間で数える（スローの影響を受けない）
 inline constexpr float kMaxChargeTime = 0.8f;
 // ちょん押しでも最高速度のこの割合で飛ぶ
 inline constexpr float kMinLaunchRatio = 0.35f;
@@ -32,8 +32,20 @@ inline constexpr float kChargeTimeScale = 0.25f;
 inline constexpr float kInputDirectionThreshold = 0.5f;
 // これ未満を「離した（入力 0）」とみなす
 inline constexpr float kInputReleaseThreshold = 0.2f;
+// マウス：左クリックした点からこの距離（画面の高さに対する割合）まで引くと最大の力
+inline constexpr float kMaxDragScreenRatio = 0.3f;
+// マウス：これより短い引きは溜めとみなさない（離しても発射しない）
+inline constexpr float kDragDeadZoneScreenRatio = 0.02f;
 // 溜めたときにプレイヤーが伸びる最大量
 inline constexpr float kMaxStretch = 0.6f;
+
+// ----- 自動突進（コンボが 5 の倍数になったとき）-----
+inline constexpr int kAutoDashComboStep = 5;
+// コンボが決まってから溜め始めるまで
+inline constexpr float kAutoDashDelay = 0.1f;
+// ボスと反対向きに下がる時間と距離
+inline constexpr float kAutoDashWindUpTime = 0.35f;
+inline constexpr float kAutoDashBackOff = 1.5f;
 
 // ----- ストック -----
 inline constexpr int kMaxStock = 3;
@@ -44,13 +56,9 @@ inline constexpr int kComboPerStock = 10;
 
 // ----- プレイヤーの HP と被弾 -----
 inline constexpr float kPlayerMaxHp = 100.0f;
-// スーパーアーマー中に受けるダメージの割合
-inline constexpr float kArmorDamageRatio = 0.4f;
 // 被弾の吹っ飛び速度（ダメージ閾値未満にクランプされる）
 inline constexpr float kKnockbackSpeed = 9.0f;
 inline constexpr float kHitInvincibleTime = 0.8f;
-// アーマーで受けたときの無敵（連続ヒットを防ぐだけ）
-inline constexpr float kArmorInvincibleTime = 0.15f;
 
 // ----- 攻撃・ヒットストップ・コンボ -----
 // ボスへのダメージ = 速さ × この値
@@ -97,6 +105,8 @@ inline constexpr float kGiantBulletDamage = 20.0f;
 inline constexpr int kGiantBulletMaxBounces = 6;
 inline constexpr int kGiantBulletMaxCount = 3;
 inline constexpr float kDashDamage = 25.0f;
+// 点光源を付けられる弾の数（ライトは全部で 16 個まで。平行光 2・プレイヤー・ボス・弱点で 5 個使う）
+inline constexpr int kMaxProjectileLights = 8;
 inline constexpr float kAreaAttackDamage = 25.0f;
 
 } // namespace ou::Tuning

@@ -7,13 +7,13 @@
 
 namespace ou {
 
-// プレイヤーの状態は速さで 3 段階に分かれる
+// プレイヤーの状態は速さで 3 段階に分かれる（重力は速さによらず常にかかる）
 enum class SpeedBand : uint8_t {
-	// ダメージ閾値未満。再発射できる・攻撃なし・アーマーなし・重力あり
+	// ダメージ閾値未満。再発射できる・攻撃なし・無敵なし
 	Low,
-	// ダメージ閾値〜再発射閾値。再発射できる・攻撃あり・アーマーあり（つなぎの窓）
+	// ダメージ閾値〜再発射閾値。再発射できる・攻撃あり・無敵（つなぎの窓）
 	Mid,
-	// 再発射閾値より上。再発射できない・攻撃あり・アーマーあり
+	// 再発射閾値より上。再発射できない・攻撃あり・無敵
 	High,
 };
 
@@ -25,7 +25,6 @@ inline SpeedBand ClassifySpeed(float speed) {
 
 inline bool CanRelaunch(SpeedBand band) { return band != SpeedBand::High; }
 inline bool HasAttack(SpeedBand band) { return band != SpeedBand::Low; }
-inline bool HasSuperArmor(SpeedBand band) { return band != SpeedBand::Low; }
-inline bool UsesGravity(SpeedBand band) { return band == SpeedBand::Low; }
+inline bool IsInvincibleBySpeed(SpeedBand band) { return band != SpeedBand::Low; }
 
 } // namespace ou

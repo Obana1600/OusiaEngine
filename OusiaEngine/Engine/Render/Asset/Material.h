@@ -10,6 +10,8 @@
 
 #include <cstdint>
 #include <memory>
+#include <string_view>
+#include <vector>
 
 
 namespace ou {
@@ -74,6 +76,19 @@ public: // メンバ関数
 	void SetLightingMode(LightingMode lightingMode);
 	LightingMode GetLightingMode() const;
 
+	bool HasProperty(std::string_view name) const;
+
+	void SetFloat(std::string_view name, float value);
+	float GetFloat(std::string_view name) const;
+
+	void SetVector(std::string_view name, const Vector4 &value);
+	Vector4 GetVector(std::string_view name) const;
+
+	void SetColor(std::string_view name, const Color &value);
+	Color GetColor(std::string_view name) const;
+
+	void WritePropertyBuffer(void *dst) const;
+
 
 private: // 静的メンバ変数
 
@@ -94,6 +109,13 @@ private: // メンバ変数
 	Vector2 uvScale_ = Vector2::One;
 	Color color_ = Color::White;
 	LightingMode lightingMode_ = LightingMode::HalfLambert;
+
+	std::vector<Vector4> propertyValues_;
+
+
+private: // メンバ関数
+
+	int32_t FindPropertyIndex(std::string_view name, Shader::PropertyType type) const;
 };
 
 } // namespace ou

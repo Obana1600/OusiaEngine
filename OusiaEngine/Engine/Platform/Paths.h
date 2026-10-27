@@ -10,6 +10,9 @@ namespace ou {
 // 実行している .exe の親ディレクトリのパスを取得する
 std::filesystem::path ExecutableDirectory();
 
+// プロジェクトのフォルダを設定する
+void SetProjectDirectory(const std::filesystem::path &directory);
+
 // Assets フォルダのパスを取得する
 std::optional<std::filesystem::path> FindAssetsFolder();
 

@@ -15,8 +15,7 @@ struct MotionParams {
 	float drag = 0.0f;
 	// 壁で反射したときに残る速さの割合
 	float restitution = 1.0f;
-	// この速さ未満のときだけ重力（-y）をかける。0 で重力なし
-	float gravityBelowSpeed = 0.0f;
+	// -y 向きの重力。0 で重力なし
 	float gravity = 0.0f;
 };
 

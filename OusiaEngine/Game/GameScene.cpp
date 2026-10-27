@@ -1,118 +1,133 @@
 #include "GameScene.h"
-#include "Core/Time.h"
+#include "Asset/AssetDatabase.h"
+#include "UI/Button.h"
+#include "Core/Application.h"
 #include "Diagnostics/Log.h"
-#include "Math/Mathf.h"
-#include "Math/Quaternion.h"
+#include "Input/Input.h"
 #include "Render/Camera.h"
-#include "Render/LineRenderer.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
+#include "UI/Asset/FontAsset.h"
+#include "UI/Canvas.h"
+#include "UI/CanvasRenderer.h"
+#include "UI/EventSystem/EventSystem.h"
+#include "UI/EventSystem/StandaloneInputModule.h"
+#include "UI/GraphicRaycaster.h"
+#include "UI/Image.h"
+#include "UI/RectTransform.h"
+#include "UI/Text.h"
 
-#include <algorithm>
-#include <cmath>
-#include <vector>
+#include <string>
 
 using namespace ou;
 
 
 namespace {
 
-// 壁（xy 平面の箱）の半分の大きさ
-constexpr float kWallHalfWidth = 8.0f;
-constexpr float kWallHalfHeight = 5.0f;
+Button *CreateButton(Scene &scene, Transform *canvas, const std::shared_ptr<FontAsset> &font, const std::string &label, float y) {
+	auto *object = scene.CreateGameObject(label);
+	object->AddComponent<Image>()->SetColor({0.25f, 0.45f, 0.85f, 1.0f});
+	auto *rect = dynamic_cast<RectTransform *>(object->GetTransform());
+	rect->SetParent(canvas);
+	rect->SetAnchoredPosition({0.0f, y});
+	rect->SetSizeDelta({320.0f, 64.0f});
 
-// origin から direction に進み、壁で反射しながら length だけ進んだ折れ線
-std::vector<Vector3> TraceReflection(Vector3 origin, Vector3 direction, float length, int maxBounces) {
-	std::vector<Vector3> points = {origin};
-	for (int bounce = 0; bounce <= maxBounces && length > 0.0f; bounce++) {
-		// 先に当たる壁までの距離
-		const auto tx = direction.x > 0.0f ? (kWallHalfWidth - origin.x) / direction.x
-					  : direction.x < 0.0f ? (-kWallHalfWidth - origin.x) / direction.x
-										   : Mathf::Infinity;
-		const auto ty = direction.y > 0.0f ? (kWallHalfHeight - origin.y) / direction.y
-					  : direction.y < 0.0f ? (-kWallHalfHeight - origin.y) / direction.y
-										   : Mathf::Infinity;
-		const auto t = Mathf::Min(tx, ty, length);
+	// 文字も raycastTarget のまま。当たったら親の Button に届くかを見る
+	auto *textObject = scene.CreateGameObject(label + " Text");
+	auto *text = textObject->AddComponent<Text>();
+	auto *textRect = dynamic_cast<RectTransform *>(textObject->GetTransform());
+	textRect->SetParent(rect);
+	textRect->SetSizeDelta({320.0f, 64.0f});
+	if (font) { text->SetFont(font); }
+	text->SetFontSize(28.0f);
+	text->SetAlignment(TextAlignment::Center);
+	text->SetText(label);
 
-		origin = origin + direction * t;
-		points.push_back(origin);
-		length -= t;
-
-		if (tx <= ty) { direction.x = -direction.x; }
-		if (ty <= tx) { direction.y = -direction.y; }
-	}
-	return points;
+	auto *button = object->AddComponent<Button>();
+	ColorBlock colors{};
+	colors.highlightedColor = {1.0f, 1.0f, 0.6f, 1.0f};
+	colors.selectedColor = {1.0f, 0.8f, 0.3f, 1.0f};
+	colors.pressedColor = {0.4f, 0.4f, 0.4f, 1.0f};
+	button->SetColors(colors);
+	return button;
 }
 
 } // namespace
 
 
-
 void ou::BuildGameScene(Scene &scene) {
-	scene.CreateGameObject("Line Ring Test")->AddComponent<LineRingTest>();
+	scene.CreateGameObject("UI Input Test")->AddComponent<UiInputTest>();
 }
 
 
-void ou::LineRingTest::Start() {
+void ou::UiInputTest::Start() {
 	auto &scene = *GetGameObject()->GetScene();
 
-	// xy 平面を正面から見る
-	auto *cameraObject = scene.CreateGameObject("Main Camera");
-	cameraObject->GetTransform()->SetLocalPosition({0.0f, 0.0f, -16.0f});
-	cameraObject->AddComponent<Camera>();
+	scene.CreateGameObject("Main Camera")->AddComponent<Camera>();
 
-	// 壁（loop）
-	auto *walls = scene.CreateGameObject("Walls")->AddComponent<LineRenderer>();
-	const Vector3 corners[] = {
-		{-kWallHalfWidth, -kWallHalfHeight, 0.0f},
-		{kWallHalfWidth, -kWallHalfHeight, 0.0f},
-		{kWallHalfWidth, kWallHalfHeight, 0.0f},
-		{-kWallHalfWidth, kWallHalfHeight, 0.0f},
-	};
-	walls->SetPositions(corners);
-	walls->SetLoop(true);
-	walls->SetWidthMultiplier(0.2f);
-	walls->SetStartColor(Color::Gray);
-	walls->SetEndColor(Color::Gray);
+	auto *eventSystemObject = scene.CreateGameObject("EventSystem");
+	auto *eventSystem = eventSystemObject->AddComponent<EventSystem>();
+	eventSystemObject->AddComponent<StandaloneInputModule>();
 
-	// 予測線（毎フレーム頂点が変わる。先に行くほど細く透明に）
-	predictionLine_ = scene.CreateGameObject("Prediction Line")->AddComponent<LineRenderer>();
-	predictionLine_->SetStartWidth(0.25f);
-	predictionLine_->SetEndWidth(0.05f);
-	predictionLine_->SetStartColor(Color::White);
-	predictionLine_->SetEndColor({0.3f, 0.8f, 1.0f, 0.0f});
+	auto *canvasObject = scene.CreateGameObject("Canvas");
+	canvasObject->AddComponent<Canvas>();
+	canvasObject->AddComponent<GraphicRaycaster>();
+	auto *canvas = canvasObject->GetTransform();
 
-	// 予兆線（ローカル座標。Transform の回転に付いてくる）
-	auto *warningObject = scene.CreateGameObject("Warning Line");
-	warningObject->GetTransform()->SetLocalPosition({4.0f, 1.5f, 0.0f});
-	warningLine_ = warningObject->AddComponent<LineRenderer>();
-	const Vector3 warningPoints[] = {Vector3::Zero, {6.0f, 0.0f, 0.0f}};
-	warningLine_->SetPositions(warningPoints);
-	warningLine_->SetUseWorldSpace(false);
-	warningLine_->SetWidthMultiplier(0.6f);
+	// 当たらない背景
+	auto *panelObject = scene.CreateGameObject("Panel");
+	auto *panel = panelObject->AddComponent<Image>();
+	panel->SetColor({0.0f, 0.0f, 0.0f, 0.5f});
+	panel->SetRaycastTarget(false);
+	auto *panelRect = dynamic_cast<RectTransform *>(panelObject->GetTransform());
+	panelRect->SetParent(canvas);
+	panelRect->SetSizeDelta({400.0f, 400.0f});
 
-	Log::Info("TEST LineRingTest started");
+	const auto font = AssetDatabase::LoadAssetAtPath<FontAsset>("EngineAssets/Font/NotoSansJP-Bold.ttf");
+	auto *play = CreateButton(scene, canvas, font, "Play", 120.0f);
+	auto *disabled = CreateButton(scene, canvas, font, "Disabled", 40.0f);
+	auto *retry = CreateButton(scene, canvas, font, "Retry", -40.0f);
+	auto *quit = CreateButton(scene, canvas, font, "Quit", -120.0f);
+	disabled->SetInteractable(false);
+
+	play->onClick_.AddListener([] { Log::Info("TEST onClick Play"); });
+	disabled->onClick_.AddListener([] { Log::Info("TEST onClick Disabled (呼ばれてはいけない)"); });
+	retry->onClick_.AddListener([] { Log::Info("TEST onClick Retry"); });
+	quit->onClick_.AddListener([] {
+		Log::Info("TEST onClick Quit -> Application::Quit");
+		Application::Quit();
+	});
+
+	for (auto *button : {play, disabled, retry, quit}) {
+		watched_.push_back({button->GetTargetGraphic()});
+	}
+
+	eventSystem->SetFirstSelectedGameObject(play->GetGameObject());
 }
 
 
-void ou::LineRingTest::Update() {
-	const auto time = Time::GetTime();
+void ou::UiInputTest::Update() {
+	frame_++;
 
-	// 発射の向きを回しながら、壁で 4 回反射する予測線を作り直す
-	const auto angle = time * 0.4f;
-	const Vector3 direction = {std::cos(angle), std::sin(angle), 0.0f};
-	const auto points = TraceReflection({-5.0f, -3.0f, 0.0f}, direction, 40.0f, 4);
-	predictionLine_->SetPositions(points);
+	// 色が変わるあいだも、頂点は作り直されないはず
+	int geometryCount = 0;
+	for (auto &watched : watched_) {
+		const void *vertices = watched.graphic->GetCanvasRenderer()->GetVertices().data();
+		if (vertices != watched.vertices) { geometryCount++; }
+		watched.vertices = vertices;
+	}
+	if (geometryCount > 0) {
+		Log::Info("TEST frame {} rebuilt geometry={}", frame_, geometryCount);
+	}
 
-	// 予兆線は回りながら点滅する
-	warningLine_->GetTransform()->SetLocalRotation(Quaternion::Euler({0.0f, 0.0f, time * 0.5f}));
-	const auto alpha = 0.4f + 0.4f * std::sin(time * 8.0f);
-	warningLine_->SetStartColor({1.0f, 0.2f, 0.2f, alpha});
-	warningLine_->SetEndColor({1.0f, 0.2f, 0.2f, 0.0f});
+	auto *eventSystem = EventSystem::GetCurrent();
+	auto *selected = eventSystem->GetCurrentSelectedGameObject();
+	if (selected != lastSelected_) {
+		Log::Info("TEST selected={}", selected ? selected->GetName() : "(none)");
+		lastSelected_ = selected;
+	}
 
-	logTimer_ += Time::GetDeltaTime();
-	if (logTimer_ >= 1.0f) {
-		logTimer_ = 0.0f;
-		Log::Info("TEST prediction points={}", predictionLine_->GetPositionCount());
+	if (Input::GetKeyDown(KeyCode::Escape)) {
+		Application::Quit();
 	}
 }

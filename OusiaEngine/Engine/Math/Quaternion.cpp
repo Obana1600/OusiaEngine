@@ -57,7 +57,7 @@ Vector3 ou::Quaternion::EulerAngles() const {
 	const auto m32 = 2.0f * (n.y * n.z - n.w * n.x);
 	const auto m33 = 1.0f - 2.0f * (n.x * n.x + n.y * n.y);
 
-	const auto sinY = Mathf::Clamp(-m13, -1.0f, 1.0f);
+	const auto sinY = Mathf::ClampN1P1(-m13);
 	const auto angleY = Mathf::Asin(sinY);
 
 	if (Mathf::Abs(sinY) > 1.0f - Mathf::Epsilon) {
@@ -68,7 +68,7 @@ Vector3 ou::Quaternion::EulerAngles() const {
 
 
 void ou::Quaternion::ToAngleAxis(Vector3 *outAxis, float *outAngle) const {
-	const auto cw = Mathf::Clamp(w, -1.0f, 1.0f);
+	const auto cw = Mathf::ClampN1P1(w);
 	const float angle = 2.0f * Mathf::Acos(cw);
 	const float s = Mathf::Sin(angle * 0.5f);
 
@@ -85,7 +85,13 @@ void ou::Quaternion::ToAngleAxis(Vector3 *outAxis, float *outAngle) const {
 
 
 std::string ou::Quaternion::ToString() const {
-	return std::format("({:.2f} {:.2f} {:.2f} {:.2f})", x, y, z, w);
+	return std::format("({:.2f}, {:.2f}, {:.2f}, {:.2f})", x, y, z, w);
+}
+
+
+std::string ou::Quaternion::ToString(std::string_view format) const {
+	const auto fmt = std::format("({{:{0}}}, {{:{0}}}, {{:{0}}}, {{:{0}}})", format);
+	return std::vformat(fmt, std::make_format_args(x, y, z, w));
 }
 
 

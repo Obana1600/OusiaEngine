@@ -1,5 +1,8 @@
 #include "BossDashAction.h"
 #include "Boss.h"
+#include "CameraRig.h"
+#include "GameColors.h"
+#include "ParticleEffects.h"
 #include "Math/Mathf.h"
 #include "Motion2D.h"
 
@@ -56,7 +59,14 @@ bool ou::BossDashAction::Update(Boss &boss, float dt) {
 		case Step::Dashing: {
 			// 高速のプレイヤーとぶつかると CombatSystem が向きを変える
 			MotionState state = {boss.GetPosition(), boss.GetDashVelocity()};
-			bounceCount_ += Motion2D::Step(state, MakeDashParams(boss), dt).bounceCount;
+			const auto result = Motion2D::Step(state, MakeDashParams(boss), dt);
+			bounceCount_ += result.bounceCount;
+			if (result.bounceCount > 0) {
+				// 壁にぶつかるたびに大きくはじけて揺れる
+				const auto contact = state.position - result.lastWallNormal * boss.GetRadius();
+				ParticleEffects::PlayHit(contact, result.lastWallNormal, GameColors::kBossDanger, 1.0f);
+				if (auto *camera = CameraRig::GetInstance()) { camera->Shake(0.4f); }
+			}
 			boss.SetPosition(state.position);
 			boss.SetDashVelocity(state.velocity);
 			if (bounceCount_ >= kMaxBounces || timer_ >= kMaxDashTime) {

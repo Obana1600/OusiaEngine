@@ -17,6 +17,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Arena.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="AutoDash.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="BossParticles.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="GameColors.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="ParticleEffects.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="ParticleEmitter.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="PlayerParticles.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="Boss.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="BossAction.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="BossAreaAttackAction.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
@@ -43,14 +49,24 @@
     <ClInclude Include="RicochetScene.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="SmallBullet.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="SpeedBand.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="StageParticles.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="TimeControl.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="TrajectoryPreview.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="Tuning.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="WarningLine.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="FilledRing.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="MenuUi.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="ResultMenu.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="TitleMenu.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="TitleScene.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Arena.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="AutoDash.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="BossParticles.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="ParticleEffects.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="ParticleEmitter.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="PlayerParticles.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="Boss.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="BossAction.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="BossAreaAttackAction.cpp"><Filter>ソース ファイル</Filter></ClCompile>
@@ -76,10 +92,15 @@
     <ClCompile Include="PullInput.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="RicochetScene.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="SmallBullet.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="StageParticles.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="TimeControl.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="TrajectoryPreview.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="WarningLine.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="main.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="FilledRing.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="MenuUi.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="ResultMenu.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="TitleMenu.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="TitleScene.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
 </Project>

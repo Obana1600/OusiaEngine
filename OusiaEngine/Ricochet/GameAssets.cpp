@@ -1,7 +1,10 @@
 #include "GameAssets.h"
+#include "Asset/AssetDatabase.h"
+#include "Render/Asset/Texture.h"
 #include "Math/Mathf.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Mesh.h"
+#include "Render/Light.h"
 #include "Render/MeshRenderer.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -53,6 +56,10 @@ void ou::GameAssets::Awake() {
 	sInstance_ = this;
 	sphere_ = CreateSphereMesh(24, 12);
 	cube_ = Mesh::CreateCube();
+
+	glowTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/particle.png");
+	dotTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("EngineAssets/Texture/particle.png");
+	diamondTexture_ = AssetDatabase::LoadAssetAtPath<Texture>("Assets/diamond.png");
 }
 
 
@@ -91,4 +98,16 @@ std::shared_ptr<Material> ou::CreateTransparentMaterial(const Color &color) {
 	override.cull = Graphics::CullMode::NONE;
 	material->SetRenderStateOverride(override);
 	return material;
+}
+
+
+Light *ou::CreatePointLight(Scene &scene, Transform *parent, const Color &color, float intensity, float range) {
+	auto *object = scene.CreateGameObject("Point Light");
+	object->GetTransform()->SetParent(parent);
+	auto *light = object->AddComponent<Light>();
+	light->SetType(LightType::Point);
+	light->SetColor(color);
+	light->SetIntensity(intensity);
+	light->SetRange(range);
+	return light;
 }

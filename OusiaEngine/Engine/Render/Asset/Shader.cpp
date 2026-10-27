@@ -38,10 +38,22 @@ const Graphics::Shader *OptionalStage(const Graphics::Shader &shader) {
 
 
 
-ou::Shader::Shader(std::vector<Pass> passes, int renderQueue)
+ou::Shader::Shader(std::vector<Pass> passes, int renderQueue, std::vector<Property> properties)
 	: passes_(std::move(passes)),
 	  renderQueue_(renderQueue),
-	  pipelineCaches_(passes_.size()) {}
+	  properties_(std::move(properties)),
+	  pipelineCaches_(passes_.size()) {
+	uint32_t offset = 0;
+	for (auto &property : properties_) {
+		const uint32_t size = (property.type == PropertyType::Float) ? 4 : 16;
+		if (offset % 16 + size > 16) {
+			offset = Graphics::AlignTo(offset, 16u);
+		}
+		property.offset = offset;
+		offset += size;
+	}
+	propertyBufferSize_ = Graphics::AlignTo(offset, 16u);
+}
 
 
 const Graphics::PipelineState *ou::Shader::GetPipelineState(
@@ -108,4 +120,22 @@ size_t ou::Shader::GetPassCount() const {
 
 int ou::Shader::GetRenderQueue() const {
 	return renderQueue_;
+}
+
+
+const std::vector<Shader::Property> &ou::Shader::GetProperties() const {
+	return properties_;
+}
+
+
+int32_t ou::Shader::FindPropertyIndex(std::string_view name) const {
+	for (size_t i = 0; i < properties_.size(); i++) {
+		if (properties_[i].name == name) { return static_cast<int32_t>(i); }
+	}
+	return -1;
+}
+
+
+uint32_t ou::Shader::GetPropertyBufferSize() const {
+	return propertyBufferSize_;
 }

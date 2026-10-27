@@ -14,6 +14,7 @@ namespace ou {
 
 // 前方宣言
 class BossWeakPoint;
+class Light;
 class Material;
 class Scene;
 
@@ -64,6 +65,7 @@ public: // メンバ関数
 
 	// 予兆として体を光らせる
 	void SetWarningGlow(float amount) { warningGlow_ = amount; }
+	float GetWarningGlow() const { return warningGlow_; }
 
 
 private: // 静的メンバ変数
@@ -91,6 +93,8 @@ private: // メンバ変数
 
 	BossWeakPoint *weakPoint_ = nullptr;
 	std::shared_ptr<Material> bodyMaterial_;
+	// 形態の色で周りを照らし、攻撃の予兆で強く光る
+	Light *light_ = nullptr;
 
 
 private: // メンバ関数

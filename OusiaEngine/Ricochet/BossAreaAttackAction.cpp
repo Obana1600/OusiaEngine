@@ -1,6 +1,8 @@
 #include "BossAreaAttackAction.h"
 #include "Boss.h"
 #include "FilledRing.h"
+#include "GameColors.h"
+#include "ParticleEffects.h"
 #include "Player.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -65,6 +67,9 @@ bool ou::BossAreaAttackAction::Update(Boss &boss, float dt) {
 		boss.SetWarningGlow(0.0f);
 		fill_->SetFillAmount(1.0f);
 		fill_->SetColor(kBlastColor);
+		// 範囲の縁まで衝撃波が広がる
+		ParticleEffects::PlayRing(boss.GetPosition(), {1.0f, 0.5f, 0.3f, 1.0f}, kRadius);
+		ParticleEffects::PlayExplosion(boss.GetPosition(), GameColors::kBossDanger, 1.0f);
 
 		auto *player = Player::GetInstance();
 		if (player) {

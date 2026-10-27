@@ -1,6 +1,8 @@
 #include "Engine.h"
 #include "Asset/AssetDatabase.h"
 #include "Audio/XAudio2/Audio.h"
+#include "Core/Application.h"
+#include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
 #include "Input/Input.h"
@@ -9,10 +11,10 @@
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
 #include "Render/Asset/Material.h"
+#include "Render/LineRenderer.h"
 #include "Scene/SceneManager.h"
 #include "UI/Graphic.h"
 #include "UI/Text.h"
-#include "Render/LineRenderer.h"
 
 #include <filesystem>
 #include <thread>
@@ -43,8 +45,18 @@ struct BlitConstants {
 void ou::Engine::Initialize(const EngineDesc &desc) {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
+	// プロジェクトのフォルダ
+	SetProjectDirectory(std::filesystem::path(Utf8ToWide(desc.projectDir)));
+
 	// ログ
-	logSystem_ = std::make_unique<LogSystem>(LogDirectory("CG2_DirectXGame"), std::span<const std::string>());
+	const auto productName = desc.productName.empty() ? "OusiaEngine_Project" : desc.productName;
+	logSystem_ = std::make_unique<LogSystem>(LogDirectory(productName), std::span<const std::string>());
+
+#ifdef WITH_EDITOR
+	if (!FindAssetsFolder()) {
+		Log::Error("Assets フォルダが見つかりません");
+	}
+#endif
 
 	// オーディオ
 	if (!Audio::Initialize()) {
@@ -162,7 +174,7 @@ bool ou::Engine::Update() {
 	window_->PumpMessages();
 	Input::Update();
 	imGuiManager_->NewFrame();
-	return window_->IsCloseRequested();
+	return window_->IsCloseRequested() || Application::IsQuitRequested();
 }
 
 

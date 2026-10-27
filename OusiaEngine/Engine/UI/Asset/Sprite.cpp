@@ -52,7 +52,7 @@ Rect ou::Sprite::MakeUvRect() const {
 							 static_cast<float>(texture_->GetHeight())};
 
 	return {
-		{rect_.position.x / texSize.x, rect_.position.y / texSize.y},
+		{rect_.center.x / texSize.x, rect_.center.y / texSize.y},
 		{rect_.size.x / texSize.x, rect_.size.y / texSize.y}};
 }
 

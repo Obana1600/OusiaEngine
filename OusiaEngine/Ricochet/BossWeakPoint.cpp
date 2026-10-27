@@ -28,6 +28,8 @@ void ou::BossWeakPoint::Start() {
 	marker_ = renderer->GetTransform();
 	marker_->SetParent(GetTransform());
 	markerMaterial_ = renderer->GetSharedMaterial();
+	// 弱点の周りを黄色く照らす（マーカーと一緒に出る）
+	CreatePointLight(*GetGameObject()->GetScene(), marker_, kMarkerColor, 3.0f, 3.0f);
 	renderer->GetGameObject()->SetActive(isActive_);
 }
 

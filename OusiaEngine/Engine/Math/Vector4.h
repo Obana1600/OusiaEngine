@@ -4,6 +4,7 @@
 #include "Math/Vector3.h"
 
 #include <string>
+#include <string_view>
 
 
 namespace ou {
@@ -84,7 +85,7 @@ public:
 
 	// ベクトルの値をフォーマットされた文字列として返す
 	std::string ToString() const;
-	// TODO: フォーマット指定のオーバーライド
+	std::string ToString(std::string_view format) const;
 
 
 public: // TODO: API の追加 / コメント書く

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Math/Color.h"
+#include "Math/Vector2.h"
 #include "Scene/Component.h"
 
 
@@ -22,7 +24,8 @@ private: // メンバ関数
 
 	static void ResolvePlayerBoss(Player &player, Boss &boss);
 	static void ResolvePlayerProjectile(Player &player, Projectile &projectile);
-	static void OnScore(float speed);
+	// コンボの加算・ヒットストップ・揺れ・はじけるパーティクル。position と direction ははじける位置と向き
+	static void OnScore(float speed, const Vector2 &position, const Vector2 &direction, const Color &color);
 };
 
 } // namespace ou
