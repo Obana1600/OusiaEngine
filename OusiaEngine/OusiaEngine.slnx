@@ -13,5 +13,5 @@
   </Folder>
   <Project Path="Engine/Engine.vcxproj" Id="cb6d32a0-4551-4278-8db9-3352e4b67748" />
   <Project Path="Game/Game.vcxproj" Id="6f97b06d-51b8-4807-bdc0-8a6e53fe087a" />
-  <Project Path="Ricochet/Ricochet.vcxproj" Id="46375cec-b36f-4c95-b0e2-b4f1135690a0" />
+  <Project Path="pullrun/pullrun.vcxproj" Id="46375cec-b36f-4c95-b0e2-b4f1135690a0" />
 </Solution>
