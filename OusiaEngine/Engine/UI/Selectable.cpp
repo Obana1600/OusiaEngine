@@ -104,7 +104,7 @@ const ColorBlock &ou::Selectable::GetColors() const {
 
 
 Selectable *ou::Selectable::FindSelectable(const Vector3 &dir) const {
-	const auto direction = dir.Normalize();
+	const auto direction = dir.Normalized();
 
 	auto pos = GetTransform()->GetWorldPosition();
 	if (const auto *rectTransform = dynamic_cast<const RectTransform *>(GetTransform())) {

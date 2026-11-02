@@ -48,7 +48,6 @@ const Vector3 &ou::BoxCollider::GetCenter() const {
 
 void ou::BoxCollider::SetSize(const Vector3 &size) {
 	size_ = size;
-	PhysicsWorld::SetBoxHalfExtents(GetShapeId(), size_ * 0.5f);
 }
 
 
@@ -57,8 +56,9 @@ const Vector3 &ou::BoxCollider::GetSize() const {
 }
 
 
-PhysicsWorld::ShapeId ou::BoxCollider::CreateShape() const {
-	return PhysicsWorld::CreateBoxShape(size_ * 0.5f);
+PhysicsWorld::ShapeGeometry ou::BoxCollider::BuildShapeGeometry() const {
+	return {.type = PhysicsWorld::ShapeGeometry::Type::Box,
+			.halfExtents = size_ * 0.5f};
 }
 
 

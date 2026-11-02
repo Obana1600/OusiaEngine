@@ -13,7 +13,7 @@ Vector3 ou::SphereCollider::ClosestPoint(const Vector3 &position) const {
 	if (offset.LengthSquared() <= worldRadius * worldRadius) {
 		return position;
 	}
-	return worldCenter + offset.Normalize() * worldRadius;
+	return worldCenter + offset.Normalized() * worldRadius;
 }
 
 
@@ -34,7 +34,6 @@ const Vector3 &ou::SphereCollider::GetCenter() const {
 
 void ou::SphereCollider::SetRadius(float radius) {
 	radius_ = radius;
-	PhysicsWorld::SetSphereRadius(GetShapeId(), radius_);
 }
 
 
@@ -43,8 +42,9 @@ float ou::SphereCollider::GetRadius() const {
 }
 
 
-PhysicsWorld::ShapeId ou::SphereCollider::CreateShape() const {
-	return PhysicsWorld::CreateSphereShape(radius_);
+PhysicsWorld::ShapeGeometry ou::SphereCollider::BuildShapeGeometry() const {
+	return {.type = PhysicsWorld::ShapeGeometry::Type::Sphere,
+			.radius = radius_};
 }
 
 

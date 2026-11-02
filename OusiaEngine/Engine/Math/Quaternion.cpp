@@ -31,7 +31,7 @@ float ou::Quaternion::LengthSquared() const {
 }
 
 
-Quaternion ou::Quaternion::Normalize() const {
+Quaternion ou::Quaternion::Normalized() const {
 	float len = Length();
 	if (len < Mathf::Epsilon) {
 		return Identity;
@@ -47,7 +47,7 @@ Quaternion ou::Quaternion::Normalize() const {
 
 
 Vector3 ou::Quaternion::EulerAngles() const {
-	const auto n = Normalize();
+	const auto n = Normalized();
 
 	const auto m11 = 1.0f - 2.0f * (n.y * n.y + n.z * n.z);
 	const auto m12 = 2.0f * (n.x + n.y + n.w * n.z);
@@ -102,7 +102,7 @@ float ou::Quaternion::Angle(const Quaternion &a, const Quaternion &b) {
 
 
 Quaternion ou::Quaternion::AngleAxis(const Vector3 &axis, float angle) {
-	const auto n = axis.Normalize();
+	const auto n = axis.Normalized();
 	const auto s = Mathf::Sin(angle * 0.5f);
 	return {n.x * s, n.y * s, n.z * s, Mathf::Cos(angle * 0.5f)};
 }
@@ -141,7 +141,7 @@ Quaternion ou::Quaternion::Inverse(const Quaternion &q) {
 
 
 Quaternion ou::Quaternion::Normalize(Quaternion &q) {
-	return q = q.Normalize();
+	return q = q.Normalized();
 }
 
 

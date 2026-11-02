@@ -74,7 +74,7 @@ void ou::AutoDash::BeginWindUp(Player &player) {
 	}
 
 	const auto toBoss = boss->GetPosition() - player.GetPosition();
-	pullDirection_ = toBoss.LengthSquared() > 0.0001f ? -toBoss.Normalize() : Vector2{-1.0f, 0.0f};
+	pullDirection_ = toBoss.LengthSquared() > 0.0001f ? -toBoss.Normalized() : Vector2{-1.0f, 0.0f};
 
 	// アリーナの外へは下がらない
 	const auto limitX = Tuning::kArenaHalfWidth - Tuning::kPlayerRadius;
@@ -101,7 +101,7 @@ void ou::AutoDash::BeginDash(Player &player) {
 
 	// 溜めている間にボスが動いても、今のボスの中心を狙う
 	const auto toBoss = boss->GetPosition() - player.GetPosition();
-	const auto direction = toBoss.LengthSquared() > 0.0001f ? toBoss.Normalize() : -pullDirection_;
+	const auto direction = toBoss.LengthSquared() > 0.0001f ? toBoss.Normalized() : -pullDirection_;
 	player.SetVelocity(direction * Tuning::kPlayerMaxSpeed);
 	ParticleEffects::PlayHit(player.GetPosition(), -direction, GameColors::kGold, 1.0f);
 	GameAudio::PlaySe(Se::PlayerDash);

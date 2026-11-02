@@ -2,7 +2,7 @@
 #include "Core/Time.h"
 #include "Physics/Collider.h"
 #include "Physics/Collision.h"
-#include "Physics/Jolt/PhysicsWorld.h"
+#include "Physics/Box3D/PhysicsWorld.h"
 #include "Physics/Rigidbody.h"
 #include "Scene/GameObject.h"
 
@@ -103,13 +103,18 @@ std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vec
 }
 
 
+std::vector<Collider *> ou::Physics::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapBox(center, halfExtents, orientation, HitsTriggers(queryTriggerInteraction)));
+}
+
+
 std::vector<Collider *> ou::Physics::OverlapSphere(const Vector3 &center, float radius, QueryTriggerInteracation queryTriggerInteraction) {
 	return FindColliders(PhysicsWorld::OverlapSphere(center, radius, HitsTriggers(queryTriggerInteraction)));
 }
 
 
-std::vector<Collider *> ou::Physics::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, QueryTriggerInteracation queryTriggerInteraction) {
-	return FindColliders(PhysicsWorld::OverlapBox(center, halfExtents, orientation, HitsTriggers(queryTriggerInteraction)));
+std::vector<Collider *> ou::Physics::OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapCapsule(point0, point1, radius, HitsTriggers(queryTriggerInteraction)));
 }
 
 

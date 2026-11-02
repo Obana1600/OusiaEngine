@@ -196,7 +196,7 @@ ParticleSystem::Particle ou::ParticleSystem::MakeParticle() const {
 				direction = Vector3(disk.x * Mathf::Sin(angle),
 									Mathf::Cos(angle),
 									disk.y * Mathf::Sin(angle))
-								.Normalize();
+								.Normalized();
 				break;
 			}
 		}

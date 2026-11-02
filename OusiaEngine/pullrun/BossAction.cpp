@@ -12,12 +12,12 @@ Vector2 ou::DirectionToPlayer(const Boss &boss) {
 	if (!player) { return {-1.0f, 0.0f}; }
 	const auto toPlayer = player->GetPosition() - boss.GetPosition();
 	if (toPlayer.LengthSquared() < 0.0001f) { return {-1.0f, 0.0f}; }
-	return toPlayer.Normalize();
+	return toPlayer.Normalized();
 }
 
 
 Vector2 ou::RotateDirection(const Vector2 &direction, float angle) {
 	const auto cos = Mathf::Cos(angle);
 	const auto sin = Mathf::Sin(angle);
-	return Vector2{direction.x * cos - direction.y * sin, direction.x * sin + direction.y * cos}.Normalize();
+	return Vector2{direction.x * cos - direction.y * sin, direction.x * sin + direction.y * cos}.Normalized();
 }

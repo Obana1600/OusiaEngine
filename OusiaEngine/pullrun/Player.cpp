@@ -113,7 +113,7 @@ bool ou::Player::TakeHit(float damage, const Vector2 &knockbackDirection) {
 	// 吹っ飛び速度はダメージ閾値未満にクランプする（被弾中は低速帯）
 	hp_ = std::max(hp_ - damage, 0.0f);
 	const auto speed = std::min(Tuning::kKnockbackSpeed, Tuning::kDamageSpeed * 0.95f);
-	const auto direction = knockbackDirection.Normalize();
+	const auto direction = knockbackDirection.Normalized();
 	const auto velocityBefore = motion_.velocity;
 	motion_.velocity = direction * speed;
 	invincibleTimer_ = Tuning::kHitInvincibleTime;
@@ -156,7 +156,7 @@ void ou::Player::Launch() {
 	motion_.velocity = ComputeLaunchVelocity();
 	// 発射した反対側へ、溜めた分だけ火花を噴く
 	const auto ratio = pull_.GetChargeRatio();
-	ParticleEffects::PlayHit(motion_.position, -motion_.velocity.Normalize(), GameColors::ForBand(GetBand()), 0.2f + 0.6f * ratio);
+	ParticleEffects::PlayHit(motion_.position, -motion_.velocity.Normalized(), GameColors::ForBand(GetBand()), 0.2f + 0.6f * ratio);
 	ParticleEffects::PlayRing(motion_.position, GameColors::ForBand(GetBand()), 1.0f + 1.5f * ratio);
 	GameAudio::PlaySe(Se::PlayerDash, 0.5f + 0.5f * ratio);
 }

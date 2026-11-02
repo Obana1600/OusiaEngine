@@ -38,117 +38,84 @@ void ou::Collider::OnEnable() {
 
 void ou::Collider::OnDisable() {
 	ReleaseShape();
+	ReleaseOwnBody();
 	Physics::UnregisterCollider(this);
 }
 
 
-PhysicsWorld::ShapeId ou::Collider::GetShapeId() const {
-	return shapeId_;
-}
-
-
 void ou::Collider::SyncToPhysics() {
-	if (shapeId_ == PhysicsWorld::kInvalidShapeId) { shapeId_ = CreateShape(); }
-
 	auto *rigidbody = GetAttachedRigidbody();
-	const auto *bodyOwner = isTrigger_ ? nullptr : rigidbody;
-	if (bodyOwner) {
+	if (rigidbody) {
 		ReleaseOwnBody();
 	} else {
-		UpdateOwnBody(rigidbody);
+		SyncOwnBody();
 	}
 
-	const auto targetBodyId = bodyOwner ? bodyOwner->bodyId_ : ownBodyId_;
-	if (targetBodyId == PhysicsWorld::kInvalidBodyId || targetBodyId != bodyId_) {
-		AttachToBody(bodyOwner, targetBodyId);
+	const auto bodyId = rigidbody ? rigidbody->bodyId_ : ownBodyId_;
+	const auto geometry = CalculateShapeGeometry(rigidbody);
+
+	if (shapeId_ == PhysicsWorld::kInvalidShapeId || bodyId != bodyId_ || isTrigger_ != isSensorShape_) {
+		ReleaseShape();
+		bodyId_ = bodyId;
+		geometry_ = geometry;
+		isSensorShape_ = isTrigger_;
+		shapeId_ = PhysicsWorld::CreateShape(bodyId_, geometry_, isSensorShape_);
 		return;
 	}
 
-	SyncShapePose(bodyOwner);
-}
-
-
-void ou::Collider::UpdateOwnBody(const Rigidbody *rigidbody) {
-	const auto motionType = rigidbody ? PhysicsWorld::MotionType::Kinematic
-									  : PhysicsWorld::MotionType::Static;
-
-	if (ownBodyId_ == PhysicsWorld::kInvalidBodyId) {
-		const auto *transform = GetTransform();
-		bodyPosition_ = transform->GetWorldPosition();
-		bodyRotation_ = transform->GetWorldRotation();
-		ownBodyId_ = PhysicsWorld::CreateBody(bodyPosition_, bodyRotation_, motionType);
-		ownMotionType_ = motionType;
-		isOwnBodySensor_ = false;
-	}
-
-	if (ownMotionType_ != motionType) {
-		ownMotionType_ = motionType;
-		PhysicsWorld::SetMotionType(ownBodyId_, ownMotionType_);
-	}
-	if (isOwnBodySensor_ != isTrigger_) {
-		isOwnBodySensor_ = isTrigger_;
-		PhysicsWorld::SetIsSensor(ownBodyId_, isOwnBodySensor_);
+	if (geometry != geometry_) {
+		geometry_ = geometry;
+		PhysicsWorld::SetShapeGeometry(shapeId_, geometry_);
 	}
 }
 
 
-void ou::Collider::AttachToBody(const Rigidbody *bodyOwner, PhysicsWorld::BodyId id) {
-	bodyId_ = id;
-	CalculateShapePose(bodyOwner, &shapePosition_, &shapeRotation_, &shapeScale_);
-	PhysicsWorld::AttachShape(bodyId_, shapeId_, shapePosition_, shapeRotation_, shapeScale_);
-}
-
-
-void ou::Collider::SyncShapePose(const Rigidbody *bodyOwner) {
-	if (!bodyOwner) {
-		const auto *transform = GetTransform();
-		auto position = transform->GetWorldPosition();
-		auto rotation = transform->GetWorldRotation();
-		if (position != bodyPosition_ || rotation != bodyRotation_) {
-			bodyPosition_ = position;
-			bodyRotation_ = rotation;
-			PhysicsWorld::SetBodyPose(ownBodyId_, bodyPosition_, bodyRotation_);
-		}
-	}
-
-	Vector3 position;
-	Quaternion rotation;
-	Vector3 scale;
-	CalculateShapePose(bodyOwner, &position, &rotation, &scale);
-	if (position == shapePosition_ && rotation == shapeRotation_ && scale == shapeScale_) { return; }
-
-	shapePosition_ = position;
-	shapeRotation_ = rotation;
-	shapeScale_ = scale;
-	PhysicsWorld::SetShapeLocalPose(shapeId_, shapePosition_, shapeRotation_, shapeScale_);
-}
-
-
-void ou::Collider::CalculateShapePose(const Rigidbody *bodyOwner, Vector3 *position, Quaternion *rotation, Vector3 *scale) {
+void ou::Collider::SyncOwnBody() {
 	const auto *transform = GetTransform();
-	*scale = transform->GetLossyScale();
+	const auto position = transform->GetWorldPosition();
+	const auto rotation = transform->GetWorldRotation();
 
-	const auto *owner = bodyOwner ? bodyOwner->GetTransform() : transform;
-	if (owner == transform) {
-		*position = Vector3::Scale(GetShapeCenter(), *scale);
-		*rotation = Quaternion::Identity;
+	// まだ Body がないなら作る
+	if (ownBodyId_ == PhysicsWorld::kInvalidBodyId) {
+		bodyPosition_ = position;
+		bodyRotation_ = rotation;
+		ownBodyId_ = PhysicsWorld::CreateBody(bodyPosition_, bodyRotation_, PhysicsWorld::MotionType::Static);
 		return;
+	}
+
+	// Body の更新
+	if (position != bodyPosition_ || rotation != bodyRotation_) {
+		bodyPosition_ = position;
+		bodyRotation_ = rotation;
+		PhysicsWorld::SetBodyPose(ownBodyId_, bodyPosition_, bodyRotation_);
+	}
+}
+
+
+PhysicsWorld::ShapeGeometry ou::Collider::CalculateShapeGeometry(const Rigidbody *rigidbody) const {
+	auto geometry = BuildShapeGeometry();
+
+	const auto *transform = GetTransform();
+	geometry.scale = transform->GetLossyScale();
+
+	const auto *owner = rigidbody ? rigidbody->GetTransform() : transform;
+	if (owner == transform) {
+		geometry.localPosition = Vector3::Scale(GetShapeCenter(), geometry.scale);
+		geometry.localRotation = Quaternion::Identity;
+		return geometry;
 	}
 
 	const auto inverse = Quaternion::Inverse(owner->GetWorldRotation());
 	const auto center = transform->GetLocalToWorldMatrix().MultiplyPoint3x4(GetShapeCenter());
-	*position = inverse * (center - owner->GetWorldPosition());
-	*rotation = inverse * transform->GetWorldRotation();
+	geometry.localPosition = inverse * (center - owner->GetWorldPosition());
+	geometry.localRotation = inverse * transform->GetWorldRotation();
+	return geometry;
 }
 
 
 void ou::Collider::ReleaseShape() {
-	if (shapeId_ != PhysicsWorld::kInvalidShapeId) {
-		PhysicsWorld::DestroyShape(shapeId_);
-		shapeId_ = PhysicsWorld::kInvalidShapeId;
-	}
-
-	ReleaseOwnBody();
+	PhysicsWorld::DestroyShape(shapeId_);
+	shapeId_ = PhysicsWorld::kInvalidShapeId;
 	bodyId_ = PhysicsWorld::kInvalidBodyId;
 }
 

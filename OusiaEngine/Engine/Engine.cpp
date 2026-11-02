@@ -7,7 +7,7 @@
 #include "Diagnostics/Fatal.h"
 #include "Input/Input.h"
 #include "Particle/ParticleSystemRenderer.h"
-#include "Physics/Jolt/PhysicsWorld.h"
+#include "Physics/Box3D/PhysicsWorld.h"
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
 #include "Render/Asset/Material.h"

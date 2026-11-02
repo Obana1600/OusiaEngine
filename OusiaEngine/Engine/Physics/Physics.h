@@ -3,7 +3,7 @@
 #include "Math/Mathf.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
-#include "Physics/Jolt/PhysicsWorld.h"
+#include "Physics/Box3D/PhysicsWorld.h"
 #include "Physics/RaycastHit.h"
 
 #include <functional>
@@ -43,10 +43,13 @@ public: // 静的メンバ関数
 						float maxDistance = Mathf::Infinity, QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
 	static std::vector<RaycastHit> RaycastAll(const Vector3 &origin, const Vector3 &direction,
 											  float maxDistance = Mathf::Infinity, QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+	static std::vector<Collider *> OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation = Quaternion::Identity,
+											  QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
 	static std::vector<Collider *> OverlapSphere(const Vector3 &center, float radius,
 												 QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
-	static std::vector<Collider *> OverlapBox(const Vector3 &center, const Vector3 &halfExtents,
-											  const Quaternion &orientation = Quaternion::Identity, QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+	static std::vector<Collider *> OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius,
+												  QueryTriggerInteracation queryTriggerInteraction = QueryTriggerInteracation::UseGlobal);
+
 
 private: // 静的メンバ変数
 

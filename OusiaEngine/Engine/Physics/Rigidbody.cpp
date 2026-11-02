@@ -22,7 +22,6 @@ void ou::Rigidbody::Awake() {
 	rotation_ = transform->GetWorldRotation();
 
 	bodyId_ = PhysicsWorld::CreateBody(position_, rotation_, PhysicsWorld::MotionType::Dynamic);
-	PhysicsWorld::SetMass(bodyId_, mass_);
 	PhysicsWorld::SetUseGravity(bodyId_, useGravity_);
 	PhysicsWorld::SetLinearDamping(bodyId_, linearDamping_);
 	PhysicsWorld::SetAngularDamping(bodyId_, angularDamping_);
@@ -221,6 +220,7 @@ void ou::Rigidbody::ApplyMotion() {
 	PhysicsWorld::SetMotionType(bodyId_,
 								isKinematic_ || isFrozenAll ? PhysicsWorld::MotionType::Kinematic
 															: PhysicsWorld::MotionType::Dynamic);
+	PhysicsWorld::SetMass(bodyId_, mass_);
 	PhysicsWorld::SetAllowedDOFs(bodyId_, isFrozenAll ? PhysicsWorld::DOF::All : dofs);
 }
 

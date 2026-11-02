@@ -3,7 +3,7 @@
 #include "Core/EnumFlags.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
-#include "Physics/Jolt/PhysicsWorld.h"
+#include "Physics/Box3D/PhysicsWorld.h"
 #include "Scene/Component.h"
 
 #include <cstdint>

@@ -63,7 +63,7 @@ void ou::BossWeakPoint::Activate() {
 bool ou::BossWeakPoint::IsHit(const Vector2 &direction) const {
 	if (!isActive_) { return false; }
 	const Vector2 weak = {Mathf::Cos(angle_), Mathf::Sin(angle_)};
-	const auto cosine = Vector2::Dot(weak, direction.Normalize());
+	const auto cosine = Vector2::Dot(weak, direction.Normalized());
 	return cosine >= Mathf::Cos(Tuning::kWeakPointHitAngle);
 }
 

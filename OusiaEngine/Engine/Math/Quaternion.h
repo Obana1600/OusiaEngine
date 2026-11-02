@@ -38,7 +38,7 @@ public: // メンバ関数
 
 	float LengthSquared() const;
 
-	Quaternion Normalize() const;
+	Quaternion Normalized() const;
 
 	Vector3 EulerAngles() const;
 

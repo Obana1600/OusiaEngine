@@ -1,21 +1,11 @@
 #include "GameScene.h"
-#include "Asset/AssetDatabase.h"
-#include "UI/Button.h"
-#include "Core/Application.h"
 #include "Diagnostics/Log.h"
-#include "Input/Input.h"
+#include "Physics/BoxCollider.h"
+#include "Physics/Physics.h"
+#include "Physics/Rigidbody.h"
 #include "Render/Camera.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
-#include "UI/Asset/FontAsset.h"
-#include "UI/Canvas.h"
-#include "UI/CanvasRenderer.h"
-#include "UI/EventSystem/EventSystem.h"
-#include "UI/EventSystem/StandaloneInputModule.h"
-#include "UI/GraphicRaycaster.h"
-#include "UI/Image.h"
-#include "UI/RectTransform.h"
-#include "UI/Text.h"
 
 #include <string>
 
@@ -24,110 +14,91 @@ using namespace ou;
 
 namespace {
 
-Button *CreateButton(Scene &scene, Transform *canvas, const std::shared_ptr<FontAsset> &font, const std::string &label, float y) {
-	auto *object = scene.CreateGameObject(label);
-	object->AddComponent<Image>()->SetColor({0.25f, 0.45f, 0.85f, 1.0f});
-	auto *rect = dynamic_cast<RectTransform *>(object->GetTransform());
-	rect->SetParent(canvas);
-	rect->SetAnchoredPosition({0.0f, y});
-	rect->SetSizeDelta({320.0f, 64.0f});
+GameObject *MakeBox(Scene &scene, const char *name, const Vector3 &position, const Vector3 &size) {
+	auto *object = scene.CreateGameObject(name);
+	object->GetTransform()->SetWorldPosition(position);
+	object->AddComponent<BoxCollider>()->SetSize(size);
+	return object;
+}
 
-	// 文字も raycastTarget のまま。当たったら親の Button に届くかを見る
-	auto *textObject = scene.CreateGameObject(label + " Text");
-	auto *text = textObject->AddComponent<Text>();
-	auto *textRect = dynamic_cast<RectTransform *>(textObject->GetTransform());
-	textRect->SetParent(rect);
-	textRect->SetSizeDelta({320.0f, 64.0f});
-	if (font) { text->SetFont(font); }
-	text->SetFontSize(28.0f);
-	text->SetAlignment(TextAlignment::Center);
-	text->SetText(label);
+void LogHits(const char *label, const std::vector<RaycastHit> &hits) {
+	std::string text;
+	for (const auto &hit : hits) {
+		text += std::format(" {}({:.3f} p ({:.2f}, {:.2f}, {:.2f}) n ({:.2f}, {:.2f}, {:.2f}) t {})",
+							hit.collider->GetGameObject()->GetName(), hit.distance, hit.point.x, hit.point.y, hit.point.z,
+							hit.normal.x, hit.normal.y, hit.normal.z, hit.GetTransform()->GetGameObject()->GetName());
+	}
+	Log::Info("TEST {}:{}", label, hits.empty() ? " (なし)" : text);
+}
 
-	auto *button = object->AddComponent<Button>();
-	ColorBlock colors{};
-	colors.highlightedColor = {1.0f, 1.0f, 0.6f, 1.0f};
-	colors.selectedColor = {1.0f, 0.8f, 0.3f, 1.0f};
-	colors.pressedColor = {0.4f, 0.4f, 0.4f, 1.0f};
-	button->SetColors(colors);
-	return button;
+void LogColliders(const char *label, const std::vector<Collider *> &colliders) {
+	std::string text;
+	for (const auto *collider : colliders) {
+		text += " " + collider->GetGameObject()->GetName();
+	}
+	Log::Info("TEST {}:{}", label, colliders.empty() ? " (なし)" : text);
 }
 
 } // namespace
 
 
 void ou::BuildGameScene(Scene &scene) {
-	scene.CreateGameObject("UI Input Test")->AddComponent<UiInputTest>();
+	scene.CreateGameObject("Probe")->AddComponent<QueryProbe>();
 }
 
 
-void ou::UiInputTest::Start() {
+void ou::QueryProbe::Start() {
 	auto &scene = *GetGameObject()->GetScene();
-
 	scene.CreateGameObject("Main Camera")->AddComponent<Camera>();
 
-	auto *eventSystemObject = scene.CreateGameObject("EventSystem");
-	auto *eventSystem = eventSystemObject->AddComponent<EventSystem>();
-	eventSystemObject->AddComponent<StandaloneInputModule>();
+	MakeBox(scene, "Floor", {0, 0, 0}, {200, 1, 60});
+	MakeBox(scene, "BoxA", {0, 2, 0}, {1, 1, 1});
+	MakeBox(scene, "BoxB", {0, 4, 0}, {1, 1, 1});
+	MakeBox(scene, "Trigger", {0, 7, 0}, {2, 0.2f, 2})->GetComponent<BoxCollider>()->SetIsTrigger(true);
 
-	auto *canvasObject = scene.CreateGameObject("Canvas");
-	canvasObject->AddComponent<Canvas>();
-	canvasObject->AddComponent<GraphicRaycaster>();
-	auto *canvas = canvasObject->GetTransform();
+	// Rigidbody の子のコライダー
+	auto *parent = scene.CreateGameObject("Parent");
+	parent->GetTransform()->SetWorldPosition({6, 2, 0});
+	parent->AddComponent<Rigidbody>()->SetIsKinematic(true);
+	auto *child = scene.CreateGameObject("Child");
+	child->GetTransform()->SetParent(parent->GetTransform());
+	child->AddComponent<BoxCollider>();
 
-	// 当たらない背景
-	auto *panelObject = scene.CreateGameObject("Panel");
-	auto *panel = panelObject->AddComponent<Image>();
-	panel->SetColor({0.0f, 0.0f, 0.0f, 0.5f});
-	panel->SetRaycastTarget(false);
-	auto *panelRect = dynamic_cast<RectTransform *>(panelObject->GetTransform());
-	panelRect->SetParent(canvas);
-	panelRect->SetSizeDelta({400.0f, 400.0f});
-
-	const auto font = AssetDatabase::LoadAssetAtPath<FontAsset>("EngineAssets/Font/NotoSansJP-Bold.ttf");
-	auto *play = CreateButton(scene, canvas, font, "Play", 120.0f);
-	auto *disabled = CreateButton(scene, canvas, font, "Disabled", 40.0f);
-	auto *retry = CreateButton(scene, canvas, font, "Retry", -40.0f);
-	auto *quit = CreateButton(scene, canvas, font, "Quit", -120.0f);
-	disabled->SetInteractable(false);
-
-	play->onClick_.AddListener([] { Log::Info("TEST onClick Play"); });
-	disabled->onClick_.AddListener([] { Log::Info("TEST onClick Disabled (呼ばれてはいけない)"); });
-	retry->onClick_.AddListener([] { Log::Info("TEST onClick Retry"); });
-	quit->onClick_.AddListener([] {
-		Log::Info("TEST onClick Quit -> Application::Quit");
-		Application::Quit();
-	});
-
-	for (auto *button : {play, disabled, retry, quit}) {
-		watched_.push_back({button->GetTargetGraphic()});
-	}
-
-	eventSystem->SetFirstSelectedGameObject(play->GetGameObject());
+	// 無効にしたコライダー
+	MakeBox(scene, "Off", {10, 2, 0}, {1, 1, 1})->GetComponent<BoxCollider>()->SetEnabled(false);
 }
 
 
-void ou::UiInputTest::Update() {
-	frame_++;
+void ou::QueryProbe::FixedUpdate() {
+	// 形は最初の Simulate で作られるので、2 歩目に調べる
+	if (++step_ != 2) { return; }
 
-	// 色が変わるあいだも、頂点は作り直されないはず
-	int geometryCount = 0;
-	for (auto &watched : watched_) {
-		const void *vertices = watched.graphic->GetCanvasRenderer()->GetVertices().data();
-		if (vertices != watched.vertices) { geometryCount++; }
-		watched.vertices = vertices;
-	}
-	if (geometryCount > 0) {
-		Log::Info("TEST frame {} rebuilt geometry={}", frame_, geometryCount);
-	}
+	const Vector3 down = {0, -1, 0};
+	LogHits("上から", Physics::RaycastAll({0, 10, 0}, down));
+	LogHits("向きの長さ 5", Physics::RaycastAll({0, 10, 0}, down * 5.0f));
+	LogHits("Ignore", Physics::RaycastAll({0, 10, 0}, down, Mathf::Infinity, QueryTriggerInteracation::Ignore));
+	Physics::SetQueriesHitTriggers(false);
+	LogHits("UseGlobal（queriesHitTriggers false）", Physics::RaycastAll({0, 10, 0}, down));
+	Physics::SetQueriesHitTriggers(true);
+	LogHits("maxDistance 3・Ignore", Physics::RaycastAll({0, 10, 0}, down, 3.0f, QueryTriggerInteracation::Ignore));
+	LogHits("maxDistance 6・Ignore", Physics::RaycastAll({0, 10, 0}, down, 6.0f, QueryTriggerInteracation::Ignore));
+	LogHits("始点が BoxB の中", Physics::RaycastAll({0, 4, 0}, down));
+	LogHits("横から", Physics::RaycastAll({-5, 2, 0}, {1, 0, 0}, 10.0f));
+	LogHits("Rigidbody の子", Physics::RaycastAll({6, 10, 0}, down, 20.0f));
+	LogHits("無効にしたコライダー", Physics::RaycastAll({10, 10, 0}, down, 20.0f));
 
-	auto *eventSystem = EventSystem::GetCurrent();
-	auto *selected = eventSystem->GetCurrentSelectedGameObject();
-	if (selected != lastSelected_) {
-		Log::Info("TEST selected={}", selected ? selected->GetName() : "(none)");
-		lastSelected_ = selected;
-	}
+	RaycastHit hit;
+	const auto isHit = Physics::Raycast({0, 10, 0}, down, &hit, Mathf::Infinity, QueryTriggerInteracation::Ignore);
+	Log::Info("TEST Raycast（Ignore）: {} {} {:.3f}", isHit, isHit ? hit.collider->GetGameObject()->GetName() : "", hit.distance);
+	Log::Info("TEST Raycast（何もない方向）: {}", Physics::Raycast({0, 10, 0}, {0, 1, 0}));
 
-	if (Input::GetKeyDown(KeyCode::Escape)) {
-		Application::Quit();
-	}
+	LogColliders("OverlapSphere (0, 2, 0) r 0.6", Physics::OverlapSphere({0, 2, 0}, 0.6f));
+	LogColliders("OverlapSphere (0, 3, 0) r 1", Physics::OverlapSphere({0, 3, 0}, 1.0f));
+	LogColliders("OverlapSphere Trigger・Ignore", Physics::OverlapSphere({0, 7, 0}, 0.5f, QueryTriggerInteracation::Ignore));
+	LogColliders("OverlapSphere Trigger・Collide", Physics::OverlapSphere({0, 7, 0}, 0.5f, QueryTriggerInteracation::Collide));
+	LogColliders("OverlapBox z に長い", Physics::OverlapBox({2, 2, 0}, {0.3f, 0.3f, 3}));
+	LogColliders("OverlapBox y で 90 度", Physics::OverlapBox({2, 2, 0}, {0.3f, 0.3f, 3}, Quaternion::Euler(0, 90, 0)));
+	LogColliders("OverlapCapsule 横", Physics::OverlapCapsule({-2, 2, 0}, {2, 2, 0}, 0.3f));
+	LogColliders("OverlapCapsule 縦", Physics::OverlapCapsule({0, 2, 0}, {0, 4, 0}, 0.2f));
+	LogColliders("OverlapCapsule 離れている", Physics::OverlapCapsule({3, 2, 0}, {3, 4, 0}, 0.2f));
 }

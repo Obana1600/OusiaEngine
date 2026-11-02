@@ -30,7 +30,7 @@ const Vector3 &ou::Transform::GetLocalPosition() const {
 
 
 void ou::Transform::SetLocalRotation(const Quaternion &rotation) {
-	localRotation_ = rotation.Normalize();
+	localRotation_ = rotation.Normalized();
 	MarkDirty();
 }
 
@@ -108,7 +108,7 @@ Vector3 ou::Transform::GetLossyScale() const {
 
 Vector3 ou::Transform::GetForward() const {
 	const auto &m = GetLocalToWorldMatrix();
-	return Vector3(m.m31, m.m32, m.m33).Normalize();
+	return Vector3(m.m31, m.m32, m.m33).Normalized();
 }
 
 

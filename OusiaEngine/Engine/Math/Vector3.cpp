@@ -71,7 +71,7 @@ float ou::Vector3::LengthSquared() const {
 }
 
 
-Vector3 ou::Vector3::Normalize() const {
+Vector3 ou::Vector3::Normalized() const {
 	float len = Length();
 	if (len == 0.0f) { return Vector3::Zero; }
 
@@ -98,7 +98,7 @@ float ou::Vector3::Distance(const Vector3 &v1, const Vector3 &v2) {
 
 
 Vector3 ou::Vector3::Normalize(Vector3 &v) {
-	return v = v.Normalize();
+	return v = v.Normalized();
 }
 
 

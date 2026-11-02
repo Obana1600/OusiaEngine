@@ -81,7 +81,7 @@ public:
 	float LengthSquared() const;
 
 	// 正規化したベクトルを作成し、それを返す
-	Vector4 Normalize() const;
+	Vector4 Normalized() const;
 
 	// ベクトルの値をフォーマットされた文字列として返す
 	std::string ToString() const;

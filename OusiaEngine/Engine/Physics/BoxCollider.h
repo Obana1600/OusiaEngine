@@ -38,7 +38,7 @@ private: // メンバ変数
 
 private: // メンバ関数
 
-	PhysicsWorld::ShapeId CreateShape() const override;
+	PhysicsWorld::ShapeGeometry BuildShapeGeometry() const override;
 	Vector3 GetShapeCenter() const override;
 
 	// TODO: 消す

@@ -44,7 +44,7 @@ float ou::Vector2::LengthSquared() const {
 }
 
 
-Vector2 ou::Vector2::Normalize() const {
+Vector2 ou::Vector2::Normalized() const {
 	float len = Length();
 	if (len == 0.0f) { return Vector2::Zero; }
 	return {x / len, y / len};
@@ -63,7 +63,7 @@ std::string ou::Vector2::ToString(std::string_view format) const {
 
 
 Vector2 ou::Vector2::Normalize(Vector2 &v) {
-	return v = v.Normalize();
+	return v = v.Normalized();
 }
 
 
