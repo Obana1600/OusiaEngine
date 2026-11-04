@@ -6,35 +6,44 @@
 
 namespace ou {
 
+class Rigidbody;
+
 void BuildGameScene(Scene &scene);
 
-// 当たったこと・離れたことをログに出す
-class ContactLogger final: public Component {
+// 単位 5（Rigidbody の補間）の確かめ
+class InterpolationProbe final: public Component {
 public:
-	void OnCollisionEnter(const Collision &collision) override;
-	void OnCollisionExit(const Collision &collision) override;
-	void OnTriggerEnter(Collider *other) override;
-	void OnTriggerExit(Collider *other) override;
-};
+	Rigidbody *none = nullptr;
+	Rigidbody *interpolate = nullptr;
+	Rigidbody *extrapolate = nullptr;
+	Rigidbody *spinner = nullptr;
+	Rigidbody *teleported = nullptr;
+	Rigidbody *resting = nullptr;
 
-// 単位 2（衝突のフィルタ）の確かめ
-class FilterProbe final: public Component {
-public:
-	GameObject *playerBox = nullptr;
-	GameObject *enemyBox = nullptr;
-	GameObject *ghost = nullptr;
-	GameObject *visitor = nullptr;
-	GameObject *sleeper = nullptr;
-	GameObject *switcher = nullptr;
-
-	void Start() override;
 	void Update() override;
 
 private:
 	int step_ = 0;
 
-	void LogPositions(const char *label) const;
-	void LogQueries() const;
+	// 0.5〜1.5 秒の、計算との差の最大
+	float noneError_ = 0.0f;
+	float interpolateError_ = 0.0f;
+	float extrapolateError_ = 0.0f;
+	float spinnerError_ = 0.0f;
+	float interpolateFixedUpdateGap_ = 0.0f;
+
+	// 0.5〜1.5 秒で、前のフレームから動いたフレームの数
+	int frames_ = 0;
+	int noneMoved_ = 0;
+	int interpolateMoved_ = 0;
+	float lastNoneX_ = 0.0f;
+	float lastInterpolateX_ = 0.0f;
+
+	// 瞬間移動のあと
+	float teleportMinX_ = 1e9f;
+
+	// 床で止まった玉
+	float restingGap_ = 0.0f;
 };
 
 } // namespace ou

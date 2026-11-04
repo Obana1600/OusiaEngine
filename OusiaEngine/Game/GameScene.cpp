@@ -1,167 +1,134 @@
 #include "GameScene.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
+#include "Math/Mathf.h"
 #include "Physics/BoxCollider.h"
-#include "Physics/Collision.h"
-#include "Physics/Physics.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
 #include "Render/Camera.h"
 #include "Scene/GameObject.h"
-#include "Scene/LayerMask.h"
 #include "Scene/Transform.h"
-
-#include <string>
 
 using namespace ou;
 
 
 namespace {
 
-GameObject *CreateBox(Scene &scene, const char *name, const char *layer, const Vector3 &position, const Vector3 &size, bool dynamic) {
+// 補間が見えるように、ステップを大きくする
+constexpr float kFixedDeltaTime = 0.1f;
+constexpr float kSpeed = 2.0f;
+
+Rigidbody *CreateMover(Scene &scene, const char *name, float z, RigidbodyInterpolation interpolation) {
 	auto *object = scene.CreateGameObject(name);
-	object->SetLayer(LayerMask::NameToLayer(layer));
-	object->GetTransform()->SetWorldPosition(position);
-	object->AddComponent<BoxCollider>()->SetSize(size);
-	if (dynamic) { object->AddComponent<Rigidbody>(); }
-	object->AddComponent<ContactLogger>();
-	return object;
+	object->GetTransform()->SetWorldPosition({0.0f, 5.0f, z});
+	object->AddComponent<BoxCollider>()->SetSize({0.5f, 0.5f, 0.5f});
+	auto *rigidbody = object->AddComponent<Rigidbody>();
+	rigidbody->SetUseGravity(false);
+	rigidbody->SetInterpolation(interpolation);
+	rigidbody->SetLinearVelocity({kSpeed, 0.0f, 0.0f});
+	return rigidbody;
 }
 
-GameObject *CreateBall(Scene &scene, const char *name, const char *layer, const Vector3 &position) {
-	auto *object = scene.CreateGameObject(name);
-	object->SetLayer(LayerMask::NameToLayer(layer));
-	object->GetTransform()->SetWorldPosition(position);
-	object->AddComponent<SphereCollider>()->SetRadius(0.3f);
-	object->AddComponent<Rigidbody>();
-	object->AddComponent<ContactLogger>();
-	return object;
+float X(const Rigidbody *rigidbody) {
+	return rigidbody->GetTransform()->GetWorldPosition().x;
 }
 
-std::string Names(const std::vector<Collider *> &colliders) {
-	std::string names;
-	for (auto *collider : colliders) {
-		names += " " + collider->GetGameObject()->GetName();
+float Max(float a, float b) {
+	return (a > b) ? a : b;
+}
+
+// FixedUpdate で Transform と Rigidbody の位置の差を見る
+class FixedUpdateWatcher final: public Component {
+public:
+	float gap = 0.0f;
+
+	void FixedUpdate() override {
+		auto *rigidbody = GetGameObject()->GetComponent<Rigidbody>();
+		gap = Max(gap, Mathf::Abs(X(rigidbody) - rigidbody->GetPosition().x));
 	}
-	return names.empty() ? " (なし)" : names;
-}
-
-std::string RayResult(bool hit, const RaycastHit &hitInfo) {
-	if (!hit) { return "(なし)"; }
-	return std::format("{} {:.2f}", hitInfo.collider->GetGameObject()->GetName(), hitInfo.distance);
-}
+};
 
 } // namespace
 
 
 
 void ou::BuildGameScene(Scene &scene) {
+	Time::SetFixedDeltaTime(kFixedDeltaTime);
 	scene.CreateGameObject("Main Camera")->AddComponent<Camera>();
 
-	// Player と Enemy、Ghost と Ground は当たらない
-	Physics::IgnoreLayerCollision(LayerMask::NameToLayer("Player"), LayerMask::NameToLayer("Enemy"));
-	Physics::IgnoreLayerCollision(LayerMask::NameToLayer("Ghost"), LayerMask::NameToLayer("Ground"));
+	auto *floor = scene.CreateGameObject("Floor");
+	floor->GetTransform()->SetWorldPosition({0.0f, -0.5f, 0.0f});
+	floor->AddComponent<BoxCollider>()->SetSize({60.0f, 1.0f, 40.0f});
 
-	CreateBox(scene, "Floor", "Ground", {0.0f, -0.5f, 0.0f}, {40.0f, 1.0f, 40.0f}, false);
+	auto *probe = scene.CreateGameObject("Probe")->AddComponent<InterpolationProbe>();
+	probe->none = CreateMover(scene, "None", -6.0f, RigidbodyInterpolation::None);
+	probe->interpolate = CreateMover(scene, "Interpolate", -3.0f, RigidbodyInterpolation::Interpolate);
+	probe->interpolate->GetGameObject()->AddComponent<FixedUpdateWatcher>();
+	probe->extrapolate = CreateMover(scene, "Extrapolate", 0.0f, RigidbodyInterpolation::Extrapolate);
 
-	auto *probe = scene.CreateGameObject("Probe")->AddComponent<FilterProbe>();
+	// y 軸まわりに 1 rad/s で回す
+	probe->spinner = CreateMover(scene, "Spinner", 3.0f, RigidbodyInterpolation::Interpolate);
+	probe->spinner->SetLinearVelocity(Vector3::Zero);
+	probe->spinner->SetAngularVelocity({0.0f, 1.0f, 0.0f});
+	probe->spinner->SetAngularDamping(0.0f);
 
-	// Enemy の箱は Player の箱をすり抜けて床に落ちる
-	probe->playerBox = CreateBox(scene, "PlayerBox", "Player", {0.0f, 0.5f, 0.0f}, Vector3::One, true);
-	probe->enemyBox = CreateBox(scene, "EnemyBox", "Enemy", {0.0f, 3.0f, 0.0f}, Vector3::One, true);
+	// 1.5 秒で Transform から x 20 に移す
+	probe->teleported = CreateMover(scene, "Teleported", 6.0f, RigidbodyInterpolation::Interpolate);
 
-	// Enemy のトリガーに、Player の玉は入らず、Default の玉は入る
-	CreateBox(scene, "EnemyZone", "Enemy", {4.0f, 2.0f, 0.0f}, {2.0f, 1.0f, 8.0f}, false)->GetComponent<BoxCollider>()->SetIsTrigger(true);
-	probe->ghost = CreateBall(scene, "PlayerBall", "Player", {4.0f, 5.0f, -2.0f});
-	probe->visitor = CreateBall(scene, "DefaultBall", "Default", {4.0f, 5.0f, 2.0f});
-
-	// 3 秒で Default と Ground を当たらなくする / 2 秒で Ghost に変える
-	probe->sleeper = CreateBox(scene, "Sleeper", "Default", {-4.0f, 0.5f, 0.0f}, Vector3::One, true);
-	probe->switcher = CreateBox(scene, "Switcher", "Player", {-8.0f, 0.5f, 0.0f}, Vector3::One, true);
-
-	// Ignore Raycast の箱（床の上、y 0.5〜1.5）
-	CreateBox(scene, "NoRay", "Ignore Raycast", {8.0f, 1.0f, 0.0f}, Vector3::One, false);
+	// 床に落として止める
+	auto *ball = scene.CreateGameObject("Resting");
+	ball->GetTransform()->SetWorldPosition({-10.0f, 2.0f, 0.0f});
+	ball->AddComponent<SphereCollider>()->SetRadius(0.3f);
+	probe->resting = ball->AddComponent<Rigidbody>();
+	probe->resting->SetInterpolation(RigidbodyInterpolation::Interpolate);
 }
 
 
-void ou::ContactLogger::OnCollisionEnter(const Collision &collision) {
-	Log::Info("TEST CollisionEnter {} <- {}", GetGameObject()->GetName(), collision.GetGameObject()->GetName());
-}
-
-
-void ou::ContactLogger::OnCollisionExit(const Collision &collision) {
-	Log::Info("TEST CollisionExit {} <- {}", GetGameObject()->GetName(), collision.GetGameObject()->GetName());
-}
-
-
-void ou::ContactLogger::OnTriggerEnter(Collider *other) {
-	Log::Info("TEST TriggerEnter {} <- {}", GetGameObject()->GetName(), other->GetGameObject()->GetName());
-}
-
-
-void ou::ContactLogger::OnTriggerExit(Collider *other) {
-	Log::Info("TEST TriggerExit {} <- {}", GetGameObject()->GetName(), other->GetGameObject()->GetName());
-}
-
-
-void ou::FilterProbe::Start() {
-	const auto player = LayerMask::NameToLayer("Player");
-	const auto enemy = LayerMask::NameToLayer("Enemy");
-	const auto ground = LayerMask::NameToLayer("Ground");
-	Log::Info("TEST Get Player-Enemy {} Enemy-Player {} Player-Ground {} Ghost-Ground {}",
-			  Physics::GetIgnoreLayerCollision(player, enemy), Physics::GetIgnoreLayerCollision(enemy, player),
-			  Physics::GetIgnoreLayerCollision(player, ground), Physics::GetIgnoreLayerCollision(LayerMask::NameToLayer("Ghost"), ground));
-	Physics::IgnoreLayerCollision(40, 0);
-	Log::Info("TEST Get 40-0 {} (範囲の外は false)", Physics::GetIgnoreLayerCollision(40, 0));
-	Log::Info("TEST masks Default 0x{:08X} IgnoreRaycast 0x{:08X} All 0x{:08X}",
-			  Physics::kDefaultRaycastLayers, Physics::kIgnoreRaycastLayer, Physics::kAllLayers);
-}
-
-
-void ou::FilterProbe::Update() {
+void ou::InterpolationProbe::Update() {
 	const auto time = Time::GetTime();
-	if (step_ == 0 && time >= 1.0f) {
-		step_++;
-		LogQueries();
-	} else if (step_ == 1 && time >= 1.9f) {
-		step_++;
-		LogPositions("1.9s");
-		switcher->SetLayer(LayerMask::NameToLayer("Ghost"));
-		Log::Info("TEST 2s Switcher を Ghost に");
-	} else if (step_ == 2 && time >= 3.0f) {
-		step_++;
-		Physics::IgnoreLayerCollision(LayerMask::NameToLayer("Default"), LayerMask::NameToLayer("Ground"));
-		Log::Info("TEST 3s Default と Ground を当たらなくする");
-	} else if (step_ == 3 && time >= 4.5f) {
-		step_++;
-		LogPositions("4.5s");
+
+	if (time >= 0.5f && time < 1.5f) {
+		// 最後のステップの時刻 fixedTime のとき、Body は kSpeed * fixedTime にいる
+		noneError_ = Max(noneError_, Mathf::Abs(X(none) - kSpeed * Time::GetFixedTime()));
+		interpolateError_ = Max(interpolateError_, Mathf::Abs(X(interpolate) - kSpeed * (time - kFixedDeltaTime)));
+		extrapolateError_ = Max(extrapolateError_, Mathf::Abs(X(extrapolate) - kSpeed * time));
+
+		Vector3 axis;
+		float angle = 0.0f;
+		spinner->GetTransform()->GetWorldRotation().ToAngleAxis(&axis, &angle);
+		spinnerError_ = Max(spinnerError_, Mathf::Abs(angle - (time - kFixedDeltaTime)));
+
+		if (frames_ > 0) {
+			noneMoved_ += (X(none) != lastNoneX_) ? 1 : 0;
+			interpolateMoved_ += (X(interpolate) != lastInterpolateX_) ? 1 : 0;
+		}
+		frames_++;
+		lastNoneX_ = X(none);
+		lastInterpolateX_ = X(interpolate);
 	}
-}
 
-
-void ou::FilterProbe::LogPositions(const char *label) const {
-	for (auto *object : {playerBox, enemyBox, ghost, visitor, sleeper, switcher}) {
-		Log::Info("TEST {} {} y {:.2f}", label, object->GetName(), object->GetTransform()->GetWorldPosition().y);
+	if (step_ == 0 && time >= 1.5f) {
+		step_++;
+		teleported->GetTransform()->SetWorldPosition({20.0f, 5.0f, 6.0f});
+	} else if (step_ == 1) {
+		// 移したあと、元の場所（x 3 くらい）との間に戻らない
+		teleportMinX_ = Mathf::Min(teleportMinX_, X(teleported));
+		if (time >= 2.0f) {
+			step_++;
+			Log::Info("TEST 移したあと 一番小さい x {:.3f} / Body の x {:.3f} / 0.5 秒で進むはず 21.0", teleportMinX_, teleported->GetPosition().x);
+		}
 	}
-}
 
+	if (time >= 3.0f && time < 4.0f) {
+		restingGap_ = Max(restingGap_, Mathf::Abs(resting->GetTransform()->GetWorldPosition().y - resting->GetPosition().y));
+	}
 
-void ou::FilterProbe::LogQueries() const {
-	const Vector3 origin = {8.0f, 10.0f, 0.0f};
-	const Vector3 down = {0.0f, -1.0f, 0.0f};
-	RaycastHit hit;
-	bool found = Physics::Raycast(origin, down, &hit);
-	Log::Info("TEST Raycast 既定 {}", RayResult(found, hit));
-	found = Physics::Raycast(origin, down, &hit, Mathf::Infinity, Physics::kAllLayers);
-	Log::Info("TEST Raycast All {}", RayResult(found, hit));
-	found = Physics::Raycast(origin, down, &hit, Mathf::Infinity, LayerMask::GetMask({"Player"}));
-	Log::Info("TEST Raycast Player {}", RayResult(found, hit));
-	Log::Info("TEST RaycastAll All 件数 {}", Physics::RaycastAll(origin, down, Mathf::Infinity, Physics::kAllLayers).size());
-
-	const Vector3 center = {8.0f, 1.0f, 0.0f};
-	Log::Info("TEST OverlapSphere 既定{}", Names(Physics::OverlapSphere(center, 0.3f)));
-	Log::Info("TEST OverlapSphere DefaultRaycastLayers{}", Names(Physics::OverlapSphere(center, 0.3f, Physics::kDefaultRaycastLayers)));
-	Log::Info("TEST OverlapBox Ground{}", Names(Physics::OverlapBox({0.0f, 0.0f, 0.0f}, {1.0f, 1.2f, 1.0f}, Quaternion::Identity, LayerMask::GetMask({"Ground"}))));
-	Log::Info("TEST OverlapBox Player+Enemy{}", Names(Physics::OverlapBox({0.0f, 0.0f, 0.0f}, {1.0f, 1.2f, 1.0f}, Quaternion::Identity, LayerMask::GetMask({"Player", "Enemy"}))));
-	Log::Info("TEST OverlapCapsule なし{}", Names(Physics::OverlapCapsule({0.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, 0.5f, 0)));
+	if (step_ == 2 && time >= 4.0f) {
+		step_++;
+		Log::Info("TEST フレーム {} / 動いたフレーム None {} Interpolate {}", frames_ - 1, noneMoved_, interpolateMoved_);
+		Log::Info("TEST 計算との差 None {:.5f} / Interpolate {:.5f} / Extrapolate {:.5f} / 回転 {:.5f} rad", noneError_, interpolateError_, extrapolateError_, spinnerError_);
+		Log::Info("TEST FixedUpdate での Transform と Body の差 Interpolate {:.3f}（1 ステップ以内 = {:.1f} 以下）",
+				  interpolate->GetGameObject()->GetComponent<FixedUpdateWatcher>()->gap, kSpeed * kFixedDeltaTime);
+		Log::Info("TEST 止まった玉 Transform と Body の y の差 {:.6f} / y {:.3f}", restingGap_, resting->GetPosition().y);
+	}
 }

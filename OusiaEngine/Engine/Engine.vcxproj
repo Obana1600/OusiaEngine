@@ -31,6 +31,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Physics\PhysicsMaterial.h" />
+    <ClInclude Include="Asset\Importer\PhysicsMaterialImporter.h" />
     <ClInclude Include="Scene\LayerMask.h" />
     <ClInclude Include="Physics\CapsuleCollider.h" />
     <ClInclude Include="UI\Button.h" />
@@ -143,6 +145,8 @@
     <ClInclude Include="UI\VertexHelper.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Physics\PhysicsMaterial.cpp" />
+    <ClCompile Include="Asset\Importer\PhysicsMaterialImporter.cpp" />
     <ClCompile Include="Scene\LayerMask.cpp" />
     <ClCompile Include="Physics\CapsuleCollider.cpp" />
     <ClCompile Include="Physics\Box3D\PhysicsWorld.cpp" />

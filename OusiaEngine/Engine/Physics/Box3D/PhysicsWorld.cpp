@@ -31,6 +31,9 @@ constexpr float kWakeMargin = 0.1f;
 // Raycast の最大距離
 constexpr float kMaxRaycastDistance = 100000.0f;
 
+// userMaterialId の中で、restitutionCombine を置く位置
+constexpr int kRestitutionCombineShift = 8;
+
 // フィルター
 constexpr uint64_t kQueryCategoryBits = 1ull << 32;
 
@@ -106,10 +109,8 @@ Vector3 Abs(const Vector3 &v) {
 	return Vector3(Mathf::Abs(v.x), Mathf::Abs(v.y), Mathf::Abs(v.z));
 }
 
-b3BodyId FindBody(PhysicsWorld::BodyId id) {
-	const auto body = b3LoadBodyId(id);
-	return b3Body_IsValid(body) ? body : b3_nullBodyId;
-}
+
+// Shape ==========================================================================================
 
 b3ShapeId FindShape(PhysicsWorld::ShapeId id) {
 	const auto shape = b3LoadShapeId(id);
@@ -145,6 +146,52 @@ b3Capsule MakeCapsule(const PhysicsWorld::ShapeGeometry &geometry) {
 			Mathf::Max(radius, kMinShapeExtent)};
 }
 
+
+// SurfaceMaterial --------------------------------------------------------------------------------
+
+b3SurfaceMaterial ToB3(const PhysicsWorld::SurfaceMaterial &material) {
+	auto result = b3DefaultSurfaceMaterial();
+	result.friction = material.friction;
+	result.restitution = material.restitution;
+	result.userMaterialId = static_cast<uint64_t>(material.frictionCombine) |
+							(static_cast<uint64_t>(material.restitutionCombine) << kRestitutionCombineShift);
+	return result;
+}
+
+PhysicsWorld::CombineMode ToCombine(uint64_t bits) {
+	return static_cast<PhysicsWorld::CombineMode>(bits & 0xFF);
+}
+
+float Combine(float a, float b, PhysicsWorld::CombineMode combine) {
+	switch (combine) {
+		default:
+		case PhysicsWorld::CombineMode::Average:
+			return (a + b) * 0.5f;
+		case PhysicsWorld::CombineMode::Minimum:
+			return Mathf::Min(a, b);
+		case PhysicsWorld::CombineMode::Multiply:
+			return a * b;
+		case PhysicsWorld::CombineMode::Maximum:
+			return Mathf::Max(a, b);
+	}
+}
+
+float MixFriction(float frictionA, uint64_t userMaterialIdA, float frictionB, uint64_t userMaterialIdB) {
+	const auto combine = std::max(ToCombine(userMaterialIdA), ToCombine(userMaterialIdB));
+	return Combine(frictionA, frictionB, combine);
+}
+
+float MixRestitution(float restitutionA, uint64_t userMaterialIdA, float restitutionB, uint64_t userMaterialIdB) {
+	const auto combine = std::max(ToCombine(userMaterialIdA >> kRestitutionCombineShift),
+								  ToCombine(userMaterialIdB >> kRestitutionCombineShift));
+	return Combine(restitutionA, restitutionB, combine);
+}
+
+// ------------------------------------------------------------------------------------------------
+
+
+// Filter -----------------------------------------------------------------------------------------
+
 b3Filter ToB3(const PhysicsWorld::CollisionFilter &filter) {
 	auto result = b3DefaultFilter();
 	result.categoryBits = filter.categoryBits;
@@ -157,6 +204,18 @@ b3QueryFilter MakeQueryFilter(uint32_t layerMask) {
 	filter.categoryBits = kQueryCategoryBits;
 	filter.maskBits = layerMask;
 	return filter;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+// ================================================================================================
+
+
+// Body ===========================================================================================
+
+b3BodyId FindBody(PhysicsWorld::BodyId id) {
+	const auto body = b3LoadBodyId(id);
+	return b3Body_IsValid(body) ? body : b3_nullBodyId;
 }
 
 void ApplyMass(b3BodyId body, float mass) {
@@ -189,6 +248,10 @@ void WakeBodiesInBounds(const b3AABB &bounds) {
 	}
 }
 
+// ================================================================================================
+
+
+// Collision ======================================================================================
 
 ContactKey MakeContactKey(b3ShapeId shapeA, b3ShapeId shapeB) {
 	const auto a = b3StoreShapeId(shapeA);
@@ -225,8 +288,13 @@ PhysicsWorld::ContactEvent MakeContactEvent(PhysicsWorld::ContactEvent::Type typ
 	return event;
 }
 
+// ================================================================================================
 
-float CollectRaycastHit(b3ShapeId shape, b3Pos point, b3Vec3 normal, float fraction, uint64_t, int, int, void *context) {
+
+// Raycast ========================================================================================
+
+float CollectRaycastHit(
+	b3ShapeId shape, b3Pos point, b3Vec3 normal, float fraction, uint64_t, int, int, void *context) {
 	auto *raycast = static_cast<RaycastContext *>(context);
 
 	if (fraction <= 0.0f) { return -1.0f; }
@@ -236,7 +304,6 @@ float CollectRaycastHit(b3ShapeId shape, b3Pos point, b3Vec3 normal, float fract
 							 ToOu(point),
 							 ToOu(normal),
 							 fraction * raycast->distance});
-
 	return 1.0f;
 }
 
@@ -248,7 +315,8 @@ bool CollectOverlap(b3ShapeId shape, void *context) {
 	return true;
 }
 
-std::vector<PhysicsWorld::ShapeId> OverlapProxy(const Vector3 &origin, const b3Vec3 *points, int count, float radius, uint32_t layerMask, bool hitsSensors) {
+std::vector<PhysicsWorld::ShapeId> OverlapProxy(
+	const Vector3 &origin, const b3Vec3 *points, int count, float radius, uint32_t layerMask, bool hitsSensors) {
 	if (B3_IS_NULL(sWorld)) { return {}; }
 
 	const b3ShapeProxy proxy = {points, count, radius};
@@ -257,6 +325,8 @@ std::vector<PhysicsWorld::ShapeId> OverlapProxy(const Vector3 &origin, const b3V
 	b3World_OverlapShape(sWorld, ToB3(origin), &proxy, MakeQueryFilter(layerMask), CollectOverlap, &overlap);
 	return overlap.shapes;
 }
+
+// ================================================================================================
 
 } // namespace
 
@@ -271,6 +341,8 @@ void ou::PhysicsWorld::Initialize() {
 	auto def = b3DefaultWorldDef();
 	def.gravity = kDefaultGravity;
 	def.workerCount = std::clamp(std::thread::hardware_concurrency(), 1u, static_cast<uint32_t>(B3_MAX_WORKERS));
+	def.frictionCallback = MixFriction;
+	def.restitutionCallback = MixRestitution;
 	sWorld = b3CreateWorld(&def);
 
 	const auto version = b3GetVersion();
@@ -373,7 +445,7 @@ void ou::PhysicsWorld::SetMotionType(BodyId id, MotionType motionType) {
 }
 
 
-PhysicsWorld::ShapeId ou::PhysicsWorld::CreateShape(BodyId bodyId, const ShapeGeometry &geometry, const CollisionFilter &filter, bool isSensor) {
+PhysicsWorld::ShapeId ou::PhysicsWorld::CreateShape(BodyId bodyId, const ShapeGeometry &geometry, const SurfaceMaterial &material, const CollisionFilter &filter, bool isSensor) {
 	const auto body = FindBody(bodyId);
 	if (B3_IS_NULL(body)) { return kInvalidShapeId; }
 
@@ -383,6 +455,7 @@ PhysicsWorld::ShapeId ou::PhysicsWorld::CreateShape(BodyId bodyId, const ShapeGe
 	def.updateBodyMass = false;
 	def.enableContactEvents = true;
 	def.enableSensorEvents = true;
+	def.baseMaterial = ToB3(material);
 	def.filter = ToB3(filter);
 
 	auto shape = b3_nullShapeId;
@@ -429,6 +502,14 @@ void ou::PhysicsWorld::SetShapeGeometry(ShapeId id, const ShapeGeometry &geometr
 
 	const auto body = b3Shape_GetBody(shape);
 	ApplyMass(body, b3Body_GetMass(body));
+}
+
+
+void ou::PhysicsWorld::SetShapeSurfaceMaterial(ShapeId id, const SurfaceMaterial &material) {
+	const auto shape = FindShape(id);
+	if (B3_IS_NULL(shape)) { return; }
+
+	b3Shape_SetSurfaceMaterial(shape, ToB3(material));
 }
 
 

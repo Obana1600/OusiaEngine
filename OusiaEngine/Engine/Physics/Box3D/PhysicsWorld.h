@@ -63,6 +63,22 @@ struct ShapeGeometry {
 	bool operator==(const ShapeGeometry &) const = default;
 };
 
+enum class CombineMode : uint8_t {
+	Average,
+	Minimum,
+	Multiply,
+	Maximum,
+};
+
+struct SurfaceMaterial {
+	float friction = 0.6f;
+	float restitution = 0.0f;
+	CombineMode frictionCombine = CombineMode::Average;
+	CombineMode restitutionCombine = CombineMode::Average;
+
+	bool operator==(const SurfaceMaterial &) const = default;
+};
+
 struct CollisionFilter {
 	uint32_t categoryBits = 1;
 	uint32_t maskBits = 0xFFFFFFFF;
@@ -70,10 +86,11 @@ struct CollisionFilter {
 	bool operator==(const CollisionFilter &) const = default;
 };
 
-ShapeId CreateShape(BodyId bodyId, const ShapeGeometry &geometry, const CollisionFilter &filter, bool isSensor);
+ShapeId CreateShape(BodyId bodyId, const ShapeGeometry &geometry, const SurfaceMaterial &material, const CollisionFilter &filter, bool isSensor);
 void DestroyShape(ShapeId id);
 
 void SetShapeGeometry(ShapeId id, const ShapeGeometry &geometry);
+void SetShapeSurfaceMaterial(ShapeId id, const SurfaceMaterial &material);
 void SetShapeFilter(ShapeId id, const CollisionFilter &filter);
 
 
