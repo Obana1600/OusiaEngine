@@ -31,6 +31,9 @@ constexpr float kWakeMargin = 0.1f;
 // Raycast の最大距離
 constexpr float kMaxRaycastDistance = 100000.0f;
 
+// フィルター
+constexpr uint64_t kQueryCategoryBits = 1ull << 32;
+
 // Stay コリジョン 1つぶん
 struct ActiveContact {
 	b3ShapeId shapeA = b3_nullShapeId;
@@ -41,14 +44,14 @@ struct ActiveContact {
 // Stay コリジョンの組
 using ContactKey = std::pair<PhysicsWorld::ShapeId, PhysicsWorld::ShapeId>;
 
-//
+// レイキャストの情報
 struct RaycastContext {
 	std::vector<PhysicsWorld::RaycastHit> hits;
 	float distance = 0.0f;
 	bool hitsSensors = true;
 };
 
-//
+// コリジョンの情報
 struct OverlapContext {
 	std::vector<PhysicsWorld::ShapeId> shapes;
 	bool hitsSensors = false;
@@ -142,6 +145,20 @@ b3Capsule MakeCapsule(const PhysicsWorld::ShapeGeometry &geometry) {
 			Mathf::Max(radius, kMinShapeExtent)};
 }
 
+b3Filter ToB3(const PhysicsWorld::CollisionFilter &filter) {
+	auto result = b3DefaultFilter();
+	result.categoryBits = filter.categoryBits;
+	result.maskBits = filter.maskBits | kQueryCategoryBits;
+	return result;
+}
+
+b3QueryFilter MakeQueryFilter(uint32_t layerMask) {
+	auto filter = b3DefaultQueryFilter();
+	filter.categoryBits = kQueryCategoryBits;
+	filter.maskBits = layerMask;
+	return filter;
+}
+
 void ApplyMass(b3BodyId body, float mass) {
 	if (b3Body_GetType(body) != b3_dynamicBody) { return; }
 
@@ -164,7 +181,8 @@ bool CollectBody(b3ShapeId id, void *context) {
 
 void WakeBodiesInBounds(const b3AABB &bounds) {
 	std::vector<b3BodyId> bodies;
-	b3World_OverlapAABB(sWorld, b3AABB_Inflate(bounds, kWakeMargin), b3DefaultQueryFilter(), CollectBody, &bodies);
+	b3World_OverlapAABB(sWorld, b3AABB_Inflate(bounds, kWakeMargin),
+						MakeQueryFilter(0xFFFFFFFF), CollectBody, &bodies);
 
 	for (const auto &body : bodies) {
 		b3Body_SetAwake(body, true);
@@ -230,13 +248,13 @@ bool CollectOverlap(b3ShapeId shape, void *context) {
 	return true;
 }
 
-std::vector<PhysicsWorld::ShapeId> OverlapProxy(const Vector3 &origin, const b3Vec3 *points, int count, float radius, bool hitsSensors) {
+std::vector<PhysicsWorld::ShapeId> OverlapProxy(const Vector3 &origin, const b3Vec3 *points, int count, float radius, uint32_t layerMask, bool hitsSensors) {
 	if (B3_IS_NULL(sWorld)) { return {}; }
 
 	const b3ShapeProxy proxy = {points, count, radius};
 	OverlapContext overlap;
 	overlap.hitsSensors = hitsSensors;
-	b3World_OverlapShape(sWorld, ToB3(origin), &proxy, b3DefaultQueryFilter(), CollectOverlap, &overlap);
+	b3World_OverlapShape(sWorld, ToB3(origin), &proxy, MakeQueryFilter(layerMask), CollectOverlap, &overlap);
 	return overlap.shapes;
 }
 
@@ -355,7 +373,7 @@ void ou::PhysicsWorld::SetMotionType(BodyId id, MotionType motionType) {
 }
 
 
-PhysicsWorld::ShapeId ou::PhysicsWorld::CreateShape(BodyId bodyId, const ShapeGeometry &geometry, bool isSensor) {
+PhysicsWorld::ShapeId ou::PhysicsWorld::CreateShape(BodyId bodyId, const ShapeGeometry &geometry, const CollisionFilter &filter, bool isSensor) {
 	const auto body = FindBody(bodyId);
 	if (B3_IS_NULL(body)) { return kInvalidShapeId; }
 
@@ -365,6 +383,7 @@ PhysicsWorld::ShapeId ou::PhysicsWorld::CreateShape(BodyId bodyId, const ShapeGe
 	def.updateBodyMass = false;
 	def.enableContactEvents = true;
 	def.enableSensorEvents = true;
+	def.filter = ToB3(filter);
 
 	auto shape = b3_nullShapeId;
 	if (geometry.type == ShapeGeometry::Type::Box) {
@@ -410,6 +429,14 @@ void ou::PhysicsWorld::SetShapeGeometry(ShapeId id, const ShapeGeometry &geometr
 
 	const auto body = b3Shape_GetBody(shape);
 	ApplyMass(body, b3Body_GetMass(body));
+}
+
+
+void ou::PhysicsWorld::SetShapeFilter(ShapeId id, const CollisionFilter &filter) {
+	const auto shape = FindShape(id);
+	if (B3_IS_NULL(shape)) { return; }
+
+	b3Shape_SetFilter(shape, ToB3(filter), true);
 }
 
 
@@ -619,7 +646,7 @@ Vector3 ou::PhysicsWorld::GetGravity() {
 }
 
 
-std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, bool hitsSensors) {
+std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors) {
 	const auto length = direction.Length();
 	if (B3_IS_NULL(sWorld) || length <= 0.0f || maxDistance <= 0.0f) { return {}; }
 
@@ -627,7 +654,7 @@ std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::RaycastAll(const Vector3
 	raycast.distance = Mathf::Min(maxDistance, kMaxRaycastDistance);
 	raycast.hitsSensors = hitsSensors;
 	b3World_CastRay(sWorld, ToB3(origin), ToB3(direction / length * raycast.distance),
-					b3DefaultQueryFilter(), CollectRaycastHit, &raycast);
+					MakeQueryFilter(layerMask), CollectRaycastHit, &raycast);
 
 	std::sort(raycast.hits.begin(), raycast.hits.end(),
 			  [](const RaycastHit &a, const RaycastHit &b) { return a.distance < b.distance; });
@@ -635,7 +662,7 @@ std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::RaycastAll(const Vector3
 }
 
 
-std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, bool hitsSensors) {
+std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, uint32_t layerMask, bool hitsSensors) {
 	const auto extents = Abs(halfExtents);
 
 	b3Vec3 corners[8];
@@ -646,19 +673,19 @@ std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapBox(const Vector3 &c
 		corners[i] = ToB3(rotation * corner);
 	}
 
-	return OverlapProxy(center, corners, 8, 0.0f, hitsSensors);
+	return OverlapProxy(center, corners, 8, 0.0f, layerMask, hitsSensors);
 }
 
 
-std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapSphere(const Vector3 &center, float radius, bool hitsSensors) {
+std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapSphere(const Vector3 &center, float radius, uint32_t layerMask, bool hitsSensors) {
 	const b3Vec3 point = b3Vec3_zero;
-	return OverlapProxy(center, &point, 1, Mathf::Abs(radius), hitsSensors);
+	return OverlapProxy(center, &point, 1, Mathf::Abs(radius), layerMask, hitsSensors);
 }
 
 
-std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, bool hitsSensors) {
+std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, uint32_t layerMask, bool hitsSensors) {
 	const auto center = (point0 + point1) * 0.5f;
 	const b3Vec3 points[2] = {ToB3(point0 - center),
 							  ToB3(point1 - center)};
-	return OverlapProxy(center, points, 2, Mathf::Abs(radius), hitsSensors);
+	return OverlapProxy(center, points, 2, Mathf::Abs(radius), layerMask, hitsSensors);
 }

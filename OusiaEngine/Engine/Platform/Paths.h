@@ -19,6 +19,9 @@ std::optional<std::filesystem::path> FindAssetsFolder();
 // EngineAssets フォルダ（エンジンが使うシェーダなど）のパスを取得する
 std::optional<std::filesystem::path> FindEngineAssetsFolder();
 
+// ProjectSettings フォルダのパスを取得する
+std::optional<std::filesystem::path> FindProjectSettingsFolder();
+
 // UserSettings フォルダのパスを取得する
 std::optional<std::filesystem::path> FindUserSettingsFolder();
 

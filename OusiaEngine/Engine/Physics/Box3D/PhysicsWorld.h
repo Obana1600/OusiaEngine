@@ -63,10 +63,18 @@ struct ShapeGeometry {
 	bool operator==(const ShapeGeometry &) const = default;
 };
 
-ShapeId CreateShape(BodyId bodyId, const ShapeGeometry &geometry, bool isSensor);
+struct CollisionFilter {
+	uint32_t categoryBits = 1;
+	uint32_t maskBits = 0xFFFFFFFF;
+
+	bool operator==(const CollisionFilter &) const = default;
+};
+
+ShapeId CreateShape(BodyId bodyId, const ShapeGeometry &geometry, const CollisionFilter &filter, bool isSensor);
 void DestroyShape(ShapeId id);
 
 void SetShapeGeometry(ShapeId id, const ShapeGeometry &geometry);
+void SetShapeFilter(ShapeId id, const CollisionFilter &filter);
 
 
 // ----- Collision -----
@@ -124,7 +132,7 @@ void SetGravity(const Vector3 &gravity);
 Vector3 GetGravity();
 
 
-// ----- RayCast -----
+// ----- Raycast -----
 
 struct RaycastHit {
 	ShapeId shapeId = kInvalidShapeId;
@@ -133,9 +141,9 @@ struct RaycastHit {
 	float distance = 0.0f;
 };
 
-std::vector<RaycastHit> RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, bool hitsSensors);
-std::vector<ShapeId> OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, bool hitsSensors);
-std::vector<ShapeId> OverlapSphere(const Vector3 &center, float radius, bool hitsSensors);
-std::vector<ShapeId> OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, bool hitsSensors);
+std::vector<RaycastHit> RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors);
+std::vector<ShapeId> OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, uint32_t layerMask, bool hitsSensors);
+std::vector<ShapeId> OverlapSphere(const Vector3 &center, float radius, uint32_t layerMask, bool hitsSensors);
+std::vector<ShapeId> OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, uint32_t layerMask, bool hitsSensors);
 
 } // namespace ou::PhysicsWorld

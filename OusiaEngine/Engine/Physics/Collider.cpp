@@ -53,19 +53,26 @@ void ou::Collider::SyncToPhysics() {
 
 	const auto bodyId = rigidbody ? rigidbody->bodyId_ : ownBodyId_;
 	const auto geometry = CalculateShapeGeometry(rigidbody);
+	const auto filter = Physics::CalculateCollisionFilter(GetGameObject()->GetLayer());
 
 	if (shapeId_ == PhysicsWorld::kInvalidShapeId || bodyId != bodyId_ || isTrigger_ != isSensorShape_) {
 		ReleaseShape();
 		bodyId_ = bodyId;
 		geometry_ = geometry;
+		filter_ = filter;
 		isSensorShape_ = isTrigger_;
-		shapeId_ = PhysicsWorld::CreateShape(bodyId_, geometry_, isSensorShape_);
+		shapeId_ = PhysicsWorld::CreateShape(bodyId_, geometry_, filter_, isSensorShape_);
 		return;
 	}
 
 	if (geometry != geometry_) {
 		geometry_ = geometry;
 		PhysicsWorld::SetShapeGeometry(shapeId_, geometry_);
+	}
+
+	if (filter_ != filter) {
+		filter_ = filter;
+		PhysicsWorld::SetShapeFilter(shapeId_, filter_);
 	}
 }
 

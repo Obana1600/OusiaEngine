@@ -40,12 +40,16 @@ public: // メンバ関数
 	bool IsActiveSelf() const;
 	bool IsActiveInHierarchy() const;
 
+	void SetLayer(int layer);
+	int GetLayer() const;
+
 
 private: // メンバ変数
 
 	std::vector<std::unique_ptr<Component>> components_;
 
 	bool isActiveSelf_ = true;
+	int layer_ = 0;
 
 	Transform *transform_ = nullptr;
 	Scene *scene_ = nullptr;

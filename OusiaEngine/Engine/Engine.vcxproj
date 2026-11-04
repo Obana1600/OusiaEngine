@@ -31,6 +31,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scene\LayerMask.h" />
     <ClInclude Include="Physics\CapsuleCollider.h" />
     <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\Selectable.h" />
@@ -142,6 +143,7 @@
     <ClInclude Include="UI\VertexHelper.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Scene\LayerMask.cpp" />
     <ClCompile Include="Physics\CapsuleCollider.cpp" />
     <ClCompile Include="Physics\Box3D\PhysicsWorld.cpp" />
     <ClCompile Include="UI\Button.cpp" />

@@ -1,6 +1,8 @@
 #include "GameObject.h"
 #include "Diagnostics/Assert.h"
 #include "Scene/Behaviour.h"
+#include "Diagnostics/Log.h"
+#include "Scene/LayerMask.h"
 
 using namespace ou;
 
@@ -54,6 +56,20 @@ bool ou::GameObject::IsActiveInHierarchy() const {
 
 	const auto *parent = transform_->GetParent();
 	return !parent || parent->GetGameObject()->IsActiveInHierarchy();
+}
+
+
+void ou::GameObject::SetLayer(int layer) {
+	if (layer < 0 || layer >= LayerMask::kLayerCount) {
+		Log::Error("レイヤーは 0~31 で指定してください: {} ({})", layer, GetName());
+		return;
+	}
+	layer_ = layer;
+}
+
+
+int ou::GameObject::GetLayer() const {
+	return layer_;
 }
 
 

@@ -44,6 +44,7 @@ private: // メンバ変数
 	PhysicsWorld::BodyId bodyId_ = PhysicsWorld::kInvalidBodyId;
 	PhysicsWorld::ShapeId shapeId_ = PhysicsWorld::kInvalidShapeId;
 	PhysicsWorld::ShapeGeometry geometry_;
+	PhysicsWorld::CollisionFilter filter_;
 	bool isSensorShape_ = false;
 
 	// Rigidbody がないときに使う

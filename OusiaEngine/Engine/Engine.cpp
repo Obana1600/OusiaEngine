@@ -12,6 +12,7 @@
 #include "Platform/Screen.h"
 #include "Render/Asset/Material.h"
 #include "Render/LineRenderer.h"
+#include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
 #include "UI/Graphic.h"
 #include "UI/Text.h"
@@ -57,6 +58,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		Log::Error("Assets フォルダが見つかりません");
 	}
 #endif
+
+	// レイヤー
+	LayerMask::LoadLayerNames();
 
 	// オーディオ
 	if (!Audio::Initialize()) {

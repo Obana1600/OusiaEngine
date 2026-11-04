@@ -72,6 +72,11 @@ std::optional<std::filesystem::path> ou::FindEngineAssetsFolder() {
 }
 
 
+std::optional<std::filesystem::path> ou::FindProjectSettingsFolder() {
+	return FindFolder(ProjectDirectory() / L"ProjectSettings", L"ProjectSettings");
+}
+
+
 std::optional<std::filesystem::path> ou::FindUserSettingsFolder() {
 	const auto assets = FindAssetsFolder();
 	if (!assets) {

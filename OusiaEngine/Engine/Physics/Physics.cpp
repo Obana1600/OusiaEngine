@@ -1,8 +1,9 @@
 #include "Physics.h"
 #include "Core/Time.h"
+#include "Diagnostics/Log.h"
+#include "Physics/Box3D/PhysicsWorld.h"
 #include "Physics/Collider.h"
 #include "Physics/Collision.h"
-#include "Physics/Box3D/PhysicsWorld.h"
 #include "Physics/Rigidbody.h"
 #include "Scene/GameObject.h"
 
@@ -35,6 +36,10 @@ Collision MakeCollision(const PhysicsWorld::ContactEvent &event, Collider *self,
 		contacts.push_back({point, normal, event.separation, self, other});
 	}
 	return Collision(other, other->GetAttachedRigidbody(), std::move(contacts));
+}
+
+bool IsValidLayer(int layer) {
+	return layer >= 0 && layer < LayerMask::kLayerCount;
 }
 
 } // namespace
@@ -83,8 +88,32 @@ bool ou::Physics::GetQueriesHitTriggers() {
 }
 
 
-bool ou::Physics::Raycast(const Vector3 &origin, const Vector3 &direction, RaycastHit *hitInfo, float maxDistance, QueryTriggerInteracation queryTriggerInteraction) {
-	const auto hits = RaycastAll(origin, direction, maxDistance, queryTriggerInteraction);
+void ou::Physics::IgnoreLayerCollision(int layer1, int layer2, bool ignore) {
+	if (!IsValidLayer(layer1) || !IsValidLayer(layer2)) {
+		Log::Error("レイヤーは 0~31 で指定してください: {}, {}", layer1, layer2);
+		return;
+	}
+
+	const auto bit1 = 1u << layer1;
+	const auto bit2 = 1u << layer2;
+	if (ignore) {
+		sIgnoreLayerMasks_[layer1] |= bit2;
+		sIgnoreLayerMasks_[layer2] |= bit1;
+	} else {
+		sIgnoreLayerMasks_[layer1] &= ~bit2;
+		sIgnoreLayerMasks_[layer2] &= ~bit1;
+	}
+}
+
+
+bool ou::Physics::GetIgnoreLayerCollision(int layer1, int layer2) {
+	if (!IsValidLayer(layer1) || !IsValidLayer(layer2)) { return false; }
+	return (sIgnoreLayerMasks_[layer1] & (1u << layer2)) != 0;
+}
+
+
+bool ou::Physics::Raycast(const Vector3 &origin, const Vector3 &direction, RaycastHit *hitInfo, float maxDistance, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	const auto hits = RaycastAll(origin, direction, maxDistance, layerMask, queryTriggerInteraction);
 	if (hits.empty()) { return false; }
 
 	if (hitInfo) { *hitInfo = hits.front(); }
@@ -92,9 +121,9 @@ bool ou::Physics::Raycast(const Vector3 &origin, const Vector3 &direction, Rayca
 }
 
 
-std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, QueryTriggerInteracation queryTriggerInteraction) {
+std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
 	std::vector<RaycastHit> hits;
-	for (const auto &result : PhysicsWorld::RaycastAll(origin, direction, maxDistance, HitsTriggers(queryTriggerInteraction))) {
+	for (const auto &result : PhysicsWorld::RaycastAll(origin, direction, maxDistance, layerMask, HitsTriggers(queryTriggerInteraction))) {
 		if (auto *collider = FindCollider(result.shapeId)) {
 			hits.push_back({result.point, result.normal, result.distance, collider});
 		}
@@ -103,18 +132,18 @@ std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vec
 }
 
 
-std::vector<Collider *> ou::Physics::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, QueryTriggerInteracation queryTriggerInteraction) {
-	return FindColliders(PhysicsWorld::OverlapBox(center, halfExtents, orientation, HitsTriggers(queryTriggerInteraction)));
+std::vector<Collider *> ou::Physics::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapBox(center, halfExtents, orientation, layerMask, HitsTriggers(queryTriggerInteraction)));
 }
 
 
-std::vector<Collider *> ou::Physics::OverlapSphere(const Vector3 &center, float radius, QueryTriggerInteracation queryTriggerInteraction) {
-	return FindColliders(PhysicsWorld::OverlapSphere(center, radius, HitsTriggers(queryTriggerInteraction)));
+std::vector<Collider *> ou::Physics::OverlapSphere(const Vector3 &center, float radius, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapSphere(center, radius, layerMask, HitsTriggers(queryTriggerInteraction)));
 }
 
 
-std::vector<Collider *> ou::Physics::OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, QueryTriggerInteracation queryTriggerInteraction) {
-	return FindColliders(PhysicsWorld::OverlapCapsule(point0, point1, radius, HitsTriggers(queryTriggerInteraction)));
+std::vector<Collider *> ou::Physics::OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	return FindColliders(PhysicsWorld::OverlapCapsule(point0, point1, radius, layerMask, HitsTriggers(queryTriggerInteraction)));
 }
 
 
@@ -226,4 +255,9 @@ std::vector<Collider *> ou::Physics::FindColliders(const std::vector<PhysicsWorl
 		if (auto *collider = FindCollider(id)) { colliders.push_back(collider); }
 	}
 	return colliders;
+}
+
+
+PhysicsWorld::CollisionFilter ou::Physics::CalculateCollisionFilter(int layer) {
+	return {1u << layer, ~sIgnoreLayerMasks_[layer]};
 }
