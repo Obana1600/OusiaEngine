@@ -13,9 +13,8 @@ std::shared_ptr<Sprite> ou::Sprite::Create(std::shared_ptr<Texture> texture) {
 		return nullptr;
 	}
 
-	const Rect rect = {
-		{},
-		{static_cast<float>(texture->GetWidth()), static_cast<float>(texture->GetHeight())}};
+	const auto rect = Rect(0.0f, 0.0f,
+						   static_cast<float>(texture->GetWidth()), static_cast<float>(texture->GetHeight()));
 
 	return Create(std::move(texture), rect);
 }
@@ -51,9 +50,8 @@ Rect ou::Sprite::MakeUvRect() const {
 	const Vector2 texSize = {static_cast<float>(texture_->GetWidth()),
 							 static_cast<float>(texture_->GetHeight())};
 
-	return {
-		{rect_.center.x / texSize.x, rect_.center.y / texSize.y},
-		{rect_.size.x / texSize.x, rect_.size.y / texSize.y}};
+	return Rect(rect_.x / texSize.x, rect_.y / texSize.y,
+				rect_.width / texSize.x, rect_.height / texSize.y);
 }
 
 

@@ -137,8 +137,8 @@ const Glyph *ou::FontAsset::FindOrAddGlyph(char32_t unicode) {
 
 		// ページの画像に写す
 		auto &page = atlasPages_[glyph.atlasIndex];
-		const auto x0 = static_cast<size_t>(glyph.glyphRect.center.x);
-		const auto y0 = static_cast<size_t>(glyph.glyphRect.center.y);
+		const auto x0 = static_cast<size_t>(glyph.glyphRect.x);
+		const auto y0 = static_cast<size_t>(glyph.glyphRect.y);
 		for (uint32_t y = 0; y < bitmap->height; y++) {
 			std::memcpy(page.pixels.data() + (y0 + y) * atlasSize_ + x0,
 						bitmap->pixels.data() + static_cast<size_t>(y) * bitmap->width,
@@ -308,8 +308,8 @@ bool ou::FontAsset::ReserveAtlasRect(uint32_t width, uint32_t height, uint32_t *
 
 	// 呼び出し元に返す
 	*outAtlasIndex = static_cast<uint32_t>(atlasPages_.size() - 1);
-	*outRect = {{static_cast<float>(page->cursorX), static_cast<float>(page->cursorY)},
-				{static_cast<float>(width), static_cast<float>(height)}};
+	*outRect = Rect(static_cast<float>(page->cursorX), static_cast<float>(page->cursorY),
+					static_cast<float>(width), static_cast<float>(height));
 
 	// 次の画像用にカーソルを進める
 	page->cursorX += width + kGlyphSpacing;

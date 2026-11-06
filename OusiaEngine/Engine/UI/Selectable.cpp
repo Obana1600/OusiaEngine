@@ -13,11 +13,11 @@ using namespace ou;
 namespace {
 
 Vector2 FindPointOnRectEdge(const Rect &rect, Vector2 dir) {
-	const auto center = rect.center + rect.size * 0.5f;
+	const auto center = rect.GetCenter();
 	if (dir == Vector2::Zero) { return center; }
 
 	dir = dir / std::max(std::abs(dir.x), std::abs(dir.y));
-	return center + Vector2::Scale(rect.size, dir * 0.5f);
+	return center + Vector2::Scale(rect.GetSize(), dir * 0.5f);
 }
 
 } // namespace
@@ -280,7 +280,5 @@ Vector3 ou::Selectable::CalculateWorldCenter() const {
 	const auto *rectTransform = dynamic_cast<const RectTransform *>(GetTransform());
 	if (!rectTransform) { return GetTransform()->GetWorldPosition(); }
 
-	const auto &rect = rectTransform->GetRect();
-	const auto center = rect.center + rect.size * 0.5f;
-	return rectTransform->GetLocalToWorldMatrix().MultiplyPoint({center, 0.0f});
+	return rectTransform->GetLocalToWorldMatrix().MultiplyPoint({rectTransform->GetRect().GetCenter(), 0.0f});
 }

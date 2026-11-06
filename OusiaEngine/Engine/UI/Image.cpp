@@ -23,7 +23,7 @@ const std::shared_ptr<Sprite> &ou::Image::GetSprite() const {
 
 void ou::Image::SetNativeSize() {
 	if (!sprite_) { return; }
-	GetRectTransform()->SetSizeDelta(sprite_->GetRect().size);
+	GetRectTransform()->SetSizeDelta(sprite_->GetRect().GetSize());
 }
 
 
@@ -39,16 +39,16 @@ void ou::Image::OnPopulateMesh(VertexHelper &vh) {
 	}
 
 	const auto &rect = GetRectTransform()->GetRect();
-	const auto left = rect.center.x;
-	const auto bottom = rect.center.y;
-	const auto right = left + rect.size.x;
-	const auto top = bottom + rect.size.y;
+	const auto left = rect.GetXMin();
+	const auto bottom = rect.GetYMin();
+	const auto right = rect.GetXMax();
+	const auto top = rect.GetYMax();
 
 	const auto uvRect = sprite_->MakeUvRect();
-	const auto u0 = uvRect.center.x;
-	const auto v0 = uvRect.center.y;
-	const auto u1 = u0 + uvRect.size.x;
-	const auto v1 = v0 + uvRect.size.y;
+	const auto u0 = uvRect.GetXMin();
+	const auto v0 = uvRect.GetYMin();
+	const auto u1 = uvRect.GetXMax();
+	const auto v1 = uvRect.GetYMax();
 
 	const auto &color = GetColor();
 	vh.Clear();

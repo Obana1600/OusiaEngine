@@ -63,6 +63,9 @@ public: // 静的メンバ関数
 
 	static Quaternion Normalize(Quaternion &q);
 
+	static Quaternion Slerp(const Quaternion &a, const Quaternion &b, float t);
+	static Quaternion SlerpUnclamped(const Quaternion &a, const Quaternion &b, float t);
+
 
 public: // オペレータ
 

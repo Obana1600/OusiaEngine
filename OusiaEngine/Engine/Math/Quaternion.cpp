@@ -7,6 +7,38 @@
 using namespace ou;
 
 
+namespace ou {
+namespace {
+
+Quaternion operator+(const Quaternion &a, const Quaternion &b) {
+	return Quaternion(
+		a.x + b.x,
+		a.y + b.y,
+		a.z + b.z,
+		a.w + b.w);
+}
+
+Quaternion operator*(const Quaternion &a, float b) {
+	return Quaternion(
+		a.x * b,
+		a.y * b,
+		a.z * b,
+		a.w * b);
+}
+
+Quaternion operator*(float a, const Quaternion &b) {
+	return b * a;
+}
+
+Quaternion operator-(const Quaternion &q) {
+	return Quaternion(-q.x, -q.y, -q.z, -q.w);
+}
+
+} // namespace
+} // namespace ou
+
+
+
 const ou::Quaternion ou::Quaternion::Identity = {0.0f, 0.0f, 0.0f, 1.0f};
 
 
@@ -142,6 +174,31 @@ Quaternion ou::Quaternion::Inverse(const Quaternion &q) {
 
 Quaternion ou::Quaternion::Normalize(Quaternion &q) {
 	return q = q.Normalized();
+}
+
+
+Quaternion ou::Quaternion::Slerp(const Quaternion &a, const Quaternion &b, float t) {
+	t = Mathf::Clamp01(t);
+	return SlerpUnclamped(a, b, t);
+}
+
+
+Quaternion ou::Quaternion::SlerpUnclamped(const Quaternion &a, const Quaternion &b, float t) {
+	auto cosTheta = Dot(a, b);
+	const auto sign = (cosTheta < 0.0f) ? -1.0f : 1.0f;
+	cosTheta *= sign;
+
+	auto scaleA = 1.0f - t;
+	auto scaleB = t;
+	if (cosTheta < 1.0f - Mathf::Epsilon) {
+		const auto theta = Mathf::Acos(cosTheta);
+		const auto sinTheta = Mathf::Sin(theta);
+		scaleA = Mathf::Sin((1.0f - t) * theta) / sinTheta;
+		scaleB = Mathf::Sin(t * theta) / sinTheta;
+	}
+	scaleB *= sign;
+
+	return Quaternion(scaleA * a + scaleB * b).Normalized();
 }
 
 

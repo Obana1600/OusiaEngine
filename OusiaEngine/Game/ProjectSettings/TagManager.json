@@ -1,5 +1,4 @@
 {
-	// Unity の Tags and Layers の User Layer に当たる（番号: 名前）
 	"layers": {
 		"3": "Ground",
 		"8": "Player",

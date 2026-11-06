@@ -4,6 +4,7 @@
 
 #include <Windows.h>
 #include <algorithm>
+#include <cfloat>
 #include <map>
 #include <set>
 #include <thread>
@@ -22,21 +23,6 @@ constexpr int kSubStepCount = 4;
 // 重力の既定値
 constexpr b3Vec3 kDefaultGravity = {0.0f, -9.81f, 0.0f};
 
-// 形の大きさの下限
-constexpr float kMinShapeExtent = 0.001f;
-
-// 動かした Body の周りで起こす範囲の余白
-constexpr float kWakeMargin = 0.1f;
-
-// Raycast の最大距離
-constexpr float kMaxRaycastDistance = 100000.0f;
-
-// userMaterialId の中で、restitutionCombine を置く位置
-constexpr int kRestitutionCombineShift = 8;
-
-// フィルター
-constexpr uint64_t kQueryCategoryBits = 1ull << 32;
-
 // Stay コリジョン 1つぶん
 struct ActiveContact {
 	b3ShapeId shapeA = b3_nullShapeId;
@@ -47,25 +33,14 @@ struct ActiveContact {
 // Stay コリジョンの組
 using ContactKey = std::pair<PhysicsWorld::ShapeId, PhysicsWorld::ShapeId>;
 
-// レイキャストの情報
-struct RaycastContext {
-	std::vector<PhysicsWorld::RaycastHit> hits;
-	float distance = 0.0f;
-	bool hitsSensors = true;
-};
-
-// コリジョンの情報
-struct OverlapContext {
-	std::vector<PhysicsWorld::ShapeId> shapes;
-	bool hitsSensors = false;
-};
-
 
 // グローバルなインスタンス
 b3WorldId sWorld = b3_nullWorldId;
-
 std::map<ContactKey, ActiveContact> sActiveContacts;
+std::map<PhysicsWorld::BodyId, b3Vec3> sCenterOfMassOverrides;
 
+
+// Impl ===========================================================================================
 
 void LogImpl(const char *message) {
 	Log::Warning("Box3D: {}", message);
@@ -76,6 +51,10 @@ int AssertImpl(const char *condition, const char *fileName, int lineNumber) {
 	return IsDebuggerPresent() ? 1 : 0;
 }
 
+// ================================================================================================
+
+
+// Convert ========================================================================================
 
 b3Vec3 ToB3(const Vector3 &v) {
 	return {v.x, v.y, v.z};
@@ -109,8 +88,14 @@ Vector3 Abs(const Vector3 &v) {
 	return Vector3(Mathf::Abs(v.x), Mathf::Abs(v.y), Mathf::Abs(v.z));
 }
 
+// ================================================================================================
+
 
 // Shape ==========================================================================================
+
+// 形の大きさの下限
+constexpr float kMinShapeExtent = 0.001f;
+
 
 b3ShapeId FindShape(PhysicsWorld::ShapeId id) {
 	const auto shape = b3LoadShapeId(id);
@@ -148,6 +133,10 @@ b3Capsule MakeCapsule(const PhysicsWorld::ShapeGeometry &geometry) {
 
 
 // SurfaceMaterial --------------------------------------------------------------------------------
+
+// userMaterialId の中で、restitutionCombine を置く位置
+constexpr int kRestitutionCombineShift = 8;
+
 
 b3SurfaceMaterial ToB3(const PhysicsWorld::SurfaceMaterial &material) {
 	auto result = b3DefaultSurfaceMaterial();
@@ -192,6 +181,9 @@ float MixRestitution(float restitutionA, uint64_t userMaterialIdA, float restitu
 
 // Filter -----------------------------------------------------------------------------------------
 
+// フィルター
+constexpr uint64_t kQueryCategoryBits = 1ull << 32;
+
 b3Filter ToB3(const PhysicsWorld::CollisionFilter &filter) {
 	auto result = b3DefaultFilter();
 	result.categoryBits = filter.categoryBits;
@@ -213,6 +205,10 @@ b3QueryFilter MakeQueryFilter(uint32_t layerMask) {
 
 // Body ===========================================================================================
 
+// 動かした Body の周りで起こす範囲の余白
+constexpr float kWakeMargin = 0.1f;
+
+
 b3BodyId FindBody(PhysicsWorld::BodyId id) {
 	const auto body = b3LoadBodyId(id);
 	return b3Body_IsValid(body) ? body : b3_nullBodyId;
@@ -220,6 +216,10 @@ b3BodyId FindBody(PhysicsWorld::BodyId id) {
 
 void ApplyMass(b3BodyId body, float mass) {
 	if (b3Body_GetType(body) != b3_dynamicBody) { return; }
+
+	const auto oldCenter = b3Body_GetWorldCenterOfMass(body);
+	const auto linearVelocity = b3Body_GetLinearVelocity(body);
+	const auto angularVelocity = b3Body_GetAngularVelocity(body);
 
 	b3Body_ApplyMassFromShapes(body);
 	auto massData = b3Body_GetMassData(body);
@@ -230,7 +230,17 @@ void ApplyMass(b3BodyId body, float mass) {
 		massData.inertia = b3Mat3_identity;
 	}
 	massData.mass = mass;
+
+	const auto found = sCenterOfMassOverrides.find(b3StoreBodyId(body));
+	if (found != sCenterOfMassOverrides.end()) {
+		massData.center = found->second;
+	}
 	b3Body_SetMassData(body, massData);
+
+	b3Body_SetTransform(body, b3Body_GetPosition(body), b3Body_GetRotation(body));
+
+	const auto centerShift = b3SubPos(b3Body_GetWorldCenterOfMass(body), oldCenter);
+	b3Body_SetLinearVelocity(body, b3Add(linearVelocity, b3Cross(angularVelocity, centerShift)));
 }
 
 bool CollectBody(b3ShapeId id, void *context) {
@@ -279,10 +289,15 @@ PhysicsWorld::ContactEvent MakeContactEvent(PhysicsWorld::ContactEvent::Type typ
 	event.separation = Mathf::Infinity;
 	for (int i = 0; i < data.manifoldCount; i++) {
 		const auto &manifold = data.manifolds[i];
+		auto normalImpulse = 0.0f; 
 		for (int j = 0; j < manifold.pointCount; j++) {
 			event.points.push_back(centerA + ToOu(manifold.points[j].anchorA));
 			event.separation = Mathf::Min(event.separation, manifold.points[j].separation);
+			normalImpulse += manifold.points[j].totalNormalImpulse;
 		}
+
+		event.impulse += ToOu(manifold.normal) * (normalImpulse * 0.5f) +
+						 ToOu(manifold.frictionImpulse) * static_cast<float>(kSubStepCount);
 	}
 	if (event.points.empty()) { event.separation = 0.0f; }
 	return event;
@@ -293,6 +308,23 @@ PhysicsWorld::ContactEvent MakeContactEvent(PhysicsWorld::ContactEvent::Type typ
 
 // Raycast ========================================================================================
 
+// Raycast の最大距離
+constexpr float kMaxRaycastDistance = 100000.0f;
+
+// レイキャストの情報
+struct RaycastContext {
+	std::vector<PhysicsWorld::RaycastHit> hits;
+	float distance = 0.0f;
+	bool hitsSensors = true;
+};
+
+// 形状の情報
+struct OverlapContext {
+	std::vector<PhysicsWorld::ShapeId> shapes;
+	bool hitsSensors = false;
+};
+
+
 float CollectRaycastHit(
 	b3ShapeId shape, b3Pos point, b3Vec3 normal, float fraction, uint64_t, int, int, void *context) {
 	auto *raycast = static_cast<RaycastContext *>(context);
@@ -300,10 +332,7 @@ float CollectRaycastHit(
 	if (fraction <= 0.0f) { return -1.0f; }
 	if (!raycast->hitsSensors && b3Shape_IsSensor(shape)) { return -1.0f; }
 
-	raycast->hits.push_back({b3StoreShapeId(shape),
-							 ToOu(point),
-							 ToOu(normal),
-							 fraction * raycast->distance});
+	raycast->hits.push_back({b3StoreShapeId(shape), ToOu(point), ToOu(normal), fraction * raycast->distance});
 	return 1.0f;
 }
 
@@ -324,6 +353,96 @@ std::vector<PhysicsWorld::ShapeId> OverlapProxy(
 	overlap.hitsSensors = hitsSensors;
 	b3World_OverlapShape(sWorld, ToB3(origin), &proxy, MakeQueryFilter(layerMask), CollectOverlap, &overlap);
 	return overlap.shapes;
+}
+
+float CollectShapeCastHit(
+	b3ShapeId shape, b3Pos point, b3Vec3 normal, float fraction, uint64_t, int, int, void *context) {
+	auto *cast = static_cast<RaycastContext *>(context);
+	if (!cast->hitsSensors && b3Shape_IsSensor(shape)) { return -1.0f; }
+
+	cast->hits.push_back({b3StoreShapeId(shape), ToOu(point), ToOu(normal), fraction * cast->distance});
+	return 1.0f;
+}
+
+std::vector<PhysicsWorld::RaycastHit> CastProxy(
+	const Vector3 &origin, const b3Vec3 *points, int count, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors) {
+	const auto length = direction.Length();
+	if (B3_IS_NULL(sWorld) || length <= 0.0f || maxDistance <= 0.0f) { return {}; }
+
+	const b3ShapeProxy proxy = {points, count, radius};
+	RaycastContext cast;
+	cast.distance = Mathf::Min(maxDistance, kMaxRaycastDistance);
+	cast.hitsSensors = hitsSensors;
+	b3World_CastShape(sWorld, ToB3(origin), &proxy, ToB3(direction / length * cast.distance),
+					  MakeQueryFilter(layerMask), CollectShapeCastHit, &cast);
+
+	std::sort(cast.hits.begin(), cast.hits.end(),
+			  [](const PhysicsWorld::RaycastHit &a, const PhysicsWorld::RaycastHit &b) { return a.distance < b.distance; });
+	return cast.hits;
+}
+
+void MakeBoxCorners(const Vector3 &halfExtents, const Quaternion &rotation, b3Vec3 corners[8]) {
+	const auto extents = Abs(halfExtents);
+	for (int i = 0; i < 8; i++) {
+		const auto corner = Vector3((i & 1) ? extents.x : -extents.x,
+									(i & 2) ? extents.y : -extents.y,
+									(i & 4) ? extents.z : -extents.z);
+		corners[i] = ToB3(rotation * corner);
+	}
+}
+
+// ================================================================================================
+
+
+// Character ======================================================================================
+
+// 面と衝突判定を繰り返す回数
+constexpr int kMoverIterations = 5;
+
+// 最小移動量
+constexpr float kMoverTolerance = 0.0001f;
+
+// カプセルの移動時に集める面
+struct MoverContext {
+	b3Pos origin;
+	b3ShapeId ignoreShape = b3_nullShapeId;
+	float minGroundNormalY = 0.0f;
+	bool flattenGround = false;
+	std::vector<b3CollisionPlane> planes;
+	std::vector<PhysicsWorld::CapsuleMoveHit> hits;
+};
+
+
+bool IsMoverIgnored(b3ShapeId shape, const MoverContext &mover) {
+	return B3_ID_EQUALS(shape, mover.ignoreShape) || b3Shape_IsSensor(shape);
+}
+
+bool CollectMoverPlanes(b3ShapeId shape, const b3PlaneResult *results, int count, void *context) {
+	auto *mover = static_cast<MoverContext *>(context);
+	if (IsMoverIgnored(shape, *mover)) { return true; }
+
+	for (int i = 0; i < count; i++) {
+		auto plane = results[i].plane;
+
+		if (plane.normal.y > 0.0f && plane.normal.y < mover->minGroundNormalY) {
+			plane.normal.y = 0.0f;
+			plane.normal = b3Normalize(plane.normal);
+		} else if (mover->flattenGround && plane.normal.y >= mover->minGroundNormalY) {
+			plane.normal = {0.0f, 1.0f, 0.0f};
+		}
+		mover->planes.push_back({plane, FLT_MAX, 0.0f, true});
+
+		const auto point = ToOu(results[i].point) + Vector3(static_cast<float>(mover->origin.x),
+															static_cast<float>(mover->origin.y),
+															static_cast<float>(mover->origin.z));
+		mover->hits.push_back({b3StoreShapeId(shape), point, ToOu(results[i].plane.normal)});
+	}
+
+	return true;
+}
+
+bool FilterMover(b3ShapeId shape, void *context) {
+	return !IsMoverIgnored(shape, *static_cast<MoverContext *>(context));
 }
 
 // ================================================================================================
@@ -355,6 +474,7 @@ void ou::PhysicsWorld::Finalize() {
 	if (B3_IS_NULL(sWorld)) { return; }
 
 	sActiveContacts.clear();
+	sCenterOfMassOverrides.clear();
 
 	b3DestroyWorld(sWorld);
 	sWorld = b3_nullWorldId;
@@ -396,6 +516,7 @@ void ou::PhysicsWorld::DestroyBody(BodyId id) {
 	if (B3_IS_NULL(body)) { return; }
 
 	b3DestroyBody(body);
+	sCenterOfMassOverrides.erase(id);
 }
 
 
@@ -638,6 +759,38 @@ void ou::PhysicsWorld::SetAngularDamping(BodyId id, float damping) {
 }
 
 
+void ou::PhysicsWorld::SetBullet(BodyId id, bool isBullet) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	b3Body_SetBullet(body, isBullet);
+}
+
+
+void ou::PhysicsWorld::SetAwake(BodyId id, bool isAwake) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	b3Body_SetAwake(body, isAwake);
+}
+
+
+bool ou::PhysicsWorld::IsAwake(BodyId id) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return false; }
+
+	return b3Body_IsAwake(body);
+}
+
+
+void ou::PhysicsWorld::SetSleepThreshold(BodyId id, float threshold) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	b3Body_SetSleepThreshold(body, Mathf::Max(threshold, 0.0f));
+}
+
+
 void ou::PhysicsWorld::SetLinearVelocity(BodyId id, const Vector3 &velocity) {
 	const auto body = FindBody(id);
 	if (B3_IS_NULL(body)) { return; }
@@ -702,6 +855,64 @@ void ou::PhysicsWorld::AddAngularImpulse(BodyId id, const Vector3 &impulse) {
 }
 
 
+void ou::PhysicsWorld::AddForceAtPoint(BodyId id, const Vector3 &force, const Vector3 &point) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	b3Body_ApplyForce(body, ToB3(force), ToB3(point), true);
+}
+
+
+void ou::PhysicsWorld::AddImpulseAtPoint(BodyId id, const Vector3 &impulse, const Vector3 &point) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	b3Body_ApplyLinearImpulse(body, ToB3(impulse), ToB3(point), true);
+}
+
+
+Vector3 ou::PhysicsWorld::GetPointVelocity(BodyId id, const Vector3 &point) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return Vector3::Zero; }
+
+	return ToOu(b3Body_GetWorldPointVelocity(body, ToB3(point)));
+}
+
+
+void ou::PhysicsWorld::SetLocalCenterOfMass(BodyId id, const Vector3 &center) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	sCenterOfMassOverrides[id] = ToB3(center);
+	ApplyMass(body, b3Body_GetMass(body));
+}
+
+
+void ou::PhysicsWorld::ResetLocalCenterOfMass(BodyId id) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return; }
+
+	sCenterOfMassOverrides.erase(id);
+	ApplyMass(body, b3Body_GetMass(body));
+}
+
+
+Vector3 ou::PhysicsWorld::GetLocalCenterOfMass(BodyId id) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return Vector3::Zero; }
+
+	return ToOu(b3Body_GetLocalCenterOfMass(body));
+}
+
+
+Vector3 ou::PhysicsWorld::GetWorldCenterOfMass(BodyId id) {
+	const auto body = FindBody(id);
+	if (B3_IS_NULL(body)) { return Vector3::Zero; }
+
+	return ToOu(b3Body_GetWorldCenterOfMass(body));
+}
+
+
 void ou::PhysicsWorld::MoveKinematic(BodyId id, const Vector3 &position, const Quaternion &rotation, float deltaTime) {
 	const auto body = FindBody(id);
 	if (B3_IS_NULL(body)) { return; }
@@ -744,15 +955,8 @@ std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::RaycastAll(const Vector3
 
 
 std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, uint32_t layerMask, bool hitsSensors) {
-	const auto extents = Abs(halfExtents);
-
 	b3Vec3 corners[8];
-	for (int i = 0; i < 8; i++) {
-		const Vector3 corner = {(i & 1) ? extents.x : -extents.x,
-								(i & 2) ? extents.y : -extents.y,
-								(i & 4) ? extents.z : -extents.z};
-		corners[i] = ToB3(rotation * corner);
-	}
+	MakeBoxCorners(halfExtents, rotation, corners);
 
 	return OverlapProxy(center, corners, 8, 0.0f, layerMask, hitsSensors);
 }
@@ -769,4 +973,59 @@ std::vector<PhysicsWorld::ShapeId> ou::PhysicsWorld::OverlapCapsule(const Vector
 	const b3Vec3 points[2] = {ToB3(point0 - center),
 							  ToB3(point1 - center)};
 	return OverlapProxy(center, points, 2, Mathf::Abs(radius), layerMask, hitsSensors);
+}
+
+
+std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::BoxCastAll(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors) {
+	b3Vec3 corners[8];
+	MakeBoxCorners(halfExtents, rotation, corners);
+	return CastProxy(center, corners, 8, 0.0f, direction, maxDistance, layerMask, hitsSensors);
+}
+
+
+std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::SphereCastAll(const Vector3 &origin, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors) {
+	const auto point = b3Vec3_zero;
+	return CastProxy(origin, &point, 1, Mathf::Abs(radius), direction, maxDistance, layerMask, hitsSensors);
+}
+
+
+std::vector<PhysicsWorld::RaycastHit> ou::PhysicsWorld::CapsuleCastAll(const Vector3 &point0, const Vector3 &point1, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors) {
+	const auto center = (point0 + point1) * 0.5f;
+	const b3Vec3 points[2] = {ToB3(point0 - center),
+							  ToB3(point1 - center)};
+	return CastProxy(center, points, 2, Mathf::Abs(radius), direction, maxDistance, layerMask, hitsSensors);
+}
+
+
+PhysicsWorld::CapsuleMoveResult ou::PhysicsWorld::MoveCapsule(const Vector3 &point0, const Vector3 &point1, float radius, const Vector3 &motion, uint32_t layerMask, ShapeId ignoreShape, float minGroundNormalY, bool flattenGround) {
+	CapsuleMoveResult result;
+	if (B3_IS_NULL(sWorld)) { return result; }
+
+	const auto start = (point0 + point1) * 0.5f;
+	const b3Capsule capsule = {ToB3(point0 - start), ToB3(point1 - start), Mathf::Abs(radius)};
+	const auto filter = MakeQueryFilter(layerMask);
+	const auto target = start + motion;
+
+	MoverContext mover;
+	mover.ignoreShape = FindShape(ignoreShape);
+	mover.minGroundNormalY = minGroundNormalY;
+	mover.flattenGround = flattenGround;
+
+	auto position = start;
+	for (int iteration = 0; iteration < kMoverIterations; iteration++) {
+		mover.origin = ToB3(position);
+		mover.planes.clear();
+		b3World_CollideMover(sWorld, mover.origin, &capsule, filter, CollectMoverPlanes, &mover);
+		const auto solved = b3SolvePlanes(ToB3(target - position), mover.planes.data(), static_cast<int>(mover.planes.size()));
+
+		const auto fraction = b3World_CastMover(sWorld, mover.origin, &capsule, solved.delta, filter, FilterMover, &mover);
+		const auto delta = ToOu(solved.delta) * fraction;
+		position += delta;
+
+		if (delta.LengthSquared() < kMoverTolerance * kMoverTolerance) { break; }
+	}
+
+	result.delta = position - start;
+	result.hits = std::move(mover.hits);
+	return result;
 }

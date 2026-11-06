@@ -222,10 +222,10 @@ void ou::Graphic::UpdateMaterial() {
 
 void ou::Graphic::OnPopulateMesh(VertexHelper &vh) {
 	const auto &rect = rectTransform_->GetRect();
-	const auto left = rect.center.x;
-	const auto bottom = rect.center.y;
-	const auto right = left + rect.size.x;
-	const auto top = bottom + rect.size.y;
+	const auto left = rect.GetXMin();
+	const auto bottom = rect.GetYMin();
+	const auto right = rect.GetXMax();
+	const auto top = rect.GetYMax();
 
 	vh.Clear();
 	vh.AddVert({left, bottom, 0.0f}, color_, {0.0f, 1.0f, 0.0f, 0.0f});

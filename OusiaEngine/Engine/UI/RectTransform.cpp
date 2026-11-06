@@ -79,16 +79,16 @@ void ou::RectTransform::RecalculateLayout() {
 	const auto parentRect = FindParentRect();
 
 	// アンカーの位置
-	const auto anchorMinPos = parentRect.center + Vector2::Scale(anchorMin_, parentRect.size);
-	const auto anchorMaxPos = parentRect.center + Vector2::Scale(anchorMax_, parentRect.size);
+	const auto anchorMinPos = parentRect.GetMin() + Vector2::Scale(anchorMin_, parentRect.GetSize());
+	const auto anchorMaxPos = parentRect.GetMin() + Vector2::Scale(anchorMax_, parentRect.GetSize());
 	const auto anchorSpan = anchorMaxPos - anchorMinPos;
 
 	// サイズとピボット
 	const auto size = anchorSpan + sizeDelta_;
 	const auto pivotPos = anchorMinPos + Vector2::Scale(anchorSpan, pivot_) + anchoredPosition_;
 
-	const Rect rect = {-Vector2::Scale(pivot_, size), size};
-	const auto isRectChanged = !(rect.center == rect_.center) || !(rect.size == rect_.size);
+	const auto rect = Rect(-Vector2::Scale(pivot_, size), size);
+	const auto isRectChanged = rect != rect_;
 	rect_ = rect;
 	SetLocalPosition({pivotPos.x, pivotPos.y, GetLocalPosition().z});
 

@@ -1,6 +1,7 @@
 #include "Rigidbody.h"
 #include "Core/Time.h"
 #include "Math/Mathf.h"
+#include "Physics/Collider.h"
 #include "Physics/Physics.h"
 #include "Scene/Transform.h"
 
@@ -18,13 +19,15 @@ constexpr float kMinMass = 1e-7f;
 
 void ou::Rigidbody::Awake() {
 	const auto *transform = GetTransform();
-	position_ = transform->GetWorldPosition();
-	rotation_ = transform->GetWorldRotation();
+	position_ = previousPosition_ = writtenPosition_ = transform->GetWorldPosition();
+	rotation_ = previousRotation_ = writtenRotation_ = transform->GetWorldRotation();
 
 	bodyId_ = PhysicsWorld::CreateBody(position_, rotation_, PhysicsWorld::MotionType::Dynamic);
 	PhysicsWorld::SetUseGravity(bodyId_, useGravity_);
 	PhysicsWorld::SetLinearDamping(bodyId_, linearDamping_);
 	PhysicsWorld::SetAngularDamping(bodyId_, angularDamping_);
+	PhysicsWorld::SetSleepThreshold(bodyId_, sleepThreshold_);
+	PhysicsWorld::SetBullet(bodyId_, collisionDetectionMode_ == CollisionDetectionMode::ContinuousDynamic);
 	ApplyMotion();
 
 	Physics::RegisterRigidbody(this);
@@ -94,6 +97,48 @@ float ou::Rigidbody::GetAngularDamping() const {
 }
 
 
+void ou::Rigidbody::SetMaxLinearVelocity(float velocity) {
+	maxLinearVelocity_ = Mathf::Max(velocity, 0.0f);
+}
+
+
+float ou::Rigidbody::GetMaxLinearVelocity() const {
+	return maxLinearVelocity_;
+}
+
+
+void ou::Rigidbody::SetMaxAngularVelocity(float velocity) {
+	maxAngularVelocity_ = Mathf::Max(velocity, 0.0f);
+}
+
+
+float ou::Rigidbody::GetMaxAngularVelocity() const {
+	return maxAngularVelocity_;
+}
+
+
+void ou::Rigidbody::SetSleepThreshold(float threshold) {
+	sleepThreshold_ = Mathf::Max(threshold, 0.0f);
+	PhysicsWorld::SetSleepThreshold(bodyId_, sleepThreshold_);
+}
+
+
+float ou::Rigidbody::GetSleepThreshold() const {
+	return sleepThreshold_;
+}
+
+
+void ou::Rigidbody::SetCollisionDetectionMode(CollisionDetectionMode mode) {
+	collisionDetectionMode_ = mode;
+	PhysicsWorld::SetBullet(bodyId_, collisionDetectionMode_ == CollisionDetectionMode::ContinuousDynamic);
+}
+
+
+CollisionDetectionMode ou::Rigidbody::GetCollisionDetectionMode() const {
+	return collisionDetectionMode_;
+}
+
+
 void ou::Rigidbody::SetConstraints(RigidbodyConstraints constraints) {
 	constraints_ = constraints;
 	ApplyMotion();
@@ -102,6 +147,19 @@ void ou::Rigidbody::SetConstraints(RigidbodyConstraints constraints) {
 
 RigidbodyConstraints ou::Rigidbody::GetConstraints() const {
 	return constraints_;
+}
+
+
+void ou::Rigidbody::SetInterpolation(RigidbodyInterpolation interpolation) {
+	interpolation_ = interpolation;
+
+	previousPosition_ = position_;
+	previousRotation_ = rotation_;
+}
+
+
+RigidbodyInterpolation ou::Rigidbody::GetInterpolation() const {
+	return interpolation_;
 }
 
 
@@ -163,6 +221,72 @@ void ou::Rigidbody::AddTorque(const Vector3 &torque, ForceMode mode) {
 }
 
 
+void ou::Rigidbody::AddRelativeForce(const Vector3 &force, ForceMode mode) {
+	AddForce(rotation_ * force, mode);
+}
+
+
+void ou::Rigidbody::AddRelativeTorque(const Vector3 &torque, ForceMode mode) {
+	AddTorque(rotation_ * torque, mode);
+}
+
+
+void ou::Rigidbody::AddForceAtPosition(const Vector3 &force, const Vector3 &position, ForceMode mode) {
+	switch (mode) {
+		case ForceMode::Force:
+			PhysicsWorld::AddForceAtPoint(bodyId_, force, position);
+			break;
+		case ForceMode::Acceleration:
+			PhysicsWorld::AddForceAtPoint(bodyId_, force * mass_, position);
+			break;
+		case ForceMode::Impulse:
+			PhysicsWorld::AddImpulseAtPoint(bodyId_, force, position);
+			break;
+		case ForceMode::VelocityChange:
+			PhysicsWorld::AddImpulseAtPoint(bodyId_, force * mass_, position);
+			break;
+	}
+}
+
+
+void ou::Rigidbody::AddExplosionForce(float explosionForce, const Vector3 &explosionPosition, float explosionRadius, float upwardsModifier, ForceMode mode) {
+	if (isKinematic_) { return; }
+
+	Vector3 point;
+	if (!FindClosestSurfacePoint(explosionPosition, &point)) {
+		point = PhysicsWorld::GetWorldCenterOfMass(bodyId_);
+	}
+
+	const auto distance = Vector3::Distance(point, explosionPosition);
+	if (explosionRadius > 0.0f && distance > explosionRadius) { return; }
+	const auto falloff = (explosionRadius > 0.0f) ? 1.0f - distance / explosionRadius
+												  : 1.0f;
+
+	const auto direction = (point - (explosionPosition - Vector3::Up * upwardsModifier)).Normalized();
+	AddForceAtPosition(direction * (explosionForce * falloff), point, mode);
+}
+
+
+Vector3 ou::Rigidbody::GetPointVelocity(const Vector3 &worldPoint) const {
+	return PhysicsWorld::GetPointVelocity(bodyId_, worldPoint);
+}
+
+
+void ou::Rigidbody::Sleep() {
+	PhysicsWorld::SetAwake(bodyId_, false);
+}
+
+
+void ou::Rigidbody::WakeUp() {
+	PhysicsWorld::SetAwake(bodyId_, true);
+}
+
+
+bool ou::Rigidbody::IsSleeping() const {
+	return !PhysicsWorld::IsAwake(bodyId_);
+}
+
+
 void ou::Rigidbody::MovePosition(const Vector3 &position) {
 	PrepareMoveTarget();
 	movePosition_ = position;
@@ -175,15 +299,38 @@ void ou::Rigidbody::MoveRotation(const Quaternion &rotation) {
 }
 
 
+Vector3 ou::Rigidbody::GetPosition() const {
+	return position_;
+}
+
+
+Quaternion ou::Rigidbody::GetRotation() const {
+	return rotation_;
+}
+
+
+void ou::Rigidbody::SetCenterOfMass(const Vector3 &center) {
+	PhysicsWorld::SetLocalCenterOfMass(bodyId_, center);
+}
+
+
+void ou::Rigidbody::ResetCenterOfMass() {
+	PhysicsWorld::ResetLocalCenterOfMass(bodyId_);
+}
+
+
+Vector3 ou::Rigidbody::GetCenterOfMass() const {
+	return PhysicsWorld::GetLocalCenterOfMass(bodyId_);
+}
+
+
+Vector3 ou::Rigidbody::GetWorldCenterOfMass() const {
+	return PhysicsWorld::GetWorldCenterOfMass(bodyId_);
+}
+
+
 void ou::Rigidbody::SyncBodyPose() {
-	const auto *transform = GetTransform();
-	auto position = transform->GetWorldPosition();
-	auto rotation = transform->GetWorldRotation();
-	if (position_ != position || rotation_ != rotation) {
-		position_ = position;
-		rotation_ = rotation;
-		PhysicsWorld::SetBodyPose(bodyId_, position_, rotation_);
-	}
+	SyncMovedTransform();
 
 	if (!hasMoveTarget_) { return; }
 	hasMoveTarget_ = false;
@@ -198,17 +345,64 @@ void ou::Rigidbody::SyncBodyPose() {
 
 
 void ou::Rigidbody::WriteBackPose() {
+	previousPosition_ = position_;
+	previousRotation_ = rotation_;
+	PhysicsWorld::GetBodyPose(bodyId_, &position_, &rotation_);
+
+	linearVelocity_ = PhysicsWorld::GetLinearVelocity(bodyId_);
+	angularVelocity_ = PhysicsWorld::GetAngularVelocity(bodyId_);
+
 	if (isMovingKinematic_) {
 		isMovingKinematic_ = false;
 		PhysicsWorld::SetLinearVelocity(bodyId_, Vector3::Zero);
 		PhysicsWorld::SetAngularVelocity(bodyId_, Vector3::Zero);
 	}
 
-	PhysicsWorld::GetBodyPose(bodyId_, &position_, &rotation_);
+	if (interpolation_ == RigidbodyInterpolation::None) {
+		WriteTransform(position_, rotation_);
+	}
+}
 
+
+void ou::Rigidbody::UpdateInterpolatedPose(float alpha, float elapsed) {
+	if (interpolation_ == RigidbodyInterpolation::None) { return; }
+
+	SyncMovedTransform();
+
+	if (interpolation_ == RigidbodyInterpolation::Interpolate) {
+		WriteTransform(Vector3::Lerp(previousPosition_, position_, alpha),
+					   Quaternion::Slerp(previousRotation_, rotation_, alpha));
+		return;
+	}
+
+	auto rotation = rotation_;
+	const auto angle = angularVelocity_.Length() * elapsed;
+	if (angle > Mathf::Epsilon) {
+		rotation = Quaternion::AngleAxis(angularVelocity_, angle) * rotation_;
+	}
+	WriteTransform(position_ + linearVelocity_ * elapsed, rotation);
+}
+
+
+void ou::Rigidbody::SyncMovedTransform() {
+	const auto *transform = GetTransform();
+	const auto position = transform->GetWorldPosition();
+	const auto rotation = transform->GetWorldRotation();
+	if (position == writtenPosition_ && rotation == writtenRotation_) { return; }
+
+	position_ = previousPosition_ = writtenPosition_ = position;
+	rotation_ = previousRotation_ = writtenRotation_ = rotation;
+	PhysicsWorld::SetBodyPose(bodyId_, position_, rotation_);
+}
+
+
+void ou::Rigidbody::WriteTransform(const Vector3 &position, const Quaternion &rotation) {
 	auto *transform = GetTransform();
-	transform->SetWorldPosition(position_);
-	transform->SetWorldRotation(rotation_);
+	transform->SetWorldPosition(position);
+	transform->SetWorldRotation(rotation);
+
+	writtenPosition_ = transform->GetWorldPosition();
+	writtenRotation_ = transform->GetWorldRotation();
 }
 
 
@@ -229,4 +423,46 @@ void ou::Rigidbody::PrepareMoveTarget() {
 	if (hasMoveTarget_) { return; }
 	hasMoveTarget_ = true;
 	PhysicsWorld::GetBodyPose(bodyId_, &movePosition_, &moveRotation_);
+}
+
+
+bool ou::Rigidbody::FindClosestSurfacePoint(const Vector3 &position, Vector3 *point) const {
+	auto found = false;
+	auto nearestDistanceSquared = Mathf::Infinity;
+
+	for (const auto *collider : Physics::sColliders_) {
+		if (collider->GetAttachedRigidbody() != this || collider->IsTrigger()) { continue; }
+
+		const auto closest = collider->ClosestPoint(position);
+		const auto distanceSquared = (closest - position).LengthSquared();
+		if (distanceSquared <= 0.0f) { return false; }
+
+		if (distanceSquared < nearestDistanceSquared) {
+			nearestDistanceSquared = distanceSquared;
+			*point = closest;
+			found = true;
+		}
+	}
+
+	return found;
+}
+
+
+void ou::Rigidbody::ClampVelocity() {
+	if (isKinematic_) { return; }
+
+	const auto linear = PhysicsWorld::GetLinearVelocity(bodyId_);
+	if (linear.LengthSquared() > maxLinearVelocity_ * maxLinearVelocity_) {
+		PhysicsWorld::SetLinearVelocity(bodyId_, linear.Normalized() * maxLinearVelocity_);
+	}
+
+	const auto angular = PhysicsWorld::GetAngularVelocity(bodyId_);
+	if (angular.LengthSquared() > maxAngularVelocity_ * maxAngularVelocity_) {
+		PhysicsWorld::SetAngularVelocity(bodyId_, angular.Normalized() * maxAngularVelocity_);
+	}
+}
+
+
+void ou::Rigidbody::StoreVelocityBeforeStep() {
+	linearVelocityBeforeStep_ = PhysicsWorld::GetLinearVelocity(bodyId_);
 }

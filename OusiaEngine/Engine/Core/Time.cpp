@@ -74,6 +74,11 @@ float ou::Time::GetFixedTime() {
 }
 
 
+double ou::Time::GetFixedTimeAsDouble() {
+	return sFixedTime;
+}
+
+
 bool ou::Time::IsInFixedTimeStep() {
 	return sIsInFixedTimeStep;
 }

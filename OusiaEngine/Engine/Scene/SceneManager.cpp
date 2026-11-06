@@ -83,6 +83,7 @@ void ou::SceneManager::Update() {
 		}
 		Physics::Simulate();
 	}
+	Physics::Interpolate();
 
 	if (auto *eventSystem = EventSystem::GetCurrent()) {
 		eventSystem->Process();

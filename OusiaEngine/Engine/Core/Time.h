@@ -23,6 +23,7 @@ void SetFixedDeltaTime(float fixedDeltaTime);
 float GetFixedDeltaTime();
 
 float GetFixedTime();
+double GetFixedTimeAsDouble();
 bool IsInFixedTimeStep();
 
 void Advance(float unscaledDeltaTime);

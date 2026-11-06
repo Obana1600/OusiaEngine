@@ -49,7 +49,7 @@ const Vector3 &ou::CapsuleCollider::GetCenter() const {
 
 
 void ou::CapsuleCollider::SetRadius(float radius) {
-	radius_ = radius;
+	radius_ = Mathf::Max(radius, 0.0f);
 }
 
 
@@ -59,7 +59,7 @@ float ou::CapsuleCollider::GetRadius() const {
 
 
 void ou::CapsuleCollider::SetHeight(float height) {
-	height_ = height;
+	height_ = Mathf::Max(height, 0.0f);
 }
 
 

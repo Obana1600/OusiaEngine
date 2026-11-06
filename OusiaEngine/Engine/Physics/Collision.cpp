@@ -7,10 +7,12 @@
 using namespace ou;
 
 
-ou::Collision::Collision(Collider *collider, Rigidbody *rigidbody, std::vector<ContactPoint> contacts)
+ou::Collision::Collision(Collider *collider, Rigidbody *rigidbody, std::vector<ContactPoint> contacts, const Vector3 &relativeVelocity, const Vector3 &impulse)
 	: collider_(collider),
 	  rigidbody_(rigidbody),
-	  contacts_(std::move(contacts)) {}
+	  contacts_(std::move(contacts)),
+	  relativeVelocity_(relativeVelocity),
+	  impulse_(impulse) {}
 
 
 Collider *ou::Collision::GetCollider() const {
@@ -45,4 +47,14 @@ const ContactPoint &ou::Collision::GetContactPoint(int index) const {
 
 const std::vector<ContactPoint> &ou::Collision::GetContacts() const {
 	return contacts_;
+}
+
+
+const Vector3 &ou::Collision::GetRelativeVelocity() const {
+	return relativeVelocity_;
+}
+
+
+const Vector3 &ou::Collision::GetImpulse() const {
+	return impulse_;
 }

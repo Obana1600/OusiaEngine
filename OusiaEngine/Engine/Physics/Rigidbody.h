@@ -18,6 +18,19 @@ enum class ForceMode {
 	VelocityChange,
 };
 
+enum class CollisionDetectionMode {
+	Discrete,
+	Continuous,
+	ContinuousDynamic,
+	ContinuousSpeculative,
+};
+
+enum class RigidbodyInterpolation {
+	None,
+	Interpolate,
+	Extrapolate,
+};
+
 enum class RigidbodyConstraints : uint8_t {
 	None = 0,
 	FreezePositionX = 1 << 1,
@@ -55,6 +68,21 @@ public: // メンバ関数
 	void SetAngularDamping(float damping);
 	float GetAngularDamping() const;
 
+	void SetMaxLinearVelocity(float velocity);
+	float GetMaxLinearVelocity() const;
+
+	void SetMaxAngularVelocity(float velocity);
+	float GetMaxAngularVelocity() const;
+
+	void SetSleepThreshold(float threshold);
+	float GetSleepThreshold() const;
+
+	void SetCollisionDetectionMode(CollisionDetectionMode mode);
+	CollisionDetectionMode GetCollisionDetectionMode() const;
+
+	void SetInterpolation(RigidbodyInterpolation interpolation);
+	RigidbodyInterpolation GetInterpolation() const;
+
 	void SetConstraints(RigidbodyConstraints constraints);
 	RigidbodyConstraints GetConstraints() const;
 
@@ -66,9 +94,27 @@ public: // メンバ関数
 
 	void AddForce(const Vector3 &force, ForceMode mode = ForceMode::Force);
 	void AddTorque(const Vector3 &torque, ForceMode mode = ForceMode::Force);
+	void AddRelativeForce(const Vector3 &force, ForceMode mode = ForceMode::Force);
+	void AddRelativeTorque(const Vector3 &torque, ForceMode mode = ForceMode::Force);
+	void AddForceAtPosition(const Vector3 &force, const Vector3 &position, ForceMode mode = ForceMode::Force);
+	void AddExplosionForce(float explosionForce, const Vector3 &explosionPosition, float explosionRadius,
+						   float upwardsModifier = 0.0f, ForceMode mode = ForceMode::Force);
+	Vector3 GetPointVelocity(const Vector3 &worldPoint) const;
+
+	void Sleep();
+	void WakeUp();
+	bool IsSleeping() const;
 
 	void MovePosition(const Vector3 &position);
 	void MoveRotation(const Quaternion &rotation);
+
+	Vector3 GetPosition() const;
+	Quaternion GetRotation() const;
+
+	void SetCenterOfMass(const Vector3 &center);
+	void ResetCenterOfMass();
+	Vector3 GetCenterOfMass() const;
+	Vector3 GetWorldCenterOfMass() const;
 
 
 private: // メンバ変数
@@ -78,10 +124,24 @@ private: // メンバ変数
 	bool isKinematic_ = false;
 	float linearDamping_ = 0.0f;
 	float angularDamping_ = 0.05f;
+	float maxLinearVelocity_ = 1e16f;
+	float maxAngularVelocity_ = 50.0f;
+	float sleepThreshold_ = 0.05f;
+	CollisionDetectionMode collisionDetectionMode_ = CollisionDetectionMode::Discrete;
 	RigidbodyConstraints constraints_ = RigidbodyConstraints::None;
+	RigidbodyInterpolation interpolation_ = RigidbodyInterpolation::None;
 
 	Vector3 position_ = Vector3::Zero;
 	Quaternion rotation_ = Quaternion::Identity;
+	Vector3 linearVelocity_ = Vector3::Zero;
+	Vector3 linearVelocityBeforeStep_ = Vector3::Zero;
+	Vector3 angularVelocity_ = Vector3::Zero;
+
+	Vector3 previousPosition_ = Vector3::Zero;
+	Quaternion previousRotation_ = Quaternion::Identity;
+
+	Vector3 writtenPosition_ = Vector3::Zero;
+	Quaternion writtenRotation_ = Quaternion::Identity;
 
 	bool hasMoveTarget_ = false;
 	Vector3 movePosition_ = Vector3::Zero;
@@ -96,8 +156,18 @@ private: // メンバ関数
 	void SyncBodyPose();
 	void WriteBackPose();
 
+	void UpdateInterpolatedPose(float alpha, float elapsed);
+
+	void SyncMovedTransform();
+	void WriteTransform(const Vector3 &position, const Quaternion &rotation);
+
 	void ApplyMotion();
 	void PrepareMoveTarget();
+
+	bool FindClosestSurfacePoint(const Vector3 &position, Vector3 *point) const;
+
+	void ClampVelocity();
+	void StoreVelocityBeforeStep();
 };
 
 } // namespace ou

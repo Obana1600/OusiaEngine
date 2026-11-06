@@ -8,6 +8,7 @@
 #include "Input/Input.h"
 #include "Particle/ParticleSystemRenderer.h"
 #include "Physics/Box3D/PhysicsWorld.h"
+#include "Physics/Physics.h"
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
 #include "Render/Asset/Material.h"
@@ -69,6 +70,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 	// 物理
 	PhysicsWorld::Initialize();
+	Physics::LoadDynamicsManager();
 
 	// ウィンドウ
 	window_ = Window::Create({.title = desc.title, .width = desc.width, .height = desc.height});

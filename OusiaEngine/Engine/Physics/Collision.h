@@ -24,7 +24,8 @@ struct ContactPoint {
 class Collision final {
 public: // メンバ関数
 
-	Collision(Collider *collider, Rigidbody *rigidbody, std::vector<ContactPoint> contacts);
+	Collision(Collider *collider, Rigidbody *rigidbody, std::vector<ContactPoint> contacts,
+			  const Vector3 &relativeVelocity, const Vector3 &impulse);
 
 	Collider *GetCollider() const;
 	Rigidbody *GetRigidbody() const;
@@ -34,6 +35,8 @@ public: // メンバ関数
 	int GetContactCount() const;
 	const ContactPoint &GetContactPoint(int index) const;
 	const std::vector<ContactPoint> &GetContacts() const;
+	const Vector3 &GetRelativeVelocity() const;
+	const Vector3 &GetImpulse() const;
 
 
 private: // メンバ変数
@@ -41,6 +44,8 @@ private: // メンバ変数
 	Collider *collider_ = nullptr;
 	Rigidbody *rigidbody_ = nullptr;
 	std::vector<ContactPoint> contacts_;
+	Vector3 relativeVelocity_ = Vector3::Zero;
+	Vector3 impulse_ = Vector3::Zero;
 };
 
 } // namespace ou

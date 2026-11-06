@@ -92,6 +92,16 @@ void ou::Collider::OnDisable() {
 }
 
 
+PhysicsWorld::MotionType ou::Collider::GetOwnBodyMotionType() const {
+	return PhysicsWorld::MotionType::Static;
+}
+
+
+PhysicsWorld::ShapeId ou::Collider::GetShapeId() const {
+	return shapeId_;
+}
+
+
 void ou::Collider::SyncToPhysics() {
 	auto *rigidbody = GetAttachedRigidbody();
 	if (rigidbody) {
@@ -142,7 +152,7 @@ void ou::Collider::SyncOwnBody() {
 	if (ownBodyId_ == PhysicsWorld::kInvalidBodyId) {
 		bodyPosition_ = position;
 		bodyRotation_ = rotation;
-		ownBodyId_ = PhysicsWorld::CreateBody(bodyPosition_, bodyRotation_, PhysicsWorld::MotionType::Static);
+		ownBodyId_ = PhysicsWorld::CreateBody(bodyPosition_, bodyRotation_, GetOwnBodyMotionType());
 		return;
 	}
 

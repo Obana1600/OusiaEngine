@@ -43,6 +43,9 @@ protected: // メンバ関数
 
 	virtual PhysicsWorld::ShapeGeometry BuildShapeGeometry() const = 0;
 	virtual Vector3 GetShapeCenter() const = 0;
+	virtual PhysicsWorld::MotionType GetOwnBodyMotionType() const;
+
+	PhysicsWorld::ShapeId GetShapeId() const;
 
 
 private: // メンバ変数

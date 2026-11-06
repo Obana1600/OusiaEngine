@@ -109,6 +109,7 @@ struct ContactEvent {
 	Vector3 normal = Vector3::Zero;
 	float separation = 0.0f;
 	std::vector<Vector3> points;
+	Vector3 impulse = Vector3::Zero;
 };
 
 std::vector<ContactEvent> TakeContactEvents();
@@ -127,6 +128,12 @@ void SetAllowedDOFs(BodyId id, uint8_t dofs);
 void SetLinearDamping(BodyId id, float damping);
 void SetAngularDamping(BodyId id, float damping);
 
+void SetBullet(BodyId id, bool isBullet);
+
+void SetAwake(BodyId id, bool isAwake);
+bool IsAwake(BodyId id);
+void SetSleepThreshold(BodyId id, float threshold);
+
 
 // ----- Force -----
 
@@ -139,6 +146,15 @@ void AddForce(BodyId id, const Vector3 &force);
 void AddTorque(BodyId id, const Vector3 &torque);
 void AddImpulse(BodyId id, const Vector3 &impulse);
 void AddAngularImpulse(BodyId id, const Vector3 &impulse);
+
+void AddForceAtPoint(BodyId id, const Vector3 &force, const Vector3 &point);
+void AddImpulseAtPoint(BodyId id, const Vector3 &impulse, const Vector3 &point);
+Vector3 GetPointVelocity(BodyId id, const Vector3 &point);
+
+void SetLocalCenterOfMass(BodyId id, const Vector3 &center);
+void ResetLocalCenterOfMass(BodyId id);
+Vector3 GetLocalCenterOfMass(BodyId id);
+Vector3 GetWorldCenterOfMass(BodyId id);
 
 void MoveKinematic(BodyId id, const Vector3 &position, const Quaternion &rotation, float deltaTime);
 
@@ -162,5 +178,28 @@ std::vector<RaycastHit> RaycastAll(const Vector3 &origin, const Vector3 &directi
 std::vector<ShapeId> OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, uint32_t layerMask, bool hitsSensors);
 std::vector<ShapeId> OverlapSphere(const Vector3 &center, float radius, uint32_t layerMask, bool hitsSensors);
 std::vector<ShapeId> OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, uint32_t layerMask, bool hitsSensors);
+
+std::vector<RaycastHit> BoxCastAll(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &rotation, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors);
+std::vector<RaycastHit> SphereCastAll(const Vector3 &origin, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors);
+std::vector<RaycastHit> CapsuleCastAll(const Vector3 &point0, const Vector3 &point1, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, bool hitsSensors);
+
+
+
+// ----- Character -----
+
+struct CapsuleMoveHit {
+	ShapeId shapeId = kInvalidShapeId;
+	Vector3 point = Vector3::Zero;
+	Vector3 normal = Vector3::Zero;
+};
+
+struct CapsuleMoveResult {
+	Vector3 delta = Vector3::Zero;
+	std::vector<CapsuleMoveHit> hits;
+};
+
+CapsuleMoveResult MoveCapsule(const Vector3 &point0, const Vector3 &point1, float radius,
+							  const Vector3 &motion, uint32_t layerMask, ShapeId ignoreShape,
+							  float minGroundNormalY, bool flattenGround);
 
 } // namespace ou::PhysicsWorld

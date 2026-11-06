@@ -62,7 +62,5 @@ bool ou::GraphicRaycaster::ContainsCanvasPoint(const Graphic *graphic, const Vec
 	const auto worldToLocal = rectTransform->GetLocalToWorldMatrix().Inverse();
 	const auto local = worldToLocal.MultiplyPoint({canvasPoint, 0.0f});
 
-	const auto &rect = rectTransform->GetRect();
-	return local.x >= rect.center.x && local.x <= rect.center.x + rect.size.x &&
-		   local.y >= rect.center.y && local.y <= rect.center.y + rect.size.y;
+	return rectTransform->GetRect().Contains({local.x, local.y});
 }

@@ -11,6 +11,7 @@ class GameObject;
 class Transform;
 class Collider;
 class Collision;
+class ControllerColliderHit;
 
 class Component: public Object {
 	friend class GameObject;
@@ -31,6 +32,7 @@ public: // メンバ関数
 	virtual void OnCollisionEnter(const Collision &) {};
 	virtual void OnCollisionStay(const Collision &) {};
 	virtual void OnCollisionExit(const Collision &) {};
+	virtual void OnControllerColliderHit(const ControllerColliderHit &) {};
 
 	GameObject *GetGameObject() const;
 	Transform *GetTransform() const;

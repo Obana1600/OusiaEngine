@@ -344,7 +344,7 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 
 		// 幅を超えたら折り返す
 		auto &line = lines.back();
-		if (wordWrappingEnabled_ && !line.empty() && penX + advance > rect.size.x) {
+		if (wordWrappingEnabled_ && !line.empty() && penX + advance > rect.width) {
 			std::vector<LineGlyph> next;
 			if (breakIndex != SIZE_MAX) {
 				next.assign(line.begin() + static_cast<ptrdiff_t>(breakIndex) + 1, line.end());
@@ -378,14 +378,14 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 	const auto ascent = face.ascentLine * scale;
 	const auto descent = face.descentLine * scale;
 	const auto blockHeight = ascent - descent + lineHeight * static_cast<float>(lines.size() - 1);
-	const auto rectTop = rect.center.y + rect.size.y;
+	const auto rectTop = rect.GetYMax();
 
 	// 垂直アライメント
 	auto blockTop = rectTop;
 	if (vertical == 1) {
-		blockTop = rectTop - (rect.size.y - blockHeight) * 0.5f;
+		blockTop = rectTop - (rect.height - blockHeight) * 0.5f;
 	} else if (vertical == 2) {
-		blockTop = rect.center.y + blockHeight;
+		blockTop = rect.GetYMin() + blockHeight;
 	}
 	const auto firstBaseline = blockTop - ascent;
 
@@ -396,17 +396,17 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 		const auto baseline = firstBaseline - lineHeight * static_cast<float>(i);
 		const auto lineWidth = MeasureLineWidth(line);
 
-		// 平行アライメント
-		auto lineLeft = rect.center.x;
+		// 水平アライメント
+		auto lineLeft = rect.GetXMin();
 		if (horizontal == 1) {
-			lineLeft += (rect.size.x - lineWidth) * 0.5f;
+			lineLeft += (rect.width - lineWidth) * 0.5f;
 		} else if (horizontal == 2) {
-			lineLeft += rect.size.x - lineWidth;
+			lineLeft += rect.width - lineWidth;
 		}
 
 		for (const auto &lineGlyph : line) {
 			const auto &glyphRect = lineGlyph.glyph->glyphRect;
-			if (glyphRect.size.x <= 0.0f) { continue; }
+			if (glyphRect.width <= 0.0f) { continue; }
 
 			// 描画する矩形の左上座標
 			const auto &offset = lineGlyph.glyph->bitmapOffset;
@@ -418,13 +418,13 @@ void ou::Text::RebuildLayout(FontAsset &font) {
 			placed.positionRect = {
 				left,
 				top,
-				left + glyphRect.size.x * scale,
-				top - glyphRect.size.y * scale};
+				left + glyphRect.width * scale,
+				top - glyphRect.height * scale};
 			placed.texcoordRect = {
-				glyphRect.center.x / atlasSize,
-				glyphRect.center.y / atlasSize,
-				(glyphRect.center.x + glyphRect.size.x) / atlasSize,
-				(glyphRect.center.y + glyphRect.size.y) / atlasSize};
+				glyphRect.x / atlasSize,
+				glyphRect.y / atlasSize,
+				glyphRect.GetXMax() / atlasSize,
+				glyphRect.GetYMax() / atlasSize};
 			placed.atlasIndex = lineGlyph.glyph->atlasIndex;
 			placedGlyphs_.push_back(placed);
 		}
