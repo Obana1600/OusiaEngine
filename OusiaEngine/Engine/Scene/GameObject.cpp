@@ -1,8 +1,10 @@
 #include "GameObject.h"
 #include "Diagnostics/Assert.h"
-#include "Scene/Behaviour.h"
 #include "Diagnostics/Log.h"
+#include "Scene/Behavior.h"
 #include "Scene/LayerMask.h"
+#include "Serialize/Serializer.h"
+
 
 using namespace ou;
 
@@ -25,6 +27,19 @@ ou::GameObject::~GameObject() {
 	while (!components_.empty()) {
 		components_.pop_back();
 	}
+}
+
+
+void ou::GameObject::Serialize(Serializer &serializer) {
+	auto name = GetName();
+	serializer.Field("name", name);
+	if (serializer.IsReading()) { SetName(name); }
+
+	serializer.Field("active", isActiveSelf_);
+
+	auto layer = layer_;
+	serializer.Field("layer", layer);
+	if (serializer.IsReading()) { SetLayer(layer); }
 }
 
 
@@ -70,6 +85,15 @@ void ou::GameObject::SetLayer(int layer) {
 
 int ou::GameObject::GetLayer() const {
 	return layer_;
+}
+
+
+Component *ou::GameObject::AttachComponent(std::unique_ptr<Component> component) {
+	auto *ptr = component.get();
+	ptr->gameObject_ = this;
+	ptr->transform_ = transform_;
+	components_.push_back(std::move(component));
+	return ptr;
 }
 
 
@@ -218,14 +242,14 @@ void ou::GameObject::RefreshActiveInHierarchy() {
 
 
 void ou::GameObject::RefreshBehavior(Component *component) {
-	if (auto *behavior = dynamic_cast<Behaviour *>(component)) {
+	if (auto *behavior = dynamic_cast<Behavior *>(component)) {
 		behavior->RefreshActiveAndEnabled();
 	}
 }
 
 
 void ou::GameObject::DisableBeheviorForDestroy(Component *component) {
-	if (auto *behavior = dynamic_cast<Behaviour *>(component)) {
+	if (auto *behavior = dynamic_cast<Behavior *>(component)) {
 		behavior->DisableForDestroy();
 	}
 }

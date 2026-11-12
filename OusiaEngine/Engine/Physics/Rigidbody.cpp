@@ -4,6 +4,8 @@
 #include "Physics/Collider.h"
 #include "Physics/Physics.h"
 #include "Scene/Transform.h"
+#include "Serialize/SerializeEnums.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
 
@@ -39,6 +41,30 @@ void ou::Rigidbody::OnDestroy() {
 
 	PhysicsWorld::DestroyBody(bodyId_);
 	bodyId_ = PhysicsWorld::kInvalidBodyId;
+}
+
+
+void ou::Rigidbody::Serialize(Serializer &serializer) {
+	serializer.Field("mass", mass_);
+	serializer.Field("useGravity", useGravity_);
+	serializer.Field("isKinematic", isKinematic_);
+	serializer.Field("linearDamping", linearDamping_);
+	serializer.Field("angularDamping", angularDamping_);
+	serializer.Field("maxLinearVelocity", maxLinearVelocity_);
+	serializer.Field("maxAngularVelocity", maxAngularVelocity_);
+	serializer.Field("sleepThreshold", sleepThreshold_);
+	serializer.Enum("collisionDetectionMode", collisionDetectionMode_);
+	serializer.Enum("interpolation", interpolation_);
+	SerializeEnums(serializer, "constraints", constraints_);
+
+	if (serializer.IsReading()) {
+		mass_ = Mathf::Max(mass_, kMinMass);
+		linearDamping_ = Mathf::Max(linearDamping_, 0.0f);
+		angularDamping_ = Mathf::Max(angularDamping_, 0.0f);
+		maxLinearVelocity_ = Mathf::Max(maxLinearVelocity_, 0.0f);
+		maxAngularVelocity_ = Mathf::Max(maxAngularVelocity_, 0.0f);
+		sleepThreshold_ = Mathf::Max(sleepThreshold_, 0.0f);
+	}
 }
 
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Math/Vector3.h"
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 #include "UI/ColorBlock.h"
 #include "UI/EventSystem/EventInterfaces.h"
 
@@ -14,7 +14,7 @@ namespace ou {
 // 前方宣言
 class Graphic;
 
-class Selectable: public Behaviour,
+class Selectable: public Behavior,
 				  public IPointerEnterHandler,
 				  public IPointerExitHandler,
 				  public IPointerDownHandler,
@@ -33,6 +33,7 @@ public: // メンバ関数
 	void OnEnable() override;
 	void OnDisable() override;
 	void OnDestroy() override;
+	void Serialize(Serializer &serializer) override;
 
 	void SetInteractable(bool interactable);
 	bool IsInteractable() const;

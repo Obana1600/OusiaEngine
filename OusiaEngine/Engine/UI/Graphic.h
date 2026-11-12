@@ -3,7 +3,7 @@
 #include "Math/Color.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Texture.h"
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 
 #include <memory>
 
@@ -15,7 +15,7 @@ class CanvasRenderer;
 class RectTransform;
 class VertexHelper;
 
-class Graphic: public Behaviour {
+class Graphic: public Behavior {
 public: // 静的メンバ関数
 
 	static void StaticInitialize();
@@ -31,6 +31,7 @@ public: // メンバ関数
 	void OnEnable() override;
 	void OnDisable() override;
 	void OnDestroy() override;
+	void Serialize(Serializer &serializer) override;
 
 	virtual const std::shared_ptr<Material> &GetDefaultMaterial() const;
 	virtual const std::shared_ptr<Texture> &GetMainTexture() const;

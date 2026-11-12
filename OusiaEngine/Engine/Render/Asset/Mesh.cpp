@@ -72,7 +72,7 @@ void ou::Mesh::Upload() {
 	vbDesc.size = vertices_.size() * sizeof(Vertex);
 	vbDesc.bindFlags = Graphics::BindFlag::VERTEX_BUFFER;
 	if (!device->CreateBuffer(&vbDesc, vertices_.data(), &vertexBuffer_)) {
-		FatalError("Mesh の頂点バッファの作成に失敗しました。");
+		FatalError("Mesh の頂点バッファの作成に失敗しました");
 	}
 	device->SetName(&vertexBuffer_, GetName() + "_VB");
 
@@ -81,9 +81,24 @@ void ou::Mesh::Upload() {
 	ibDesc.size = indices_.size() * sizeof(uint32_t);
 	ibDesc.bindFlags = Graphics::BindFlag::INDEX_BUFFER;
 	if (!device->CreateBuffer(&ibDesc, indices_.data(), &indexBuffer_)) {
-		FatalError("Mesh のインデックスバッファの作成に失敗しました。");
+		FatalError("Mesh のインデックスバッファの作成に失敗しました");
 	}
 	device->SetName(&indexBuffer_, GetName() + "_IB");
+
+	// ボーンウェイトバッファの作成
+	if (!boneWeights_.empty()) {
+		ASSERT(boneWeights_.size() == vertices_.size(), "ボーンウェイトの数が頂点の数と違います");
+
+		Graphics::GpuBufferDesc bwDesc{};
+		bwDesc.size = boneWeights_.size() * sizeof(BoneWeight);
+		bwDesc.bindFlags = Graphics::BindFlag::SHADER_RESOURCE;
+		bwDesc.miscFlags = Graphics::ResourceMiscFlag::BUFFER_STRUCTURED;
+		bwDesc.stride = sizeof(BoneWeight);
+		if (!device->CreateBuffer(&bwDesc, boneWeights_.data(), &boneWeightBuffer_)) {
+			FatalError("Mesh のボーンウェイトバッファの作成に失敗しました");
+		}
+		device->SetName(&boneWeightBuffer_, GetName() + "_BoneWeights");
+	}
 }
 
 
@@ -114,6 +129,31 @@ void ou::Mesh::SetSubMeshes(std::vector<SubMesh> subMeshes) {
 
 const std::vector<Mesh::SubMesh> &ou::Mesh::GetSubMeshes() const {
 	return subMeshes_;
+}
+
+
+void ou::Mesh::SetBoneWeights(std::vector<BoneWeight> boneWeights) {
+	boneWeights_ = std::move(boneWeights);
+}
+
+
+const std::vector<Mesh::BoneWeight> &ou::Mesh::GetBoneWeights() const {
+	return boneWeights_;
+}
+
+
+uint32_t ou::Mesh::GetBoneWeightBufferIndex() const {
+	return static_cast<uint32_t>(Graphics::GetDevice()->GetDescriptorIndex(&boneWeightBuffer_, Graphics::ViewType::SRV));
+}
+
+
+void ou::Mesh::SetBindPoses(std::vector<Matrix4x4> bindPoses) {
+	bindPoses_ = std::move(bindPoses);
+}
+
+
+const std::vector<Matrix4x4> &ou::Mesh::GetBindPoses() const {
+	return bindPoses_;
 }
 
 

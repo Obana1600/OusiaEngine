@@ -3,6 +3,7 @@
 #include "Math/Mathf.h"
 #include "Math/Random.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 #include <utility>
 
@@ -11,7 +12,23 @@ using namespace ou;
 
 namespace {
 
+// 既定の重力値
 constexpr float kGravity = -9.81f;
+
+
+void SerializeRange(Serializer &serializer, std::string_view name, FloatRange &range) {
+	serializer.Struct(name, [&] {
+		serializer.Field("min", range.min);
+		serializer.Field("max", range.max);
+	});
+}
+
+void SerializeRange(Serializer &serializer, std::string_view name, ColorRange &range) {
+	serializer.Struct(name, [&] {
+		serializer.Field("min", range.min);
+		serializer.Field("max", range.max);
+	});
+}
 
 } // namespace
 
@@ -40,6 +57,53 @@ void ou::ParticleSystem::Update() {
 	if (isPlaying_) {
 		UpdateEmission(deltaTime);
 	}
+}
+
+
+void ou::ParticleSystem::Serialize(Serializer &serializer) {
+	serializer.Struct("main", [&] {
+		serializer.Field("duration", main_.duration);
+		serializer.Field("looping", main_.looping);
+		serializer.Field("playOnAwake", main_.playOnAwake);
+		SerializeRange(serializer, "startLifetime", main_.startLifetime);
+		SerializeRange(serializer, "startSpeed", main_.startSpeed);
+		SerializeRange(serializer, "startSize", main_.startSize);
+		SerializeRange(serializer, "startColor", main_.startColor);
+		serializer.Field("gravityModifier", main_.gravityModifier);
+		serializer.Field("maxParticles", main_.maxParticles);
+		serializer.Enum("simulationSpace", main_.simulationSpace);
+	});
+
+	serializer.Struct("emission", [&] {
+		serializer.Field("enabled", emission_.enabled);
+		serializer.Field("rateOverTime", emission_.rateOverTime);
+		serializer.Array("bursts", emission_.bursts, [&](Burst &burst) {
+			serializer.Struct("", [&] {
+				serializer.Field("time", burst.time);
+				serializer.Field("count", burst.count);
+			});
+		});
+	});
+
+	serializer.Struct("shape", [&] {
+		serializer.Field("enabled", shape_.enabled);
+		serializer.Enum("shapeType", shape_.shapeType);
+		serializer.Field("angle", shape_.angle);
+		serializer.Field("radius", shape_.radius);
+		serializer.Field("radiusThickness", shape_.radiusThickness);
+	});
+
+	serializer.Struct("colorOverLifetime", [&] {
+		serializer.Field("enabled", colorOverLifetime_.enabled);
+		serializer.Field("start", colorOverLifetime_.start);
+		serializer.Field("end", colorOverLifetime_.end);
+	});
+
+	serializer.Struct("sizeOverLifetime", [&] {
+		serializer.Field("enabled", sizeOverLifetime_.enabled);
+		serializer.Field("start", sizeOverLifetime_.start);
+		serializer.Field("end", sizeOverLifetime_.end);
+	});
 }
 
 

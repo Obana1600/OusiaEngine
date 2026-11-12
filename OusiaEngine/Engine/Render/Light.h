@@ -2,7 +2,7 @@
 
 #include "Math/Color.h"
 #include "Math/Vector3.h"
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 
 #include <cstdint>
 
@@ -16,7 +16,7 @@ enum class LightType : uint32_t {
 	Point,
 };
 
-class Light: public Behaviour {
+class Light: public Behavior {
 public: // 定数
 
 	static constexpr uint32_t kMaxLights = 16;
@@ -47,6 +47,7 @@ public: // メンバ関数
 
 	void Awake() override;
 	void OnDestroy() override;
+	void Serialize(Serializer &serializer) override;
 
 	ShaderLight MakeShaderLight() const;
 

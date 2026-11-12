@@ -4,6 +4,7 @@
 #include "Diagnostics/Fatal.h"
 #include "Render/Asset/Shader.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 #include "UI/CanvasRenderer.h"
 #include "UI/CanvasUpdateRegistry.h"
 #include "UI/EventSystem/EventSystem.h"
@@ -59,7 +60,7 @@ void ou::Graphic::Awake() {
 
 void ou::Graphic::Update() {
 	auto &tween = colorTween_;
-	if (tween.elapsed >= tween.duration) { return;}
+	if (tween.elapsed >= tween.duration) { return; }
 
 	tween.elapsed += tween.ignoreTimeScale ? Time::GetUnscaledDeltaTime() : Time::GetDeltaTime();
 	const auto t = std::min(tween.elapsed / tween.duration, 1.0f);
@@ -81,6 +82,19 @@ void ou::Graphic::OnDisable() {
 void ou::Graphic::OnDestroy() {
 	if (auto *eventSystem = EventSystem::GetCurrent()) {
 		eventSystem->OnGameObjectDestroyed(GetGameObject());
+	}
+}
+
+
+void ou::Graphic::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Asset("material", material_);
+	serializer.Field("color", color_);
+	serializer.Field("raycastTarget", raycastTarget_);
+
+	if (serializer.IsReading()) {
+		SetAllDirty();
 	}
 }
 

@@ -17,7 +17,17 @@ cbuffer PerDraw : register(b0)
 {
     float4x4 gWorld;
     float4x4 gWorldInverseTranspose;
+    uint gBoneMatrixBufferIndex;
+    uint gBoneWeightBufferIndex;
 }
+
+static const uint kNoSkinning = 0xFFFFFFFF;
+
+struct BoneWeight
+{
+    uint4 boneIndices;
+    float4 weights;
+};
 
 cbuffer PerMaterial : register(b1)
 {

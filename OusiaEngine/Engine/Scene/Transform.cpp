@@ -1,6 +1,8 @@
 #include "Transform.h"
 #include "Diagnostics/Assert.h"
+#include "Diagnostics/Log.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 
 #include <algorithm>
 
@@ -17,6 +19,7 @@ ou::Transform::~Transform() {
 		child->MarkDirty();
 	}
 }
+
 
 void ou::Transform::SetLocalPosition(const Vector3 &position) {
 	localPosition_ = position;
@@ -142,6 +145,47 @@ void ou::Transform::SetParent(Transform *parent) {
 
 const std::vector<Transform *> &ou::Transform::GetChildren() const {
 	return children_;
+}
+
+
+Transform *ou::Transform::Find(std::string_view path) {
+	auto *current = this;
+
+	while (!path.empty()) {
+		const auto slash = path.find('/');
+		const auto name = path.substr(0, slash);
+
+		const auto &children = current->children_;
+		const auto it = std::find_if(children.begin(), children.end(),
+									 [&](const auto *child) { return child->GetGameObject()->GetName() == name; });
+		if (it == children.end()) { return nullptr; }
+
+		current = *it;
+		path = (slash == std::string_view::npos) ? std::string_view{}
+												 : path.substr(slash + 1);
+	}
+
+	return current;
+}
+
+
+void ou::Transform::Serialize(Serializer &serializer) {
+	serializer.Field("localPosition", localPosition_);
+	serializer.Field("localRotation", localRotation_);
+	serializer.Field("localScale", localScale_);
+
+	auto *parent = parent_;
+	serializer.Reference("parent", parent);
+
+	if (serializer.IsReading()) {
+		MarkDirty();
+
+		if (parent == this || (parent && parent->IsDescendantOf(this))) {
+			Log::Warning("親子関係が循環するため、親を参照できません: {}", GetGameObject()->GetName());
+			parent = nullptr;
+		}
+		SetParent(parent);
+	}
 }
 
 

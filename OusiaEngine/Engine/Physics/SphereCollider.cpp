@@ -1,8 +1,17 @@
 #include "SphereCollider.h"
 #include "Math/Mathf.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
+
+
+void ou::SphereCollider::Serialize(Serializer &serializer) {
+	Collider::Serialize(serializer);
+
+	serializer.Field("center", center_);
+	serializer.Field("radius", radius_);
+}
 
 
 Vector3 ou::SphereCollider::ClosestPoint(const Vector3 &position) const {

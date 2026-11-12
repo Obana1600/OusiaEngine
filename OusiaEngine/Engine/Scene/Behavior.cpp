@@ -1,10 +1,11 @@
-#include "Behaviour.h"
+#include "Behavior.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
 
 
-void ou::Behaviour::SetEnabled(bool value) {
+void ou::Behavior::SetEnabled(bool value) {
 	if (isEnabled_ == value) { return; }
 
 	isEnabled_ = value;
@@ -12,22 +13,27 @@ void ou::Behaviour::SetEnabled(bool value) {
 }
 
 
-bool ou::Behaviour::IsEnabled() const {
+bool ou::Behavior::IsEnabled() const {
 	return isEnabled_;
 }
 
 
-bool ou::Behaviour::IsActiveAndEnabled() const {
+bool ou::Behavior::IsActiveAndEnabled() const {
 	return isEnabled_ && GetGameObject()->IsActiveInHierarchy();
 }
 
 
-bool ou::Behaviour::IsEnabledSelf() const {
+void ou::Behavior::Serialize(Serializer &serializer) {
+	serializer.Field("enabled", isEnabled_);
+}
+
+
+bool ou::Behavior::IsEnabledSelf() const {
 	return isEnabled_;
 }
 
 
-void ou::Behaviour::RefreshActiveAndEnabled() {
+void ou::Behavior::RefreshActiveAndEnabled() {
 	const auto isActiveAndEnabled = IsActiveAndEnabled();
 	if (isActiveAndEnabled == wasActiveAndEnabled_) { return; }
 
@@ -40,7 +46,7 @@ void ou::Behaviour::RefreshActiveAndEnabled() {
 }
 
 
-void ou::Behaviour::DisableForDestroy() {
+void ou::Behavior::DisableForDestroy() {
 	if (!wasActiveAndEnabled_) { return; }
 
 	wasActiveAndEnabled_ = false;

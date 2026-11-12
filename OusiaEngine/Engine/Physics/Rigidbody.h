@@ -52,6 +52,7 @@ public: // メンバ関数
 
 	void Awake() override;
 	void OnDestroy() override;
+	void Serialize(Serializer &serializer) override;
 
 	void SetMass(float mass);
 	float GetMass() const;

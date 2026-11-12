@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 #include "UI/EventSystem/EventData.h"
 
 
@@ -9,7 +9,7 @@ namespace ou {
 // 前方宣言
 class EventSystem;
 
-class BaseInputModule: public Behaviour {
+class BaseInputModule: public Behavior {
 public: // メンバ関数
 
 	virtual void Process() = 0;

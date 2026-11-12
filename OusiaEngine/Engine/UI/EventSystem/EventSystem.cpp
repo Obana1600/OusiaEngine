@@ -1,6 +1,7 @@
 #include "EventSystem.h"
 #include "Diagnostics/Log.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 #include "UI/EventSystem/BaseInputModule.h"
 #include "UI/EventSystem/EventInterfaces.h"
 #include "UI/EventSystem/ExecuteEvents.h"
@@ -30,6 +31,13 @@ void ou::EventSystem::OnEnable() {
 
 void ou::EventSystem::OnDisable() {
 	std::erase(sEventSystems_, this);
+}
+
+
+void ou::EventSystem::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Reference("firstSelected", firstSelected_);
 }
 
 

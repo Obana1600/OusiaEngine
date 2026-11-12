@@ -7,6 +7,11 @@
 using namespace ou;
 
 
+uint64_t ou::Scene::GetDestroyGeneration() {
+	return sDestroyGeneration_;
+}
+
+
 ou::Scene::Scene(std::string_view name, int32_t buildIndex)
 	: name_(name),
 	  buildIndex_(buildIndex) {}
@@ -107,10 +112,10 @@ void ou::Scene::DestroyMarkedObjects() {
 		}
 	}
 
-	// 実際に消す
-	std::erase_if(gameObjects_, [](const auto &obj) {
+	const auto erasedCount = std::erase_if(gameObjects_, [](const auto &obj) {
 		return !obj || obj->IsDestroyed();
 	});
+	if (erasedCount > 0) { sDestroyGeneration_++; }
 }
 
 
@@ -120,6 +125,7 @@ void ou::Scene::DestroyAllGameObjects() {
 		obj->NotifyDestroyToAllComponents();
 	}
 	gameObjects_.clear();
+	sDestroyGeneration_++;
 }
 
 

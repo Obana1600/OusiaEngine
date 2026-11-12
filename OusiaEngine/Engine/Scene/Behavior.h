@@ -5,19 +5,20 @@
 
 namespace ou {
 
-class Behaviour: public Component {
+class Behavior: public Component {
 	friend class GameObject;
 
 public: // メンバ関数
 
 	virtual void OnEnable() {};
-
 	virtual void OnDisable() {};
 
 	void SetEnabled(bool value);
 	bool IsEnabled() const;
 
 	bool IsActiveAndEnabled() const;
+
+	void Serialize(Serializer &serializer) override;
 
 
 private: // メンバ変数

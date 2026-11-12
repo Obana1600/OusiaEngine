@@ -104,6 +104,7 @@ public: // メンバ関数
 
 	void Awake() override;
 	void Update() override;
+	void Serialize(Serializer &serializer) override;
 
 	void Play();
 	void Stop();

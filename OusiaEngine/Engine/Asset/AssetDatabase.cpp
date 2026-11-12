@@ -1,5 +1,6 @@
 #include "AssetDatabase.h"
 #include "Asset/AssetImporter.h"
+#include "Asset/Format/AssetJson.h"
 #include "Asset/Importer/AudioImporter.h"
 #include "Asset/Importer/FontImporter.h"
 #include "Asset/Importer/MaterialImporter.h"
@@ -12,13 +13,17 @@
 #include "Diagnostics/Log.h"
 #include "Platform/Paths.h"
 
+#include <algorithm>
 #include <cwctype>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <optional>
 #include <string>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 using namespace ou;
 
@@ -130,6 +135,163 @@ AssetEntry *FindOrCreateEntry(const std::string &key) {
 	return &it->second;
 }
 
+// GUID とパスのテーブル
+struct GuidTable {
+	std::unordered_map<Guid, std::string> pathsByGuid;
+	std::unordered_map<std::string, Guid> guidsByPath;
+};
+
+// グローバルなインスタンス
+GuidTable &Guids() {
+	static GuidTable table;
+	return table;
+}
+
+// .meta を作ったり書き直したりしてよいか
+bool CanWriteMeta() {
+#ifdef WITH_EDITOR
+	return true;
+#else
+	return false;
+#endif
+}
+
+// .meta かどうか
+bool IsMetaFile(const std::filesystem::path &path) {
+	auto extension = path.extension().wstring();
+	for (auto &c : extension) {
+		c = static_cast<wchar_t>(std::towlower(c));
+	}
+	return extension == L".meta";
+}
+
+// . で始まるものかどうか
+bool IsHidden(const std::filesystem::path &path) {
+	return path.filename().wstring().starts_with(L'.');
+}
+
+// json から GUID を読む
+Guid ReadGuid(const AssetJson::Json &meta) {
+	const auto it = meta.find("guid");
+	if (it == meta.end() || !it->is_string()) { return Guid::Invalid; }
+
+	return Guid::Parse(it->get<std::string>()).value_or(Guid::Invalid);
+}
+
+// GUID を入れて .meta を書く
+bool WriteMeta(const std::filesystem::path &metaPath, AssetJson::Json meta, const Guid &guid) {
+	meta["guid"] = guid.ToString();
+
+	std::ofstream file(metaPath, std::ios::binary);
+	if (!file) { return false; }
+
+	file << meta.dump(1, '\t') << '\n';
+	return file.good();
+}
+
+// folder の下のファイルを table に足す
+void ScanFolder(std::string_view root, const std::filesystem::path &folder, GuidTable &table) {
+	std::vector<std::filesystem::path> assetFiles;
+	std::vector<std::filesystem::path> metaFiles;
+
+	std::error_code ec;
+	for (std::filesystem::recursive_directory_iterator it(folder, ec), end; !ec && it != end; it.increment(ec)) {
+		const auto &path = it->path();
+
+		if (it->is_directory(ec)) {
+			if (IsHidden(path)) { it.disable_recursion_pending(); }
+			continue;
+		}
+		if (!it->is_regular_file(ec) || IsHidden(path)) { continue; }
+
+		(IsMetaFile(path) ? metaFiles : assetFiles).push_back(path);
+	}
+	if (ec) {
+		Log::Warning("フォルダの走査が途中で止まりました: {}", ToUtf8(folder));
+	}
+
+	std::sort(assetFiles.begin(), assetFiles.end());
+
+	for (const auto &fullPath : assetFiles) {
+		const auto assetPath = std::string(root) + "/" + WideToUtf8(fullPath.lexically_relative(folder).generic_wstring());
+
+		auto metaPath = fullPath;
+		metaPath += L".meta";
+
+		auto meta = AssetJson::Json::object();
+		auto guid = Guid::Invalid;
+		if (std::filesystem::exists(metaPath, ec)) {
+			if (auto loaded = AssetJson::Load(metaPath); loaded && loaded->is_object()) {
+				meta = std::move(*loaded);
+				guid = ReadGuid(meta);
+			}
+			if (!guid.IsValid()) {
+				Log::Warning(".meta の guid の読み込みに失敗しました: {}.meta", assetPath);
+			}
+		}
+
+		if (const auto it = table.pathsByGuid.find(guid); it != table.pathsByGuid.end()) {
+			Log::Warning("GUID が重複しています: {} と {}", it->second, assetPath);
+			guid = Guid::Invalid;
+		}
+
+		if (!guid.IsValid()) {
+			if (!CanWriteMeta()) {
+				Log::Error("GUID がないため、シーンから参照できません: {}", assetPath);
+				continue;
+			}
+
+			guid = Guid::Generate();
+			if (!WriteMeta(metaPath, std::move(meta), guid)) {
+				Log::Error(".meta の書き込みに失敗しました: {}.meta", assetPath);
+				continue;
+			}
+			Log::Info(".meta を作成しました: {}.meta", assetPath);
+		}
+
+		table.pathsByGuid.emplace(guid, assetPath);
+		table.guidsByPath.emplace(assetPath, guid);
+	}
+
+	for (const auto &metaPath : metaFiles) {
+		auto assetFullPath = metaPath;
+		assetFullPath.replace_extension();
+		if (!std::filesystem::is_regular_file(assetFullPath, ec)) {
+			Log::Warning("相手のファイルがない .meta です: {}", ToUtf8(metaPath));
+		}
+	}
+}
+
+// オブジェクトの出どころ
+struct AssetOrigin {
+	std::string assetPath;
+	std::string subAsset;
+};
+
+// グローバルなキー
+std::unordered_map<uint32_t, AssetOrigin> &Origins() {
+	static std::unordered_map<uint32_t, AssetOrigin> origins;
+	return origins;
+}
+
+// インポートして、できたオブジェクトの出どころを覚える
+std::shared_ptr<Object> ImportEntry(const std::string &key, AssetEntry &entry) {
+	entry.importer->ClearSubAssets();
+
+	auto asset = entry.importer->Import();
+	if (!asset) { return nullptr; }
+
+	auto &origins = Origins();
+	origins[asset->GetInstanceId()] = {key, {}};
+	for (const auto &sub : entry.importer->GetSubAssets()) {
+		if (const auto object = sub.object.lock()) {
+			origins[object->GetInstanceId()] = {key, sub.name};
+		}
+	}
+
+	return asset;
+}
+
 } // namespace
 
 
@@ -141,7 +303,7 @@ std::shared_ptr<Object> ou::AssetDatabase::LoadMainAssetAtPath(std::string_view 
 
 	// アセットがなければ読み込む
 	if (!entry->asset) {
-		entry->asset = entry->importer->Import();
+		entry->asset = ImportEntry(key, *entry);
 	}
 	return entry->asset;
 }
@@ -160,7 +322,7 @@ void ou::AssetDatabase::ImportAsset(std::string_view assetPath) {
 	auto *entry = FindOrCreateEntry(key);
 	if (!entry) { return; }
 
-	auto asset = entry->importer->Import();
+		auto asset = ImportEntry(key, *entry);
 	if (!asset) { return; }
 	entry->asset = std::move(asset);
 }
@@ -177,4 +339,73 @@ void ou::AssetDatabase::UnloadUnusedAssets() {
 
 void ou::AssetDatabase::UnloadAllAssets() {
 	Entries().clear();
+	Origins().clear();
+}
+
+
+void ou::AssetDatabase::Refresh() {
+	auto &table = Guids();
+	table = {};
+
+	if (const auto folder = FindEngineAssetsFolder()) {
+		ScanFolder("EngineAssets", *folder, table);
+	}
+	if (const auto folder = FindAssetsFolder()) {
+		ScanFolder("Assets", *folder, table);
+	}
+}
+
+
+Guid ou::AssetDatabase::AssetPathToGuid(std::string_view assetPath) {
+	const auto &guids = Guids().guidsByPath;
+	const auto it = guids.find(NormalizeAssetPath(assetPath));
+	return it != guids.end() ? it->second : Guid::Invalid;
+}
+
+
+std::string ou::AssetDatabase::GuidToAssetPath(const Guid &guid) {
+	const auto &paths = Guids().pathsByGuid;
+	const auto it = paths.find(guid);
+	return it != paths.end() ? it->second : std::string();
+}
+
+
+std::optional<std::filesystem::path> ou::AssetDatabase::AssetPathToFullPath(std::string_view assetPath) {
+	return ToFullPath(NormalizeAssetPath(assetPath));
+}
+
+
+std::optional<ou::AssetDatabase::AssetReference> ou::AssetDatabase::FindAssetReference(const Object *asset) {
+	if (!asset) { return std::nullopt; }
+
+	const auto &origins = Origins();
+	const auto it = origins.find(asset->GetInstanceId());
+	if (it == origins.end()) { return std::nullopt; }
+
+	const auto guid = AssetPathToGuid(it->second.assetPath);
+	if (!guid.IsValid()) { return std::nullopt; }
+
+	return AssetReference{guid, it->second.subAsset};
+}
+
+
+std::shared_ptr<Object> ou::AssetDatabase::LoadAsset(const Guid &guid, std::string_view subAsset) {
+	const auto assetPath = GuidToAssetPath(guid);
+	if (assetPath.empty()) {
+		Log::Warning("この GUID のアセットが見つかりません: {}", guid.ToString());
+		return nullptr;
+	}
+
+	auto main = LoadMainAssetAtPath(assetPath);
+	if (!main || subAsset.empty()) { return main; }
+
+	if (const auto *importer = GetImporterAtPath(assetPath)) {
+		for (const auto &sub : importer->GetSubAssets()) {
+			if (sub.name != subAsset) { continue; }
+			if (auto object = sub.object.lock()) { return object; }
+		}
+	}
+
+	Log::Warning("サブアセットが見つかりません: {}: {}", assetPath, subAsset);
+	return nullptr;
 }

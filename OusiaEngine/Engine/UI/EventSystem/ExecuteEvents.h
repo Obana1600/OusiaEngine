@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
 
@@ -26,7 +26,7 @@ T *FindHandler(GameObject *gameObject) {
 	if (!gameObject) { return nullptr; }
 
 	auto *handler = gameObject->GetComponent<T>();
-	const auto *behavior = dynamic_cast<const Behaviour *>(handler);
+	const auto *behavior = dynamic_cast<const Behavior *>(handler);
 	if (behavior && !behavior->IsActiveAndEnabled()) { return nullptr; }
 	return handler;
 }

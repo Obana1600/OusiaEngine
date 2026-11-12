@@ -1,6 +1,7 @@
 #include "StandaloneInputModule.h"
 #include "Input/Input.h"
 #include "Platform/Screen.h"
+#include "Serialize/Serializer.h"
 #include "UI/EventSystem/EventInterfaces.h"
 #include "UI/EventSystem/EventSystem.h"
 #include "UI/EventSystem/ExecuteEvents.h"
@@ -8,6 +9,25 @@
 #include <utility>
 
 using namespace ou;
+
+
+// TODO: どこかのファイルに分離したい
+template <>
+struct magic_enum::customize::enum_range<ou::KeyCode> {
+	static constexpr int min = 0;
+	static constexpr int max = 255;
+};
+
+
+
+void ou::StandaloneInputModule::Serialize(Serializer &serializer) {
+	BaseInputModule::Serialize(serializer);
+
+	const auto key = [&](KeyCode &value) { serializer.Enum("", value); };
+	serializer.Array("upKeys", upKeys_, key);
+	serializer.Array("downKeys", downKeys_, key);
+	serializer.Array("submitKeys", submitKeys_, key);
+}
 
 
 void ou::StandaloneInputModule::Process() {

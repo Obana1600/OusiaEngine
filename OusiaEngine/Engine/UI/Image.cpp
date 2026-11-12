@@ -3,10 +3,37 @@
 #include "UI/Asset/Sprite.h"
 #include "UI/RectTransform.h"
 #include "UI/VertexHelper.h"
+#include "Serialize/Serializer.h"
 
 #include <utility>
 
 using namespace ou;
+
+
+void ou::Image::Serialize(Serializer &serializer) {
+	Graphic::Serialize(serializer);
+
+	// TODO: Sprite をサブアセットにする
+	auto texture = sprite_ ? sprite_->GetTexture() : nullptr;
+	auto rect = sprite_ ? sprite_->GetRect() : Rect::Zero;
+	auto pivot = sprite_ ? sprite_->GetPivot() : Vector2{0.5f, 0.5f};
+
+	const auto oldTexture = texture;
+	const auto oldRect = rect;
+	const auto oldPivot = pivot;
+
+	serializer.Struct("sprite", [&] {
+		serializer.Asset("texture", texture);
+		serializer.Field("rect", rect);
+		serializer.Field("pivot", pivot);
+	});
+
+	if (!serializer.IsReading()) { return; }
+
+	if (texture == oldTexture && rect == oldRect && pivot == oldPivot) { return; }
+
+	SetSprite(texture ? Sprite::Create(texture, rect, pivot) : nullptr);
+}
 
 
 void ou::Image::SetSprite(std::shared_ptr<Sprite> sprite) {

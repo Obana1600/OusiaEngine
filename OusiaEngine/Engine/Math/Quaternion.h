@@ -29,13 +29,12 @@ public: // コンストラクタ
 
 	Quaternion(float x, float y, float z, float w);
 
-	Quaternion(const Vector3 &axis, float angle);
+	Quaternion(const Vector3 &v, float w);
 
 
 public: // メンバ関数
 
 	float Length() const;
-
 	float LengthSquared() const;
 
 	Quaternion Normalized() const;
@@ -43,6 +42,8 @@ public: // メンバ関数
 	Vector3 EulerAngles() const;
 
 	void ToAngleAxis(Vector3 *outAxis, float *outAngle) const;
+
+	void SetFromToRotation(const Vector3 &fromDirection, const Vector3 &toDirection);
 
 	std::string ToString() const;
 	std::string ToString(std::string_view format) const;
@@ -62,6 +63,11 @@ public: // 静的メンバ関数
 	static Quaternion Inverse(const Quaternion &q);
 
 	static Quaternion Normalize(Quaternion &q);
+
+	static Quaternion FromToRotation(const Vector3 &fromDirection, const Vector3 &toDirection);
+
+	static Quaternion Lerp(const Quaternion &a, const Quaternion &b, float t);
+	static Quaternion LerpUnclamped(const Quaternion &a, const Quaternion &b, float t);
 
 	static Quaternion Slerp(const Quaternion &a, const Quaternion &b, float t);
 	static Quaternion SlerpUnclamped(const Quaternion &a, const Quaternion &b, float t);

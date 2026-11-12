@@ -5,6 +5,7 @@
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
 
+#include <string_view>
 #include <vector>
 
 // TODO: API 名を Unity にそろえる
@@ -30,7 +31,7 @@ public: // メンバ関数
 
 	const Matrix4x4 &GetLocalToWorldMatrix() const;
 
-	void SetWorldPosition(const Vector3 &position); 
+	void SetWorldPosition(const Vector3 &position);
 	Vector3 GetWorldPosition() const;
 
 	void SetWorldRotation(const Quaternion &rotation);
@@ -42,6 +43,9 @@ public: // メンバ関数
 	Transform *GetParent() const;
 	void SetParent(Transform *parent);
 	const std::vector<Transform *> &GetChildren() const;
+	Transform *Find(std::string_view path);
+
+	void Serialize(Serializer &serializer) override;
 
 
 protected: // メンバ関数

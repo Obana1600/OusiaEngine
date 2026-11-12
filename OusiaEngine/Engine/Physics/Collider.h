@@ -4,7 +4,7 @@
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
 #include "Physics/Box3D/PhysicsWorld.h"
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 
 #include <memory>
 
@@ -15,10 +15,12 @@ namespace ou {
 class Rigidbody;
 class PhysicsMaterial;
 
-class Collider: public Behaviour {
+class Collider: public Behavior {
 	friend class Physics;
 
 public: // メンバ関数
+
+	void Serialize(Serializer &serializer) override;
 
 	virtual Vector3 ClosestPoint(const Vector3 &position) const = 0;
 	Vector3 ClosestPointOnBounds(const Vector3 &position) const;

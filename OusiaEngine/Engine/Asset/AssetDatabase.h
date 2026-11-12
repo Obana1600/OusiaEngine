@@ -1,8 +1,12 @@
 #pragma once
 
+#include "Core/Guid.h"
 #include "Core/Object.h"
 
+#include <filesystem>
 #include <memory>
+#include <optional>
+#include <string>
 #include <string_view>
 
 
@@ -14,6 +18,13 @@ class AssetImporter;
 
 // ファイルから読み込んだリソースをキャッシュする
 namespace ou::AssetDatabase {
+
+// アセットを指す情報
+struct AssetReference {
+	Guid guid;
+	std::string subAsset; // メインのアセットなら空
+};
+
 
 // アセットの読み込み (ex: "Assets/..." or "EngineAssets/...")
 std::shared_ptr<Object> LoadMainAssetAtPath(std::string_view assetPath);
@@ -35,5 +46,23 @@ void UnloadUnusedAssets();
 
 // キャッシュをすべて捨てる
 void UnloadAllAssets();
+
+// Assets と EngineAssets を走査して、GUID の表を作り直す (エディタでは追加で .meta の作成・更新)
+void Refresh();
+
+// アセットの GUID を引く (なければ無効な Guid)
+Guid AssetPathToGuid(std::string_view assetPath);
+
+// GUID からアセットのパスを引く (なければ空の文字列)
+std::string GuidToAssetPath(const Guid &guid);
+
+// アセットのパスを実際のファイルのパスにする
+std::optional<std::filesystem::path> AssetPathToFullPath(std::string_view assetPath);
+
+// オブジェクトがどのアセットかを引く (アセットでなければ nullopt)
+std::optional<AssetReference> FindAssetReference(const Object *asset);
+
+// GUID とサブアセットの名前から読み込む (subAsset が空ならメイン)
+std::shared_ptr<Object> LoadAsset(const Guid &guid, std::string_view subAsset = {});
 
 } // namespace ou::AssetDatabase

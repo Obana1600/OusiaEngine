@@ -1,8 +1,12 @@
 #include "Renderer.h"
+#include "Asset/AssetDatabase.h"
+#include "Graphics/GraphicsDevice.h"
 #include "Render/Asset/Material.h"
+#include "Render/Asset/Mesh.h"
 #include "Render/Asset/Shader.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 #include <utility>
 
@@ -16,6 +20,19 @@ void ou::Renderer::Awake() {
 
 void ou::Renderer::OnDestroy() {
 	SceneManager::UnregisterRenderer(this);
+}
+
+
+void ou::Renderer::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Array("materials", materials_, [&](std::shared_ptr<Material> &material) {
+		serializer.Asset("", material);
+	});
+
+	if (serializer.IsReading()) {
+		isInstanced_.assign(materials_.size(), false);
+	}
 }
 
 
@@ -81,13 +98,60 @@ Renderer::PerDraw ou::Renderer::MakePerDraw() const {
 }
 
 
+void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::CommandList cmd) const {
+	auto *device = Graphics::GetDevice();
+	device->BindDynamicConstantBuffer(perDraw, 0, cmd);
+	mesh.BindBuffers(cmd);
+
+	const auto subMeshCount = static_cast<uint32_t>(mesh.GetSubMeshes().size());
+	for (uint32_t i = 0; i < subMeshCount; i++) {
+		const auto *material = FindMaterialForSubMesh(i);
+		if (!material || !material->GetShader()) { continue; }
+
+		device->BindDynamicConstantBuffer(material->MakePerMaterial(), 1, cmd);
+
+		const auto &shader = material->GetShader();
+		for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
+			const auto *pso = shader->GetPipelineState(
+				pass, material->GetRenderStateOverride(), &Mesh::GetInputLayout(), Graphics::PrimitiveTopology::TRIANGLELIST);
+			if (!pso) { continue; }
+
+			device->BindPipelineState(pso, cmd);
+			mesh.DrawSubMesh(i, cmd);
+		}
+	}
+}
+
+
 Material *ou::Renderer::FindMaterialForSubMesh(uint32_t subMeshIndex) const {
 	if (materials_.empty()) { return nullptr; }
 
 	if (subMeshIndex < materials_.size()) {
 		return materials_[subMeshIndex].get();
 	}
-	return materials_.back().get(); // TODO: ログとかに出す
+	return materials_.back().get();
+}
+
+
+void ou::Renderer::SerializeAssetMaterials(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	auto materials = materials_;
+	if (!serializer.IsReading()) {
+		for (auto &material : materials) {
+			if (material && !AssetDatabase::FindAssetReference(material.get())) {
+				material = nullptr;
+			}
+		}
+	}
+
+	serializer.Array("materials", materials, [&](std::shared_ptr<Material> &material) {
+		serializer.Asset("", material);
+	});
+
+	if (serializer.IsReading()) {
+		SetSharedMaterials(std::move(materials));
+	}
 }
 
 

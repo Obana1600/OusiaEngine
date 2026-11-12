@@ -4,6 +4,7 @@
 #include "Math/Mathf.h"
 #include "Render/Asset/Material.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 #include <algorithm>
 
@@ -76,6 +77,22 @@ void ou::LineRenderer::LateUpdate() {
 		data[i].color = Color::Lerp(startColor_, endColor_, t).Linear();
 		data[i].texcoord = t;
 	}
+}
+
+
+void ou::LineRenderer::Serialize(Serializer &serializer) {
+	SerializeAssetMaterials(serializer);
+
+	serializer.Array("positions", positions_, [&](Vector3 &position) {
+		serializer.Field("", position);
+	});
+	serializer.Field("startWidth", startWidth_);
+	serializer.Field("endWidth", endWidth_);
+	serializer.Field("widthMultiplier", widthMultiplier_);
+	serializer.Field("startColor", startColor_);
+	serializer.Field("endColor", endColor_);
+	serializer.Field("useWorldSpace", useWorldSpace_);
+	serializer.Field("loop", loop_);
 }
 
 

@@ -2,6 +2,7 @@
 #include "Math/Mathf.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
 
@@ -13,6 +14,18 @@ void ou::Light::Awake() {
 
 void ou::Light::OnDestroy() {
 	SceneManager::UnregisterLight(this);
+}
+
+
+void ou::Light::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Enum("type", type_);
+	serializer.Field("color", color_);
+	serializer.Field("intensity", intensity_);
+	serializer.Field("range", range_);
+	serializer.Field("spotAngle", spotAngle_);
+	serializer.Field("innerSpotAngle", innerSpotAngle_);
 }
 
 

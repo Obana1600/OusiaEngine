@@ -6,6 +6,7 @@
 #include "Physics/Physics.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 #include "Scene/Transform.h"
 
 #include <algorithm>
@@ -36,6 +37,28 @@ CollisionFlags ClassifyHit(const Vector3 &normal) {
 
 } // namespace
 
+
+
+void ou::CharacterController::Serialize(Serializer &serializer) {
+	Collider::Serialize(serializer);
+
+	serializer.Field("center", center_);
+	serializer.Field("radius", radius_);
+	serializer.Field("height", height_);
+	serializer.Field("slopeLimit", slopeLimit_);
+	serializer.Field("stepOffset", stepOffset_);
+	serializer.Field("skinWidth", skinWidth_);
+	serializer.Field("minMoveDistance", minMoveDistance_);
+
+	if (serializer.IsReading()) {
+		SetRadius(radius_);
+		SetHeight(height_);
+		SetSlopeLimit(slopeLimit_);
+		SetStepOffset(stepOffset_);
+		SetSkinWidth(skinWidth_);
+		SetMinMoveDistance(minMoveDistance_);
+	}
+}
 
 
 Vector3 ou::CharacterController::ClosestPoint(const Vector3 &position) const {

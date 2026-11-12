@@ -13,13 +13,18 @@ namespace ou {
 
 class Scene {
 	friend class SceneManager;
+	friend class SceneSerializer;
+
+public: // 静的メンバ関数
+
+	static uint64_t GetDestroyGeneration();
+
 
 public: // メンバ関数
 
 	Scene(std::string_view name, int32_t buildIndex);
 	Scene(const Scene &) = delete;
 	Scene &operator=(const Scene &) = delete;
-
 	~Scene();
 
 	GameObject *CreateGameObject(std::string_view name = "GameObject");
@@ -27,6 +32,11 @@ public: // メンバ関数
 
 	const std::string &GetName() const;
 	int32_t GetBuildIndex() const;
+
+
+private: // 静的メンバ変数
+
+	static inline uint64_t sDestroyGeneration_ = 0;
 
 
 private: // メンバ変数

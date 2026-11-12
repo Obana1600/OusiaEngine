@@ -18,6 +18,14 @@ Quaternion operator+(const Quaternion &a, const Quaternion &b) {
 		a.w + b.w);
 }
 
+Quaternion operator-(const Quaternion &a, const Quaternion &b) {
+	return Quaternion(
+		a.x - b.x,
+		a.y - b.y,
+		a.z - b.z,
+		a.w - b.w);
+}
+
 Quaternion operator*(const Quaternion &a, float b) {
 	return Quaternion(
 		a.x * b,
@@ -49,8 +57,8 @@ ou::Quaternion::Quaternion(float x, float y, float z, float w)
 	  w(w) {}
 
 
-ou::Quaternion::Quaternion(const Vector3 &axis, float angle)
-	: Quaternion(AngleAxis(axis, angle)) {}
+ou::Quaternion::Quaternion(const Vector3 &v, float w)
+	: Quaternion(v.x, v.y, v.z, w) {}
 
 
 float ou::Quaternion::Length() const {
@@ -116,6 +124,11 @@ void ou::Quaternion::ToAngleAxis(Vector3 *outAxis, float *outAngle) const {
 }
 
 
+void ou::Quaternion::SetFromToRotation(const Vector3 &fromDirection, const Vector3 &toDirection) {
+	*this = FromToRotation(fromDirection, toDirection);
+}
+
+
 std::string ou::Quaternion::ToString() const {
 	return std::format("({:.2f}, {:.2f}, {:.2f}, {:.2f})", x, y, z, w);
 }
@@ -136,7 +149,8 @@ float ou::Quaternion::Angle(const Quaternion &a, const Quaternion &b) {
 Quaternion ou::Quaternion::AngleAxis(const Vector3 &axis, float angle) {
 	const auto n = axis.Normalized();
 	const auto s = Mathf::Sin(angle * 0.5f);
-	return {n.x * s, n.y * s, n.z * s, Mathf::Cos(angle * 0.5f)};
+	const auto c = Mathf::Cos(angle * 0.5f);
+	return Quaternion(n * s, c);
 }
 
 
@@ -177,6 +191,37 @@ Quaternion ou::Quaternion::Normalize(Quaternion &q) {
 }
 
 
+Quaternion ou::Quaternion::FromToRotation(const Vector3 &fromDirection, const Vector3 &toDirection) {
+	const auto from = fromDirection.Normalized();
+	const auto to = toDirection.Normalized();
+	const auto dot = Vector3::Dot(from, to);
+	const auto cross = Vector3::Cross(from, to);
+	const auto epsilon = 1e-6f;
+
+	if (dot <= -1.0f + epsilon) {
+		auto axis = Vector3::Cross(from, Vector3::Forward);
+		if (axis.LengthSquared() < epsilon) {
+			axis = Vector3::Cross(from, Vector3::Up);
+		}
+		Vector3::Normalize(axis);
+		return Quaternion(axis, 0.0f);
+	}
+	return Quaternion(cross, 1.0f + dot).Normalized();
+}
+
+
+Quaternion ou::Quaternion::Lerp(const Quaternion &a, const Quaternion &b, float t) {
+	t = Mathf::Clamp01(t);
+	return LerpUnclamped(a, b, t);
+}
+
+
+Quaternion ou::Quaternion::LerpUnclamped(const Quaternion &a, const Quaternion &b, float t) {
+	const auto end = Dot(a, b) < 0.0f ? -b : b;
+	return (a + (end - a) * t).Normalized();
+}
+
+
 Quaternion ou::Quaternion::Slerp(const Quaternion &a, const Quaternion &b, float t) {
 	t = Mathf::Clamp01(t);
 	return SlerpUnclamped(a, b, t);
@@ -184,21 +229,19 @@ Quaternion ou::Quaternion::Slerp(const Quaternion &a, const Quaternion &b, float
 
 
 Quaternion ou::Quaternion::SlerpUnclamped(const Quaternion &a, const Quaternion &b, float t) {
-	auto cosTheta = Dot(a, b);
-	const auto sign = (cosTheta < 0.0f) ? -1.0f : 1.0f;
-	cosTheta *= sign;
+	auto dot = Dot(a, b);
+	const auto sign = (dot < 0.0f) ? -1.0f : 1.0f;
+	dot *= sign;
 
-	auto scaleA = 1.0f - t;
-	auto scaleB = t;
-	if (cosTheta < 1.0f - Mathf::Epsilon) {
-		const auto theta = Mathf::Acos(cosTheta);
-		const auto sinTheta = Mathf::Sin(theta);
-		scaleA = Mathf::Sin((1.0f - t) * theta) / sinTheta;
-		scaleB = Mathf::Sin(t * theta) / sinTheta;
+	if (dot < 1.0f - Mathf::Epsilon) {
+		const auto angle = Mathf::Acos(dot);
+		const auto s = 1.0f / Mathf::Sin(angle);
+		const auto wA = Mathf::Sin(angle * (1.0f - t)) * s;
+		const auto wB = Mathf::Sin(angle * t) * s * sign;
+		return Quaternion(a * wA + b * wB).Normalized();
+	} else {
+		return LerpUnclamped(a, b, t);
 	}
-	scaleB *= sign;
-
-	return Quaternion(scaleA * a + scaleB * b).Normalized();
 }
 
 

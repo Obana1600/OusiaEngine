@@ -10,6 +10,8 @@ namespace ou {
 class SphereCollider final: public Collider {
 public: // メンバ関数
 
+	void Serialize(Serializer &serializer) override;
+
 	Vector3 ClosestPoint(const Vector3 &position) const override;
 	Bounds GetBounds() const override;
 
@@ -31,7 +33,6 @@ private: // メンバ関数
 	PhysicsWorld::ShapeGeometry BuildShapeGeometry() const override;
 	Vector3 GetShapeCenter() const override;
 
-	// TODO: 消す
 	Vector3 CalculateWorldCenter() const;
 	float CalculateWorldRadius() const;
 };

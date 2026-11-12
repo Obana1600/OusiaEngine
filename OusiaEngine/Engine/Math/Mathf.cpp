@@ -117,6 +117,11 @@ float ou::Mathf::Pow(float f, float p) {
 }
 
 
+float ou::Mathf::Repeat(float t, float length) {
+	return Clamp(t - Floor(t / length) * length, 0.0f, length);
+}
+
+
 float ou::Mathf::Round(float f) {
 	return std::round(f);
 }

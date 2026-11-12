@@ -1,5 +1,6 @@
 #include "Selectable.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 #include "UI/EventSystem/EventSystem.h"
 #include "UI/Graphic.h"
 #include "UI/RectTransform.h"
@@ -60,6 +61,24 @@ void ou::Selectable::OnDestroy() {
 	if (auto *eventSystem = EventSystem::GetCurrent()) {
 		eventSystem->OnGameObjectDestroyed(GetGameObject());
 	}
+}
+
+
+void ou::Selectable::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Reference("targetGraphic", targetGraphic_);
+	serializer.Field("interactable", interactable_);
+
+	serializer.Struct("colors", [&] {
+		serializer.Field("normalColor", colors_.normalColor);
+		serializer.Field("highlightedColor", colors_.highlightedColor);
+		serializer.Field("pressedColor", colors_.pressedColor);
+		serializer.Field("selectedColor", colors_.selectedColor);
+		serializer.Field("disabledColor", colors_.disabledColor);
+		serializer.Field("colorMultiplier", colors_.colorMultiplier);
+		serializer.Field("fadeDuration", colors_.fadeDuration);
+	});
 }
 
 

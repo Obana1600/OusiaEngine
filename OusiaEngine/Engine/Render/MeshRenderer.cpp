@@ -1,37 +1,21 @@
 #include "MeshRenderer.h"
-#include "Graphics/GraphicsDevice.h"
-#include "Render/Asset/Material.h"
 #include "Render/Asset/Mesh.h"
+#include "Serialize/Serializer.h"
 
 #include <utility>
 
 using namespace ou;
 
 
+void ou::MeshRenderer::Serialize(Serializer &serializer) {
+	Renderer::Serialize(serializer);
+
+	serializer.Asset("mesh", mesh_);
+}
+
+
 void ou::MeshRenderer::Draw(Graphics::CommandList cmd) const {
-	if (!mesh_) { return; }
-
-	auto *device = Graphics::GetDevice();
-	device->BindDynamicConstantBuffer(MakePerDraw(), 0, cmd);
-	mesh_->BindBuffers(cmd);
-
-	const auto subMeshCount = static_cast<uint32_t>(mesh_->GetSubMeshes().size());
-	for (uint32_t i = 0; i < subMeshCount; i++) {
-		const auto *material = FindMaterialForSubMesh(i);
-		if (!material || !material->GetShader()) { continue; }
-
-		device->BindDynamicConstantBuffer(material->MakePerMaterial(), 1, cmd);
-
-
-		const auto &shader = *material->GetShader();
-		for (size_t pass = 0; pass < shader.GetPassCount(); pass++) {
-			const auto *pso = shader.GetPipelineState(pass, material->GetRenderStateOverride(), &Mesh::GetInputLayout(), Graphics::PrimitiveTopology::TRIANGLELIST);
-			if (!pso) { continue; }
-
-			device->BindPipelineState(pso, cmd);
-			mesh_->DrawSubMesh(i, cmd);
-		}
-	}
+	if (mesh_) { DrawMesh(*mesh_, MakePerDraw(), cmd); }
 }
 
 

@@ -1,4 +1,8 @@
 #include "SceneManager.h"
+#include "Animation/Skeletal/SkeletalAnimator.h"
+#include "Animation/Tween/TweenManager.h"
+#include "Asset/AssetDatabase.h"
+#include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
@@ -8,14 +12,33 @@
 #include "Render/Renderer.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
+#include "Serialize/SceneSerializer.h"
 #include "UI/Canvas.h"
 #include "UI/CanvasUpdateRegistry.h"
 #include "UI/EventSystem/EventSystem.h"
 
 #include <algorithm>
+#include <filesystem>
+#include <string>
 #include <utility>
 
 using namespace ou;
+
+
+void ou::SceneManager::AddScene(std::string_view scenePath) {
+	const auto name = WideToUtf8(std::filesystem::path(Utf8ToWide(scenePath)).stem().wstring());
+
+	// フルパスにするのは読み込むとき。登録の時点ではファイルを確かめない
+	AddScene(name, [path = std::string(scenePath)](Scene &scene) {
+		const auto fullPath = AssetDatabase::AssetPathToFullPath(path);
+		if (!fullPath) {
+			Log::Error("シーンのパスは Assets/ か EngineAssets/ で始めてください: {}", path);
+			return;
+		}
+
+		SceneSerializer::Load(scene, *fullPath);
+	});
+}
 
 
 void ou::SceneManager::AddScene(std::string_view name, SceneBuilder builder) {
@@ -77,6 +100,7 @@ void ou::SceneManager::Update() {
 		if (scene) { scene->StartGameObjects(); }
 	}
 
+	// 物理の更新
 	while (Time::AdvanceFixedTime()) {
 		for (auto *scene : scenes) {
 			if (scene) { scene->FixedUpdateGameObjects(); }
@@ -92,6 +116,16 @@ void ou::SceneManager::Update() {
 	for (auto *scene : scenes) {
 		if (scene) { scene->UpdateGameObjects(); }
 	}
+
+	// Tween の更新
+	TweenManager::Update(Time::GetDeltaTime(), Time::GetUnscaledDeltaTime());
+
+	// アニメーションの更新
+	const auto deltaTime = Time::GetDeltaTime();
+	for (auto *animator : sSkeletalAnimators_) {
+		if (animator->IsActiveAndEnabled()) { animator->UpdateAnimation(deltaTime); }
+	}
+
 	for (auto *scene : scenes) {
 		if (scene) { scene->LateUpdateGameObjects(); }
 	}
@@ -102,6 +136,8 @@ void ou::SceneManager::Update() {
 
 
 void ou::SceneManager::Finalize() {
+	TweenManager::Finalize();
+
 	sActiveScene_.reset();
 	sDontDestroyOnLoadScene_.reset();
 	sBuildScenes_.clear();
@@ -208,6 +244,16 @@ void ou::SceneManager::RegisterCanvas(Canvas *canvas) {
 
 void ou::SceneManager::UnregisterCanvas(Canvas *canvas) {
 	std::erase(sCanvases_, canvas);
+}
+
+
+void ou::SceneManager::RegisterSkeletalAnimator(SkeletalAnimator *animator) {
+	sSkeletalAnimators_.push_back(animator);
+}
+
+
+void ou::SceneManager::UnregisterSkeletalAnimator(SkeletalAnimator *animator) {
+	std::erase(sSkeletalAnimators_, animator);
 }
 
 

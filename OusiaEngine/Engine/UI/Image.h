@@ -13,6 +13,8 @@ class Sprite;
 class Image final: public Graphic {
 public: // メンバ関数
 
+	void Serialize(Serializer &serializer) override;
+
 	void SetSprite(std::shared_ptr<Sprite> sprite);
 	const std::shared_ptr<Sprite> &GetSprite() const;
 

@@ -20,6 +20,7 @@ class Camera;
 class Renderer;
 class Light;
 class Canvas;
+class SkeletalAnimator;
 
 class SceneManager final {
 	friend class Object;
@@ -38,6 +39,7 @@ public: // 静的メンバ変数
 
 public: // 静的メンバ関数
 
+	static void AddScene(std::string_view scenePath);
 	static void AddScene(std::string_view name, SceneBuilder builder);
 	static int32_t GetSceneCountInBuildSettings();
 
@@ -66,6 +68,9 @@ public: // 静的メンバ関数
 	static void RegisterCanvas(Canvas *canvas);
 	static void UnregisterCanvas(Canvas *canvas);
 
+	static void RegisterSkeletalAnimator(SkeletalAnimator *animator);
+	static void UnregisterSkeletalAnimator(SkeletalAnimator *animator);
+
 
 private: // インナークラス
 
@@ -86,6 +91,7 @@ private: // 静的メンバ変数
 	static inline std::vector<Renderer *> sRenderers_;
 	static inline std::vector<Light *> sLights_;
 	static inline std::vector<Canvas *> sCanvases_;
+	static inline std::vector<SkeletalAnimator *> sSkeletalAnimators_;
 
 
 private: // 静的メンバ関数

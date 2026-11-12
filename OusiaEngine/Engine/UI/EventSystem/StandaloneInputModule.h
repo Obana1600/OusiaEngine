@@ -11,6 +11,8 @@ namespace ou {
 class StandaloneInputModule final: public BaseInputModule {
 public: // メンバ関数
 
+	void Serialize(Serializer &serializer) override;
+
 	void Process() override;
 
 	bool IsPointerOverGameObject() const override;

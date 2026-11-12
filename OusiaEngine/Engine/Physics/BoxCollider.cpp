@@ -2,8 +2,17 @@
 #include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
+
+
+void ou::BoxCollider::Serialize(Serializer &serializer) {
+	Collider::Serialize(serializer);
+
+	serializer.Field("center", center_);
+	serializer.Field("size", size_);
+}
 
 
 Vector3 ou::BoxCollider::ClosestPoint(const Vector3 &position) const {

@@ -1,5 +1,6 @@
 #include "ControllerColliderHit.h"
 #include "Physics/Collider.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
 

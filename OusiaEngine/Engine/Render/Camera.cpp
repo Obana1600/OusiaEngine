@@ -3,6 +3,7 @@
 #include "Platform/Screen.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
 
@@ -14,6 +15,16 @@ void ou::Camera::Awake() {
 
 void ou::Camera::OnDestroy() {
 	SceneManager::UnregisterCamera(this);
+}
+
+
+void ou::Camera::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Field("fieldOfView", fieldOfView_);
+	serializer.Field("aspect", aspect_);
+	serializer.Field("nearClipPlane", nearClipPlane_);
+	serializer.Field("farClipPlane", farClipPlane_);
 }
 
 

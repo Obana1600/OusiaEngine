@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 
@@ -16,6 +17,7 @@ class GameObject;
 class Material;
 class Mesh;
 class Scene;
+class SkeletalAnimationClip;
 
 class Model final: public Object {
 public: // インナークラス
@@ -28,6 +30,7 @@ public: // インナークラス
 		int parent = -1;
 		std::shared_ptr<Mesh> mesh;
 		std::vector<std::shared_ptr<Material>> materials;
+		std::vector<int> bones;
 	};
 
 
@@ -39,10 +42,15 @@ public: // メンバ関数
 
 	const std::vector<Node> &GetNodes() const;
 
+	void SetAnimationClips(std::vector<std::shared_ptr<SkeletalAnimationClip>> clips);
+	const std::vector<std::shared_ptr<SkeletalAnimationClip>> &GetAnimationClips() const;
+	std::shared_ptr<SkeletalAnimationClip> FindAnimationClip(std::string_view name) const;
+
 
 private: // メンバ変数
 
 	std::vector<Node> nodes_;
+	std::vector<std::shared_ptr<SkeletalAnimationClip>> animationClips_;
 };
 
 } // namespace ou

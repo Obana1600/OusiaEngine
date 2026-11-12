@@ -1,5 +1,6 @@
 #include "RectTransform.h"
 #include "Scene/GameObject.h"
+#include "Serialize/Serializer.h"
 #include "UI/Graphic.h"
 
 using namespace ou;
@@ -7,6 +8,21 @@ using namespace ou;
 
 void ou::RectTransform::Awake() {
 	RecalculateLayout();
+}
+
+
+void ou::RectTransform::Serialize(Serializer &serializer) {
+	Transform::Serialize(serializer);
+
+	serializer.Field("anchorMin", anchorMin_);
+	serializer.Field("anchorMax", anchorMax_);
+	serializer.Field("anchoredPosition", anchoredPosition_);
+	serializer.Field("sizeDelta", sizeDelta_);
+	serializer.Field("pivot", pivot_);
+
+	if (serializer.IsReading()) {
+		RecalculateLayout();
+	}
 }
 
 

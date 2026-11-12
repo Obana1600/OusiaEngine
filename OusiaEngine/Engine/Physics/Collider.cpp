@@ -4,6 +4,7 @@
 #include "Physics/Rigidbody.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 #include <string>
 #include <utility>
@@ -28,6 +29,18 @@ PhysicsWorld::CombineMode ToCombineMode(PhysicsMaterialCombine combine) {
 
 } // namespace
 
+
+
+void ou::Collider::Serialize(Serializer &serializer) {
+	Behavior::Serialize(serializer);
+
+	serializer.Field("isTrigger", isTrigger_);
+	serializer.Asset("material", sharedMaterial_);
+
+	if (serializer.IsReading()) {
+		isMaterialInstanced_ = false;
+	}
+}
 
 
 Vector3 ou::Collider::ClosestPointOnBounds(const Vector3 &position) const {

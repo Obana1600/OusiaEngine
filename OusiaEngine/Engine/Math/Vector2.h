@@ -88,7 +88,6 @@ public: // TODO: API を増やす / コメント書く
 	static Vector2 Scale(const Vector2 &a, const Vector2 &b);
 
 	static Vector2 Lerp(const Vector2 &a, const Vector2 &b, float t);
-
 	static Vector2 LerpUnclamped(const Vector2 &a, const Vector2 &b, float t);
 
 

@@ -2,13 +2,13 @@
 
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 
 // TODO: API 名を Unity にそろえる
 
 namespace ou {
 
-class Camera final: public Behaviour {
+class Camera final: public Behavior {
 public: // インナークラス
 
 	// 定数バッファ: b2
@@ -25,6 +25,7 @@ public: // メンバ関数
 
 	void Awake() override;
 	void OnDestroy() override;
+	void Serialize(Serializer &serializer) override;
 
 	Matrix4x4 GetWorldToCameraMatrix() const;
 	Matrix4x4 GetProjectionMatrix() const;

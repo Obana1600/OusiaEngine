@@ -6,6 +6,7 @@
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
+#include "Serialize/Serializer.h"
 #include "UI/Asset/FontAsset.h"
 #include "UI/CanvasRenderer.h"
 #include "UI/RectTransform.h"
@@ -66,6 +67,30 @@ void ou::Text::StaticFinalize() {
 void ou::Text::LateUpdate() {
 	if (IsAtlasTextureChanged()) {
 		SetMaterialDirty();
+	}
+}
+
+
+void ou::Text::Serialize(Serializer &serializer) {
+	Graphic::Serialize(serializer);
+
+	serializer.Field("text", text_);
+	serializer.Asset("font", font_);
+	serializer.Field("fontSize", fontSize_);
+	serializer.Enum("alignment", alignment_);
+	serializer.Field("wordWrappingEnabled", wordWrappingEnabled_);
+	serializer.Field("lineSpacing", lineSpacing_);
+	serializer.Field("characterSpacing", characterSpacing_);
+	serializer.Field("faceDilate", faceDilate_);
+	serializer.Field("outlineWidth", outlineWidth_);
+	serializer.Field("outlineColor", outlineColor_);
+	serializer.Field("underlayDilate", underlayDilate_);
+	serializer.Field("underlaySoftness", underlaySoftness_);
+	serializer.Field("underlayOffset", underlayOffset_);
+	serializer.Field("underlayColor", underlayColor_);
+
+	if (serializer.IsReading()) {
+		SetAllDirty();
 	}
 }
 

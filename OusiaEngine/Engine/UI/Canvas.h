@@ -3,7 +3,7 @@
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Color.h"
 #include "Math/Matrix4x4.h"
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 
 #include <cstdint>
 #include <vector>
@@ -16,7 +16,7 @@ class CanvasRenderer;
 class RectTransform;
 class Transform;
 
-class Canvas final: public Behaviour {
+class Canvas final: public Behavior {
 public: // インナークラス
 
 	// 定数バッファ: b0

@@ -2,10 +2,27 @@
 #include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 #include <algorithm>
 
 using namespace ou;
+
+
+void ou::CapsuleCollider::Serialize(Serializer &serializer) {
+	Collider::Serialize(serializer);
+
+	serializer.Field("center", center_);
+	serializer.Field("radius", radius_);
+	serializer.Field("height", height_);
+	serializer.Field("direction", direction_);
+
+	if (serializer.IsReading()) {
+		SetRadius(radius_);
+		SetHeight(height_);
+		SetDirection(direction_);
+	}
+}
 
 
 Vector3 ou::CapsuleCollider::ClosestPoint(const Vector3 &position) const {

@@ -39,6 +39,7 @@ public: // 静的メンバ関数
 public: // メンバ関数
 
 	void LateUpdate() override;
+	void Serialize(Serializer &serializer) override;
 
 	const std::shared_ptr<Material> &GetDefaultMaterial() const override;
 

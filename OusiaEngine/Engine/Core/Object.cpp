@@ -22,8 +22,21 @@ void ou::Object::DontDestroyOnLoad(Object *obj) {
 }
 
 
+Object *ou::Object::FindObjectFromInstanceId(uint32_t instanceId) {
+	const auto it = sObjects_.find(instanceId);
+	return it != sObjects_.end() ? it->second : nullptr;
+}
+
+
 ou::Object::Object()
-	: instanceId_(sNextInstanceId_++) {}
+	: instanceId_(sNextInstanceId_++) {
+	sObjects_.emplace(instanceId_, this);
+}
+
+
+ou::Object::~Object() {
+	sObjects_.erase(instanceId_);
+}
 
 
 uint32_t ou::Object::GetInstanceId() const {
@@ -34,6 +47,17 @@ uint32_t ou::Object::GetInstanceId() const {
 bool ou::Object::IsDestroyed() const {
 	return isDestroyed_;
 }
+
+
+void ou::Object::SetFileId(uint64_t fileId) {
+	fileId_ = fileId;
+}
+
+
+uint64_t ou::Object::GetFileId() const {
+	return fileId_;
+}
+
 
 void ou::Object::SetName(std::string_view name) {
 	name_ = name;

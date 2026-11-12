@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 #include "UI/EventSystem/EventData.h"
 #include "Math/Vector2.h"
 
@@ -13,7 +13,7 @@ namespace ou {
 class Graphic;
 class Transform;
 
-class GraphicRaycaster final: public Behaviour {
+class GraphicRaycaster final: public Behavior {
 public: // 静的メンバ関数
 
 	static const std::vector<GraphicRaycaster *> &GetRaycasters();

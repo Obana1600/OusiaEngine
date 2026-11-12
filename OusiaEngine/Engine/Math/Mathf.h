@@ -67,6 +67,8 @@ float Min(float a, float b);
 
 float Pow(float f, float p);
 
+float Repeat(float t, float length);
+
 float Round(float f);
 
 int RoundToInt(float f);

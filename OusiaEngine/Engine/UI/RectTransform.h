@@ -11,6 +11,7 @@ class RectTransform final: public Transform {
 public: // メンバ関数
 
 	void Awake() override;
+	void Serialize(Serializer &serializer) override;
 
 	void SetAnchorMin(const Vector2 &anchorMin);
 	const Vector2 &GetAnchorMin() const;

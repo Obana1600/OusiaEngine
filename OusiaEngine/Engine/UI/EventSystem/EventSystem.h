@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene/Behaviour.h"
+#include "Scene/Behavior.h"
 #include "UI/EventSystem/EventData.h"
 
 #include <vector>
@@ -11,7 +11,7 @@ namespace ou {
 // 前方宣言
 class BaseInputModule;
 
-class EventSystem final: public Behaviour {
+class EventSystem final: public Behavior {
 public: // 静的メンバ関数
 
 	static EventSystem *GetCurrent();
@@ -22,6 +22,7 @@ public: // メンバ関数
 	void Start() override;
 	void OnEnable() override;
 	void OnDisable() override;
+	void Serialize(Serializer &serializer) override;
 
 	void Process();
 

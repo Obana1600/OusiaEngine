@@ -17,11 +17,13 @@
 #include "Scene/SceneManager.h"
 #include "UI/Graphic.h"
 #include "UI/Text.h"
+#include "Serialize/EngineTypes.h"
 
 #include <filesystem>
 #include <thread>
 
 #pragma comment(lib, "winmm.lib")
+
 
 using namespace ou;
 
@@ -59,6 +61,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 		Log::Error("Assets フォルダが見つかりません");
 	}
 #endif
+
+	// アセットの読み込み
+	AssetDatabase::Refresh();
 
 	// レイヤー
 	LayerMask::LoadLayerNames();
@@ -112,6 +117,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 	// imgui
 	imGuiManager_ = std::make_unique<ImGuiManager>(window_.get());
+
+	// 組み込みコンポーネントのレジスタ
+	RegisterEngineTypes();
 
 	// 初期化
 	Material::StaticInitialize();

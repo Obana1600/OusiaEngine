@@ -88,6 +88,14 @@ void DecomposeMatrix(const float m[16], float translation[3], float rotation[4],
 	}
 }
 
+Matrix4x4 ToLeftHandedMatrix(const float *m) {
+	return Matrix4x4(m[0], -m[1], -m[2], -m[3],
+					 -m[4], m[5], m[6], m[7],
+					 -m[8], m[9], m[10], m[11],
+					 -m[12], m[13], m[14], m[15]);
+}
+
+// マテリアル
 ModelData::MaterialData BuildMaterial(const cgltf_material &material, const std::string &pathUtf8) {
 	ModelData::MaterialData result;
 	result.name = NameOr(material.name, "Material");
@@ -114,6 +122,55 @@ ModelData::MaterialData BuildMaterial(const cgltf_material &material, const std:
 	return result;
 }
 
+// ボーンウェイト
+Mesh::BoneWeight MakeBoneWeight(const float *joints, const float *weights) {
+	Mesh::BoneWeight result;
+	auto total = 0.0f;
+	for (int i = 0; i < 4; i++) {
+		result.boneIndices[i] = static_cast<uint32_t>(joints[i]);
+		result.weights[i] = weights[i];
+		total += weights[i];
+	}
+
+	if (!(total > 0.0f)) { return {}; }
+
+	for (auto &weight : result.weights) {
+		weight /= total;
+	}
+	return result;
+}
+
+// 面の法線
+void BuildFlatNormals(ModelData::MeshData &mesh, uint32_t baseVertex, uint32_t indexStart) {
+	const std::vector<Mesh::Vertex> vertices(mesh.vertices.begin() + baseVertex, mesh.vertices.end());
+	const std::vector<uint32_t> indices(mesh.indices.begin() + indexStart, mesh.indices.end());
+	const auto hasBoneWeights = mesh.boneWeights.size() > baseVertex;
+	const std::vector<Mesh::BoneWeight> boneWeights(
+		hasBoneWeights ? mesh.boneWeights.begin() + baseVertex : mesh.boneWeights.end(), mesh.boneWeights.end());
+
+	mesh.vertices.resize(baseVertex);
+	mesh.indices.resize(indexStart);
+	if (hasBoneWeights) { mesh.boneWeights.resize(baseVertex); }
+
+	for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+		const auto &a = vertices[indices[i] - baseVertex].position;
+		const auto &b = vertices[indices[i + 1] - baseVertex].position;
+		const auto &c = vertices[indices[i + 2] - baseVertex].position;
+		const auto normal = Vector3::Cross(b - a, c - a).Normalized();
+
+		for (size_t corner = 0; corner < 3; corner++) {
+			const auto source = indices[i + corner] - baseVertex;
+			auto vertex = vertices[source];
+			vertex.normal = normal;
+
+			mesh.indices.push_back(static_cast<uint32_t>(mesh.vertices.size()));
+			mesh.vertices.push_back(vertex);
+			if (hasBoneWeights) { mesh.boneWeights.push_back(boneWeights[source]); }
+		}
+	}
+}
+
+// メッシュ
 ModelData::MeshData BuildMesh(const cgltf_data &data, const cgltf_mesh &mesh, const std::string &pathUtf8) {
 	ModelData::MeshData result;
 	result.name = NameOr(mesh.name, "Mesh");
@@ -131,13 +188,17 @@ ModelData::MeshData BuildMesh(const cgltf_data &data, const cgltf_mesh &mesh, co
 			continue;
 		}
 
-		// 座標 / 法線 / UV
+		// 座標 / 法線 / UV / 関節 / ウェイト
 		const auto positions = UnpackFloats(positionAccessor);
 		const auto normals = UnpackFloats(cgltf_find_accessor(&primitive, cgltf_attribute_type_normal, 0));
 		const auto texcoords = UnpackFloats(cgltf_find_accessor(&primitive, cgltf_attribute_type_texcoord, 0));
+		const auto joints = UnpackFloats(cgltf_find_accessor(&primitive, cgltf_attribute_type_joints, 0));
+		const auto weights = UnpackFloats(cgltf_find_accessor(&primitive, cgltf_attribute_type_weights, 0));
+		const auto hasBoneWeights = !joints.empty() && !weights.empty();
 
 		// 頂点
 		const auto baseVertex = static_cast<uint32_t>(result.vertices.size());
+		if (hasBoneWeights) { result.boneWeights.resize(baseVertex); }
 		for (cgltf_size v = 0; v < positionAccessor->count; v++) {
 			Mesh::Vertex vertex{};
 			vertex.position = {-positions[3 * v], positions[3 * v + 1], positions[3 * v + 2]};
@@ -148,6 +209,7 @@ ModelData::MeshData BuildMesh(const cgltf_data &data, const cgltf_mesh &mesh, co
 				vertex.texcoord = {texcoords[2 * v], texcoords[2 * v + 1]};
 			}
 			result.vertices.push_back(vertex);
+			if (hasBoneWeights) { result.boneWeights.push_back(MakeBoneWeight(&joints[4 * v], &weights[4 * v])); }
 		}
 
 		// インデックス
@@ -162,24 +224,25 @@ ModelData::MeshData BuildMesh(const cgltf_data &data, const cgltf_mesh &mesh, co
 				result.indices.push_back(baseVertex + static_cast<uint32_t>(index));
 			}
 		}
+		if (normals.empty()) { BuildFlatNormals(result, baseVertex, subMesh.indexStart); }
 		subMesh.indexCount = static_cast<uint32_t>(result.indices.size()) - subMesh.indexStart;
 
 		result.submeshes.push_back(subMesh);
-		result.materialIndices.push_back(primitive.material ? static_cast<int>(cgltf_material_index(&data, primitive.material))
-															: -1);
+		result.materialIndices.push_back(
+			primitive.material ? static_cast<int>(cgltf_material_index(&data, primitive.material)) : -1);
 	}
 
+	if (!result.boneWeights.empty()) { result.boneWeights.resize(result.vertices.size()); }
 	return result;
 }
 
 // ノード
-void AddNode(const cgltf_data &data, const cgltf_node &node, int parent, ModelData &out) {
+void AddNode(const cgltf_data &data, const cgltf_node &node, int parent, std::vector<int> &nodeIndices, ModelData &out) {
 	ModelData::NodeData nodeData;
 	nodeData.name = NameOr(node.name, "Node");
 	nodeData.parent = parent;
-	if (node.mesh) {
-		nodeData.mesh = static_cast<int>(cgltf_mesh_index(&data, node.mesh));
-	}
+	if (node.mesh) { nodeData.mesh = static_cast<int>(cgltf_mesh_index(&data, node.mesh)); }
+	if (node.skin) { nodeData.skin = static_cast<int>(cgltf_skin_index(&data, node.skin)); }
 
 	// 座標 / 回転 / スケール
 	float translation[3] = {0.0f, 0.0f, 0.0f};
@@ -200,10 +263,105 @@ void AddNode(const cgltf_data &data, const cgltf_node &node, int parent, ModelDa
 
 	// 子の追加
 	const auto index = static_cast<int>(out.nodes.size());
+	nodeIndices[cgltf_node_index(&data, &node)] = index;
 	out.nodes.push_back(std::move(nodeData));
 	for (cgltf_size i = 0; i < node.children_count; i++) {
-		AddNode(data, *node.children[i], index, out);
+		AddNode(data, *node.children[i], index, nodeIndices, out);
 	}
+}
+
+// スキン
+ModelData::SkinData BuildSkin(const cgltf_data &data, const cgltf_skin &skin, const std::vector<int> &nodeIndices, const std::string &pathUtf8) {
+	ModelData::SkinData result;
+
+	for (cgltf_size i = 0; i < skin.joints_count; i++) {
+		const auto node = nodeIndices[cgltf_node_index(&data, skin.joints[i])];
+
+		if (node < 0) {
+			Log::Warning("シーンにないジョイントがあるためスキンを使いません: {}: {}", pathUtf8, NameOr(skin.name, "Skin"));
+			return {};
+		}
+
+		result.joints.push_back(node);
+	}
+
+	result.inverseBindMatrices.assign(result.joints.size(), Matrix4x4::Identity);
+	const auto matrices = UnpackFloats(skin.inverse_bind_matrices);
+	const auto matrixCount = std::min(result.joints.size(), matrices.size() / 16);
+	for (size_t i = 0; i < matrixCount; i++) {
+		result.inverseBindMatrices[i] = ToLeftHandedMatrix(&matrices[i * 16]);
+	}
+	return result;
+}
+
+void ConvertToLeftHanded(ModelData::AnimationChannelData &channel) {
+	using Path = ModelData::AnimationChannelData::Path;
+
+	auto &values = channel.values;
+	if (channel.path == Path::Translation) {
+		for (size_t i = 0; i + 2 < values.size(); i += 3) {
+			values[i] = -values[i];
+		}
+	} else if (channel.path == Path::Rotation) {
+		for (size_t i = 0; i + 3 < values.size(); i += 4) {
+			values[i + 1] = -values[i + 1];
+			values[i + 2] = -values[i + 2];
+		}
+	}
+}
+
+ModelData::AnimationData BuildAnimation(const cgltf_data &data, const cgltf_animation &animation, const std::vector<int> &nodeIndices, const std::string &pathUtf8) {
+	using Channel = ModelData::AnimationChannelData;
+
+	ModelData::AnimationData result;
+	result.name = NameOr(animation.name, "Animation");
+
+	for (cgltf_size i = 0; i < animation.channels_count; i++) {
+		const auto &channel = animation.channels[i];
+		if (!channel.target_node || !channel.sampler) { continue; }
+
+		Channel out;
+		switch (channel.target_path) {
+			case cgltf_animation_path_type_translation:
+				out.path = Channel::Path::Translation;
+				break;
+			case cgltf_animation_path_type_rotation:
+				out.path = Channel::Path::Rotation;
+				break;
+			case cgltf_animation_path_type_scale:
+				out.path = Channel::Path::Scale;
+				break;
+			default:
+				Log::Warning("このアニメーションのチャンネルにはまだ対応していません: {} : {} (path = {})",
+							 pathUtf8, result.name, static_cast<int>(channel.target_path));
+				continue;
+		}
+
+		out.node = nodeIndices[cgltf_node_index(&data, channel.target_node)];
+		if (out.node < 0) { continue; }
+
+		const auto &sampler = *channel.sampler;
+		switch (sampler.interpolation) {
+			default:
+			case cgltf_interpolation_type_linear:
+				out.interpolation = Channel::Interpolation::Linear;
+				break;
+			case cgltf_interpolation_type_step:
+				out.interpolation = Channel::Interpolation::Step;
+				break;
+			case cgltf_interpolation_type_cubic_spline:
+				out.interpolation = Channel::Interpolation::CubicHermite;
+				break;
+		}
+
+		out.times = UnpackFloats(sampler.input);
+		out.values = UnpackFloats(sampler.output);
+		ConvertToLeftHanded(out);
+
+		result.channels.push_back(std::move(out));
+	}
+
+	return result;
 }
 
 } // namespace
@@ -247,15 +405,27 @@ std::optional<ModelData> ou::ReadGltfModel(const std::filesystem::path &path) {
 	}
 
 	// ノード
-	const auto *scene = data->scene ? data->scene : (data->scenes_count > 0 ? &data->scenes[0] : nullptr);
+	std::vector<int> nodeIndices(data->nodes_count, -1);
+	const auto *scene = (data->scene)			   ? data->scene
+						: (data->scenes_count > 0) ? &data->scenes[0]
+												   : nullptr;
 	if (scene) {
 		for (cgltf_size i = 0; i < scene->nodes_count; i++) {
-			AddNode(*data, *scene->nodes[i], -1, model);
+			AddNode(*data, *scene->nodes[i], -1, nodeIndices, model);
 		}
 	} else {
 		for (cgltf_size i = 0; i < data->nodes_count; i++) {
-			AddNode(*data, data->nodes[i], -1, model);
+			if (data->nodes[i].parent) { continue; }
+			AddNode(*data, data->nodes[i], -1, nodeIndices, model);
 		}
+	}
+
+	// スキン / アニメーション
+	for (cgltf_size i = 0; i < data->skins_count; i++) {
+		model.skins.push_back(BuildSkin(*data, data->skins[i], nodeIndices, pathUtf8));
+	}
+	for (cgltf_size i = 0; i < data->animations_count; i++) {
+		model.animations.push_back(BuildAnimation(*data, data->animations[i], nodeIndices, pathUtf8));
 	}
 
 	return model;

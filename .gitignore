@@ -382,3 +382,5 @@ Generated/
 
 # モデルの OBJ は追跡する
 !OusiaEngine/Game/Assets/**/*.obj
+
+!*.meta

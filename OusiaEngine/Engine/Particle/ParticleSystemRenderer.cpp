@@ -1,12 +1,14 @@
 #include "ParticleSystemRenderer.h"
 #include "Asset/AssetDatabase.h"
 #include "Diagnostics/Fatal.h"
+#include "Diagnostics/Log.h"
 #include "Particle/ParticleSystem.h"
 #include "Render/Asset/Material.h"
 #include "Render/Camera.h"
 #include "Scene/GameObject.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
+#include "Serialize/Serializer.h"
 
 #include <algorithm>
 #include <numeric>
@@ -87,6 +89,10 @@ void ou::ParticleSystemRenderer::Awake() {
 	if (!GetSharedMaterial()) {
 		SetSharedMaterial(sDefaultMaterial_);
 	}
+
+	if (blendMode_ != BlendMode::Additive) {
+		SetBlendMode(blendMode_);
+	}
 }
 
 
@@ -123,6 +129,28 @@ void ou::ParticleSystemRenderer::LateUpdate() {
 		data[i].position = particle.position;
 		data[i].size = particleSystem_->EvaluateSize(particle);
 		data[i].color = particleSystem_->EvaluateColor(particle).Linear();
+	}
+}
+
+
+void ou::ParticleSystemRenderer::Serialize(Serializer &serializer) {
+	SerializeAssetMaterials(serializer);
+
+	auto blendMode = blendMode_;
+	serializer.Enum("blendMode", blendMode);
+	serializer.Enum("sortMode", sortMode_);
+
+	if (!serializer.IsReading()) { return; }
+
+	if (blendMode == BlendMode::Count) {
+		Log::Warning("blendMode に Count は使えません");
+		blendMode = blendMode_;
+	}
+
+	if (GetSharedMaterial()) {
+		SetBlendMode(blendMode);
+	} else {
+		blendMode_ = blendMode;
 	}
 }
 

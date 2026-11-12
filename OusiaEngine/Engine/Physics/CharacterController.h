@@ -21,6 +21,8 @@ enum class CollisionFlags : uint8_t {
 class CharacterController final: public Collider {
 public: // メンバ関数
 
+	void Serialize(Serializer &serializer) override;
+
 	Vector3 ClosestPoint(const Vector3 &position) const override;
 	Bounds GetBounds() const override;
 

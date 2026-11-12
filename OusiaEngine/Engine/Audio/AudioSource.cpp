@@ -1,6 +1,8 @@
 #include "AudioSource.h"
 #include "Audio/AudioClip.h"
+#include "Diagnostics/Log.h"
 #include "Math/Mathf.h"
+#include "Serialize/Serializer.h"
 
 #include <utility>
 
@@ -19,6 +21,37 @@ void ou::AudioSource::Update() {
 		return !Audio::IsPlaying(&oneShot.instance) &&
 			   !Audio::IsPaused(&oneShot.instance);
 	});
+}
+
+
+void ou::AudioSource::Serialize(Serializer &serializer) {
+	auto clip = clip_;
+	auto submixType = submixType_;
+
+	serializer.Asset("clip", clip);
+	serializer.Field("volume", volume_);
+	serializer.Field("pitch", pitch_);
+	serializer.Field("loop", loop_);
+	serializer.Field("mute", mute_);
+	serializer.Field("playOnAwake", playOnAwake_);
+	serializer.Enum("submixType", submixType);
+
+	if (!serializer.IsReading()) { return; }
+
+	volume_ = Mathf::Clamp01(volume_);
+
+	if (submixType == Audio::SubmixType::Count) {
+		Log::Warning("submixType に Count は使えません");
+		submixType = submixType_;
+	}
+
+	if (clip != clip_ || submixType != submixType_) {
+		clip_ = std::move(clip);
+		submixType_ = submixType;
+		RecreateInstance();
+	} else {
+		ApplySettingsToAll();
+	}
 }
 
 

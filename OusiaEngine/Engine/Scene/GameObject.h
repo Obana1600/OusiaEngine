@@ -21,11 +21,14 @@ class GameObject final: public Object {
 	friend class SceneManager;
 	friend class Transform;
 	friend class Physics;
+	friend class SceneSerializer;
 
 public: // メンバ関数
 
 	GameObject(Scene *scene, std::string_view name);
 	~GameObject() override;
+
+	void Serialize(Serializer &serializer) override;
 
 	template <typename T, typename... Args>
 	T *AddComponent(Args &&...args);
@@ -57,6 +60,7 @@ private: // メンバ変数
 
 private: // メンバ関数
 
+	Component *AttachComponent(std::unique_ptr<Component> component);
 	void AwakeComponents();
 	void StartComponents();
 	void FixedUpdateComponents();
