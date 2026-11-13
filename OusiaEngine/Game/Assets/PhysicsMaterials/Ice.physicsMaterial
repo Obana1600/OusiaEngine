@@ -1,8 +1,0 @@
-{
-	// 氷: よく滑り、組み合わせは小さいほう
-	"dynamicFriction": 0.02,
-	"staticFriction": 0.05,
-	"bounciness": 0.0,
-	"frictionCombine": "Minimum",
-	"bounceCombine": "Average"
-}

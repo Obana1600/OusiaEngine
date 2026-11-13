@@ -48,7 +48,7 @@
     <!-- Develop -->
     <ItemDefinitionGroup Condition="'$(Configuration)'=='Develop'">
         <ClCompile>
-            <PreprocessorDefinitions>_DEVELOP;WITH_EDITOR;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>_DEVELOP;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
             <Optimization>MaxSpeed</Optimization>
         </ClCompile>
@@ -75,7 +75,8 @@
         </ItemGroup>
         <Copy SourceFiles="@(RuntimeDll)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
 
-        <ItemGroup Condition="'$(Configuration)'=='Release'">
+        <!-- エディタなし（Develop / Release）は exe の隣のフォルダから読む -->
+        <ItemGroup Condition="'$(Configuration)'!='Debug'">
             <ReleaseFile Include="$(SourceRoot)Engine\EngineAssets\**\*" Folder="EngineAssets" />
             <ReleaseFile Include="$(ProjectDir)Assets\**\*" Folder="Assets" />
             <ReleaseFile Include="$(ProjectDir)ProjectSettings\**\*" Folder="ProjectSettings" />
