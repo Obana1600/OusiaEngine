@@ -89,21 +89,21 @@ Quaternion ou::Quaternion::Normalized() const {
 Vector3 ou::Quaternion::EulerAngles() const {
 	const auto n = Normalized();
 
-	const auto m11 = 1.0f - 2.0f * (n.y * n.y + n.z * n.z);
-	const auto m12 = 2.0f * (n.x + n.y + n.w * n.z);
-	const auto m13 = 2.0f * (n.x * n.z - n.w * n.y);
-	const auto m22 = 1.0f - 2.0f * (n.x * n.x + n.z * n.z);
-	const auto m23 = 2.0f * (n.y * n.z + n.w * n.x);
-	const auto m32 = 2.0f * (n.y * n.z - n.w * n.x);
-	const auto m33 = 1.0f - 2.0f * (n.x * n.x + n.y * n.y);
+	const auto r00 = 1.0f - 2.0f * (n.y * n.y + n.z * n.z);
+	const auto r02 = 2.0f * (n.x * n.z + n.w * n.y);
+	const auto r10 = 2.0f * (n.x * n.y + n.w * n.z);
+	const auto r11 = 1.0f - 2.0f * (n.x * n.x + n.z * n.z);
+	const auto r12 = 2.0f * (n.y * n.z - n.w * n.x);
+	const auto r20 = 2.0f * (n.x * n.z - n.w * n.y);
+	const auto r22 = 1.0f - 2.0f * (n.x * n.x + n.y * n.y);
 
-	const auto sinY = Mathf::ClampN1P1(-m13);
-	const auto angleY = Mathf::Asin(sinY);
+	const auto sinX = Mathf::ClampN1P1(-r12);
+	const auto angleX = Mathf::Asin(sinX);
 
-	if (Mathf::Abs(sinY) > 1.0f - Mathf::Epsilon) {
-		return {Mathf::Atan2(-m32, m22), angleY, 0.0f};
+	if (Mathf::Abs(sinX) > 1.0f - Mathf::Epsilon) {
+		return {angleX, Mathf::Atan2(-r20, r00), 0.0f};
 	}
-	return {Mathf::Atan2(m23, m33), angleY, Mathf::Atan2(m12, m11)};
+	return {angleX, Mathf::Atan2(r02, r22), Mathf::Atan2(r10, r11)};
 }
 
 
@@ -167,8 +167,8 @@ Quaternion ou::Quaternion::Euler(float x, float y, float z) {
 	const auto sy = Mathf::Sin(y * 0.5f);
 	const auto sz = Mathf::Sin(z * 0.5f);
 
-	return {sx * cy * cz - cx * sy * sz,
-			cx * sy * cz + sx * cy * sz,
+	return {sx * cy * cz + cx * sy * sz,
+			cx * sy * cz - sx * cy * sz,
 			cx * cy * sz - sx * sy * cz,
 			cx * cy * cz + sx * sy * sz};
 }

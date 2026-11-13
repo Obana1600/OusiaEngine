@@ -97,6 +97,23 @@ Component *ou::GameObject::AttachComponent(std::unique_ptr<Component> component)
 }
 
 
+Component *ou::GameObject::AddComponentInstance(std::unique_ptr<Component> component) {
+	if (auto *transform = dynamic_cast<Transform *>(component.get())) {
+		component.release();
+		ReplaceTransform(std::unique_ptr<Transform>(transform));
+		return transform;
+	}
+
+	auto *added = AttachComponent(std::move(component));
+	if (IsActiveInHierarchy()) {
+		added->isAwoken_ = true;
+		added->Awake();
+		RefreshBehavior(added);
+	}
+	return added;
+}
+
+
 void ou::GameObject::AwakeComponents() {
 	const auto count = components_.size();
 	for (size_t i = 0; i < count; i++) {

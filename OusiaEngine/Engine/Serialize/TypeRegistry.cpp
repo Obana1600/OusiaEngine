@@ -1,6 +1,7 @@
 #include "TypeRegistry.h"
 #include "Diagnostics/Log.h"
 
+#include <algorithm>
 #include <unordered_map>
 #include <utility>
 
@@ -30,6 +31,16 @@ void ou::TypeRegistry::RegisterType(std::type_index type, std::string_view name,
 		return;
 	}
 	NamesByType().emplace(type, std::string(name));
+}
+
+
+std::vector<std::string> ou::TypeRegistry::GetTypeNames() {
+	std::vector<std::string> names;
+	for (const auto &[name, factory] : FactoriesByName()) {
+		names.push_back(name);
+	}
+	std::sort(names.begin(), names.end());
+	return names;
 }
 
 

@@ -41,13 +41,37 @@ GameObject *ou::Scene::Find(std::string_view name) const {
 }
 
 
+std::vector<GameObject *> ou::Scene::GetRootGameObjects() const {
+	std::vector<GameObject *> roots;
+
+	// 親のない GameObject を集める
+	for (const auto &gameObject : gameObjects_) {
+		if (gameObject && !gameObject->GetTransform()->GetParent()) {
+			roots.push_back(gameObject.get());
+		}
+	}
+
+	return roots;
+}
+
+
 const std::string &ou::Scene::GetName() const {
 	return name_;
 }
 
 
+const std::string &ou::Scene::GetPath() const {
+	return path_;
+}
+
+
 int32_t ou::Scene::GetBuildIndex() const {
 	return buildIndex_;
+}
+
+
+bool ou::Scene::IsDirty() const {
+	return isDirty_;
 }
 
 

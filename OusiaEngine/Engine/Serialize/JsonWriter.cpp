@@ -140,7 +140,7 @@ void ou::JsonWriter::EndArray() {
 }
 
 
-void ou::JsonWriter::ObjectReference(std::string_view name, Object *&value) {
+void ou::JsonWriter::ObjectReference(std::string_view name, Object *&value, ObjectFilter) {
 	auto &json = Slot(name);
 
 	if (!value) {
@@ -159,7 +159,7 @@ void ou::JsonWriter::ObjectReference(std::string_view name, Object *&value) {
 }
 
 
-void ou::JsonWriter::AssetObject(std::string_view name, std::shared_ptr<Object> &value) {
+void ou::JsonWriter::AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &) {
 	auto &json = Slot(name);
 
 	if (!value) {

@@ -11,7 +11,6 @@
 #pragma comment(lib, "xinput.lib")
 
 using namespace ou;
-using namespace ou::Input;
 
 
 namespace {
@@ -49,14 +48,14 @@ void StopMotors() {
 
 
 
-void ou::Input::XInput::Finalize() {
+void ou::XInput::Finalize() {
 	StopMotors();
 	sGamepads = {};
 	sNeedScan = true;
 }
 
 
-void ou::Input::XInput::Update() {
+void ou::XInput::Update() {
 	for (DWORD i = 0; i < kMaxGamepadCount; i++) {
 		auto &pad = sGamepads[i];
 		if (!pad.isConnected && !sNeedScan) { continue; }
@@ -83,12 +82,12 @@ void ou::Input::XInput::Update() {
 }
 
 
-void ou::Input::XInput::RequestScan() {
+void ou::XInput::RequestScan() {
 	sNeedScan = true;
 }
 
 
-void ou::Input::XInput::ReleaseAll() {
+void ou::XInput::ReleaseAll() {
 	StopMotors();
 
 	// 接続状態だけ残す
@@ -98,7 +97,7 @@ void ou::Input::XInput::ReleaseAll() {
 }
 
 
-void ou::Input::XInput::SetMotorSpeeds(size_t index, float low, float high) {
+void ou::XInput::SetMotorSpeeds(size_t index, float low, float high) {
 	if (index >= kMaxGamepadCount || !sGamepads[index].isConnected) { return; }
 
 	XINPUT_VIBRATION vibration{};
@@ -108,6 +107,6 @@ void ou::Input::XInput::SetMotorSpeeds(size_t index, float low, float high) {
 }
 
 
-const XInput::GamepadState &ou::Input::XInput::GetState(size_t index) {
+const XInput::GamepadState &ou::XInput::GetState(size_t index) {
 	return sGamepads[index];
 }

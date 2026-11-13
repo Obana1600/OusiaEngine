@@ -5,7 +5,7 @@
 #include <cstdint>
 
 
-namespace ou::Input::RawInput {
+namespace ou::RawInput {
 
 // Raw Input から送られるマウスのボタンの数
 constexpr size_t kMouseButtonCount = 5;
@@ -36,4 +36,4 @@ void ClearMouseDelta();
 const KeyboardState &GetKeyboardState();
 const MouseState &GetMouseState();
 
-} // namespace ou::Input::RawInput
+} // namespace ou::RawInput

@@ -75,7 +75,6 @@ std::unique_ptr<AssetImporter> MakeImporter(std::string assetPath, std::filesyst
 
 // 拡張子からインポーターを作る
 std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, const std::filesystem::path &fullPath) {
-	// 拡張子とファクトリのテーブル
 	struct ImporterEntry {
 		std::wstring_view extension;
 		std::function<std::unique_ptr<AssetImporter>(std::string, std::filesystem::path)> factory;
@@ -292,6 +291,54 @@ std::shared_ptr<Object> ImportEntry(const std::string &key, AssetEntry &entry) {
 	return asset;
 }
 
+
+// ASCII だけ小文字にする
+std::string ToLowerAscii(std::string_view text) {
+	std::string result(text);
+	for (auto &c : result) {
+		if (c >= 'A' && c <= 'Z') { c = static_cast<char>(c - 'A' + 'a'); }
+	}
+	return result;
+}
+
+// 拡張子から、FindAssets の t: に使える型の名前
+bool MatchesAssetType(const std::filesystem::path &path, std::string_view typeName) {
+	struct TypeEntry {
+		std::string_view extension;
+		std::string_view typeName;
+	};
+	static constexpr TypeEntry kTypes[] = {
+		{".scene", "scene"},
+		{".png", "texture2d"},
+		{".png", "texture"},
+		{".jpg", "texture2d"},
+		{".jpg", "texture"},
+		{".jpeg", "texture2d"},
+		{".jpeg", "texture"},
+		{".mat", "material"},
+		{".shader", "shader"},
+		{".wav", "audioclip"},
+		{".mp3", "audioclip"},
+		{".ttf", "font"},
+		{".ttf", "fontasset"},
+		{".otf", "font"},
+		{".otf", "fontasset"},
+		{".physicsmaterial", "physicsmaterial"},
+		{".gltf", "model"},
+		{".gltf", "gameobject"},
+		{".glb", "model"},
+		{".glb", "gameobject"},
+		{".obj", "model"},
+		{".obj", "gameobject"},
+	};
+
+	const auto extension = ToLowerAscii(ToUtf8(path.extension()));
+	for (const auto &entry : kTypes) {
+		if (entry.extension == extension && entry.typeName == typeName) { return true; }
+	}
+	return false;
+}
+
 } // namespace
 
 
@@ -408,4 +455,45 @@ std::shared_ptr<Object> ou::AssetDatabase::LoadAsset(const Guid &guid, std::stri
 
 	Log::Warning("サブアセットが見つかりません: {}: {}", assetPath, subAsset);
 	return nullptr;
+}
+
+
+std::vector<Guid> ou::AssetDatabase::FindAssets(std::string_view filter) {
+	std::vector<std::string> typeNames;
+	std::vector<std::string> nameParts;
+	size_t begin = 0;
+	while (begin < filter.size()) {
+		const auto end = std::min(filter.find(' ', begin), filter.size());
+		const auto word = ToLowerAscii(filter.substr(begin, end - begin));
+		if (word.starts_with("t:")) { // TODO: "t:" 以外のフィルタにも対応する
+			typeNames.push_back(word.substr(2));
+		} else if (!word.empty()) {
+			nameParts.push_back(word);
+		}
+		begin = end + 1;
+	}
+
+	std::vector<std::pair<std::string, Guid>> found;
+	for (const auto &[guid, assetPath] : Guids().pathsByGuid) {
+		const auto path = std::filesystem::path(Utf8ToWide(assetPath));
+		const auto name = ToLowerAscii(ToUtf8(path.stem()));
+
+		const auto matchesType = typeNames.empty() ||
+								 std::any_of(typeNames.begin(), typeNames.end(),
+											 [&](const std::string &type) { return MatchesAssetType(path, type); });
+		const auto matchesName = std::all_of(nameParts.begin(), nameParts.end(),
+											 [&](const std::string &part) { return name.find(part) != std::string::npos; });
+
+		if (matchesType && matchesName) {
+			found.emplace_back(assetPath, guid);
+		}
+	}
+	std::sort(found.begin(), found.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+
+	std::vector<Guid> guids;
+	guids.reserve(found.size());
+	for (const auto &[path, guid] : found) {
+		guids.push_back(guid);
+	}
+	return guids;
 }

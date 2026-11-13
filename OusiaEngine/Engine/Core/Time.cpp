@@ -10,27 +10,17 @@ constexpr float kMaxDeltaTime = 1.0f / 3.0f;
 
 constexpr float kMinFixedDeltaTime = 0.0001f;
 
-float sDeltaTime = 0.0f;
-float sUnscaledDeltaTime = 0.0f;
-double sTime = 0.0;
-uint64_t sFrameCount = 0;
-float sTimeScale = 1.0f;
-
-float sFixedDeltaTime = 0.02f;
-double sFixedTime = 0.0;
-bool sIsInFixedTimeStep = false;
-
 } // namespace
 
 
 
 float ou::Time::GetDeltaTime() {
-	return sIsInFixedTimeStep ? sFixedDeltaTime : sDeltaTime;
+	return sIsInFixedTimeStep_ ? sFixedDeltaTime_ : sDeltaTime_;
 }
 
 
 float ou::Time::GetUnscaledDeltaTime() {
-	return sUnscaledDeltaTime;
+	return sUnscaledDeltaTime_;
 }
 
 
@@ -40,62 +30,69 @@ float ou::Time::GetTime() {
 
 
 double ou::Time::GetTimeAsDouble() {
-	return sIsInFixedTimeStep ? sFixedTime : sTime;
+	return sIsInFixedTimeStep_ ? sFixedTime_ : sTime_;
 }
 
 
 uint64_t ou::Time::GetFrameCount() {
-	return sFrameCount;
+	return sFrameCount_;
 }
 
 
 void ou::Time::SetTimeScale(float timeScale) {
-	sTimeScale = timeScale;
+	sTimeScale_ = timeScale;
 }
 
 
 float ou::Time::GetTimeScale() {
-	return sTimeScale;
+	return sTimeScale_;
 }
 
 
 void ou::Time::SetFixedDeltaTime(float fixedDeltaTime) {
-	sFixedDeltaTime = Mathf::Max(fixedDeltaTime, kMinFixedDeltaTime);
+	sFixedDeltaTime_ = Mathf::Max(fixedDeltaTime, kMinFixedDeltaTime);
 }
 
 
 float ou::Time::GetFixedDeltaTime() {
-	return sFixedDeltaTime;
+	return sFixedDeltaTime_;
 }
 
 
 float ou::Time::GetFixedTime() {
-	return static_cast<float>(sFixedTime);
+	return static_cast<float>(sFixedTime_);
 }
 
 
 double ou::Time::GetFixedTimeAsDouble() {
-	return sFixedTime;
+	return sFixedTime_;
 }
 
 
 bool ou::Time::IsInFixedTimeStep() {
-	return sIsInFixedTimeStep;
+	return sIsInFixedTimeStep_;
 }
 
 
 void ou::Time::Advance(float unscaledDeltaTime) {
-	sUnscaledDeltaTime = Mathf::Min(unscaledDeltaTime, kMaxDeltaTime);
-	sDeltaTime = sUnscaledDeltaTime * sTimeScale;
-	sTime += sDeltaTime;
-	sFrameCount++;
+	sUnscaledDeltaTime_ = Mathf::Min(unscaledDeltaTime, kMaxDeltaTime);
+	sDeltaTime_ = sUnscaledDeltaTime_ * sTimeScale_;
+	sTime_ += sDeltaTime_;
+	sFrameCount_++;
 }
 
 
 bool ou::Time::AdvanceFixedTime() {
-	sIsInFixedTimeStep = (sFixedTime + sFixedDeltaTime <= sTime);
-	if (sIsInFixedTimeStep) {
-		sFixedTime += sFixedDeltaTime;
+	sIsInFixedTimeStep_ = (sFixedTime_ + sFixedDeltaTime_ <= sTime_);
+	if (sIsInFixedTimeStep_) {
+		sFixedTime_ += sFixedDeltaTime_;
 	}
-	return sIsInFixedTimeStep;
+	return sIsInFixedTimeStep_;
+}
+
+
+void ou::Time::ResetForPlayMode() {
+	sTime_ = 0.0;
+	sFixedTime_ = 0.0;
+	sTimeScale_ = 1.0f;
 }

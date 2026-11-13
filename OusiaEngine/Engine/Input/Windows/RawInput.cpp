@@ -5,7 +5,6 @@
 #include <iterator>
 
 using namespace ou;
-using namespace ou::Input;
 
 
 namespace {
@@ -82,7 +81,7 @@ void ParseMouse(const RAWMOUSE &mouse) {
 
 
 
-bool ou::Input::RawInput::Initialize(HWND hwnd) {
+bool ou::RawInput::Initialize(HWND hwnd) {
 	// 登録するデバイス
 	const RAWINPUTDEVICE devices[] = {
 		{kUsagePageGeneric, kUsageMouse, 0, hwnd},
@@ -99,7 +98,7 @@ bool ou::Input::RawInput::Initialize(HWND hwnd) {
 }
 
 
-void ou::Input::RawInput::Finalize() {
+void ou::RawInput::Finalize() {
 	// 登録を解除するデバイス
 	const RAWINPUTDEVICE devices[] = {
 		{kUsagePageGeneric, kUsageMouse, RIDEV_REMOVE, nullptr},
@@ -112,7 +111,7 @@ void ou::Input::RawInput::Finalize() {
 }
 
 
-void ou::Input::RawInput::ParseMessage(LPARAM lparam) {
+void ou::RawInput::ParseMessage(LPARAM lparam) {
 	RAWINPUT raw{};
 	UINT size = sizeof(raw);
 
@@ -134,13 +133,13 @@ void ou::Input::RawInput::ParseMessage(LPARAM lparam) {
 }
 
 
-void ou::Input::RawInput::ReleaseAll() {
+void ou::RawInput::ReleaseAll() {
 	sKeyboard = {};
 	sMouse = {};
 }
 
 
-void ou::Input::RawInput::ClearMouseDelta() {
+void ou::RawInput::ClearMouseDelta() {
 	sMouse.deltaX = 0;
 	sMouse.deltaY = 0;
 	sMouse.wheel = 0.0f;
@@ -148,11 +147,11 @@ void ou::Input::RawInput::ClearMouseDelta() {
 }
 
 
-const RawInput::KeyboardState &ou::Input::RawInput::GetKeyboardState() {
+const RawInput::KeyboardState &ou::RawInput::GetKeyboardState() {
 	return sKeyboard;
 }
 
 
-const RawInput::MouseState &ou::Input::RawInput::GetMouseState() {
+const RawInput::MouseState &ou::RawInput::GetMouseState() {
 	return sMouse;
 }

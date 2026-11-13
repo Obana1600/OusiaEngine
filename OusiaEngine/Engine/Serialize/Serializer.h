@@ -18,11 +18,17 @@
 #include <vector>
 
 #include <magic_enum/magic_enum.hpp>
+#include <span>
 
 
 namespace ou {
 
 class Serializer {
+public: // エイリアス
+
+	using ObjectFilter = bool (*)(const Object *);
+
+
 public: // メンバ関数
 
 	virtual ~Serializer() = default;
@@ -40,6 +46,8 @@ public: // メンバ関数
 	virtual void Field(std::string_view name, Color &value) = 0;
 	virtual void Field(std::string_view name, Rect &value) = 0;
 	virtual void Field(std::string_view name, std::string &value) = 0;
+
+	virtual void RotationField(std::string_view name, Quaternion &rotation, std::string_view hintName, Vector3 &eulerHint);
 
 	virtual bool BeginObject(std::string_view name) = 0;
 	virtual void EndObject() = 0;
@@ -63,10 +71,26 @@ public: // メンバ関数
 	void Struct(std::string_view name, F &&body);
 
 
+protected: // インナークラス
+
+	struct AssetType {
+		std::string_view name;
+		ObjectFilter accepts;
+	};
+
+
 protected: // メンバ関数
 
-	virtual void ObjectReference(std::string_view name, Object *&value) = 0;
-	virtual void AssetObject(std::string_view name, std::shared_ptr<Object> &value) = 0;
+	virtual void ObjectReference(std::string_view name, Object *&value, ObjectFilter accepts) = 0;
+	virtual void AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &type) = 0;
+
+	virtual void EnumField(std::string_view name, std::string &text, std::span<const std::string_view> names);
+
+
+protected: // 静的メンバ関数
+
+	template <typename T>
+	static std::string_view MakeTypeName();
 };
 
 
@@ -76,7 +100,9 @@ inline void Serializer::Reference(std::string_view name, T *&value) {
 	static_assert(std::is_base_of_v<Object, T>, "T は Object の派生クラスでなければいけません");
 
 	Object *object = value;
-	ObjectReference(name, object);
+	ObjectReference(name, object, [](const Object *candidate) {
+		return dynamic_cast<const T *>(candidate) != nullptr;
+	});
 
 	if (IsReading()) {
 		value = dynamic_cast<T *>(object);
@@ -89,8 +115,12 @@ template <typename T>
 inline void Serializer::Asset(std::string_view name, std::shared_ptr<T> &value) {
 	static_assert(std::is_base_of_v<Object, T>, "T は Object の派生クラスでなければいけません");
 
+	const AssetType type{
+		MakeTypeName<T>(),
+		[](const Object *candidate) { return dynamic_cast<const T *>(candidate) != nullptr; }};
+
 	std::shared_ptr<Object> object = value;
-	AssetObject(name, object);
+	AssetObject(name, object, type);
 
 	if (IsReading()) {
 		value = std::dynamic_pointer_cast<T>(object);
@@ -103,6 +133,7 @@ template <typename E>
 inline void Serializer::Enum(std::string_view name, E &value) {
 	static_assert(std::is_enum_v<E>, "E は enum でなければいけません");
 
+	constexpr auto &kNames = magic_enum::enum_names<E>();
 	auto text = std::string(magic_enum::enum_name(value));
 
 	if (!IsReading()) {
@@ -110,18 +141,19 @@ inline void Serializer::Enum(std::string_view name, E &value) {
 			Log::Warning("enum の値に名前がないため保存できません: \"{}\"", name);
 			return;
 		}
-		Field(name, text);
+		EnumField(name, text, kNames);
 		return;
 	}
 
-	Field(name, text);
+	const auto before = text;
+	EnumField(name, text, kNames);
 	if (const auto parsed = magic_enum::enum_cast<E>(text)) {
 		value = *parsed;
 		return;
 	}
 
 	std::string names;
-	for (const auto candidate : magic_enum::enum_names<E>()) {
+	for (const auto candidate : kNames) {
 		if (!names.empty()) { names += ", "; }
 		names += candidate;
 	}
@@ -134,7 +166,14 @@ inline void Serializer::Array(std::string_view name, std::vector<T> &values, F &
 	auto count = values.size();
 	if (!BeginArray(name, count)) { return; }
 
-	if (IsReading()) { values.resize(count); }
+	if (IsReading()) {
+		if (count > values.size() && !values.empty()) {
+			const auto last = values.back();
+			values.resize(count, last);
+		} else {
+			values.resize(count);
+		}
+	}
 
 	for (auto &value : values) {
 		element(value);
@@ -149,6 +188,17 @@ inline void Serializer::Struct(std::string_view name, F &&body) {
 
 	body();
 	EndObject();
+}
+
+
+template <typename T>
+inline std::string_view Serializer::MakeTypeName() {
+	static const std::string name = [] {
+		const std::string_view full = typeid(T).name();
+		const auto last = full.find_last_of(": ");
+		return std::string(last == std::string_view::npos ? full : full.substr(last + 1));
+	}();
+	return name;
 }
 
 } // namespace ou

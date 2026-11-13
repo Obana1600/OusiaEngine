@@ -2,6 +2,7 @@
 
 #include "Diagnostics/Log.h"
 #include "Editor/ImGuiManager.h"
+#include "Editor/SceneRenderTarget.h"
 #include "Graphics/DirectX12/GraphicsDevice_DX12.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Platform/Window.h"
@@ -14,6 +15,10 @@
 
 
 namespace ou {
+
+// 前方宣言
+class SceneView;
+
 
 struct EngineDesc {
 	std::string title;
@@ -36,17 +41,7 @@ public: // メンバ関数
 	void Initialize(const EngineDesc &desc);
 	void Finalize();
 
-	bool Update();
-
-	Graphics::CommandList BeginDraw();
-
-	void BeginOverlay(Graphics::CommandList cmd);
-
-	void EndDraw(Graphics::CommandList cmd);
-
-	const Graphics::RenderPassInfo &GetRenderPassInfo() const {
-		return sceneInfo_;
-	}
+	void Run();
 
 
 private: // メンバ変数
@@ -57,11 +52,7 @@ private: // メンバ変数
 	std::unique_ptr<ImGuiManager> imGuiManager_;
 
 	Graphics::SwapChain swapChain_;
-
-	// シーン描画
-	Graphics::Texture sceneColor_;
-	Graphics::Texture sceneDepth_;
-	Graphics::RenderPassInfo sceneInfo_;
+	SceneRenderTarget gameTarget_{"Game"};
 
 	std::shared_ptr<ShaderModule> blitVs_;
 	std::shared_ptr<ShaderModule> blitPs_;
@@ -71,12 +62,15 @@ private: // メンバ変数
 	std::chrono::steady_clock::time_point lastUpdateTime_;
 	std::chrono::steady_clock::time_point reference_;
 
-	bool isOverlayBegun_ = false;
-
 
 private: // メンバ関数
 
-	void CreateSceneTargets(uint32_t width, uint32_t height);
+	bool Update();
+
+	void Render();
+	void RenderGame(const SceneRenderTarget &target, Graphics::CommandList cmd);
+	void RenderSceneView(const SceneView &sceneView, Graphics::CommandList cmd);
+	void BlitToSwapChain(const SceneRenderTarget &source, Graphics::CommandList cmd);
 
 	void ResizeIfNeeded();
 

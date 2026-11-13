@@ -2,6 +2,7 @@
 
 #include "Core/Event.h"
 #include "Graphics/GraphicsTypes.h"
+#include "Render/Camera.h"
 #include "Scene/Scene.h"
 
 #include <cstdint>
@@ -11,12 +12,13 @@
 #include <string_view>
 #include <vector>
 
+#include <nlohmann/json_fwd.hpp>
+
 
 namespace ou {
 
 // 前方宣言
 class GameObject;
-class Camera;
 class Renderer;
 class Light;
 class Canvas;
@@ -24,6 +26,9 @@ class SkeletalAnimator;
 
 class SceneManager final {
 	friend class Object;
+	friend class Engine;
+	friend class EditorApplication;
+	friend class EditorSceneManager;
 
 public: // エイリアス
 
@@ -49,12 +54,6 @@ public: // 静的メンバ関数
 	static Scene *GetActiveScene();
 	static void MoveGameObjectToScene(GameObject *gameObject, Scene *scene);
 
-	static void Update();
-	static void Finalize();
-
-	static void Render(Graphics::CommandList cmd);
-	static void RenderOverlay(Graphics::CommandList cmd);
-
 	static void RegisterCamera(Camera *camera);
 	static void UnregisterCamera(Camera *camera);
 	static Camera *GetMainCamera();
@@ -76,6 +75,7 @@ private: // インナークラス
 
 	struct BuildScene {
 		std::string name;
+		std::string path;
 		SceneBuilder builder;
 	};
 
@@ -96,10 +96,20 @@ private: // 静的メンバ変数
 
 private: // 静的メンバ関数
 
+	static void Update();
+	static void Finalize();
+
+	static void Render(Graphics::CommandList cmd);
+	static void RenderWithCamera(const Camera::PerCamera &perCamera, Graphics::CommandList cmd);
+	static void RenderOverlay(Graphics::CommandList cmd);
+
 	static void LoadPendingScene();
 
 	static Scene *GetDontDestroyOnLoadScene();
 	static void MoveHierarchy(GameObject *gameObject, Scene *scene);
+
+	static void ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const nlohmann::ordered_json &json);
+	static int32_t FindBuildIndexByPath(std::string_view path);
 };
 
 } // namespace ou

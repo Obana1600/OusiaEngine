@@ -14,6 +14,7 @@ namespace ou {
 class Scene {
 	friend class SceneManager;
 	friend class SceneSerializer;
+	friend class EditorSceneManager;
 
 public: // 静的メンバ関数
 
@@ -29,9 +30,12 @@ public: // メンバ関数
 
 	GameObject *CreateGameObject(std::string_view name = "GameObject");
 	GameObject *Find(std::string_view name) const;
+	std::vector<GameObject *> GetRootGameObjects() const;
 
 	const std::string &GetName() const;
+	const std::string &GetPath() const;
 	int32_t GetBuildIndex() const;
+	bool IsDirty() const;
 
 
 private: // 静的メンバ変数
@@ -44,7 +48,9 @@ private: // メンバ変数
 	std::vector<std::unique_ptr<GameObject>> gameObjects_;
 
 	std::string name_;
+	std::string path_;
 	int32_t buildIndex_ = -1;
+	bool isDirty_ = false;
 
 
 private: // メンバ関数

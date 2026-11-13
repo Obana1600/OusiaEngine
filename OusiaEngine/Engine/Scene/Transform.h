@@ -40,8 +40,9 @@ public: // メンバ関数
 	Vector3 GetLossyScale() const;
 	Vector3 GetForward() const;
 
-	Transform *GetParent() const;
 	void SetParent(Transform *parent);
+	void SetParent(Transform *parent, bool worldPositionStays);
+	Transform *GetParent() const;
 	const std::vector<Transform *> &GetChildren() const;
 	Transform *Find(std::string_view path);
 
@@ -55,8 +56,9 @@ protected: // メンバ関数
 
 private: // メンバ変数
 
-	Vector3 localPosition_{};
+	Vector3 localPosition_ = Vector3::Zero;
 	Quaternion localRotation_ = Quaternion::Identity;
+	Vector3 localEulerAnglesHint_ = Vector3::Zero;
 	Vector3 localScale_ = Vector3::One;
 
 	Transform *parent_ = nullptr;

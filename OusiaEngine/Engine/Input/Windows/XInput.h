@@ -5,7 +5,7 @@
 #include <cstdint>
 
 
-namespace ou::Input::XInput {
+namespace ou::XInput {
 
 // XInput がつなげられるパッドの数
 constexpr size_t kMaxGamepadCount = 4;
@@ -32,4 +32,4 @@ void SetMotorSpeeds(size_t index, float low, float high);
 
 const GamepadState &GetState(size_t index);
 
-} // namespace ou::Input::XInput
+} // namespace ou::XInput

@@ -145,7 +145,7 @@ void ou::JsonReader::EndArray() {
 }
 
 
-void ou::JsonReader::ObjectReference(std::string_view name, Object *&value) {
+void ou::JsonReader::ObjectReference(std::string_view name, Object *&value, ObjectFilter) {
 	const auto *json = FindValue(name);
 	if (!json) { return; }
 
@@ -173,7 +173,7 @@ void ou::JsonReader::ObjectReference(std::string_view name, Object *&value) {
 }
 
 
-void ou::JsonReader::AssetObject(std::string_view name, std::shared_ptr<Object> &value) {
+void ou::JsonReader::AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &) {
 	const auto *json = FindValue(name);
 	if (!json) { return; }
 

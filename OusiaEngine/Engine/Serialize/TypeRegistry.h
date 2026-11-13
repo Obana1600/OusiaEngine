@@ -9,6 +9,7 @@
 #include <string_view>
 #include <type_traits>
 #include <typeindex>
+#include <vector>
 
 
 namespace ou::TypeRegistry {
@@ -20,6 +21,7 @@ void RegisterType(std::type_index type, std::string_view name, Factory factory);
 template <typename T>
 void Register(std::string_view name);
 
+std::vector<std::string> GetTypeNames();
 const std::string *FindName(const Object &object);
 
 std::unique_ptr<Component> Create(std::string_view name);

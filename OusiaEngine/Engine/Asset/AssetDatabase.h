@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 
 // 前方宣言
@@ -64,5 +65,8 @@ std::optional<AssetReference> FindAssetReference(const Object *asset);
 
 // GUID とサブアセットの名前から読み込む (subAsset が空ならメイン)
 std::shared_ptr<Object> LoadAsset(const Guid &guid, std::string_view subAsset = {});
+
+// アセットを探し、フィルターに当てはまる GUID の配列を返す
+std::vector<Guid> FindAssets(std::string_view filter);
 
 } // namespace ou::AssetDatabase

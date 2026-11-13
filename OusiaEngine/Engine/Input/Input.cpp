@@ -11,114 +11,47 @@ using namespace ou;
 namespace {
 
 // ----- グローバルなインスタンス -----
+// TODO: 静的メンバ変数にする
 
 Window *sWindow = nullptr;
 Window::MessageHandlerId sMessageHandlerId = 0;
 
-Input::RawInput::KeyboardState sKeyboard;
-Input::RawInput::KeyboardState sPrevKeyboard;
-std::array<bool, Input::RawInput::kMouseButtonCount> sMouseButtons{};
-std::array<bool, Input::RawInput::kMouseButtonCount> sPrevMouseButtons{};
+RawInput::KeyboardState sKeyboard;
+RawInput::KeyboardState sPrevKeyboard;
+std::array<bool, RawInput::kMouseButtonCount> sMouseButtons{};
+std::array<bool, RawInput::kMouseButtonCount> sPrevMouseButtons{};
 
 Vector2 sMousePosition{};
 Vector2 sMouseDelta{};
 Vector2 sMouseScrollDelta{};
 
-std::array<Input::XInput::GamepadState, Input::XInput::kMaxGamepadCount> sGamepads{};
-std::array<Input::XInput::GamepadState, Input::XInput::kMaxGamepadCount> sPrevGamepads{};
+std::array<XInput::GamepadState, XInput::kMaxGamepadCount> sGamepads{};
+std::array<XInput::GamepadState, XInput::kMaxGamepadCount> sPrevGamepads{};
 
 bool sIsWindowActive = true; // ウィンドウがアクティブか
+
+#ifdef WITH_EDITOR
+Vector2 sGameViewOrigin{};
+bool sGameViewHasFocus = false;
+bool sGameViewIsHovered = false;
+#endif
 
 
 bool IsValidMouseButton(int button) {
 	return 0 <= button && button < static_cast<int>(sMouseButtons.size());
 }
 
-const Input::XInput::GamepadState *FindGamepad(int player) {
+const XInput::GamepadState *FindGamepad(int player) {
 	if (player < 0 || player >= static_cast<int>(sGamepads.size())) { return nullptr; }
 	return &sGamepads[player];
 }
 
-bool HasButton(const Input::XInput::GamepadState &pad, GamepadButton button) {
+bool HasButton(const XInput::GamepadState &pad, GamepadButton button) {
 	return (pad.buttons & static_cast<uint16_t>(button)) != 0;
 }
 
 } // namespace
 
-
-
-bool ou::Input::Initialize(Window *window) {
-	if (!RawInput::Initialize(window->Hwnd())) { return false; }
-
-	sWindow = window;
-	sMessageHandlerId = window->AddMessageHandler(
-		[](HWND, UINT msg, WPARAM wparam, LPARAM lparam) -> std::optional<LRESULT> {
-			switch (msg) {
-				case WM_INPUT:
-					RawInput::ParseMessage(lparam);
-					break;
-
-				case WM_ACTIVATEAPP:
-					sIsWindowActive = (wparam != FALSE);
-					if (sIsWindowActive) {
-						XInput::RequestScan();
-					} else {
-						RawInput::ReleaseAll();
-						XInput::ReleaseAll();
-					}
-					break;
-
-				case WM_DEVICECHANGE:
-					XInput::RequestScan();
-					break;
-			}
-
-			return std::nullopt;
-		});
-
-	return true;
-}
-
-
-void ou::Input::Finalize() {
-	if (sWindow) {
-		sWindow->RemoveMessageHandler(sMessageHandlerId);
-		sWindow = nullptr;
-	}
-
-	RawInput::Finalize();
-	XInput::Finalize();
-}
-
-
-void ou::Input::Update() {
-	// キーボード
-	sPrevKeyboard = sKeyboard;
-	sKeyboard = RawInput::GetKeyboardState();
-
-	// マウス
-	sPrevMouseButtons = sMouseButtons;
-	const auto &mouse = RawInput::GetMouseState();
-	sMouseButtons = mouse.buttons;
-	sMouseDelta = {static_cast<float>(mouse.deltaX), static_cast<float>(mouse.deltaY)};
-	sMouseScrollDelta = {mouse.horizontalWheel, mouse.wheel};
-	RawInput::ClearMouseDelta();
-
-	// ウィンドウ上のカーソル座標を取得
-	if (sWindow) {
-		POINT point{};
-		GetCursorPos(&point);
-		ScreenToClient(sWindow->Hwnd(), &point);
-		sMousePosition = {static_cast<float>(point.x), static_cast<float>(point.y)};
-	}
-
-	// ゲームパッド
-	sPrevGamepads = sGamepads;
-	if (sIsWindowActive) { XInput::Update(); }
-	for (size_t i = 0; i < sGamepads.size(); i++) {
-		sGamepads[i] = XInput::GetState(i);
-	}
-}
 
 
 bool ou::Input::GetKey(KeyCode key) {
@@ -223,3 +156,102 @@ void ou::Input::SetGamepadMotorSpeeds(float lowFrequency, float highFrequency, i
 	if (!FindGamepad(player)) { return; }
 	XInput::SetMotorSpeeds(static_cast<size_t>(player), lowFrequency, highFrequency);
 }
+
+
+bool ou::Input::Initialize(Window *window) {
+	if (!RawInput::Initialize(window->Hwnd())) { return false; }
+
+	sWindow = window;
+	sMessageHandlerId = window->AddMessageHandler(
+		[](HWND, UINT msg, WPARAM wparam, LPARAM lparam) -> std::optional<LRESULT> {
+			switch (msg) {
+				case WM_INPUT:
+					RawInput::ParseMessage(lparam);
+					break;
+
+				case WM_ACTIVATEAPP:
+					sIsWindowActive = (wparam != FALSE);
+					if (sIsWindowActive) {
+						XInput::RequestScan();
+					} else {
+						RawInput::ReleaseAll();
+						XInput::ReleaseAll();
+					}
+					break;
+
+				case WM_DEVICECHANGE:
+					XInput::RequestScan();
+					break;
+			}
+
+			return std::nullopt;
+		});
+
+	return true;
+}
+
+
+void ou::Input::Finalize() {
+	if (sWindow) {
+		sWindow->RemoveMessageHandler(sMessageHandlerId);
+		sWindow = nullptr;
+	}
+
+	RawInput::Finalize();
+	XInput::Finalize();
+}
+
+
+void ou::Input::Update() {
+	// キーボード
+	sPrevKeyboard = sKeyboard;
+	sKeyboard = RawInput::GetKeyboardState();
+
+	// マウス
+	sPrevMouseButtons = sMouseButtons;
+	const auto &mouse = RawInput::GetMouseState();
+	sMouseButtons = mouse.buttons;
+	sMouseDelta = {static_cast<float>(mouse.deltaX), static_cast<float>(mouse.deltaY)};
+	sMouseScrollDelta = {mouse.horizontalWheel, mouse.wheel};
+	RawInput::ClearMouseDelta();
+#ifdef WITH_EDITOR
+	if (!sGameViewHasFocus) {
+		sKeyboard = {};
+		sMouseButtons = {};
+		sMouseDelta = {};
+		sMouseScrollDelta = {};
+	} else if (!sGameViewIsHovered) {
+		for (size_t i = 0; i < sMouseButtons.size(); i++) {
+			sMouseButtons[i] = sMouseButtons[i] && sPrevMouseButtons[i];
+		}
+		sMouseScrollDelta = {};
+	}
+#endif
+
+	// ウィンドウ上のカーソル座標を取得
+	if (sWindow) {
+		POINT point{};
+		GetCursorPos(&point);
+		ScreenToClient(sWindow->Hwnd(), &point);
+		sMousePosition = {static_cast<float>(point.x), static_cast<float>(point.y)};
+#ifdef WITH_EDITOR
+		sMousePosition -= sGameViewOrigin;
+#endif
+	}
+
+	// ゲームパッド
+	sPrevGamepads = sGamepads;
+	if (sIsWindowActive) { XInput::Update(); }
+	for (size_t i = 0; i < sGamepads.size(); i++) {
+		sGamepads[i] = XInput::GetState(i);
+	}
+}
+
+
+#ifdef WITH_EDITOR
+void ou::Input::SetGameView(const Vector2 &origin, bool hasFocus, bool isHovered) {
+	sGameViewOrigin = origin;
+	sGameViewHasFocus = hasFocus;
+	sGameViewIsHovered = isHovered;
+}
+#endif

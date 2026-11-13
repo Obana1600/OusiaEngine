@@ -19,9 +19,10 @@ class Scene;
 class GameObject final: public Object {
 	friend class Scene;
 	friend class SceneManager;
+	friend class SceneSerializer;
+	friend class InspectorWindow;
 	friend class Transform;
 	friend class Physics;
-	friend class SceneSerializer;
 
 public: // メンバ関数
 
@@ -35,6 +36,8 @@ public: // メンバ関数
 
 	template <typename T>
 	T *GetComponent() const;
+	template <typename T>
+	std::vector<T *> GetComponents() const;
 
 	Transform *GetTransform() const;
 	Scene *GetScene() const;
@@ -61,6 +64,7 @@ private: // メンバ変数
 private: // メンバ関数
 
 	Component *AttachComponent(std::unique_ptr<Component> component);
+	Component *AddComponentInstance(std::unique_ptr<Component> component);
 	void AwakeComponents();
 	void StartComponents();
 	void FixedUpdateComponents();
@@ -118,6 +122,18 @@ inline T *GameObject::GetComponent() const {
 	}
 
 	return nullptr;
+}
+
+
+template <typename T>
+inline std::vector<T *> GameObject::GetComponents() const {
+	std::vector<T *> found;
+	for (const auto &component : components_) {
+		if (auto *ptr = dynamic_cast<T *>(component.get())) {
+			found.push_back(ptr);
+		}
+	}
+	return found;
 }
 
 } // namespace ou

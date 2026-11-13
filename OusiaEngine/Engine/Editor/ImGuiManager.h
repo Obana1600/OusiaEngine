@@ -12,13 +12,12 @@ class ImGuiManager {
 public: // メンバ関数
 
 	explicit ImGuiManager(Window *window);
-	ImGuiManager(const ImGuiManager &) =delete;
+	ImGuiManager(const ImGuiManager &) = delete;
 	ImGuiManager &operator=(const ImGuiManager &) = delete;
 
 	~ImGuiManager();
 
 	void NewFrame();
-
 	void EndFrame();
 
 	void Render(Graphics::CommandList cmd);

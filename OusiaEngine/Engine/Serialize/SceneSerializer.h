@@ -18,6 +18,8 @@ public: // 静的メンバ関数
 
 	static bool FromJson(Scene &scene, const nlohmann::ordered_json &root);
 	static bool Load(Scene &scene, const std::filesystem::path &path);
+
+	static bool ValidateRoot(const nlohmann::ordered_json &root);
 };
 
 } // namespace ou

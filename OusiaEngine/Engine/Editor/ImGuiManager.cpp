@@ -102,9 +102,6 @@ void ou::ImGuiManager::NewFrame() {
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-
-	// 画面全体をドッキング領域にする
-	ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 #endif
 }
 

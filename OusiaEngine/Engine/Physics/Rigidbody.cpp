@@ -57,14 +57,29 @@ void ou::Rigidbody::Serialize(Serializer &serializer) {
 	serializer.Enum("interpolation", interpolation_);
 	SerializeEnums(serializer, "constraints", constraints_);
 
-	if (serializer.IsReading()) {
+	if (!serializer.IsReading()) { return; }
+
+	if (bodyId_ == PhysicsWorld::kInvalidBodyId) {
 		mass_ = Mathf::Max(mass_, kMinMass);
 		linearDamping_ = Mathf::Max(linearDamping_, 0.0f);
 		angularDamping_ = Mathf::Max(angularDamping_, 0.0f);
 		maxLinearVelocity_ = Mathf::Max(maxLinearVelocity_, 0.0f);
 		maxAngularVelocity_ = Mathf::Max(maxAngularVelocity_, 0.0f);
 		sleepThreshold_ = Mathf::Max(sleepThreshold_, 0.0f);
+		return;
 	}
+
+	SetMass(mass_);
+	SetUseGravity(useGravity_);
+	SetIsKinematic(isKinematic_);
+	SetLinearDamping(linearDamping_);
+	SetAngularDamping(angularDamping_);
+	SetMaxLinearVelocity(maxLinearVelocity_);
+	SetMaxAngularVelocity(maxAngularVelocity_);
+	SetSleepThreshold(sleepThreshold_);
+	SetCollisionDetectionMode(collisionDetectionMode_);
+	SetInterpolation(interpolation_);
+	SetConstraints(constraints_);
 }
 
 

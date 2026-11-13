@@ -2,6 +2,7 @@
 #include "Animation/Skeletal/SkeletalAnimator.h"
 #include "Animation/Tween/TweenManager.h"
 #include "Asset/AssetDatabase.h"
+#include "Core/Application.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
@@ -28,21 +29,21 @@ using namespace ou;
 void ou::SceneManager::AddScene(std::string_view scenePath) {
 	const auto name = WideToUtf8(std::filesystem::path(Utf8ToWide(scenePath)).stem().wstring());
 
-	// フルパスにするのは読み込むとき。登録の時点ではファイルを確かめない
-	AddScene(name, [path = std::string(scenePath)](Scene &scene) {
-		const auto fullPath = AssetDatabase::AssetPathToFullPath(path);
-		if (!fullPath) {
-			Log::Error("シーンのパスは Assets/ か EngineAssets/ で始めてください: {}", path);
-			return;
-		}
+	sBuildScenes_.push_back(
+		{name, std::string(scenePath), [path = std::string(scenePath)](Scene &scene) {
+			 const auto fullPath = AssetDatabase::AssetPathToFullPath(path);
+			 if (!fullPath) {
+				 Log::Error("シーンのパスは Assets/ か EngineAssets/ で始めてください: {}", path);
+				 return;
+			 }
 
-		SceneSerializer::Load(scene, *fullPath);
-	});
+			 SceneSerializer::Load(scene, *fullPath);
+		 }});
 }
 
 
 void ou::SceneManager::AddScene(std::string_view name, SceneBuilder builder) {
-	sBuildScenes_.push_back({std::string(name), std::move(builder)});
+	sBuildScenes_.push_back({std::string(name), {}, std::move(builder)});
 }
 
 
@@ -86,116 +87,6 @@ void ou::SceneManager::MoveGameObjectToScene(GameObject *gameObject, Scene *scen
 	if (gameObject->GetScene() == scene) { return; }
 
 	MoveHierarchy(gameObject, scene);
-}
-
-
-void ou::SceneManager::Update() {
-	if (sPendingBuildIndex_ >= 0) {
-		LoadPendingScene();
-	}
-
-	Scene *const scenes[] = {sDontDestroyOnLoadScene_.get(), sActiveScene_.get()};
-
-	for (auto *scene : scenes) {
-		if (scene) { scene->StartGameObjects(); }
-	}
-
-	// 物理の更新
-	while (Time::AdvanceFixedTime()) {
-		for (auto *scene : scenes) {
-			if (scene) { scene->FixedUpdateGameObjects(); }
-		}
-		Physics::Simulate();
-	}
-	Physics::Interpolate();
-
-	if (auto *eventSystem = EventSystem::GetCurrent()) {
-		eventSystem->Process();
-	}
-
-	for (auto *scene : scenes) {
-		if (scene) { scene->UpdateGameObjects(); }
-	}
-
-	// Tween の更新
-	TweenManager::Update(Time::GetDeltaTime(), Time::GetUnscaledDeltaTime());
-
-	// アニメーションの更新
-	const auto deltaTime = Time::GetDeltaTime();
-	for (auto *animator : sSkeletalAnimators_) {
-		if (animator->IsActiveAndEnabled()) { animator->UpdateAnimation(deltaTime); }
-	}
-
-	for (auto *scene : scenes) {
-		if (scene) { scene->LateUpdateGameObjects(); }
-	}
-	for (auto *scene : scenes) {
-		if (scene) { scene->DestroyMarkedObjects(); }
-	}
-}
-
-
-void ou::SceneManager::Finalize() {
-	TweenManager::Finalize();
-
-	sActiveScene_.reset();
-	sDontDestroyOnLoadScene_.reset();
-	sBuildScenes_.clear();
-	sPendingBuildIndex_ = -1;
-
-	sceneLoaded_.RemoveAllListeners();
-	sceneUnloaded_.RemoveAllListeners();
-	activeSceneChanged_.RemoveAllListeners();
-}
-
-
-void ou::SceneManager::Render(Graphics::CommandList cmd) {
-	const auto *camera = GetMainCamera();
-	if (!camera) { return; }
-
-	auto *device = Graphics::GetDevice();
-	device->BindDynamicConstantBuffer(camera->MakePerCamera(), 2, cmd);
-
-	// ライトのセット
-	Light::PerFrame perFrame{};
-	for (const auto *light : sLights_) {
-		if (!light->IsActiveAndEnabled()) { continue; }
-
-		if (perFrame.lightCount >= Light::kMaxLights) {
-			static bool warned = false;
-			if (!warned) {
-				Log::Warning("有効なライトが {} を超えたため、超過分は適用されません", Light::kMaxLights);
-				warned = true;
-			}
-			break;
-		}
-
-		perFrame.lights[perFrame.lightCount++] = light->MakeShaderLight();
-	}
-	device->BindDynamicConstantBuffer(perFrame, 3, cmd);
-
-	// renderQueue の小さい順に描く
-	auto renderers = sRenderers_;
-	std::erase_if(renderers, [](const auto *r) {
-		return !r->IsActiveAndEnabled();
-	});
-	std::stable_sort(renderers.begin(), renderers.end(), [](const auto *a, const auto *b) {
-		return a->GetRenderQueue() < b->GetRenderQueue();
-	});
-	for (const auto *renderer : renderers) {
-		renderer->Draw(cmd);
-	}
-}
-
-
-void ou::SceneManager::RenderOverlay(Graphics::CommandList cmd) {
-	CanvasUpdateRegistry::PerformUpdate();
-
-	for (const auto *canvas : sCanvases_) {
-		if (canvas->IsActiveAndEnabled()) {
-			canvas->Render(cmd);
-		}
-	}
 }
 
 
@@ -257,6 +148,127 @@ void ou::SceneManager::UnregisterSkeletalAnimator(SkeletalAnimator *animator) {
 }
 
 
+void ou::SceneManager::Update() {
+	if (sPendingBuildIndex_ >= 0) {
+		LoadPendingScene();
+	}
+	if (!Application::IsPlaying()) {
+		for (auto *scene : {sDontDestroyOnLoadScene_.get(), sActiveScene_.get()}) {
+			if (scene) { scene->DestroyMarkedObjects(); }
+		}
+		return;
+	}
+
+	Scene *const scenes[] = {sDontDestroyOnLoadScene_.get(), sActiveScene_.get()};
+
+	for (auto *scene : scenes) {
+		if (scene) { scene->StartGameObjects(); }
+	}
+
+	// 物理の更新
+	while (Time::AdvanceFixedTime()) {
+		for (auto *scene : scenes) {
+			if (scene) { scene->FixedUpdateGameObjects(); }
+		}
+		Physics::Simulate();
+	}
+	Physics::Interpolate();
+
+	if (auto *eventSystem = EventSystem::GetCurrent()) {
+		eventSystem->Process();
+	}
+
+	for (auto *scene : scenes) {
+		if (scene) { scene->UpdateGameObjects(); }
+	}
+
+	// Tween の更新
+	TweenManager::Update(Time::GetDeltaTime(), Time::GetUnscaledDeltaTime());
+
+	// アニメーションの更新
+	const auto deltaTime = Time::GetDeltaTime();
+	for (auto *animator : sSkeletalAnimators_) {
+		if (animator->IsActiveAndEnabled()) { animator->UpdateAnimation(deltaTime); }
+	}
+
+	for (auto *scene : scenes) {
+		if (scene) { scene->LateUpdateGameObjects(); }
+	}
+	for (auto *scene : scenes) {
+		if (scene) { scene->DestroyMarkedObjects(); }
+	}
+}
+
+
+void ou::SceneManager::Finalize() {
+	TweenManager::Finalize();
+
+	sActiveScene_.reset();
+	sDontDestroyOnLoadScene_.reset();
+	sBuildScenes_.clear();
+	sPendingBuildIndex_ = -1;
+
+	sceneLoaded_.RemoveAllListeners();
+	sceneUnloaded_.RemoveAllListeners();
+	activeSceneChanged_.RemoveAllListeners();
+}
+
+
+void ou::SceneManager::Render(Graphics::CommandList cmd) {
+	const auto *camera = GetMainCamera();
+	if (!camera) { return; }
+
+	RenderWithCamera(camera->MakePerCamera(), cmd);
+}
+
+
+void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
+	auto *device = Graphics::GetDevice();
+	device->BindDynamicConstantBuffer(perCamera, 2, cmd);
+
+	// ライトのセット
+	Light::PerFrame perFrame{};
+	for (const auto *light : sLights_) {
+		if (!light->IsActiveAndEnabled()) { continue; }
+
+		if (perFrame.lightCount >= Light::kMaxLights) {
+			static bool warned = false;
+			if (!warned) {
+				Log::Warning("有効なライトが {} を超えたため、超過分は適用されません", Light::kMaxLights);
+				warned = true;
+			}
+			break;
+		}
+
+		perFrame.lights[perFrame.lightCount++] = light->MakeShaderLight();
+	}
+	device->BindDynamicConstantBuffer(perFrame, 3, cmd);
+
+	// renderQueue の小さい順に描く
+	auto renderers = sRenderers_;
+	std::erase_if(renderers, [](const auto *r) {
+		return !r->IsActiveAndEnabled();
+	});
+	std::stable_sort(renderers.begin(), renderers.end(), [](const auto *a, const auto *b) {
+		return a->GetRenderQueue() < b->GetRenderQueue();
+	});
+	for (const auto *renderer : renderers) {
+		renderer->Draw(cmd);
+	}
+}
+
+
+void ou::SceneManager::RenderOverlay(Graphics::CommandList cmd) {
+	CanvasUpdateRegistry::PerformUpdate();
+
+	for (const auto *canvas : sCanvases_) {
+		if (canvas->IsActiveAndEnabled()) {
+			canvas->Render(cmd);
+		}
+	}
+}
+
+
 void ou::SceneManager::LoadPendingScene() {
 	const auto buildIndex = std::exchange(sPendingBuildIndex_, -1);
 
@@ -267,6 +279,7 @@ void ou::SceneManager::LoadPendingScene() {
 
 	const auto &buildScene = sBuildScenes_[buildIndex];
 	sActiveScene_ = std::make_unique<Scene>(buildScene.name, buildIndex);
+	sActiveScene_->path_ = buildScene.path;
 	buildScene.builder(*sActiveScene_);
 
 	activeSceneChanged_.Invoke(nullptr, sActiveScene_.get());
@@ -294,4 +307,35 @@ void ou::SceneManager::MoveHierarchy(GameObject *gameObject, Scene *scene) {
 	for (auto *child : gameObject->GetTransform()->GetChildren()) {
 		MoveHierarchy(child->GetGameObject(), scene);
 	}
+}
+
+
+void ou::SceneManager::ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const nlohmann::ordered_json &json) {
+	sPendingBuildIndex_ = -1;
+
+	if (sDontDestroyOnLoadScene_) {
+		sDontDestroyOnLoadScene_->DestroyAllGameObjects();
+	}
+
+	if (auto oldScene = std::move(sActiveScene_)) {
+		oldScene->DestroyAllGameObjects();
+		sceneUnloaded_.Invoke(oldScene.get());
+	}
+
+	sActiveScene_ = std::make_unique<Scene>(name, buildIndex);
+	sActiveScene_->path_ = path;
+	SceneSerializer::FromJson(*sActiveScene_, json);
+
+	activeSceneChanged_.Invoke(nullptr, sActiveScene_.get());
+	sceneLoaded_.Invoke(sActiveScene_.get());
+}
+
+
+int32_t ou::SceneManager::FindBuildIndexByPath(std::string_view path) {
+	for (size_t i = 0; i < sBuildScenes_.size(); i++) {
+		if (!sBuildScenes_[i].path.empty() && sBuildScenes_[i].path == path) {
+			return static_cast<int32_t>(i);
+		}
+	}
+	return -1;
 }

@@ -3,6 +3,8 @@
 
 namespace ou::Application {
 
+bool IsPlaying();
+
 void Quit();
 
 bool IsQuitRequested();

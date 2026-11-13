@@ -49,9 +49,8 @@ void ou::AudioSource::Serialize(Serializer &serializer) {
 		clip_ = std::move(clip);
 		submixType_ = submixType;
 		RecreateInstance();
-	} else {
-		ApplySettingsToAll();
 	}
+	ApplySettingsToAll();
 }
 
 

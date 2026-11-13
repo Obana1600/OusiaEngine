@@ -148,23 +148,9 @@ bool ou::SceneSerializer::Save(Scene &scene, const std::filesystem::path &path) 
 
 
 bool ou::SceneSerializer::FromJson(Scene &scene, const nlohmann::ordered_json &root) {
-	if (!root.is_object()) {
-		Log::Error("json の一番外側がオブジェクトではありません");
-		return false;
-	}
-
-	const auto *version = FindMember(root, "version");
-	if (!version || !version->is_number_integer() || version->get<int>() < 1 || version->get<int>() > kVersion) {
-		Log::Error("対応していないシーンのバージョンです (対応しているのは {} まで)", kVersion);
-		return false;
-	}
+	if (!ValidateRoot(root)) { return false; }
 
 	const auto *gameObjectsJson = FindMember(root, "gameObjects");
-	if (!gameObjectsJson || !gameObjectsJson->is_array()) {
-		Log::Error("シーンの json に \"gameObjects\" の配列がありません");
-		return false;
-	}
-
 	std::vector<std::pair<GameObject *, const Json *>> loadedGameObjects;
 	std::vector<std::pair<Component *, const Json *>> loadedComponents;
 	std::unordered_map<uint64_t, Object *> objectsById;
@@ -258,4 +244,26 @@ bool ou::SceneSerializer::Load(Scene &scene, const std::filesystem::path &path) 
 	}
 
 	return FromJson(scene, root);
+}
+
+
+bool ou::SceneSerializer::ValidateRoot(const nlohmann::ordered_json &root) {
+	if (!root.is_object()) {
+		Log::Error("json の一番外側がオブジェクトではありません");
+		return false;
+	}
+
+	const auto *version = FindMember(root, "version");
+	if (!version || !version->is_number_integer() || version->get<int>() < 1 || version->get<int>() > kVersion) {
+		Log::Error("対応していないシーンのバージョンです (対応しているのは {} まで)", kVersion);
+		return false;
+	}
+
+	const auto *gameObjectsJson = FindMember(root, "gameObjects");
+	if (!gameObjectsJson || !gameObjectsJson->is_array()) {
+		Log::Error("シーンの json に \"gameObjects\" の配列がありません");
+		return false;
+	}
+
+	return true;
 }

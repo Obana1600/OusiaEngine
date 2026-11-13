@@ -52,8 +52,8 @@ private: // メンバ変数
 
 private: // メンバ関数
 
-	void ObjectReference(std::string_view name, Object *&value) override;
-	void AssetObject(std::string_view name, std::shared_ptr<Object> &value) override;
+	void ObjectReference(std::string_view name, Object *&value, ObjectFilter) override;
+	void AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &) override;
 
 	const nlohmann::ordered_json *FindValue(std::string_view name);
 

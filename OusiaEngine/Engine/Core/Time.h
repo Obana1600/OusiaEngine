@@ -3,30 +3,58 @@
 #include <cstdint>
 
 
-// TODO: 詳しく調べたい
+namespace ou {
 
-namespace ou::Time {
+// 前方宣言
+class Engine;
+class EditorApplication;
+class SceneManager;
 
-float GetDeltaTime();
+class Time final {
+	friend class Engine;
+	friend class EditorApplication;
+	friend class SceneManager;
 
-float GetUnscaledDeltaTime();
+public: // 静的メンバ関数
 
-float GetTime();
-double GetTimeAsDouble();
+	Time() = delete;
 
-uint64_t GetFrameCount();
+	static float GetDeltaTime();
+	static float GetUnscaledDeltaTime();
+	static float GetTime();
+	static double GetTimeAsDouble();
+	static uint64_t GetFrameCount();
 
-void SetTimeScale(float timeScale);
-float GetTimeScale();
+	static void SetTimeScale(float timeScale);
+	static float GetTimeScale();
 
-void SetFixedDeltaTime(float fixedDeltaTime);
-float GetFixedDeltaTime();
+	static void SetFixedDeltaTime(float fixedDeltaTime);
+	static float GetFixedDeltaTime();
+	static float GetFixedTime();
+	static double GetFixedTimeAsDouble();
+	static bool IsInFixedTimeStep();
 
-float GetFixedTime();
-double GetFixedTimeAsDouble();
-bool IsInFixedTimeStep();
 
-void Advance(float unscaledDeltaTime);
-bool AdvanceFixedTime();
+private: // 静的メンバ変数
 
-} // namespace ou::Time
+	static inline float sDeltaTime_ = 0.0f;
+	static inline float sUnscaledDeltaTime_ = 0.0f;
+	static inline double sTime_ = 0.0;
+	static inline uint64_t sFrameCount_ = 0;
+	static inline float sTimeScale_ = 1.0f;
+
+	static inline float sFixedDeltaTime_ = 0.02f;
+	static inline double sFixedTime_ = 0.0;
+	static inline bool sIsInFixedTimeStep_ = false;
+
+
+private: // 静的メンバ関数
+
+	static void Advance(float unscaledDeltaTime);
+
+	static bool AdvanceFixedTime();
+
+	static void ResetForPlayMode();
+};
+
+} // namespace ou

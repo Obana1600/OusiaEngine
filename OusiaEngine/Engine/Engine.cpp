@@ -15,9 +15,16 @@
 #include "Render/LineRenderer.h"
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
+#include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
 #include "UI/Text.h"
-#include "Serialize/EngineTypes.h"
+#ifdef WITH_EDITOR
+#include "Editor/EditorApplication.h"
+#include "Editor/EditorMainWindow.h"
+#include "Editor/EditorWindow.h"
+#include "Editor/GameView.h"
+#include "Editor/SceneView.h"
+#endif
 
 #include <filesystem>
 #include <thread>
@@ -98,7 +105,6 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	}
 
 	Screen::SetSize(scDesc.width, scDesc.height);
-	CreateSceneTargets(scDesc.width, scDesc.height);
 
 	// blit
 	blitVs_ = AssetDatabase::LoadAssetAtPath<ShaderModule>("EngineAssets/Shader/Blit.VS.hlsl");
@@ -145,6 +151,10 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 void ou::Engine::Finalize() {
 	device_->WaitForGpu();
 
+#ifdef WITH_EDITOR
+	EditorWindow::DestroyAll();
+#endif
+
 	imGuiManager_.reset();
 	SceneManager::Finalize();
 
@@ -165,8 +175,7 @@ void ou::Engine::Finalize() {
 	timeEndPeriod(1);
 
 	blitPso_ = {};
-	sceneDepth_ = {};
-	sceneColor_ = {};
+	gameTarget_.Release();
 	swapChain_ = {};
 
 	Graphics::GetDevice() = nullptr;
@@ -178,68 +187,72 @@ void ou::Engine::Finalize() {
 }
 
 
+void ou::Engine::Run() {
+	while (!Update()) {
+		SceneManager::Update();
+		Render();
+	}
+}
+
+
 bool ou::Engine::Update() {
-	// Time を進める
 	const auto now = std::chrono::steady_clock::now();
 	const auto duration = std::chrono::duration<float>(now - lastUpdateTime_).count();
 	Time::Advance(duration);
 	lastUpdateTime_ = now;
 
 	window_->PumpMessages();
+#ifdef WITH_EDITOR
+	const auto *gameView = GameView::FindVisible();
+	Input::SetGameView(gameView ? gameView->GetImageOrigin() : Vector2::Zero,
+					   gameView && gameView->HasFocus(),
+					   gameView && gameView->IsImageHovered());
+#endif
 	Input::Update();
+#ifdef WITH_EDITOR
+	EditorApplication::ApplyPendingPlayModeChange();
+#endif
 	imGuiManager_->NewFrame();
+#ifdef WITH_EDITOR
+	EditorMainWindow::Draw();
+#endif
 	return window_->IsCloseRequested() || Application::IsQuitRequested();
 }
 
 
-Graphics::CommandList ou::Engine::BeginDraw() {
+void ou::Engine::Render() {
 	imGuiManager_->EndFrame();
 
 	// 最小化中は描かない
 	if (window_->IsMinimized()) {
 		Sleep(10);
-		return {};
+		return;
 	}
 
 	ResizeIfNeeded();
 
 	auto cmd = device_->BeginCommandList();
 
-	const Graphics::RenderPassImage images[] = {
-		Graphics::RenderPassImage::RenderTarget(&sceneColor_, Graphics::RenderPassImage::LoadOp::CLEAR),
-		Graphics::RenderPassImage::DepthStencil(&sceneDepth_, Graphics::RenderPassImage::LoadOp::CLEAR, Graphics::RenderPassImage::StoreOp::DONTCARE),
-	};
-	device_->RenderPassBegin(images, 2, cmd);
-	BindFullScreenViewport(cmd);
-
-	return cmd;
-}
-
-
-void ou::Engine::BeginOverlay(Graphics::CommandList cmd) {
-	device_->RenderPassEnd(cmd);
+#ifdef WITH_EDITOR
+	// エディタではゲームを Game ビューに、エディタのカメラで Scene ビューに描き、スワップチェーンには ImGui だけを描く
+	if (const auto *gameView = GameView::FindVisible()) {
+		RenderGame(gameView->GetRenderTarget(), cmd);
+	}
+	if (const auto *sceneView = SceneView::FindVisible()) {
+		RenderSceneView(*sceneView, cmd);
+	}
+	device_->RenderPassBegin(&swapChain_, cmd);
+#else
+	const auto &desc = swapChain_.GetDesc();
+	gameTarget_.Resize(desc.width, desc.height);
+	RenderGame(gameTarget_, cmd);
 
 	device_->RenderPassBegin(&swapChain_, cmd);
-	BindFullScreenViewport(cmd);
-	device_->BindPipelineState(&blitPso_, cmd);
+	BlitToSwapChain(gameTarget_, cmd);
+#endif
 
-	BlitConstants constants{};
-	constants.sourceIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&sceneColor_, Graphics::ViewType::SRV));
-	device_->BindDynamicConstantBuffer(constants, 0, cmd);
-
-	device_->Draw(3, 0, cmd);
-
-	isOverlayBegun_ = true;
-}
-
-
-void ou::Engine::EndDraw(Graphics::CommandList cmd) {
-	if (!isOverlayBegun_) {
-		BeginOverlay(cmd);
-	}
 	imGuiManager_->Render(cmd);
 	device_->RenderPassEnd(cmd);
-	isOverlayBegun_ = false;
 
 	device_->SubmitCommandLists();
 
@@ -247,38 +260,41 @@ void ou::Engine::EndDraw(Graphics::CommandList cmd) {
 }
 
 
-void ou::Engine::CreateSceneTargets(uint32_t width, uint32_t height) {
-	Graphics::TextureDesc colDesc{};
-	colDesc.width = width;
-	colDesc.height = height;
-	colDesc.format = Graphics::Format::B8G8R8A8_UNORM_SRGB;
-	colDesc.bindFlags = Graphics::BindFlag::RENDER_TARGET | Graphics::BindFlag::SHADER_RESOURCE;
-	colDesc.layout = Graphics::ResourceState::SHADER_RESOURCE;
-	for (int i = 0; i < 4; i++) {
-		colDesc.clear.color[i] = kClearColor[i];
-	}
-	if (!device_->CreateTexture(&colDesc, nullptr, &sceneColor_)) {
-		FatalError("SceneColor の作成に失敗しました。");
-	}
-	device_->SetName(&sceneColor_, "SceneColor");
+void ou::Engine::RenderGame(const SceneRenderTarget &target, Graphics::CommandList cmd) {
+	Screen::SetSize(target.GetWidth(), target.GetHeight());
 
-	Graphics::TextureDesc depthDesc{};
-	depthDesc.width = width;
-	depthDesc.height = height;
-	depthDesc.format = Graphics::Format::D32_FLOAT;
-	depthDesc.bindFlags = Graphics::BindFlag::DEPTH_STENCIL;
-	depthDesc.layout = Graphics::ResourceState::DEPTHSTENCIL;
-	depthDesc.clear.depthStencil.depth = 1.0f;
-	if (!device_->CreateTexture(&depthDesc, nullptr, &sceneDepth_)) {
-		FatalError("SceneDepth の作成に失敗しました。");
-	}
-	device_->SetName(&sceneDepth_, "SceneDepth");
+	target.BeginScenePass(cmd);
+	SceneManager::Render(cmd);
+	device_->RenderPassEnd(cmd);
 
-	const Graphics::RenderPassImage images[] = {
-		Graphics::RenderPassImage::RenderTarget(&sceneColor_),
-		Graphics::RenderPassImage::DepthStencil(&sceneDepth_),
-	};
-	sceneInfo_ = Graphics::RenderPassInfo::From(images, 2);
+	target.BeginOverlayPass(cmd);
+	SceneManager::RenderOverlay(cmd);
+	device_->RenderPassEnd(cmd);
+}
+
+
+void ou::Engine::RenderSceneView(const SceneView &sceneView, Graphics::CommandList cmd) {
+#ifdef WITH_EDITOR
+	const auto &target = sceneView.GetRenderTarget();
+	target.BeginScenePass(cmd);
+	SceneManager::RenderWithCamera(sceneView.MakePerCamera(), cmd);
+	device_->RenderPassEnd(cmd);
+#else
+	(void)sceneView;
+	(void)cmd;
+#endif
+}
+
+
+void ou::Engine::BlitToSwapChain(const SceneRenderTarget &source, Graphics::CommandList cmd) {
+	BindFullScreenViewport(cmd);
+	device_->BindPipelineState(&blitPso_, cmd);
+
+	BlitConstants constants{};
+	constants.sourceIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&source.GetColor(), Graphics::ViewType::SRV));
+	device_->BindDynamicConstantBuffer(constants, 0, cmd);
+
+	device_->Draw(3, 0, cmd);
 }
 
 
@@ -292,9 +308,6 @@ void ou::Engine::ResizeIfNeeded() {
 	desc.width = window_->ClientWidth();
 	desc.height = window_->ClientHeight();
 	device_->CreateSwapChain(&desc, window_->Hwnd(), &swapChain_);
-
-	Screen::SetSize(desc.width, desc.height);
-	CreateSceneTargets(desc.width, desc.height);
 }
 
 

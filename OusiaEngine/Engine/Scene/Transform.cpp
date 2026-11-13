@@ -1,6 +1,7 @@
 #include "Transform.h"
 #include "Diagnostics/Assert.h"
 #include "Diagnostics/Log.h"
+#include "Math/Mathf.h"
 #include "Scene/GameObject.h"
 #include "Serialize/Serializer.h"
 
@@ -34,6 +35,7 @@ const Vector3 &ou::Transform::GetLocalPosition() const {
 
 void ou::Transform::SetLocalRotation(const Quaternion &rotation) {
 	localRotation_ = rotation.Normalized();
+	localEulerAnglesHint_ = localRotation_.EulerAngles();
 	MarkDirty();
 }
 
@@ -45,6 +47,7 @@ const Quaternion &ou::Transform::GetLocalRotation() const {
 
 void ou::Transform::SetLocalEulerAngles(const Vector3 &eulerAngles) {
 	SetLocalRotation(Quaternion::Euler(eulerAngles));
+	localEulerAnglesHint_ = eulerAngles;
 }
 
 
@@ -115,11 +118,6 @@ Vector3 ou::Transform::GetForward() const {
 }
 
 
-Transform *ou::Transform::GetParent() const {
-	return parent_;
-}
-
-
 void ou::Transform::SetParent(Transform *parent) {
 	if (parent == parent_) { return; }
 
@@ -140,6 +138,35 @@ void ou::Transform::SetParent(Transform *parent) {
 	if (auto *gameObject = GetGameObject()) {
 		gameObject->RefreshActiveInHierarchy();
 	}
+}
+
+
+void ou::Transform::SetParent(Transform *parent, bool worldPositionStays) {
+	if (!worldPositionStays) {
+		SetParent(parent);
+		return;
+	}
+
+	const auto position = GetWorldPosition();
+	const auto rotation = GetWorldRotation();
+	const auto scale = GetLossyScale();
+
+	SetParent(parent);
+	SetWorldPosition(position);
+	SetWorldRotation(rotation);
+
+	const auto parentScale = parent ? parent->GetLossyScale() : Vector3::One;
+	const auto divide = [](float value, float by, float current) {
+		return (std::abs(by) > Mathf::Epsilon) ? (value / by) : current;
+	};
+	SetLocalScale({divide(scale.x, parentScale.x, localScale_.x),
+				   divide(scale.y, parentScale.y, localScale_.y),
+				   divide(scale.z, parentScale.z, localScale_.z)});
+}
+
+
+Transform *ou::Transform::GetParent() const {
+	return parent_;
 }
 
 
@@ -171,13 +198,18 @@ Transform *ou::Transform::Find(std::string_view path) {
 
 void ou::Transform::Serialize(Serializer &serializer) {
 	serializer.Field("localPosition", localPosition_);
-	serializer.Field("localRotation", localRotation_);
+	serializer.RotationField("localRotation", localRotation_, "localEulerAnglesHint", localEulerAnglesHint_);
 	serializer.Field("localScale", localScale_);
 
 	auto *parent = parent_;
 	serializer.Reference("parent", parent);
 
 	if (serializer.IsReading()) {
+		constexpr float kHintTolerance = 1e-3f;
+		if (Quaternion::Angle(Quaternion::Euler(localEulerAnglesHint_), localRotation_) > kHintTolerance) {
+			localEulerAnglesHint_ = localRotation_.EulerAngles();
+		}
+
 		MarkDirty();
 
 		if (parent == this || (parent && parent->IsDescendantOf(this))) {

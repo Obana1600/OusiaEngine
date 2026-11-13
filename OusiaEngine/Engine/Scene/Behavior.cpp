@@ -24,7 +24,9 @@ bool ou::Behavior::IsActiveAndEnabled() const {
 
 
 void ou::Behavior::Serialize(Serializer &serializer) {
-	serializer.Field("enabled", isEnabled_);
+	auto isEnabled = isEnabled_;
+	serializer.Field("enabled", isEnabled);
+	if (serializer.IsReading()) { SetEnabled(isEnabled); }
 }
 
 
