@@ -86,6 +86,9 @@ void ou::SceneManager::MoveGameObjectToScene(GameObject *gameObject, Scene *scen
 	}
 	if (gameObject->GetScene() == scene) { return; }
 
+	std::erase(gameObject->scene_->rootGameObjects_, gameObject);
+	scene->rootGameObjects_.push_back(gameObject);
+
 	MoveHierarchy(gameObject, scene);
 }
 

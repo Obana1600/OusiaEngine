@@ -24,6 +24,7 @@ ou::Scene::~Scene() {
 
 GameObject *ou::Scene::CreateGameObject(std::string_view name) {
 	auto obj = std::make_unique<GameObject>(this, name);
+	rootGameObjects_.push_back(obj.get());
 	gameObjects_.push_back(std::move(obj));
 	return gameObjects_.back().get();
 }
@@ -42,16 +43,7 @@ GameObject *ou::Scene::Find(std::string_view name) const {
 
 
 std::vector<GameObject *> ou::Scene::GetRootGameObjects() const {
-	std::vector<GameObject *> roots;
-
-	// 親のない GameObject を集める
-	for (const auto &gameObject : gameObjects_) {
-		if (gameObject && !gameObject->GetTransform()->GetParent()) {
-			roots.push_back(gameObject.get());
-		}
-	}
-
-	return roots;
+	return rootGameObjects_;
 }
 
 
@@ -136,9 +128,8 @@ void ou::Scene::DestroyMarkedObjects() {
 		}
 	}
 
-	const auto erasedCount = std::erase_if(gameObjects_, [](const auto &obj) {
-		return !obj || obj->IsDestroyed();
-	});
+	std::erase_if(rootGameObjects_, [](const auto *gameObject) { return gameObject->IsDestroyed(); });
+	const auto erasedCount = std::erase_if(gameObjects_, [](const auto &obj) { return !obj || obj->IsDestroyed(); });
 	if (erasedCount > 0) { sDestroyGeneration_++; }
 }
 
@@ -148,6 +139,7 @@ void ou::Scene::DestroyAllGameObjects() {
 		if (!obj) { continue; }
 		obj->NotifyDestroyToAllComponents();
 	}
+	rootGameObjects_.clear();
 	gameObjects_.clear();
 	sDestroyGeneration_++;
 }

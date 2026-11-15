@@ -78,9 +78,8 @@ void RegisterFileId(Object *object, const Json &json, std::unordered_map<uint64_
 
 nlohmann::ordered_json ou::SceneSerializer::ToJson(Scene &scene) {
 	std::vector<GameObject *> gameObjects;
-	for (const auto &obj : scene.gameObjects_) {
-		if (!obj || obj->GetTransform()->GetParent()) { continue; }
-		CollectHierarchy(obj.get(), &scene, gameObjects);
+	for (auto *root : scene.GetRootGameObjects()) {
+		CollectHierarchy(root, &scene, gameObjects);
 	}
 
 	std::unordered_set<const Object *> savedObjects;

@@ -40,7 +40,8 @@ protected: // メンバ関数
 	void ObjectReference(std::string_view name, Object *&value, ObjectFilter) override;
 	void AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &) override;
 
-	void EnumField(std::string_view name, std::string &text, std::span<const std::string_view>);
+	void EnumField(std::string_view name, std::string &text, std::span<const std::string_view>) override;
+	void FlagsField(std::string_view name, std::string &text, std::span<const std::string_view>) override;
 
 
 private: // メンバ変数

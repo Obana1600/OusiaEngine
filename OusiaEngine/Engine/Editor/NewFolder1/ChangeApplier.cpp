@@ -116,3 +116,8 @@ void ou::ChangeApplier::AssetObject(std::string_view name, std::shared_ptr<Objec
 void ou::ChangeApplier::EnumField(std::string_view name, std::string &text, std::span<const std::string_view>) {
 	Apply(name, text);
 }
+
+
+void ou::ChangeApplier::FlagsField(std::string_view name, std::string &text, std::span<const std::string_view>) {
+	Apply(name, text);
+}

@@ -99,6 +99,8 @@ Renderer::PerDraw ou::Renderer::MakePerDraw() const {
 
 
 void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::CommandList cmd) const {
+	if (materials_.empty()) { return; }
+
 	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(perDraw, 0, cmd);
 	mesh.BindBuffers(cmd);
@@ -106,7 +108,7 @@ void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::Comman
 	const auto subMeshCount = static_cast<uint32_t>(mesh.GetSubMeshes().size());
 	for (uint32_t i = 0; i < subMeshCount; i++) {
 		const auto *material = FindMaterialForSubMesh(i);
-		if (!material || !material->GetShader()) { continue; }
+		if (!material || !material->GetShader()) { material = Material::sErrorMaterial_.get(); }
 
 		device->BindDynamicConstantBuffer(material->MakePerMaterial(), 1, cmd);
 

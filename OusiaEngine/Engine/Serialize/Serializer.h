@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <magic_enum/magic_enum.hpp>
+#include <magic_enum/magic_enum_flags.hpp>
 #include <span>
 
 
@@ -64,6 +65,9 @@ public: // メンバ関数
 	template <typename E>
 	void Enum(std::string_view name, E &value);
 
+	template <typename E>
+	void Flags(std::string_view name, E &value);
+
 	template <typename T, typename F>
 	void Array(std::string_view name, std::vector<T> &values, F &&element);
 
@@ -85,6 +89,7 @@ protected: // メンバ関数
 	virtual void AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &type) = 0;
 
 	virtual void EnumField(std::string_view name, std::string &text, std::span<const std::string_view> names);
+	virtual void FlagsField(std::string_view name, std::string &text, std::span<const std::string_view> names);
 
 
 protected: // 静的メンバ関数
@@ -158,6 +163,40 @@ inline void Serializer::Enum(std::string_view name, E &value) {
 		names += candidate;
 	}
 	Log::Warning("enum の名前が違います: \"{}\": \"{}\" (使えるもの: {})", name, text, names);
+}
+
+
+template <typename E>
+inline void Serializer::Flags(std::string_view name, E &value) {
+	static_assert(std::is_enum_v<E>, "E は enum でなければいけません");
+
+	constexpr auto &kNames = magic_enum::enum_names<E, magic_enum::as_flags<>>();
+	auto text = std::string(magic_enum::enum_flags_name(value));
+
+	if (!IsReading()) {
+		const auto isZero = static_cast<std::underlying_type_t<E>>(value) == 0;
+		if (!isZero && text.empty()) {
+			Log::Warning("フラグに名前のないビットがあるため保存できません: \"{}\"", name);
+			return;
+		}
+		FlagsField(name, text, kNames);
+		return;
+	}
+
+	const auto before = text;
+	FlagsField(name, text, kNames);
+	if (text == before) { return; }
+
+	if (text.empty()) {
+		value = E{};
+		return;
+	}
+
+	if (const auto parsed = magic_enum::enum_flags_cast<E>(text)) {
+		value = *parsed;
+		return;
+	}
+	Log::Warning("フラグの名前が違います: \"{}\": \"{}\"", name, text);
 }
 
 

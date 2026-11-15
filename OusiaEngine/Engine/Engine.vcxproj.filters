@@ -424,9 +424,6 @@
     <ClInclude Include="Serialize\EngineTypes.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Serialize\SerializeEnums.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\EditorApplication.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -476,6 +473,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Editor\ProjectWindow.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorGuiLayout.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -885,6 +885,9 @@
     <ClCompile Include="Editor\ProjectWindow.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\EditorGuiLayout.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli">
@@ -944,6 +947,10 @@
     <None Include="EngineAssets\Shader\Line.shader">
       <Filter>リソース ファイル</Filter>
     </None>
+    <None Include="EngineAssets\Shader\Error.PS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Error.shader" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="EngineAssets\Shader\Text.shader">

@@ -13,6 +13,8 @@
 namespace ou {
 
 class Transform: public Component {
+	friend class GameObject;
+
 public: // メンバ関数
 
 	~Transform() override;
@@ -46,6 +48,11 @@ public: // メンバ関数
 	const std::vector<Transform *> &GetChildren() const;
 	Transform *Find(std::string_view path);
 
+	void SetSiblingIndex(int index);
+	int GetSiblingIndex() const;
+	void SetAsFirstSibling();
+	void SetAsLastSibling();
+
 	void Serialize(Serializer &serializer) override;
 
 
@@ -73,6 +80,8 @@ private: // メンバ関数
 	void MarkDirty();
 
 	bool IsDescendantOf(const Transform *other) const;
+
+	void TakeOverHierarchy(Transform *old);
 };
 
 } // namespace ou

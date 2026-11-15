@@ -23,6 +23,7 @@ private: // メンバ変数
 
 	std::string selectedFolder_ = "Assets";
 	std::string selectedItem_;
+	bool revealSelectedFolder_ = false;
 
 
 private: // メンバ関数

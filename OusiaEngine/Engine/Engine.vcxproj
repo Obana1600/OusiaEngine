@@ -37,6 +37,7 @@
     <ClInclude Include="Animation\Core\Easing.h" />
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
+    <ClInclude Include="Editor\EditorGuiLayout.h" />
     <ClInclude Include="Editor\EditorFunc.h" />
     <ClInclude Include="Editor\NewFolder1\ChangeApplier.h" />
     <ClInclude Include="Core\Guid.h" />
@@ -55,7 +56,6 @@
     <ClInclude Include="Editor\SceneRenderTarget.h" />
     <ClInclude Include="Editor\SceneView.h" />
     <ClInclude Include="Editor\ProjectWindow.h" />
-    <ClInclude Include="Serialize\SerializeEnums.h" />
     <ClInclude Include="Serialize\EngineTypes.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="Serialize\JsonReader.h" />
@@ -192,6 +192,7 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="Editor\EditorGuiLayout.cpp" />
     <ClCompile Include="Editor\EditorFunc.cpp" />
     <ClCompile Include="Editor\EditorPayload.cpp" />
     <ClCompile Include="Editor\NewFolder1\ChangeApplier.cpp" />
@@ -327,6 +328,7 @@
     <None Include="EngineAssets\Shader\Blit.hlsli" />
     <None Include="EngineAssets\Shader\Blit.PS.hlsl" />
     <None Include="EngineAssets\Shader\Blit.VS.hlsl" />
+    <None Include="EngineAssets\Shader\Error.shader" />
     <None Include="EngineAssets\Shader\Line.hlsli" />
     <None Include="EngineAssets\Shader\Line.shader" />
     <None Include="EngineAssets\Shader\Particle.hlsli" />
@@ -431,6 +433,17 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\Error.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>

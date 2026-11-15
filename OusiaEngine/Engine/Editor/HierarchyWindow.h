@@ -29,7 +29,8 @@ private: // メンバ関数
 	void CreateEmpty(Scene *scene, GameObject *parent);
 	void Delete(GameObject *gameObject);
 
-	void AcceptDrop(GameObject *parent);
+	void AcceptDropOnRow(GameObject *target);
+	void AcceptDropOnBackground();
 	void AcceptAssetDrop(Scene *scene, GameObject *parent);
 };
 

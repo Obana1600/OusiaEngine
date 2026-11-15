@@ -4,10 +4,29 @@
 #include "Math/Mathf.h"
 #include "Scene/GameObject.h"
 #include "Serialize/Serializer.h"
+#include "Scene/Scene.h"
 
 #include <algorithm>
+#include <limits>
+#include <utility>
 
 using namespace ou;
+
+
+namespace {
+
+template <typename T>
+void MoveToIndex(std::vector<T *> &list, T *element, int index) {
+	const auto it = std::find(list.begin(), list.end(), element);
+	if (it == list.end()) { return; }
+	list.erase(it);
+
+	const auto clamped = std::clamp(index, 0, static_cast<int>(list.size()));
+	list.insert(list.begin() + clamped, element);
+}
+
+} // namespace
+
 
 
 ou::Transform::~Transform() {
@@ -124,18 +143,26 @@ void ou::Transform::SetParent(Transform *parent) {
 	ASSERT(parent != this && (!parent || !parent->IsDescendantOf(this)),
 		   "親子関係が循環します");
 
-	// すでに親がいるなら、自身を親の子から消す
+	auto *gameObject = GetGameObject();
+	auto *scene = gameObject ? gameObject->GetScene() : nullptr;
+
 	if (parent_) {
-		auto &siblings = parent_->children_;
-		siblings.erase(std::remove(siblings.begin(), siblings.end(), this), siblings.end());
+		std::erase(parent_->children_, this);
+	} else if (scene) {
+		std::erase(scene->rootGameObjects_, gameObject);
 	}
 
 	parent_ = parent;
-	if (parent_) { parent_->children_.push_back(this); }
+	if (parent_) {
+		parent_->children_.push_back(this);
+	} else if (scene) {
+		scene->rootGameObjects_.push_back(gameObject);
+	}
+
 	MarkDirty();
 	OnTransformParentChanged();
 
-	if (auto *gameObject = GetGameObject()) {
+	if (gameObject) {
 		gameObject->RefreshActiveInHierarchy();
 	}
 }
@@ -196,6 +223,36 @@ Transform *ou::Transform::Find(std::string_view path) {
 }
 
 
+void ou::Transform::SetSiblingIndex(int index) {
+	if (parent_) {
+		MoveToIndex(parent_->children_, this, index);
+	} else {
+		MoveToIndex(GetGameObject()->GetScene()->rootGameObjects_, GetGameObject(), index);
+	}
+}
+
+
+int ou::Transform::GetSiblingIndex() const {
+	if (parent_) {
+		const auto &siblings = parent_->children_;
+		return static_cast<int>(std::find(siblings.begin(), siblings.end(), this) - siblings.begin());
+	}
+
+	const auto &roots = GetGameObject()->GetScene()->rootGameObjects_;
+	return static_cast<int>(std::find(roots.begin(), roots.end(), GetGameObject()) - roots.begin());
+}
+
+
+void ou::Transform::SetAsFirstSibling() {
+	SetSiblingIndex(0);
+}
+
+
+void ou::Transform::SetAsLastSibling() {
+	SetSiblingIndex(std::numeric_limits<int>::max());
+}
+
+
 void ou::Transform::Serialize(Serializer &serializer) {
 	serializer.Field("localPosition", localPosition_);
 	serializer.RotationField("localRotation", localRotation_, "localEulerAnglesHint", localEulerAnglesHint_);
@@ -239,4 +296,22 @@ bool ou::Transform::IsDescendantOf(const Transform *other) const {
 	}
 
 	return false;
+}
+
+
+void ou::Transform::TakeOverHierarchy(Transform *old) {
+	parent_ = std::exchange(old->parent_, nullptr);
+	if (parent_) {
+		std::replace(parent_->children_.begin(), parent_->children_.end(), old, this);
+	}
+
+	children_ = std::move(old->children_);
+	old->children_.clear();
+	for (auto *child : children_) {
+		child->parent_ = this;
+		child->MarkDirty();
+	}
+
+	MarkDirty();
+	OnTransformParentChanged();
 }

@@ -42,6 +42,7 @@ protected: // メンバ関数
 	void AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &type) override;
 
 	void EnumField(std::string_view name, std::string &text, std::span<const std::string_view> names) override;
+	void FlagsField(std::string_view name, std::string &text, std::span<const std::string_view> names) override;
 
 
 private: // メンバ変数

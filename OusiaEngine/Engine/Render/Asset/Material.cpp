@@ -22,10 +22,19 @@ void ou::Material::StaticInitialize() {
 	if (!sWhiteTexture_) {
 		FatalError("マテリアルの既定のテクスチャの読み込みに失敗しました");
 	}
+
+	// エラー用のマテリアル
+	auto errorShader = AssetDatabase::LoadAssetAtPath<Shader>("EngineAssets/Shader/Error.shader");
+	if (!errorShader) {
+		FatalError("エラー用のシェーダの読み込みに失敗しました");
+	}
+	sErrorMaterial_ = Create(std::move(errorShader));
+	sErrorMaterial_->SetName("Error");
 }
 
 
 void ou::Material::StaticFinalize() {
+	sErrorMaterial_ = nullptr;
 	sStandardShader_ = nullptr;
 	sWhiteTexture_ = nullptr;
 }

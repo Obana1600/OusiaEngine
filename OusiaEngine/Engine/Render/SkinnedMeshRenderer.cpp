@@ -24,7 +24,15 @@ void ou::SkinnedMeshRenderer::Serialize(Serializer &serializer) {
 		serializer.Field("", path);
 	});
 
-	if (serializer.IsReading() && boneRoot && !bonePaths.empty()) {
+	if (!serializer.IsReading()) { return; }
+
+	if (!boneRoot) {
+		boneRoot_ = nullptr;
+		boneGeneration_ = kStaleBoneGeneration;
+		return;
+	}
+
+	if (!bonePaths.empty()) {
 		SetBones(boneRoot, std::move(bonePaths));
 
 		boneGeneration_ = kStaleBoneGeneration;

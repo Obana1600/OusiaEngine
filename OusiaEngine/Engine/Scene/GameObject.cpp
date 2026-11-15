@@ -220,12 +220,7 @@ void ou::GameObject::ReplaceTransform(std::unique_ptr<Transform> newTransform) {
 	next->SetLocalScale(old->GetLocalScale());
 
 	// 親子関係を引き継ぐ
-	next->SetParent(old->GetParent());
-	const auto children = old->GetChildren();
-	for (auto *child : children) {
-		child->SetParent(next);
-	}
-	old->SetParent(nullptr);
+	next->TakeOverHierarchy(old);
 
 	// ほかのコンポーネントが持つ Transform を付け替える
 	for (auto &comp : components_) {

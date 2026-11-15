@@ -9,6 +9,7 @@
 #include "Scene/LayerMask.h"
 #include "Scene/Transform.h"
 #include "Serialize/TypeRegistry.h"
+#include "Editor/EditorGUILayout.h"
 
 #include <cfloat>
 #include <optional>
@@ -71,7 +72,8 @@ void ou::InspectorWindow::DrawGameObjectHeader(GameObject *gameObject) {
 	const auto layer = gameObject->GetLayer();
 	const auto layerName = LayerMask::LayerToName(layer);
 	const auto preview = layerName.empty() ? std::to_string(layer) : layerName;
-	if (ImGui::BeginCombo("Layer", preview.c_str())) {
+	EditorGUILayout::PrefixLabel("Layer");
+	if (ImGui::BeginCombo("##Layer", preview.c_str())) {
 		for (int i = 0; i < LayerMask::kLayerCount; i++) {
 			const auto candidate = LayerMask::LayerToName(i);
 			if (candidate.empty()) { continue; }

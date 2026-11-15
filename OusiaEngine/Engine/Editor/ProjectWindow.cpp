@@ -101,6 +101,7 @@ void ou::ProjectWindow::OnGui() {
 		for (const auto &root : FindRoots()) {
 			DrawFolderTree(root.name, root.fullPath);
 		}
+		revealSelectedFolder_ = false;
 	}
 	ImGui::EndChild();
 
@@ -121,7 +122,14 @@ void ou::ProjectWindow::DrawFolderTree(const std::string &assetPath, const std::
 	if (assetPath == selectedFolder_) { flags |= ImGuiTreeNodeFlags_Selected; }
 	if (subFolders.empty()) { flags |= ImGuiTreeNodeFlags_Leaf; }
 
+	if (revealSelectedFolder_ && selectedFolder_.starts_with(assetPath + "/")) {
+		ImGui::SetNextItemOpen(true);
+	}
+
 	const auto isOpen = ImGui::TreeNodeEx(assetPath.c_str(), flags, "%s", ToUtf8(fullPath.filename()).c_str());
+	if (revealSelectedFolder_ && assetPath == selectedFolder_) {
+		ImGui::SetScrollHereY();
+	}
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 		selectedFolder_ = assetPath;
 	}
@@ -168,6 +176,7 @@ void ou::ProjectWindow::DrawFolderItem(const std::string &assetPath, const std::
 	}
 	if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 		selectedFolder_ = assetPath;
+		revealSelectedFolder_ = true;
 	}
 }
 

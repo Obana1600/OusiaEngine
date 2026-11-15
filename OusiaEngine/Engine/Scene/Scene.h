@@ -15,6 +15,7 @@ class Scene {
 	friend class SceneManager;
 	friend class SceneSerializer;
 	friend class EditorSceneManager;
+	friend class Transform;
 
 public: // 静的メンバ関数
 
@@ -46,6 +47,7 @@ private: // 静的メンバ変数
 private: // メンバ変数
 
 	std::vector<std::unique_ptr<GameObject>> gameObjects_;
+	std::vector<GameObject *> rootGameObjects_;
 
 	std::string name_;
 	std::string path_;

@@ -17,6 +17,8 @@
 namespace ou {
 
 class Material: public Object {
+	friend class Renderer;
+
 public: // インナークラス
 
 	// ライティング方法
@@ -94,6 +96,7 @@ private: // 静的メンバ変数
 
 	static inline std::shared_ptr<Shader> sStandardShader_;
 	static inline std::shared_ptr<Texture> sWhiteTexture_;
+	static inline std::shared_ptr<Material> sErrorMaterial_;
 
 
 private: // メンバ変数

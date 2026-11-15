@@ -1,13 +1,16 @@
 #include "FieldDrawer.h"
 #include "Asset/AssetDatabase.h"
+#include "Asset/AssetImporter.h"
+#include "Editor/EditorGUILayout.h"
 #include "Editor/EditorPayload.h"
 #include "Math/Mathf.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
-#include "Asset/AssetImporter.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cfloat>
+#include <format>
 #include <vector>
 
 #include <imgui/imgui.h>
@@ -19,11 +22,16 @@ using namespace ou;
 namespace {
 
 std::string MakeShownName(std::string_view name, const std::string &path) {
-	return name.empty() ? path.substr(path.find_last_of('/') + 1) : std::string(name);
+	return name.empty() ? "Element " + path.substr(path.find_last_of('/') + 1) : std::string(name);
 }
 
 std::string MakeLabel(std::string_view name, const std::string &path) {
 	return MakeShownName(name, path) + "##" + path;
+}
+
+std::string DrawPrefixLabel(std::string_view name, const std::string &path) {
+	EditorGUILayout::PrefixLabel(MakeShownName(name, path));
+	return "##" + path;
 }
 
 std::string DescribeObject(const Object *object) {
@@ -34,18 +42,33 @@ std::string DescribeObject(const Object *object) {
 	return object->GetName();
 }
 
-std::string DescribeAsset(const Object *asset) {
-	if (!asset) { return "None"; }
+std::string DescribeAsset(const Object *asset, std::string_view typeName) {
+	if (!asset) { return std::format("None ({})", typeName); }
 
 	const auto reference = AssetDatabase::FindAssetReference(asset);
 	if (!reference) { return asset->GetName() + " (アセットではない)"; }
+
+	std::string name;
+	if (reference->subAsset.empty()) {
+		const auto path = AssetDatabase::GuidToAssetPath(reference->guid);
+		const auto file = path.substr(path.find_last_of('/') + 1);
+		name = file.substr(0, file.find_last_of('.'));
+	} else {
+		name = reference->subAsset.substr(reference->subAsset.find_last_of('/') + 1);
+	}
+	return std::format("{} ({})", name, typeName);
+}
+
+std::string DescribeAssetPath(const Object *asset) {
+	const auto reference = AssetDatabase::FindAssetReference(asset);
+	if (!reference) { return {}; }
 
 	const auto path = AssetDatabase::GuidToAssetPath(reference->guid);
 	return reference->subAsset.empty() ? path : path + " : " + reference->subAsset;
 }
 
 float HideNegativeZero(float value) {
-	return value == 0.0f ? 0.0f : value;
+	return std::abs(value) < 0.0005f ? 0.0f : value;
 }
 
 const char *ChooseFormat(float value) {
@@ -113,6 +136,38 @@ bool IsCurrentAsset(const Object *value, const AssetCandidate &candidate) {
 	return reference && reference->guid == AssetDatabase::AssetPathToGuid(candidate.path) && reference->subAsset == candidate.subAsset;
 }
 
+// "A|B" を名前の並びにする
+std::vector<std::string_view> SplitFlags(std::string_view text) {
+	std::vector<std::string_view> flags;
+	while (!text.empty()) {
+		const auto bar = text.find('|');
+		flags.push_back(text.substr(0, bar));
+		text = (bar == std::string_view::npos) ? std::string_view{} : text.substr(bar + 1);
+	}
+	return flags;
+}
+
+bool ContainsFlag(const std::vector<std::string_view> &flags, std::string_view name) {
+	return std::find(flags.begin(), flags.end(), name) != flags.end();
+}
+
+std::string JoinFlags(std::span<const std::string_view> names, const std::vector<std::string_view> &flags) {
+	std::string text;
+	for (const auto name : names) {
+		if (!ContainsFlag(flags, name)) { continue; }
+		if (!text.empty()) { text += '|'; }
+		text += name;
+	}
+	return text;
+}
+
+std::string DescribeFlags(std::span<const std::string_view> names, const std::vector<std::string_view> &flags) {
+	if (flags.empty()) { return "Nothing"; }
+	if (flags.size() == names.size()) { return "Everything"; }
+	if (flags.size() == 1) { return std::string(flags.front()); }
+	return "Mixed ...";
+}
+
 } // namespace
 
 
@@ -130,28 +185,28 @@ bool ou::FieldDrawer::IsReading() const {
 void ou::FieldDrawer::Field(std::string_view name, bool &value) {
 	const auto path = MakePath(name);
 	auto copy = value;
-	if (ImGui::Checkbox(MakeLabel(name, path).c_str(), &copy)) { Record(path, copy); }
+	if (ImGui::Checkbox(DrawPrefixLabel(name, path).c_str(), &copy)) { Record(path, copy); }
 }
 
 
 void ou::FieldDrawer::Field(std::string_view name, int32_t &value) {
 	const auto path = MakePath(name);
 	auto copy = value;
-	if (ImGui::DragInt(MakeLabel(name, path).c_str(), &copy)) { Record(path, copy); }
+	if (ImGui::DragInt(DrawPrefixLabel(name, path).c_str(), &copy)) { Record(path, copy); }
 }
 
 
 void ou::FieldDrawer::Field(std::string_view name, uint32_t &value) {
 	const auto path = MakePath(name);
 	auto copy = value;
-	if (ImGui::DragScalar(MakeLabel(name, path).c_str(), ImGuiDataType_U32, &copy)) { Record(path, copy); }
+	if (ImGui::DragScalar(DrawPrefixLabel(name, path).c_str(), ImGuiDataType_U32, &copy)) { Record(path, copy); }
 }
 
 
 void ou::FieldDrawer::Field(std::string_view name, float &value) {
 	const auto path = MakePath(name);
 	auto copy = HideNegativeZero(value);
-	if (ImGui::DragFloat(MakeLabel(name, path).c_str(), &copy, 0.01f, 0.0f, 0.0f, ChooseFormat(copy))) { Record(path, copy); }
+	if (ImGui::DragFloat(DrawPrefixLabel(name, path).c_str(), &copy, 0.01f, 0.0f, 0.0f, ChooseFormat(copy))) { Record(path, copy); }
 }
 
 
@@ -160,7 +215,7 @@ void ou::FieldDrawer::Field(std::string_view name, Vector2 &value) {
 	auto copy = value;
 	copy.x = HideNegativeZero(copy.x);
 	copy.y = HideNegativeZero(copy.y);
-	if (ImGui::DragFloat2(MakeLabel(name, path).c_str(), &copy.x, 0.01f)) { Record(path, copy); }
+	if (ImGui::DragFloat2(DrawPrefixLabel(name, path).c_str(), &copy.x, 0.01f)) { Record(path, copy); }
 }
 
 
@@ -170,7 +225,7 @@ void ou::FieldDrawer::Field(std::string_view name, Vector3 &value) {
 	copy.x = HideNegativeZero(copy.x);
 	copy.y = HideNegativeZero(copy.y);
 	copy.z = HideNegativeZero(copy.z);
-	if (ImGui::DragFloat3(MakeLabel(name, path).c_str(), &copy.x, 0.01f)) { Record(path, copy); }
+	if (ImGui::DragFloat3(DrawPrefixLabel(name, path).c_str(), &copy.x, 0.01f)) { Record(path, copy); }
 }
 
 
@@ -181,7 +236,7 @@ void ou::FieldDrawer::Field(std::string_view name, Vector4 &value) {
 	copy.y = HideNegativeZero(copy.y);
 	copy.z = HideNegativeZero(copy.z);
 	copy.w = HideNegativeZero(copy.w);
-	if (ImGui::DragFloat4(MakeLabel(name, path).c_str(), &copy.x, 0.01f)) { Record(path, copy); }
+	if (ImGui::DragFloat4(DrawPrefixLabel(name, path).c_str(), &copy.x, 0.01f)) { Record(path, copy); }
 }
 
 
@@ -191,7 +246,7 @@ void ou::FieldDrawer::Field(std::string_view name, Quaternion &value) {
 	degrees.x = HideNegativeZero(degrees.x);
 	degrees.y = HideNegativeZero(degrees.y);
 	degrees.z = HideNegativeZero(degrees.z);
-	if (ImGui::DragFloat3(MakeLabel(name, path).c_str(), &degrees.x, 0.5f)) {
+	if (ImGui::DragFloat3(DrawPrefixLabel(name, path).c_str(), &degrees.x, 0.5f)) {
 		Record(path, Quaternion::Euler(degrees * Mathf::Deg2Rad));
 	}
 }
@@ -200,21 +255,21 @@ void ou::FieldDrawer::Field(std::string_view name, Quaternion &value) {
 void ou::FieldDrawer::Field(std::string_view name, Color &value) {
 	const auto path = MakePath(name);
 	auto copy = value;
-	if (ImGui::ColorEdit4(MakeLabel(name, path).c_str(), &copy.r)) { Record(path, copy); }
+	if (ImGui::ColorEdit4(DrawPrefixLabel(name, path).c_str(), &copy.r)) { Record(path, copy); }
 }
 
 
 void ou::FieldDrawer::Field(std::string_view name, Rect &value) {
 	const auto path = MakePath(name);
 	auto copy = value;
-	if (ImGui::DragFloat4(MakeLabel(name, path).c_str(), &copy.x, 0.5f)) { Record(path, copy); }
+	if (ImGui::DragFloat4(DrawPrefixLabel(name, path).c_str(), &copy.x, 0.5f)) { Record(path, copy); }
 }
 
 
 void ou::FieldDrawer::Field(std::string_view name, std::string &value) {
 	const auto path = MakePath(name);
 	auto copy = value;
-	if (ImGui::InputText(MakeLabel(name, path).c_str(), &copy)) { Record(path, copy); }
+	if (ImGui::InputText(DrawPrefixLabel(name, path).c_str(), &copy)) { Record(path, copy); }
 }
 
 
@@ -225,7 +280,7 @@ void ou::FieldDrawer::RotationField(std::string_view name, Quaternion &, std::st
 	degrees.x = HideNegativeZero(degrees.x);
 	degrees.y = HideNegativeZero(degrees.y);
 	degrees.z = HideNegativeZero(degrees.z);
-	if (ImGui::DragFloat3(MakeLabel(name, path).c_str(), &degrees.x, 0.5f)) {
+	if (ImGui::DragFloat3(DrawPrefixLabel(name, path).c_str(), &degrees.x, 0.5f)) {
 		Record(path, degrees * Mathf::Deg2Rad);
 	}
 }
@@ -251,7 +306,8 @@ bool ou::FieldDrawer::BeginArray(std::string_view name, size_t &count) {
 	if (!ImGui::TreeNodeEx(MakeLabel(name, path).c_str())) { return false; }
 
 	auto size = static_cast<int>(count);
-	if (ImGui::DragInt(("Size##" + path).c_str(), &size, 0.1f, 0, 1024)) {
+	EditorGUILayout::PrefixLabel("Size");
+	if (ImGui::DragInt(("##Size" + path).c_str(), &size, 0.1f, 0, 1024)) {
 		Record(path, static_cast<size_t>(std::max(size, 0)));
 	}
 
@@ -268,7 +324,11 @@ void ou::FieldDrawer::EndArray() {
 
 void ou::FieldDrawer::ObjectReference(std::string_view name, Object *&value, ObjectFilter accepts) {
 	const auto path = MakePath(name);
-	ImGui::LabelText(MakeLabel(name, path).c_str(), "%s", DescribeObject(value).c_str());
+	const auto id = DrawPrefixLabel(name, path);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.0f, 0.5f});
+	ImGui::Button((DescribeObject(value) + id).c_str(), {-FLT_MIN, 0.0f});
+	ImGui::PopStyleVar();
 
 	if (ImGui::BeginDragDropTarget()) {
 		if (const auto *payload = ImGui::AcceptDragDropPayload(EditorPayload::kGameObject)) {
@@ -295,11 +355,19 @@ void ou::FieldDrawer::ObjectReference(std::string_view name, Object *&value, Obj
 
 void ou::FieldDrawer::AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &type) {
 	const auto path = MakePath(name);
+	EditorGUILayout::PrefixLabel(MakeShownName(name, path));
+
 	const auto &style = ImGui::GetStyle();
 	const auto pickerWidth = ImGui::GetFrameHeight();
-	const auto valueWidth = std::max(ImGui::CalcItemWidth() - pickerWidth - style.ItemInnerSpacing.x, 1.0f);
+	const auto valueWidth = std::max(ImGui::GetContentRegionAvail().x - pickerWidth - style.ItemInnerSpacing.x, 1.0f);
 
-	ImGui::Button((DescribeAsset(value.get()) + "##Value" + path).c_str(), {valueWidth, 0.0f});
+	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.0f, 0.5f});
+	ImGui::Button((DescribeAsset(value.get(), type.name) + "##Value" + path).c_str(), {valueWidth, 0.0f});
+	ImGui::PopStyleVar();
+	if (value && ImGui::IsItemHovered()) {
+		const auto assetPath = DescribeAssetPath(value.get());
+		if (!assetPath.empty()) { ImGui::SetTooltip("%s", assetPath.c_str()); }
+	}
 
 	if (ImGui::BeginDragDropTarget()) {
 		if (const auto *peek = ImGui::AcceptDragDropPayload(EditorPayload::kAsset, ImGuiDragDropFlags_AcceptPeekOnly)) {
@@ -325,22 +393,52 @@ void ou::FieldDrawer::AssetObject(std::string_view name, std::shared_ptr<Object>
 		ImGui::OpenPopup(pickerId.c_str());
 	}
 
-	ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
-	ImGui::TextUnformatted(MakeShownName(name, path).c_str());
-
 	DrawPicker(pickerId, path, value, type);
 }
 
 
 void ou::FieldDrawer::EnumField(std::string_view name, std::string &text, std::span<const std::string_view> names) {
 	const auto path = MakePath(name);
-	if (!ImGui::BeginCombo(MakeLabel(name, path).c_str(), text.c_str())) { return; }
+	if (!ImGui::BeginCombo(DrawPrefixLabel(name, path).c_str(), text.c_str())) { return; }
 
 	for (const auto candidate : names) {
 		if (ImGui::Selectable(std::string(candidate).c_str(), candidate == text)) {
 			Record(path, std::string(candidate));
 		}
 	}
+	ImGui::EndCombo();
+}
+
+
+void ou::FieldDrawer::FlagsField(std::string_view name, std::string &text, std::span<const std::string_view> names) {
+	const auto path = MakePath(name);
+	const auto flags = SplitFlags(text);
+	if (!ImGui::BeginCombo(DrawPrefixLabel(name, path).c_str(), DescribeFlags(names, flags).c_str())) { return; }
+
+	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+
+	if (ImGui::MenuItem("Nothing", nullptr, flags.empty())) {
+		Record(path, std::string{});
+	}
+	if (ImGui::MenuItem("Everything", nullptr, flags.size() == names.size())) {
+		Record(path, JoinFlags(names, {names.begin(), names.end()}));
+	}
+	ImGui::Separator();
+
+	for (const auto candidate : names) {
+		const auto isOn = ContainsFlag(flags, candidate);
+		if (ImGui::MenuItem(std::string(candidate).c_str(), nullptr, isOn)) {
+			auto next = flags;
+			if (isOn) {
+				std::erase(next, candidate);
+			} else {
+				next.push_back(candidate);
+			}
+			Record(path, JoinFlags(names, next));
+		}
+	}
+
+	ImGui::PopItemFlag();
 	ImGui::EndCombo();
 }
 

@@ -4,7 +4,6 @@
 #include "Physics/Collider.h"
 #include "Physics/Physics.h"
 #include "Scene/Transform.h"
-#include "Serialize/SerializeEnums.h"
 #include "Serialize/Serializer.h"
 
 using namespace ou;
@@ -55,7 +54,7 @@ void ou::Rigidbody::Serialize(Serializer &serializer) {
 	serializer.Field("sleepThreshold", sleepThreshold_);
 	serializer.Enum("collisionDetectionMode", collisionDetectionMode_);
 	serializer.Enum("interpolation", interpolation_);
-	SerializeEnums(serializer, "constraints", constraints_);
+	serializer.Flags("constraints", constraints_);
 
 	if (!serializer.IsReading()) { return; }
 
