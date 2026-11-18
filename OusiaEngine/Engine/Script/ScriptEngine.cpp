@@ -227,11 +227,9 @@ void ou::ScriptEngine::LogException(asIScriptContext *context) {
 	const auto *function = context->GetExceptionFunction();
 	const auto *message = context->GetExceptionString();
 
-	Log::Error("{}\n({}:{} {})",
-			   message ? message : "?",
-			   section ? section : "?",
-			   row,
-			   function ? function->GetDeclaration() : "?");
+	Log::Write(LogLevel::Error, std::source_location::current(),
+			   std::format("{}\n{}", message ? message : "?", function ? function->GetDeclaration() : "?"),
+			   {section ? section : "", row});
 }
 
 
@@ -265,15 +263,16 @@ bool ou::ScriptEngine::IsSerializedField(const asITypeInfo *type, asUINT index) 
 
 
 void ou::ScriptEngine::MessageCallback(const asSMessageInfo *message, void *) {
-	switch (message->type) {
-		case asMSGTYPE_ERROR:
-			Log::Error("{}({},{}): {}", message->section, message->row, message->col, message->message);
-			break;
-		case asMSGTYPE_WARNING:
-			Log::Warning("{}({},{}): {}", message->section, message->row, message->col, message->message);
-			break;
-		default:
-			Log::Info("{}({},{}): {}", message->section, message->row, message->col, message->message);
-			break;
+	auto level = LogLevel::Info;
+	if (message->type == asMSGTYPE_ERROR) {
+		level = LogLevel::Error;
+	} else if (message->type == asMSGTYPE_WARNING) {
+		level = LogLevel::Warning;
 	}
+
+	// ファイルに残すログでも分かるように、場所は本文にも残す
+	const auto *section = message->section ? message->section : "";
+	Log::Write(level, std::source_location::current(),
+			   std::format("{}({},{}): {}", section, message->row, message->col, message->message),
+			   {section, message->row});
 }
