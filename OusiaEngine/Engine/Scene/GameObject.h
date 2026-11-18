@@ -23,6 +23,7 @@ class GameObject final: public Object {
 	friend class InspectorWindow;
 	friend class Transform;
 	friend class Physics;
+	friend class ScriptBindings;
 
 public: // メンバ関数
 

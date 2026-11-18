@@ -46,6 +46,15 @@ void WriteEnums(const asIScriptEngine *engine, std::ostream &stream) {
 	}
 }
 
+// funcdef（UnityAction など。関数を変数や引数で渡す型）
+void WriteFuncdefs(const asIScriptEngine *engine, std::ostream &stream) {
+	for (asUINT i = 0; i < engine->GetFuncdefCount(); i++) {
+		const auto *funcdef = engine->GetFuncdefByIndex(i);
+		if (!funcdef || funcdef->GetParentType()) { continue; }
+		stream << std::format("funcdef {};\n", funcdef->GetFuncdefSignature()->GetDeclaration());
+	}
+}
+
 void WriteTypes(const asIScriptEngine *engine, std::ostream &stream) {
 	for (asUINT i = 0; i < engine->GetObjectTypeCount(); i++) {
 		const auto *type = engine->GetObjectTypeByIndex(i);
@@ -154,6 +163,7 @@ void ou::ScriptBindings::WritePredefined(asIScriptEngine *engine) {
 	std::ostringstream stream;
 	stream << "// エンジンが書き出したファイル。手で書き換えても、エディタを起動するたびに上書きされます\n";
 	WriteEnums(engine, stream);
+	WriteFuncdefs(engine, stream);
 	WriteTypes(engine, stream);
 	WriteGlobalFunctions(engine, stream);
 	WriteGlobalProperties(engine, stream);

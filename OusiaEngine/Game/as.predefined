@@ -114,6 +114,7 @@ enum FullScreenMode {
 	MaximizedWindow = 2,
 	Windowed = 3
 }
+funcdef void UnityAction();
 class string {
 	~string();
 	string();
@@ -274,25 +275,6 @@ class Color {
 	float b;
 	float a;
 }
-class Object {
-	string get_name() const property;
-	void set_name(const string&in value) property;
-	int GetInstanceID() const;
-	GameObject@ opCast();
-	const GameObject@ opCast() const;
-	Component@ opCast();
-	const Component@ opCast() const;
-	Behavior@ opCast();
-	const Behavior@ opCast() const;
-	Transform@ opCast();
-	const Transform@ opCast() const;
-	Collider@ opCast();
-	const Collider@ opCast() const;
-	Rigidbody@ opCast();
-	const Rigidbody@ opCast() const;
-	CharacterController@ opCast();
-	const CharacterController@ opCast() const;
-}
 class GameObject {
 	GameObject(const string&in name = "GameObject");
 	Object@ opImplCast();
@@ -307,45 +289,8 @@ class GameObject {
 	void set_layer(int value) property;
 	Transform@ get_transform() const property;
 	bool TryGetComponent(?&out component) const;
-}
-class Component {
-	Object@ opImplCast();
-	const Object@ opImplCast() const;
-	string get_name() const property;
-	void set_name(const string&in value) property;
-	int GetInstanceID() const;
-	GameObject@ get_gameObject() const property;
-	Transform@ get_transform() const property;
-	Behavior@ opCast();
-	const Behavior@ opCast() const;
-	Transform@ opCast();
-	const Transform@ opCast() const;
-	Collider@ opCast();
-	const Collider@ opCast() const;
-	Rigidbody@ opCast();
-	const Rigidbody@ opCast() const;
-	CharacterController@ opCast();
-	const CharacterController@ opCast() const;
-	bool TryGetComponent(?&out component) const;
-}
-class Behavior {
-	Component@ opImplCast();
-	const Component@ opImplCast() const;
-	Object@ opImplCast();
-	const Object@ opImplCast() const;
-	string get_name() const property;
-	void set_name(const string&in value) property;
-	int GetInstanceID() const;
-	GameObject@ get_gameObject() const property;
-	Transform@ get_transform() const property;
-	bool get_enabled() const property;
-	void set_enabled(bool value) property;
-	bool get_isActiveAndEnabled() const property;
-	Collider@ opCast();
-	const Collider@ opCast() const;
-	CharacterController@ opCast();
-	const CharacterController@ opCast() const;
-	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+	T@ AddComponent<T>();
 }
 class Transform {
 	Component@ opImplCast();
@@ -386,8 +331,11 @@ class Transform {
 	void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space::Self);
 	void LookAt(const Vector3&in worldPosition, const Vector3&in worldUp = Vector3::up);
 	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
 }
-class Collider {
+class CharacterController {
+	Collider@ opImplCast();
+	const Collider@ opImplCast() const;
 	Behavior@ opImplCast();
 	const Behavior@ opImplCast() const;
 	Component@ opImplCast();
@@ -406,9 +354,140 @@ class Collider {
 	void set_isTrigger(bool value) property;
 	Rigidbody@ get_attachedRigidbody() const property;
 	Vector3 ClosestPoint(const Vector3&in position) const;
+	CollisionFlags Move(const Vector3&in motion);
+	bool SimpleMove(const Vector3&in speed);
+	bool get_isGrounded() const property;
+	Vector3 get_velocity() const property;
+	Vector3 get_center() const property;
+	void set_center(const Vector3&in value) property;
+	float get_radius() const property;
+	void set_radius(float value) property;
+	float get_height() const property;
+	void set_height(float value) property;
+	float get_slopeLimit() const property;
+	void set_slopeLimit(float value) property;
+	float get_stepOffset() const property;
+	void set_stepOffset(float value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class BoxCollider {
+	Collider@ opImplCast();
+	const Collider@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool get_isTrigger() const property;
+	void set_isTrigger(bool value) property;
+	Rigidbody@ get_attachedRigidbody() const property;
+	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 get_center() const property;
+	void set_center(const Vector3&in value) property;
+	Vector3 get_size() const property;
+	void set_size(const Vector3&in value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class SphereCollider {
+	Collider@ opImplCast();
+	const Collider@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool get_isTrigger() const property;
+	void set_isTrigger(bool value) property;
+	Rigidbody@ get_attachedRigidbody() const property;
+	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 get_center() const property;
+	void set_center(const Vector3&in value) property;
+	float get_radius() const property;
+	void set_radius(float value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class CapsuleCollider {
+	Collider@ opImplCast();
+	const Collider@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool get_isTrigger() const property;
+	void set_isTrigger(bool value) property;
+	Rigidbody@ get_attachedRigidbody() const property;
+	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 get_center() const property;
+	void set_center(const Vector3&in value) property;
+	float get_radius() const property;
+	void set_radius(float value) property;
+	float get_height() const property;
+	void set_height(float value) property;
+	int get_direction() const property;
+	void set_direction(int value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Collider {
 	CharacterController@ opCast();
 	const CharacterController@ opCast() const;
+	BoxCollider@ opCast();
+	const BoxCollider@ opCast() const;
+	SphereCollider@ opCast();
+	const SphereCollider@ opCast() const;
+	CapsuleCollider@ opCast();
+	const CapsuleCollider@ opCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool get_isTrigger() const property;
+	void set_isTrigger(bool value) property;
+	Rigidbody@ get_attachedRigidbody() const property;
+	Vector3 ClosestPoint(const Vector3&in position) const;
 	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
 }
 class Rigidbody {
 	Component@ opImplCast();
@@ -450,10 +529,42 @@ class Rigidbody {
 	void WakeUp();
 	bool IsSleeping() const;
 	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
 }
-class CharacterController {
-	Collider@ opImplCast();
-	const Collider@ opImplCast() const;
+class AudioSource {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	void Play();
+	void Stop();
+	void Pause();
+	void UnPause();
+	void PlayOneShot(AudioClip@ clip, float volumeScale = 1.0f);
+	bool get_isPlaying() const property;
+	AudioClip@ get_clip() const property;
+	void set_clip(AudioClip@ value) property;
+	float get_volume() const property;
+	void set_volume(float value) property;
+	float get_pitch() const property;
+	void set_pitch(float value) property;
+	bool get_loop() const property;
+	void set_loop(bool value) property;
+	bool get_mute() const property;
+	void set_mute(bool value) property;
+	bool get_playOnAwake() const property;
+	void set_playOnAwake(bool value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class MeshRenderer {
+	Renderer@ opImplCast();
+	const Renderer@ opImplCast() const;
 	Behavior@ opImplCast();
 	const Behavior@ opImplCast() const;
 	Component@ opImplCast();
@@ -468,25 +579,314 @@ class CharacterController {
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
-	bool get_isTrigger() const property;
-	void set_isTrigger(bool value) property;
-	Rigidbody@ get_attachedRigidbody() const property;
-	Vector3 ClosestPoint(const Vector3&in position) const;
-	CollisionFlags Move(const Vector3&in motion);
-	bool SimpleMove(const Vector3&in speed);
-	bool get_isGrounded() const property;
-	Vector3 get_velocity() const property;
-	Vector3 get_center() const property;
-	void set_center(const Vector3&in value) property;
-	float get_radius() const property;
-	void set_radius(float value) property;
-	float get_height() const property;
-	void set_height(float value) property;
-	float get_slopeLimit() const property;
-	void set_slopeLimit(float value) property;
-	float get_stepOffset() const property;
-	void set_stepOffset(float value) property;
+	Material@ get_material() property;
+	void set_material(Material@ value) property;
+	Material@ get_sharedMaterial() const property;
+	void set_sharedMaterial(Material@ value) property;
 	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Renderer {
+	MeshRenderer@ opCast();
+	const MeshRenderer@ opCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Material@ get_material() property;
+	void set_material(Material@ value) property;
+	Material@ get_sharedMaterial() const property;
+	void set_sharedMaterial(Material@ value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Text {
+	Graphic@ opImplCast();
+	const Graphic@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Color get_color() const property;
+	void set_color(const Color&in value) property;
+	bool get_raycastTarget() const property;
+	void set_raycastTarget(bool value) property;
+	void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+	string get_text() const property;
+	void set_text(const string&in value) property;
+	float get_fontSize() const property;
+	void set_fontSize(float value) property;
+	float get_lineSpacing() const property;
+	void set_lineSpacing(float value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Image {
+	Graphic@ opImplCast();
+	const Graphic@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Color get_color() const property;
+	void set_color(const Color&in value) property;
+	bool get_raycastTarget() const property;
+	void set_raycastTarget(bool value) property;
+	void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Graphic {
+	Text@ opCast();
+	const Text@ opCast() const;
+	Image@ opCast();
+	const Image@ opCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Color get_color() const property;
+	void set_color(const Color&in value) property;
+	bool get_raycastTarget() const property;
+	void set_raycastTarget(bool value) property;
+	void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Button {
+	Selectable@ opImplCast();
+	const Selectable@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_interactable() const property;
+	void set_interactable(bool value) property;
+	UnityEvent@ get_onClick() const property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Selectable {
+	Button@ opCast();
+	const Button@ opCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_interactable() const property;
+	void set_interactable(bool value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Behavior {
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+	BoxCollider@ opCast();
+	const BoxCollider@ opCast() const;
+	SphereCollider@ opCast();
+	const SphereCollider@ opCast() const;
+	CapsuleCollider@ opCast();
+	const CapsuleCollider@ opCast() const;
+	Collider@ opCast();
+	const Collider@ opCast() const;
+	MeshRenderer@ opCast();
+	const MeshRenderer@ opCast() const;
+	Renderer@ opCast();
+	const Renderer@ opCast() const;
+	Text@ opCast();
+	const Text@ opCast() const;
+	Image@ opCast();
+	const Image@ opCast() const;
+	Graphic@ opCast();
+	const Graphic@ opCast() const;
+	Button@ opCast();
+	const Button@ opCast() const;
+	Selectable@ opCast();
+	const Selectable@ opCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Component {
+	Transform@ opCast();
+	const Transform@ opCast() const;
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+	BoxCollider@ opCast();
+	const BoxCollider@ opCast() const;
+	SphereCollider@ opCast();
+	const SphereCollider@ opCast() const;
+	CapsuleCollider@ opCast();
+	const CapsuleCollider@ opCast() const;
+	Collider@ opCast();
+	const Collider@ opCast() const;
+	Rigidbody@ opCast();
+	const Rigidbody@ opCast() const;
+	AudioSource@ opCast();
+	const AudioSource@ opCast() const;
+	MeshRenderer@ opCast();
+	const MeshRenderer@ opCast() const;
+	Renderer@ opCast();
+	const Renderer@ opCast() const;
+	Text@ opCast();
+	const Text@ opCast() const;
+	Image@ opCast();
+	const Image@ opCast() const;
+	Graphic@ opCast();
+	const Graphic@ opCast() const;
+	Button@ opCast();
+	const Button@ opCast() const;
+	Selectable@ opCast();
+	const Selectable@ opCast() const;
+	Behavior@ opCast();
+	const Behavior@ opCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Material {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	Color get_color() const property;
+	void set_color(const Color&in value) property;
+	Vector2 get_mainTextureOffset() const property;
+	void set_mainTextureOffset(const Vector2&in value) property;
+	Vector2 get_mainTextureScale() const property;
+	void set_mainTextureScale(const Vector2&in value) property;
+	Color GetColor(const string&in name) const;
+	void SetColor(const string&in name, const Color&in value);
+	float GetFloat(const string&in name) const;
+	void SetFloat(const string&in name, float value);
+	bool HasProperty(const string&in name) const;
+}
+class AudioClip {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	float get_length() const property;
+	int get_frequency() const property;
+	int get_channels() const property;
+}
+class Object {
+	GameObject@ opCast();
+	const GameObject@ opCast() const;
+	Transform@ opCast();
+	const Transform@ opCast() const;
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+	BoxCollider@ opCast();
+	const BoxCollider@ opCast() const;
+	SphereCollider@ opCast();
+	const SphereCollider@ opCast() const;
+	CapsuleCollider@ opCast();
+	const CapsuleCollider@ opCast() const;
+	Collider@ opCast();
+	const Collider@ opCast() const;
+	Rigidbody@ opCast();
+	const Rigidbody@ opCast() const;
+	AudioSource@ opCast();
+	const AudioSource@ opCast() const;
+	MeshRenderer@ opCast();
+	const MeshRenderer@ opCast() const;
+	Renderer@ opCast();
+	const Renderer@ opCast() const;
+	Text@ opCast();
+	const Text@ opCast() const;
+	Image@ opCast();
+	const Image@ opCast() const;
+	Graphic@ opCast();
+	const Graphic@ opCast() const;
+	Button@ opCast();
+	const Button@ opCast() const;
+	Selectable@ opCast();
+	const Selectable@ opCast() const;
+	Behavior@ opCast();
+	const Behavior@ opCast() const;
+	Component@ opCast();
+	const Component@ opCast() const;
+	Material@ opCast();
+	const Material@ opCast() const;
+	AudioClip@ opCast();
+	const AudioClip@ opCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
 }
 class ContactPoint {
 	ContactPoint();
@@ -518,6 +918,25 @@ class Collision {
 	Vector3 get_impulse() const property;
 	int get_contactCount() const property;
 	ContactPoint GetContact(int index) const;
+}
+class Scene {
+	~Scene();
+	Scene();
+	Scene(const Scene&in other);
+	Scene& opAssign(const Scene&in other);
+	bool opEquals(const Scene&in other) const;
+	string get_name() const property;
+	string get_path() const property;
+	int get_buildIndex() const property;
+	bool IsValid() const;
+}
+class UnityEvent {
+	void AddListener(UnityAction@ call);
+	void RemoveListener(UnityAction@ call);
+	void RemoveAllListeners();
+	void Invoke();
+	int GetPersistentEventCount() const;
+	string GetPersistentMethodName(int index) const;
 }
 uint scan(const string&in str, ?&out...);
 string format(const string&in fmt, const ?&in...);
@@ -561,10 +980,19 @@ namespace Color { Color Lerp(const Color&in a, const Color&in b, float t); }
 namespace Color { Color LerpUnclamped(const Color&in a, const Color&in b, float t); }
 namespace Color { Color HSVToRGB(float h, float s, float v); }
 namespace Object { void Destroy(Object@ obj); }
+namespace Object { void DontDestroyOnLoad(Object@ target); }
+namespace Object { GameObject@ Instantiate(GameObject@ original); }
+namespace Object { GameObject@ Instantiate(GameObject@ original, Transform@ parent, bool instantiateInWorldSpace = false); }
+namespace Object { GameObject@ Instantiate(GameObject@ original, const Vector3&in position, const Quaternion&in rotation, Transform@ parent = null); }
 namespace Physics { Vector3 get_gravity() property; }
 namespace Physics { void set_gravity(const Vector3&in value) property; }
 namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
 namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
+namespace GameObject { GameObject@ Find(const string&in name); }
+namespace SceneManager { void LoadScene(const string&in sceneName); }
+namespace SceneManager { void LoadScene(int sceneBuildIndex); }
+namespace SceneManager { Scene GetActiveScene(); }
+namespace SceneManager { int get_sceneCountInBuildSettings() property; }
 namespace Debug { void Log(const string&in message); }
 namespace Debug { void LogWarning(const string&in message); }
 namespace Debug { void LogError(const string&in message); }
@@ -601,6 +1029,13 @@ namespace Mathf { float Sign(float f); }
 namespace Mathf { float Sin(float f); }
 namespace Mathf { float Sqrt(float f); }
 namespace Mathf { float Tan(float f); }
+namespace Random { void InitState(int seed); }
+namespace Random { float get_value() property; }
+namespace Random { float Range(float minInclusive, float maxInclusive); }
+namespace Random { int Range(int minInclusive, int maxExclusive); }
+namespace Random { Vector3 get_insideUnitSphere() property; }
+namespace Random { Vector3 get_onUnitSphere() property; }
+namespace Random { Vector2 get_insideUnitCircle() property; }
 namespace Time { float get_deltaTime() property; }
 namespace Time { float get_unscaledDeltaTime() property; }
 namespace Time { float get_time() property; }
@@ -626,6 +1061,8 @@ namespace Screen { void set_fullScreenMode(FullScreenMode value) property; }
 namespace Screen { bool get_fullScreen() property; }
 namespace Screen { void set_fullScreen(bool value) property; }
 namespace Screen { void SetResolution(int width, int height, FullScreenMode mode); }
+namespace Application { void Quit(); }
+namespace Application { bool get_isPlaying() property; }
 namespace Vector2 { const Vector2 zero; }
 namespace Vector2 { const Vector2 one; }
 namespace Vector2 { const Vector2 up; }
@@ -673,5 +1110,9 @@ abstract class MonoBehavior {
 	bool isActiveAndEnabled { get const { return native_.isActiveAndEnabled; } }
 
 	void Destroy(Object@ obj) { Object::Destroy(obj); }
+	void DontDestroyOnLoad(Object@ target) { Object::DontDestroyOnLoad(target); }
+	GameObject@ Instantiate(GameObject@ original) { return Object::Instantiate(original); }
+	GameObject@ Instantiate(GameObject@ original, Transform@ parent, bool instantiateInWorldSpace = false) { return Object::Instantiate(original, parent, instantiateInWorldSpace); }
+	GameObject@ Instantiate(GameObject@ original, const Vector3 &in position, const Quaternion &in rotation, Transform@ parent = null) { return Object::Instantiate(original, position, rotation, parent); }
 }
 

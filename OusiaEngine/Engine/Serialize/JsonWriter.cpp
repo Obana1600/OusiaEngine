@@ -20,6 +20,15 @@ double ToShortestDouble(float value) {
 	return result;
 }
 
+Json ToAssetReferenceJson(const AssetDatabase::AssetReference &reference) {
+	auto json = Json::object();
+	json["guid"] = reference.guid.ToString();
+	if (!reference.subAsset.empty()) {
+		json["sub"] = reference.subAsset;
+	}
+	return json;
+}
+
 } // namespace
 
 
@@ -195,6 +204,11 @@ void ou::JsonWriter::ObjectReference(std::string_view name, Object *&value, Obje
 	}
 
 	if (!savedObjects_->contains(value)) {
+		if (const auto reference = AssetDatabase::FindAssetReference(value)) {
+			json = ToAssetReferenceJson(*reference);
+			return;
+		}
+
 		Log::Warning("保存されないオブジェクトを参照しています: \"{}\" -> {}", name, value->GetName());
 		json = nullptr;
 		return;
@@ -225,11 +239,7 @@ void ou::JsonWriter::AssetObject(std::string_view name, std::shared_ptr<Object> 
 		return;
 	}
 
-	json = Json::object();
-	json["guid"] = reference->guid.ToString();
-	if (!reference->subAsset.empty()) {
-		json["sub"] = reference->subAsset;
-	}
+	json = ToAssetReferenceJson(*reference);
 }
 
 

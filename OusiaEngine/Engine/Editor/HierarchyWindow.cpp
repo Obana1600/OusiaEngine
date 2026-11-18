@@ -3,6 +3,7 @@
 #include "Editor/EditorPayload.h"
 #include "Editor/GameObjectMenu.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
 #include "Render/Asset/Model.h"
 #include "Scene/GameObject.h"
@@ -248,10 +249,15 @@ void ou::HierarchyWindow::AcceptAssetDrop(Scene *scene, GameObject *parent) {
 
 	const auto asset = EditorPayload::DecodeAsset(payload->Data, payload->DataSize);
 	if (!asset.subAsset.empty()) { return; }
-	const auto model = AssetDatabase::LoadAssetAtPath<Model>(asset.path);
-	if (!model) { return; }
 
-	auto *root = model->Instantiate(scene);
+	GameObject *root = nullptr;
+	if (const auto model = AssetDatabase::LoadAssetAtPath<Model>(asset.path)) {
+		root = model->Instantiate(scene);
+	} else if (const auto prefab = AssetDatabase::LoadAssetAtPath<GameObject>(asset.path)) {
+		root = PrefabUtility::InstantiatePrefab(prefab.get(), scene);
+	}
+	if (!root) { return; }
+
 	if (parent) {
 		root->GetTransform()->SetParent(parent->GetTransform(), false);
 	}

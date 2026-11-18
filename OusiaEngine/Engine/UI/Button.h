@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Event.h"
+#include "Events/UnityEvent.h"
 #include "UI/Selectable.h"
 
 
@@ -11,12 +11,14 @@ class Button: public Selectable,
 			  public ISubmitHandler {
 public: // メンバ変数
 
-	Event<> onClick_;
+	// Inspector でつないだもの（シーンに保存）と、AddListener でつないだものを呼ぶ
+	UnityEvent onClick_;
 
 
 public: // メンバ関数
 
 	void Update() override;
+	void Serialize(Serializer &serializer) override;
 
 	void OnPointerClick(PointerEventData &eventData) override;
 	void OnSubmit(BaseEventData &evemtData) override;

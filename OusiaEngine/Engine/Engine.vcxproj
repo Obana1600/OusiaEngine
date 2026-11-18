@@ -32,6 +32,9 @@
     <ProjectReference Include="..\External\imgui\imgui.vcxproj">
       <Project>{7bb4cfb8-f09e-4c31-abc8-18f47cb36532}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\External\ImGuizmo\ImGuizmo.vcxproj">
+      <Project>{16bff9d3-a3d7-42af-8fa5-6ccd4978bba9}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animation\Core\AnimationPlayhead.h" />
@@ -42,9 +45,10 @@
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Editor\CustomEditor.h" />
     <ClInclude Include="Editor\EngineEditors.h" />
-    <ClInclude Include="Editor\GUIContent.h" />
+    <ClInclude Include="Editor\GuiContent.h" />
     <ClInclude Include="Editor\Editor.h" />
     <ClInclude Include="Editor\EditorGuiLayout.h" />
+    <ClInclude Include="Editor\EditorGuiUtility.h" />
     <ClInclude Include="Editor\EditorFunc.h" />
     <ClInclude Include="Core\Guid.h" />
     <ClInclude Include="Editor\EditorWindow.h" />
@@ -53,6 +57,9 @@
     <ClInclude Include="Editor\EditorApplication.h" />
     <ClInclude Include="Editor\EditorPayload.h" />
     <ClInclude Include="Editor\Selection.h" />
+    <ClInclude Include="Editor\PrefabUtility.h" />
+    <ClInclude Include="Editor\UnityEventDrawer.h" />
+    <ClInclude Include="Events\UnityEvent.h" />
     <ClInclude Include="Editor\HierarchyWindow.h" />
     <ClInclude Include="Editor\InspectorWindow.h" />
     <ClInclude Include="Editor\GameView.h" />
@@ -66,6 +73,7 @@
     <ClInclude Include="Editor\EditorPrefs.h" />
     <ClInclude Include="Editor\SerializedObject.h" />
     <ClInclude Include="Editor\SerializedProperty.h" />
+    <ClInclude Include="Asset\Importer\PrefabImporter.h" />
     <ClInclude Include="Serialize\PropertySchema.h" />
     <ClInclude Include="Editor\ExternalScriptEditor.h" />
     <ClInclude Include="Editor\PreferencesWindow.h" />
@@ -98,6 +106,7 @@
     <ClInclude Include="Animation\Tween\TweenShortcuts.h" />
     <ClInclude Include="Serialize\Serializer.h" />
     <ClInclude Include="Serialize\TypeRegistry.h" />
+    <ClInclude Include="Editor\Tools.h" />
     <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\Selectable.h" />
     <ClInclude Include="UI\CanvasUpdateRegistry.h" />
@@ -217,6 +226,7 @@
     <ClCompile Include="Editor\EngineEditors.cpp" />
     <ClCompile Include="Editor\Editor.cpp" />
     <ClCompile Include="Editor\EditorGuiLayout.cpp" />
+    <ClCompile Include="Editor\EditorGuiUtility.cpp" />
     <ClCompile Include="Editor\EditorFunc.cpp" />
     <ClCompile Include="Editor\EditorPayload.cpp" />
     <ClCompile Include="Core\Guid.cpp" />
@@ -225,6 +235,9 @@
     <ClCompile Include="Editor\EditorSceneManager.cpp" />
     <ClCompile Include="Editor\EditorApplication.cpp" />
     <ClCompile Include="Editor\Selection.cpp" />
+    <ClCompile Include="Editor\PrefabUtility.cpp" />
+    <ClCompile Include="Editor\UnityEventDrawer.cpp" />
+    <ClCompile Include="Events\UnityEvent.cpp" />
     <ClCompile Include="Editor\HierarchyWindow.cpp" />
     <ClCompile Include="Editor\InspectorWindow.cpp" />
     <ClCompile Include="Editor\GameView.cpp" />
@@ -242,6 +255,7 @@
     <ClCompile Include="Editor\PreferencesWindow.cpp" />
     <ClCompile Include="Core\PlayerSettings.cpp" />
     <ClCompile Include="Core\JsonFile.cpp" />
+    <ClCompile Include="Asset\Importer\PrefabImporter.cpp" />
     <ClCompile Include="Script\ScriptBindingsPredefined.cpp" />
     <ClCompile Include="Script\MonoBehavior.cpp" />
     <ClCompile Include="Asset\Importer\MonoScriptImporter.cpp" />
@@ -251,6 +265,8 @@
     <ClCompile Include="Script\ScriptBindingsMath.cpp" />
     <ClCompile Include="Script\ScriptBindingsObject.cpp" />
     <ClCompile Include="Script\ScriptBindingsPhysics.cpp" />
+    <ClCompile Include="Script\ScriptBindingsScene.cpp" />
+    <ClCompile Include="Script\ScriptBindingsComponents.cpp" />
     <ClCompile Include="Serialize\EngineTypes.cpp" />
     <ClCompile Include="Resources.cpp" />
     <ClCompile Include="Serialize\JsonReader.cpp" />
@@ -273,6 +289,7 @@
     <ClCompile Include="Animation\Tween\TweenShortcuts.cpp" />
     <ClCompile Include="Serialize\Serializer.cpp" />
     <ClCompile Include="Serialize\TypeRegistry.cpp" />
+    <ClCompile Include="Editor\Tools.cpp" />
     <ClCompile Include="UI\Button.cpp" />
     <ClCompile Include="UI\Selectable.cpp" />
     <ClCompile Include="UI\CanvasUpdateRegistry.cpp" />

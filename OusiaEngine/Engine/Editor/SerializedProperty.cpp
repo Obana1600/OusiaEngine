@@ -298,7 +298,9 @@ void ou::SerializedProperty::SetObjectReferenceValue(Object *value) {
 	}
 	if (!Accepts(value)) { return; }
 
-	if (FindSchema()->isAsset) {
+	// アセットの欄か、シーンの外のアセット（GameObject の欄のプレハブ）なら guid で書く
+	const auto isSaved = object_->sceneObjects_.savedObjects.contains(value);
+	if (FindSchema()->isAsset || !isSaved) {
 		const auto reference = AssetDatabase::FindAssetReference(value);
 		if (!reference) { return; }
 
@@ -309,8 +311,7 @@ void ou::SerializedProperty::SetObjectReferenceValue(Object *value) {
 		return;
 	}
 
-	// シーンの中のものは、保存されるもの（同じシーン）だけ
-	if (!object_->sceneObjects_.savedObjects.contains(value)) { return; }
+	// シーンの中のものは fileId で書く
 	auto json = Json::object();
 	json["id"] = value->GetFileId();
 	Write(std::move(json));

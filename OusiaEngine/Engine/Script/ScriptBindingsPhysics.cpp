@@ -2,12 +2,15 @@
 #include "Math/Mathf.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
+#include "Physics/BoxCollider.h"
+#include "Physics/CapsuleCollider.h"
 #include "Physics/CharacterController.h"
 #include "Physics/Collider.h"
 #include "Physics/Collision.h"
 #include "Physics/Physics.h"
 #include "Physics/RaycastHit.h"
 #include "Physics/Rigidbody.h"
+#include "Physics/SphereCollider.h"
 #include "Scene/GameObject.h"
 #include "Scene/Transform.h"
 #include "Script/ScriptBindingsInternal.h"
@@ -281,14 +284,47 @@ void ou::ScriptBindings::RegisterPhysicsMembers(asIScriptEngine *engine) {
 
 	// ---- Collider ----
 	{
-		const auto c = RegisterComponentType(engine, "Collider", {"Behavior", "Component", "Object"});
+		RegisterColliderMembers(RegisterComponentType(engine, "Collider"));
+	}
+
+	// ---- BoxCollider ----
+	{
+		const auto c = RegisterComponentType(engine, "BoxCollider");
 		RegisterColliderMembers(c);
-		c.Downcast<CharacterController>("CharacterController");
+		c.Method("Vector3 get_center() const property", asFUNCTION((Get<BoxCollider, const Vector3 &, &BoxCollider::GetCenter>)));
+		c.Method("void set_center(const Vector3 &in value) property", asFUNCTION((Set<BoxCollider, const Vector3 &, &BoxCollider::SetCenter>)));
+		c.Method("Vector3 get_size() const property", asFUNCTION((Get<BoxCollider, const Vector3 &, &BoxCollider::GetSize>)));
+		c.Method("void set_size(const Vector3 &in value) property", asFUNCTION((Set<BoxCollider, const Vector3 &, &BoxCollider::SetSize>)));
+	}
+
+	// ---- SphereCollider ----
+	{
+		const auto c = RegisterComponentType(engine, "SphereCollider");
+		RegisterColliderMembers(c);
+		c.Method("Vector3 get_center() const property", asFUNCTION((Get<SphereCollider, const Vector3 &, &SphereCollider::GetCenter>)));
+		c.Method("void set_center(const Vector3 &in value) property", asFUNCTION((Set<SphereCollider, const Vector3 &, &SphereCollider::SetCenter>)));
+		c.Method("float get_radius() const property", asFUNCTION((Get<SphereCollider, float, &SphereCollider::GetRadius>)));
+		c.Method("void set_radius(float value) property", asFUNCTION((Set<SphereCollider, float, &SphereCollider::SetRadius>)));
+	}
+
+	// ---- CapsuleCollider ----
+	{
+		const auto c = RegisterComponentType(engine, "CapsuleCollider");
+		RegisterColliderMembers(c);
+		c.Method("Vector3 get_center() const property", asFUNCTION((Get<CapsuleCollider, const Vector3 &, &CapsuleCollider::GetCenter>)));
+		c.Method("void set_center(const Vector3 &in value) property", asFUNCTION((Set<CapsuleCollider, const Vector3 &, &CapsuleCollider::SetCenter>)));
+		c.Method("float get_radius() const property", asFUNCTION((Get<CapsuleCollider, float, &CapsuleCollider::GetRadius>)));
+		c.Method("void set_radius(float value) property", asFUNCTION((Set<CapsuleCollider, float, &CapsuleCollider::SetRadius>)));
+		c.Method("float get_height() const property", asFUNCTION((Get<CapsuleCollider, float, &CapsuleCollider::GetHeight>)));
+		c.Method("void set_height(float value) property", asFUNCTION((Set<CapsuleCollider, float, &CapsuleCollider::SetHeight>)));
+		// Unity と同じく 0: X、1: Y、2: Z
+		c.Method("int get_direction() const property", asFUNCTION((Get<CapsuleCollider, int, &CapsuleCollider::GetDirection>)));
+		c.Method("void set_direction(int value) property", asFUNCTION((Set<CapsuleCollider, int, &CapsuleCollider::SetDirection>)));
 	}
 
 	// ---- CharacterController ----
 	{
-		const auto c = RegisterComponentType(engine, "CharacterController", {"Collider", "Behavior", "Component", "Object"});
+		const auto c = RegisterComponentType(engine, "CharacterController");
 		RegisterColliderMembers(c);
 		c.Method("CollisionFlags Move(const Vector3 &in motion)", asFUNCTION(Move));
 		c.Method("bool SimpleMove(const Vector3 &in speed)", asFUNCTION(SimpleMove));
@@ -308,7 +344,7 @@ void ou::ScriptBindings::RegisterPhysicsMembers(asIScriptEngine *engine) {
 
 	// ---- Rigidbody ----
 	{
-		const auto r = RegisterComponentType(engine, "Rigidbody", {"Component", "Object"});
+		const auto r = RegisterComponentType(engine, "Rigidbody");
 		r.Method("float get_mass() const property", asFUNCTION((Get<Rigidbody, float, &Rigidbody::GetMass>)));
 		r.Method("void set_mass(float value) property", asFUNCTION((Set<Rigidbody, float, &Rigidbody::SetMass>)));
 		r.Method("bool get_useGravity() const property", asFUNCTION((Get<Rigidbody, bool, &Rigidbody::GetUseGravity>)));

@@ -180,12 +180,9 @@ void ou::Selectable::Select() {
 
 
 void ou::Selectable::OnPointerEnter(PointerEventData &) {
+	// Unity と同じく、マウスが乗っただけでは選ばない（選ぶと Selected の色のままになり、次からは乗っても色が変わらない）
 	isPointerInside_ = true;
 	EvaluateAndTransitionToSelectionState();
-
-	if (IsInteractable()) {
-		Select();
-	}
 }
 
 

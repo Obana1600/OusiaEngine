@@ -6,10 +6,16 @@
 #include "Editor/EditorMainWindow.h"
 #include "Editor/EditorPayload.h"
 #include "Editor/ExternalScriptEditor.h"
+#include "Editor/PrefabUtility.h"
 #include "Platform/Paths.h"
+#include "Scene/GameObject.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
+#include <cstring>
 #include <format>
 #include <fstream>
 #include <optional>
@@ -21,6 +27,7 @@
 #include <Windows.h>
 #include <shellapi.h>
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h> // BeginDragDropTargetCustom
 #include <imgui/imgui_stdlib.h>
 
 using namespace ou;
@@ -76,6 +83,62 @@ bool IsSceneFile(const std::string &assetPath) {
 
 bool IsScriptFile(const std::string &assetPath) {
 	return LowerExtension(std::filesystem::path(Utf8ToWide(assetPath))) == ".as";
+}
+
+bool IsPrefabFile(const std::string &assetPath) {
+	return LowerExtension(std::filesystem::path(Utf8ToWide(assetPath))) == ".prefab";
+}
+
+// EngineAssets はエンジンのものなので、作る・書き換えるのは Assets の中だけ
+bool IsInAssets(const std::string &assetPath) {
+	return assetPath == "Assets" || assetPath.starts_with("Assets/");
+}
+
+// Unity の AssetDatabase.GenerateUniqueAssetPath と同じく、あれば「名前 1」「名前 2」…にする
+std::optional<std::string> MakeUniqueAssetPath(const std::string &folder, const std::string &name, std::string_view extension) {
+	const auto folderPath = ToFullPath(folder);
+	if (!folderPath) { return std::nullopt; }
+
+	std::error_code error;
+	for (int i = 0; i < 1000; i++) {
+		const auto fileName = (i == 0 ? name : std::format("{} {}", name, i)) + std::string(extension);
+		if (!std::filesystem::exists(*folderPath / Utf8ToWide(fileName), error)) { return folder + "/" + fileName; }
+	}
+	return std::nullopt;
+}
+
+// ファイル名に使えない文字を _ にする（GameObject の名前は自由なので）
+std::string ToFileName(std::string_view name) {
+	std::string result(name);
+	std::replace_if(result.begin(), result.end(), [](char c) { return std::string_view("\\/:*?\"<>|").find(c) != std::string_view::npos; }, '_');
+	return result.empty() ? "New Prefab" : result;
+}
+
+// path が folder 自身か、その中か
+bool IsSameOrInside(const std::string &path, const std::string &folder) {
+	return path == folder || path.starts_with(folder + "/");
+}
+
+// Assets の中のもの（Assets 自身は除く）だけ消せる
+bool IsDeletable(const std::string &assetPath) {
+	return assetPath != "Assets" && IsInAssets(assetPath);
+}
+
+// ファイルとフォルダを Windows のごみ箱へ移す（Explorer で消したときと同じく、ごみ箱から戻せる）
+bool MoveToRecycleBin(const std::vector<std::filesystem::path> &paths) {
+	// SHFileOperation は、\0 で区切って最後を \0\0 で終える
+	std::wstring from;
+	for (const auto &path : paths) {
+		from += std::filesystem::path(path).make_preferred().wstring();
+		from += L'\0';
+	}
+	from += L'\0';
+
+	SHFILEOPSTRUCTW operation{};
+	operation.wFunc = FO_DELETE;
+	operation.pFrom = from.c_str();
+	operation.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+	return SHFileOperationW(&operation) == 0 && !operation.fAnyOperationsAborted;
 }
 
 // フォルダ → ファイルの順に、名前で並べる
@@ -161,7 +224,14 @@ void ou::ProjectWindow::OnGui() {
 		ImGui::EndTable();
 	}
 
+	// Delete キーで、選んでいるものを消す（サブアセットは消せない）
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete) && !selectedItem_.empty()) {
+		const auto selected = EditorPayload::DecodeAsset(selectedItem_.c_str(), static_cast<int>(selectedItem_.size()) + 1);
+		if (selected.subAsset.empty()) { BeginDelete(selected.path); }
+	}
+
 	DrawCreatePopup();
+	DrawDeletePopup();
 }
 
 
@@ -183,6 +253,7 @@ void ou::ProjectWindow::DrawFolderTree(const std::string &assetPath, const std::
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 		selectedFolder_ = assetPath;
 	}
+	AcceptGameObjectDrop(assetPath);
 
 	if (!isOpen) { return; }
 	for (const auto &entry : subFolders) {
@@ -214,6 +285,13 @@ void ou::ProjectWindow::DrawContents() {
 		}
 	}
 
+	// 何もないところに落とすと、開いているフォルダに作る
+	// 窓全体を受け手にする（重なったときは ImGui が小さいほうを選ぶので、フォルダや .prefab の行が勝つ）
+	if (auto *window = ImGui::GetCurrentWindow(); ImGui::BeginDragDropTargetCustom(window->InnerRect, window->ID)) {
+		SaveDroppedGameObject(currentFolder);
+		ImGui::EndDragDropTarget();
+	}
+
 	// 何もないところの右クリック（Unity の Project の Create）
 	if (ImGui::BeginPopupContextWindow("##ContentsMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 		DrawCreateMenu();
@@ -237,6 +315,7 @@ void ou::ProjectWindow::DrawFolderItem(const std::string &assetPath, const std::
 		revealSelectedFolder_ = true;
 	}
 	DrawItemMenu(assetPath);
+	AcceptGameObjectDrop(assetPath);
 }
 
 
@@ -250,6 +329,8 @@ void ou::ProjectWindow::DrawFileItem(const std::string &assetPath, const std::fi
 	const auto isOpen = ImGui::TreeNodeEx(assetPath.c_str(), flags, "%s", ToUtf8(fullPath.filename()).c_str());
 	HandleItem(assetPath, {});
 	DrawItemMenu(assetPath);
+	// Unity と同じく、プレハブの上に落とすと置き換える
+	if (IsPrefabFile(assetPath)) { AcceptGameObjectDrop(assetPath); }
 
 	if (isModel && isOpen) {
 		DrawSubAssets(assetPath);
@@ -293,7 +374,8 @@ void ou::ProjectWindow::HandleItem(const std::string &assetPath, const std::stri
 
 
 void ou::ProjectWindow::DrawItemMenu(const std::string &assetPath) {
-	if (!ImGui::BeginPopupContextItem("##ItemMenu")) { return; }
+	// 行は TreePush しないので、名前にパスを入れないと、すべての行が同じポップアップになる（開くと全部の行の分が並ぶ）
+	if (!ImGui::BeginPopupContextItem(("##ItemMenu" + assetPath).c_str())) { return; }
 
 	selectedItem_ = EditorPayload::EncodeAsset(assetPath, {});
 	DrawCreateMenu();
@@ -304,6 +386,8 @@ void ou::ProjectWindow::DrawItemMenu(const std::string &assetPath) {
 	if (ImGui::MenuItem("Show in Explorer")) {
 		if (const auto fullPath = ToFullPath(assetPath)) { ShowInExplorer(*fullPath); }
 	}
+	ImGui::Separator();
+	if (ImGui::MenuItem("Delete", "Delete", false, IsDeletable(assetPath))) { BeginDelete(assetPath); }
 	ImGui::EndPopup();
 }
 
@@ -399,4 +483,92 @@ void ou::ProjectWindow::OpenAsset(const std::string &assetPath) {
 	if (IsScriptFile(assetPath)) {
 		if (const auto fullPath = ToFullPath(assetPath)) { ExternalScriptEditor::OpenFile(*fullPath); }
 	}
+}
+
+
+void ou::ProjectWindow::AcceptGameObjectDrop(const std::string &target) {
+	if (!ImGui::BeginDragDropTarget()) { return; }
+	SaveDroppedGameObject(target);
+	ImGui::EndDragDropTarget();
+}
+
+
+void ou::ProjectWindow::SaveDroppedGameObject(const std::string &target) {
+	if (!IsInAssets(target)) { return; }
+	const auto *payload = ImGui::AcceptDragDropPayload(EditorPayload::kGameObject);
+	if (!payload) { return; }
+
+	uint32_t instanceId = 0;
+	std::memcpy(&instanceId, payload->Data, sizeof(instanceId));
+	auto *gameObject = dynamic_cast<GameObject *>(Object::FindObjectFromInstanceId(instanceId));
+	if (!gameObject) { return; }
+
+	// .prefab の上なら置き換え、フォルダなら「GameObject の名前.prefab」を新しく作る
+	const auto assetPath = IsPrefabFile(target) ? std::optional<std::string>(target) : MakeUniqueAssetPath(target, ToFileName(gameObject->GetName()), ".prefab");
+	if (!assetPath) { return; }
+
+	if (PrefabUtility::SaveAsPrefabAsset(gameObject, *assetPath)) {
+		selectedItem_ = EditorPayload::EncodeAsset(*assetPath, {});
+	}
+}
+
+
+void ou::ProjectWindow::BeginDelete(const std::string &assetPath) {
+	if (!IsDeletable(assetPath)) { return; }
+	deletingPath_ = assetPath;
+	opensDeletePopup_ = true;
+}
+
+
+void ou::ProjectWindow::DrawDeletePopup() {
+	constexpr const char *kDeletePopup = "Delete";
+	if (std::exchange(opensDeletePopup_, false)) {
+		ImGui::OpenPopup(kDeletePopup);
+	}
+	if (!ImGui::BeginPopupModal(kDeletePopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) { return; }
+
+	ImGui::Text("%s を削除しますか？", deletingPath_.c_str());
+	ImGui::TextDisabled("Windows のごみ箱に移します（ごみ箱から戻せます）。これを指していた欄は None になります");
+
+	// 開いているシーンは消せない（消すと、保存したときに同じパスへ書き戻される）
+	const auto *scene = SceneManager::GetActiveScene();
+	const auto isOpenScene = scene && !scene->GetPath().empty() && IsSameOrInside(scene->GetPath(), deletingPath_);
+	if (isOpenScene) {
+		ImGui::TextColored({1.0f, 0.4f, 0.4f, 1.0f}, "開いているシーン（%s）は削除できません", scene->GetPath().c_str());
+	}
+
+	ImGui::BeginDisabled(isOpenScene);
+	const auto isDeleteClicked = ImGui::Button("削除");
+	ImGui::EndDisabled();
+
+	if (isDeleteClicked) {
+		// .meta も一緒に消す（残すと「相手のファイルがない .meta」になる）
+		std::vector<std::filesystem::path> paths;
+		if (const auto fullPath = ToFullPath(deletingPath_)) {
+			std::error_code error;
+			paths.push_back(*fullPath);
+			auto metaPath = *fullPath;
+			metaPath += L".meta";
+			if (std::filesystem::exists(metaPath, error)) { paths.push_back(metaPath); }
+		}
+
+		if (!paths.empty() && MoveToRecycleBin(paths)) {
+			// GUID の表を作り直す（このパスの guid が引けなくなる）
+			AssetDatabase::Refresh();
+			if (IsSameOrInside(selectedFolder_, deletingPath_)) {
+				selectedFolder_ = deletingPath_.substr(0, deletingPath_.find_last_of('/'));
+			}
+			selectedItem_.clear();
+			Log::Info("ごみ箱に移しました: {}", deletingPath_);
+		} else {
+			Log::Error("削除できませんでした: {}", deletingPath_);
+		}
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("キャンセル")) {
+		ImGui::CloseCurrentPopup();
+	}
+	ImGui::EndPopup();
 }

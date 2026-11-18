@@ -10,7 +10,7 @@
 #include "Script/MonoScript.h"
 #include "Serialize/TypeRegistry.h"
 #include "Core/StringUtil.h"
-#include "Editor/EditorGUILayout.h"
+#include "Editor/EditorGuiLayout.h"
 
 #include <algorithm>
 #include <cctype>

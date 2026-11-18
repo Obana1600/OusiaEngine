@@ -55,6 +55,11 @@ private: // メンバ変数
 
 private: // メンバ関数
 
+	void DrawToolbar();
+	void SelectToolByKey();
+
+	bool DrawTransformHandle();
+
 	void HandleInput(bool isHovered);
 	void StartDrag();
 
@@ -62,6 +67,9 @@ private: // メンバ関数
 	void Pan(const Vector2 &mouseDelta);
 	void Orbit(const Vector2 &mouseDelta);
 	void Zoom(float wheel);
+
+	// Project から落としたモデル・プレハブを、マウスの先に置く
+	void AcceptAssetDrop();
 	void FrameSelected();
 
 	Quaternion MakeRotation() const;

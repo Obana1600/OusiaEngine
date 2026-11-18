@@ -104,7 +104,7 @@ private: // メンバ関数
 
 	bool Accepts(const Object *value) const;
 
-	// Quaternion を度数で見せるときのヒント（EditorGUILayout が使う）
+	// Quaternion を度数で見せるときのヒント（EditorGuiLayout が使う）
 	std::optional<SerializedProperty> FindEulerHint() const;
 };
 

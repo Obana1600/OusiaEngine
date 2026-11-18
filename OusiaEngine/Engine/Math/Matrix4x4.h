@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Math/Quaternion.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
-#include "Math/Quaternion.h"
 
 #include <string>
 #include <string_view>
@@ -42,7 +42,7 @@ public:
 	// デフォルトコンストラクタ
 	Matrix4x4();
 
-	// 16 のすべての要素を指定して作成する 
+	// 16 のすべての要素を指定して作成する
 	Matrix4x4(float m11, float m12, float m13, float m14,
 			  float m21, float m22, float m23, float m24,
 			  float m31, float m32, float m33, float m34,
@@ -54,13 +54,17 @@ public:
 
 public: // TODO: API を増やす / コメント書く
 
+	void SetColumn(int index, const Vector4 &v);
 	Vector4 GetColumn(int index) const;
 
-	void SetColumn(int index, const Vector4 &v);
-	
+	void SetRow(int index, const Vector4 &v);
 	Vector4 GetRow(int index) const;
 
-	void SetRow(int index, const Vector4 &v);
+	Vector3 GetPosition() const;
+
+	Quaternion GetRotation() const;
+
+	Vector3 GetLossyScale() const;
 
 	float Determinant() const;
 
@@ -110,4 +114,4 @@ public: // オペレータ
 	float operator()(int row, int column) const;
 };
 
-} // namespace ou
+} // namespace ou

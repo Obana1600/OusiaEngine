@@ -28,6 +28,7 @@ class SceneManager final {
 	friend class EditorApplication;
 	friend class EditorSceneManager;
 	friend class EditorBuildSettings;
+	friend class ScriptBindings;
 
 
 public: // 静的メンバ変数

@@ -183,13 +183,19 @@ asIScriptObject *ou::ScriptEngine::CreateObject(asITypeInfo *type, MonoBehavior 
 
 
 bool ou::ScriptEngine::CallMethod(asIScriptObject *object, asIScriptFunction *method, void *argument) {
-	if (!sEngine_ || !object || !method) { return false; }
+	return CallMethodWith(object, method, [argument](asIScriptContext *context) {
+		if (argument) { context->SetArgObject(0, argument); }
+	});
+}
+
+
+bool ou::ScriptEngine::CallMethodWith(asIScriptObject *object, asIScriptFunction *method, const std::function<void(asIScriptContext *)> &setArguments) {
+	if (!sEngine_ || !method) { return false; }
 
 	auto *context = sEngine_->RequestContext();
 	context->Prepare(method);
-	context->SetObject(object);
-
-	if (argument) { context->SetArgObject(0, argument); }
+	if (object) { context->SetObject(object); } // null ならメソッドではない関数（delegate など）
+	setArguments(context);
 
 	const auto result = context->Execute();
 	if (result == asEXECUTION_EXCEPTION) {

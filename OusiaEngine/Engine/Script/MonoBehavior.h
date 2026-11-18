@@ -2,8 +2,12 @@
 
 #include "Core/JsonFile.h"
 #include "Scene/Behavior.h"
+#include "Events/UnityEvent.h"
 
 #include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 
 
 // 前方宣言
@@ -17,6 +21,8 @@ class MonoBehavior: public Behavior {
 	friend class MonoScript;
 	friend class InspectorWindow;
 	friend class ScriptBindings;
+	friend class UnityEvent;
+	friend class UnityEventDrawer;
 
 public: // メンバ関数
 
@@ -66,6 +72,13 @@ private: // インナークラス
 	};
 
 
+	// Inspector の UnityEvent でつなげるメソッド（void で、引数は 0 か 1 つ）
+	struct ListenerMethod {
+		std::string name;
+		PersistentListenerMode mode = PersistentListenerMode::Void;
+	};
+
+
 private: // メンバ変数
 
 	std::shared_ptr<MonoScript> script_;
@@ -86,6 +99,10 @@ private: // メンバ関数
 	void CallMessage(asIScriptFunction *method);
 	void CallCollisionMessage(asIScriptFunction *method, const Collision &collision);
 	void CallTriggerMessage(asIScriptFunction *method, Collider *other);
+
+	// UnityEvent から呼ぶ。名前と引数の型が合うメソッドを探して呼ぶ（なければ警告）
+	void InvokeListenerMethod(std::string_view name, PersistentListenerMode mode, int32_t intArgument, float floatArgument, const std::string &stringArgument, bool boolArgument);
+	std::vector<ListenerMethod> FindListenerMethods() const;
 };
 
 } // namespace ou

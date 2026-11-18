@@ -1,5 +1,4 @@
 #include "AssetDatabase.h"
-#include "Core/JsonFile.h"
 #include "Asset/AssetImporter.h"
 #include "Asset/Importer/AudioImporter.h"
 #include "Asset/Importer/FontImporter.h"
@@ -7,9 +6,11 @@
 #include "Asset/Importer/ModelImporter.h"
 #include "Asset/Importer/MonoScriptImporter.h"
 #include "Asset/Importer/PhysicsMaterialImporter.h"
+#include "Asset/Importer/PrefabImporter.h"
 #include "Asset/Importer/ShaderImporter.h"
 #include "Asset/Importer/ShaderModuleImporter.h"
 #include "Asset/Importer/TextureImporter.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Platform/Paths.h"
@@ -95,6 +96,7 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, cons
 		{L".otf", &MakeImporter<FontImporter>},
 		{L".physicsmaterial", &MakeImporter<PhysicsMaterialImporter>},
 		{L".as", &MakeImporter<MonoScriptImporter>},
+		{L".prefab", &MakeImporter<PrefabImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる
@@ -328,6 +330,8 @@ bool MatchesAssetType(const std::filesystem::path &path, std::string_view typeNa
 		{".obj", "gameobject"},
 		{".as", "monoscript"},
 		{".as", "script"},
+		{".prefab", "prefab"},
+		{".prefab", "gameobject"},
 	};
 
 	const auto extension = ToLowerAscii(ToUtf8(path.extension()));

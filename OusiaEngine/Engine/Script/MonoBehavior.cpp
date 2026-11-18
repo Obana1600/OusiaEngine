@@ -4,13 +4,59 @@
 // #include "Physics/Collision.h"
 #include "Script/MonoScript.h"
 #include "Script/ScriptEngine.h"
+#include "Diagnostics/Log.h"
 #include "Serialize/Serializer.h"
 
+#include <algorithm>
+#include <array>
 #include <utility>
 
 #include <angelscript.h>
 
 using namespace ou;
+
+
+namespace {
+
+// エンジンが呼ぶメッセージは、Inspector の一覧に出さない（C# では private にするのが普通なので、Unity の一覧にも出ない）
+constexpr std::array<std::string_view, 14> kMessageNames = {
+	"Awake", "Start", "FixedUpdate", "Update", "LateUpdate", "OnDestroy", "OnEnable", "OnDisable",
+	"OnCollisionEnter", "OnCollisionStay", "OnCollisionExit", "OnTriggerEnter", "OnTriggerStay", "OnTriggerExit"};
+
+// 引数の型から、渡す値の型を決める（使えない型なら false）
+bool ToListenerMode(asIScriptEngine *engine, int typeId, PersistentListenerMode &mode) {
+	switch (typeId) {
+	case asTYPEID_INT32: mode = PersistentListenerMode::Int; return true;
+	case asTYPEID_FLOAT: mode = PersistentListenerMode::Float; return true;
+	case asTYPEID_BOOL: mode = PersistentListenerMode::Bool; return true;
+	default: break;
+	}
+	if (typeId == engine->GetTypeIdByDecl("string")) {
+		mode = PersistentListenerMode::String;
+		return true;
+	}
+	return false;
+}
+
+// void で、引数が 0 か 1 つ（int・float・bool・string）の、外から呼べるメソッドなら、渡す値の型を返す
+bool FindListenerMode(asIScriptEngine *engine, const asIScriptFunction *method, PersistentListenerMode &mode) {
+	if (method->IsPrivate() || method->IsProtected() || method->GetReturnTypeId() != asTYPEID_VOID) { return false; }
+	if (std::find(kMessageNames.begin(), kMessageNames.end(), method->GetName()) != kMessageNames.end()) { return false; }
+
+	if (method->GetParamCount() == 0) {
+		mode = PersistentListenerMode::Void;
+		return true;
+	}
+	if (method->GetParamCount() != 1) { return false; }
+
+	int typeId = 0;
+	asDWORD flags = 0;
+	method->GetParam(0, &typeId, &flags);
+	if (flags & (asTM_OUTREF | asTM_INOUTREF)) { return false; }
+	return ToListenerMode(engine, typeId, mode);
+}
+
+} // namespace
 
 
 ou::MonoBehavior::~MonoBehavior() {
@@ -175,4 +221,56 @@ void ou::MonoBehavior::CallCollisionMessage(asIScriptFunction *method, const Col
 void ou::MonoBehavior::CallTriggerMessage(asIScriptFunction *method, Collider *other) {
 	if (!method || !isAwakeCalled_) { return; }
 	ScriptEngine::CallColliderMethod(instance_, method, other);
+}
+
+
+void ou::MonoBehavior::InvokeListenerMethod(std::string_view name, PersistentListenerMode mode, int32_t intArgument, float floatArgument, const std::string &stringArgument, bool boolArgument) {
+	if (!instance_) { return; }
+
+	auto *engine = ScriptEngine::sEngine_;
+	const auto *type = instance_->GetObjectType();
+	for (asUINT i = 0; i < type->GetMethodCount(); i++) {
+		auto *method = type->GetMethodByIndex(i);
+		PersistentListenerMode methodMode{};
+		if (name != method->GetName() || !FindListenerMode(engine, method, methodMode) || methodMode != mode) { continue; }
+
+		ScriptEngine::CallMethodWith(instance_, method, [&](asIScriptContext *context) {
+			int typeId = 0;
+			asDWORD flags = 0;
+			if (method->GetParamCount() == 1) { method->GetParam(0, &typeId, &flags); }
+
+			switch (mode) {
+			case PersistentListenerMode::Void: break;
+			case PersistentListenerMode::Int: context->SetArgDWord(0, static_cast<asDWORD>(intArgument)); break;
+			case PersistentListenerMode::Float: context->SetArgFloat(0, floatArgument); break;
+			case PersistentListenerMode::Bool: context->SetArgByte(0, boolArgument ? 1 : 0); break;
+			case PersistentListenerMode::String:
+				// const string &in は参照、string は値で渡す（値のときは AngelScript が複製する）
+				if (flags & asTM_INREF) {
+					context->SetArgAddress(0, const_cast<std::string *>(&stringArgument));
+				} else {
+					context->SetArgObject(0, const_cast<std::string *>(&stringArgument));
+				}
+				break;
+			}
+		});
+		return;
+	}
+
+	Log::Warning("{} に、UnityEvent でつないだメソッド {} がありません（引数の型が変わったかもしれません）", type->GetName(), name);
+}
+
+
+std::vector<MonoBehavior::ListenerMethod> ou::MonoBehavior::FindListenerMethods() const {
+	std::vector<ListenerMethod> methods;
+	if (!instance_) { return methods; }
+
+	auto *engine = ScriptEngine::sEngine_;
+	const auto *type = instance_->GetObjectType();
+	for (asUINT i = 0; i < type->GetMethodCount(); i++) {
+		const auto *method = type->GetMethodByIndex(i);
+		PersistentListenerMode mode{};
+		if (FindListenerMode(engine, method, mode)) { methods.push_back({method->GetName(), mode}); }
+	}
+	return methods;
 }

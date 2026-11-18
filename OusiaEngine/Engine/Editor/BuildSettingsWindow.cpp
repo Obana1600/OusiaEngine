@@ -5,7 +5,7 @@
 #include "Core/StringUtil.h"
 #include "Editor/EditorPayload.h"
 #include "Editor/BuildPipeline.h"
-#include "Editor/EditorGUILayout.h"
+#include "Editor/EditorGuiLayout.h"
 #include "Editor/EditorPrefs.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"

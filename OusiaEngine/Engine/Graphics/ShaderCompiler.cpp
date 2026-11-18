@@ -1,7 +1,10 @@
 #include "ShaderCompiler.h"
 #include "Core/StringUtil.h"
+#include "Diagnostics/Log.h"
+#include "Platform/Paths.h"
 
 // clang-format off
+#include <Windows.h>
 #include <wrl/client.h>
 #include <dxcapi.h> // wrl/client.h より後ろに置く
 // clang-format on
@@ -23,6 +26,16 @@ struct InternalState_DXC {
 };
 
 InternalState_DXC::InternalState_DXC() {
+	// dxcompiler.dll・dxil.dll は exe の隣の Runtime/ にある（Build/Common.props）。dxcompiler.dll は遅延読み込みなので、
+	// 最初の DxcCreateInstance より前に探す場所へ足しておけば読める。dxcompiler.dll が読む dxil.dll もここから見つかる
+	SetDllDirectoryW((ExecutableDirectory() / L"Runtime").c_str());
+
+	// 遅延読み込みは DLL がないと構造化例外を投げて固まるので、先に読めるかを確かめる。読めなければ compiler は null のまま
+	if (!LoadLibraryW(L"dxcompiler.dll")) {
+		Log::Error("dxcompiler.dll を読めません。exe の隣の Runtime/ に dxcompiler.dll と dxil.dll があるかを確かめてください");
+		return;
+	}
+
 	DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils));
 	DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
 	if (utils) {

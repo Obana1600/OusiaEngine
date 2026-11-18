@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -30,6 +31,7 @@ class Collision;
 class ScriptEngine final {
 	friend class Engine;
 	friend class MonoBehavior;
+	friend class ScriptBindings;
 	friend class EditorApplication;
 
 public: // エイリアス
@@ -63,6 +65,8 @@ private: // 静的メンバ関数
 	static asITypeInfo *FindMonoBehaviorClass(const std::string &className);
 	static asIScriptObject *CreateObject(asITypeInfo *type, MonoBehavior *native);
 	static bool CallMethod(asIScriptObject *object, asIScriptFunction *method, void *argument = nullptr);
+	// 引数は setArguments で入れる（Prepare と SetObject のあと、Execute の前に呼ぶ）。object が null なら、メソッドではない関数（delegate など）を呼ぶ
+	static bool CallMethodWith(asIScriptObject *object, asIScriptFunction *method, const std::function<void(asIScriptContext *)> &setArguments);
 	static void CallCollisionMethod(asIScriptObject *object, asIScriptFunction *method, const Collision &collision);
 	static void CallColliderMethod(asIScriptObject *object, asIScriptFunction *method, Collider *collider);
 	static void LogException(asIScriptContext *context);

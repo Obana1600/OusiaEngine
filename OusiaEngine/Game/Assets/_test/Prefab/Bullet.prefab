@@ -1,0 +1,51 @@
+{
+	"version": 1,
+	"gameObjects": [
+		{
+			"$id": 101,
+			"name": "BulletRoot",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "Transform",
+					"$id": 102,
+					"localPosition": [5.0, 5.0, 5.0],
+					"localRotation": [0.0, 0.0, 0.0, 1.0],
+					"localScale": [0.3, 0.3, 0.3],
+					"parent": null
+				},
+				{
+					"$type": "Rigidbody",
+					"$id": 103
+				},
+				{
+					"$type": "MonoBehavior",
+					"$id": 104,
+					"enabled": true,
+					"script": { "guid": "136ce5ebf459821a98ed55e149eaa01d" },
+					"damage": 5,
+					"self": { "id": 101 },
+					"child": { "id": 202 },
+					"other": null
+				}
+			]
+		},
+		{
+			"$id": 201,
+			"name": "Trail",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "Transform",
+					"$id": 202,
+					"localPosition": [0.0, 0.0, -1.0],
+					"localRotation": [0.0, 0.0, 0.0, 1.0],
+					"localScale": [1.0, 1.0, 1.0],
+					"parent": { "id": 102 }
+				}
+			]
+		}
+	]
+}

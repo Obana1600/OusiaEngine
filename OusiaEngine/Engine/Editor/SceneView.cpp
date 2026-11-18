@@ -1,14 +1,26 @@
 #include "SceneView.h"
+#include "Asset/AssetDatabase.h"
 #include "Editor/EditorFunc.h"
+#include "Editor/EditorPayload.h"
+#include "Editor/EditorSceneManager.h"
+#include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
+#include "Editor/Tools.h"
 #include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
+#include "Render/Asset/Model.h"
 #include "Scene/GameObject.h"
+#include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
 #include <algorithm>
+#include <cmath>
+#include <utility>
 
+// clang-format off
 #include <imgui/imgui.h>
+#include <ImGuizmo/ImGuizmo.h> // imgui/imgui.h の後ろに置く
+// clang-format on
 
 using namespace ou;
 
@@ -29,8 +41,27 @@ constexpr float kFastMultiplier = 4.0f;
 constexpr float kMinFlySpeed = 0.1f;
 constexpr float kMaxFlySpeed = 100.0f;
 
+constexpr std::pair<Tool, const char *> kToolButtons[] = {
+	{Tool::View, "View (Q)"},
+	{Tool::Move, "Move (W)"},
+	{Tool::Rotate, "Rotate (E)"},
+	{Tool::Scale, "Scale (R)"},
+};
+
 float AxisValue(ImGuiKey positive, ImGuiKey negative) {
 	return (ImGui::IsKeyDown(positive) ? 1.0f : 0.0f) - (ImGui::IsKeyDown(negative) ? 1.0f : 0.0f);
+}
+
+ImGuizmo::OPERATION ToOperation(Tool tool) {
+	switch (tool) {
+		default:
+		case Tool::Move:
+			return ImGuizmo::TRANSLATE;
+		case Tool::Rotate:
+			return ImGuizmo::ROTATE;
+		case Tool::Scale:
+			return ImGuizmo::SCALE;
+	}
 }
 
 } // namespace
@@ -70,6 +101,8 @@ Camera::PerCamera ou::SceneView::MakePerCamera() const {
 
 
 void ou::SceneView::OnGui() {
+	DrawToolbar();
+
 	const auto available = ImGui::GetContentRegionAvail();
 	if (available.x < 1.0f || available.y < 1.0f) { return; }
 
@@ -78,10 +111,75 @@ void ou::SceneView::OnGui() {
 	renderTarget_.Resize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
 	CenterNextItem({available.x, available.y}, size);
 	ImGui::Image(ToTextureId(renderTarget_.GetColor()), {size.x, size.y});
-	HandleInput(ImGui::IsItemHovered());
+	const auto isImageHovered = ImGui::IsItemHovered();
+	AcceptAssetDrop();
+	const auto isHandleHot = DrawTransformHandle();
+	HandleInput(isImageHovered && !isHandleHot);
 
 	sLastDrawn = this;
 	sLastDrawnFrame = ImGui::GetFrameCount();
+}
+
+
+void ou::SceneView::DrawToolbar() {
+	for (const auto &[tool, label] : kToolButtons) {
+		if (ImGui::RadioButton(label, Tools::GetCurrent() == tool)) { Tools::SetCurrent(tool); }
+		ImGui::SameLine();
+	}
+
+	const auto isLocal = Tools::GetPivotRotation() == PivotRotation::Local;
+	if (ImGui::Button(isLocal ? "Local" : "Global")) {
+		Tools::SetPivotRotation(isLocal ? PivotRotation::Global : PivotRotation::Local);
+	}
+}
+
+
+void ou::SceneView::SelectToolByKey() {
+	if (ImGui::IsKeyPressed(ImGuiKey_Q, false)) { Tools::SetCurrent(Tool::View); }
+	if (ImGui::IsKeyPressed(ImGuiKey_W, false)) { Tools::SetCurrent(Tool::Move); }
+	if (ImGui::IsKeyPressed(ImGuiKey_E, false)) { Tools::SetCurrent(Tool::Rotate); }
+	if (ImGui::IsKeyPressed(ImGuiKey_R, false)) { Tools::SetCurrent(Tool::Scale); }
+}
+
+
+bool ou::SceneView::DrawTransformHandle() {
+	auto *gameObject = Selection::GetActiveGameObject();
+	const auto tool = Tools::GetCurrent();
+	if (!gameObject || tool == Tool::View || tool == Tool::None) { return false; }
+
+	const auto min = ImGui::GetItemRectMin();
+	const auto size = ImGui::GetItemRectSize();
+	ImGuizmo::SetDrawlist();
+	ImGuizmo::SetRect(min.x, min.y, size.x, size.y);
+	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::Enable(dragMode_ == DragMode::None);
+
+	const auto camera = MakePerCamera();
+	auto *transform = gameObject->GetTransform();
+	auto world = transform->GetLocalToWorldMatrix();
+	const auto mode = (tool == Tool::Scale || Tools::GetPivotRotation() == PivotRotation::Local) ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+
+	if (ImGuizmo::Manipulate(&camera.view.m11, &camera.projection.m11, ToOperation(tool), mode, &world.m11)) {
+		const auto *parent = transform->GetParent();
+		const auto local = parent ? world * parent->GetLocalToWorldMatrix().Inverse() : world;
+
+		switch (tool) {
+			case Tool::Move:
+				transform->SetLocalPosition(local.GetPosition());
+				break;
+			case Tool::Rotate:
+				transform->SetLocalRotation(local.GetRotation());
+				break;
+			case Tool::Scale:
+				transform->SetLocalScale(local.GetLossyScale());
+				break;
+			default:
+				break;
+		}
+		EditorSceneManager::MarkSceneDirty(gameObject->GetScene());
+	}
+
+	return ImGuizmo::IsOver() || ImGuizmo::IsUsing();
 }
 
 
@@ -125,8 +223,9 @@ void ou::SceneView::HandleInput(bool isHovered) {
 			break;
 	}
 
-	if (ImGui::IsWindowFocused() && !io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
-		FrameSelected();
+	if (ImGui::IsWindowFocused() && !io.WantTextInput) {
+		if (ImGui::IsKeyPressed(ImGuiKey_F, false)) { FrameSelected(); }
+		if (dragMode_ == DragMode::None) { SelectToolByKey(); }
 	}
 }
 
@@ -181,6 +280,50 @@ void ou::SceneView::Pan(const Vector2 &mouseDelta) {
 void ou::SceneView::Orbit(const Vector2 &mouseDelta) {
 	yaw_ += mouseDelta.x * kLookSensitivity;
 	pitch_ = Mathf::Clamp(pitch_ + mouseDelta.y * kLookSensitivity, -89.0f, 89.0f);
+}
+
+
+void ou::SceneView::AcceptAssetDrop() {
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	const auto *payload = ImGui::AcceptDragDropPayload(EditorPayload::kAsset);
+	ImGui::EndDragDropTarget();
+	if (!payload) { return; }
+
+	auto *scene = SceneManager::GetActiveScene();
+	const auto asset = EditorPayload::DecodeAsset(payload->Data, payload->DataSize);
+	if (!scene || !asset.subAsset.empty()) { return; }
+
+	// 直前の項目は Scene の画像なので、その矩形とマウスの位置から、マウスの先を求める
+	const auto min = ImGui::GetItemRectMin();
+	const auto itemSize = ImGui::GetItemRectSize();
+
+	GameObject *root = nullptr;
+	if (const auto model = AssetDatabase::LoadAssetAtPath<Model>(asset.path)) {
+		root = model->Instantiate(scene);
+	} else if (const auto prefab = AssetDatabase::LoadAssetAtPath<GameObject>(asset.path)) {
+		root = PrefabUtility::InstantiatePrefab(prefab.get(), scene);
+	}
+	if (!root) { return; }
+
+	// マウスの先の、高さ 0 の面に置く（面に当たらなければ、注視点と同じ距離の先）
+	// Unity はコライダーに当てるが、ここでは地面の面だけを見る
+	const auto mouse = ImGui::GetMousePos();
+	const auto x = (mouse.x - min.x) / std::max(itemSize.x, 1.0f) * 2.0f - 1.0f;
+	const auto y = 1.0f - (mouse.y - min.y) / std::max(itemSize.y, 1.0f) * 2.0f;
+	const auto tanHalf = std::tan(kFieldOfView * 0.5f * Mathf::Deg2Rad);
+	const auto aspect = itemSize.x / std::max(itemSize.y, 1.0f);
+	const auto direction = (MakeRotation() * Vector3{x * tanHalf * aspect, y * tanHalf, 1.0f}).Normalized();
+	const auto origin = MakePosition();
+
+	auto position = origin + direction * distance_;
+	if (direction.y < -0.0001f && origin.y > 0.0f) {
+		position = origin + direction * (-origin.y / direction.y);
+	}
+	root->GetTransform()->SetWorldPosition(position);
+
+	Selection::SetActiveGameObject(root);
+	EditorSceneManager::MarkSceneDirty(scene);
 }
 
 

@@ -4,6 +4,8 @@
 #include "Diagnostics/Log.h"
 
 #include <cstdint>
+#include <optional>
+#include <string>
 
 using namespace ou;
 
@@ -12,6 +14,22 @@ namespace {
 
 void WarnWrongType(std::string_view name) {
 	Log::Warning("値の型が違います: \"{}\"", name);
+}
+
+std::optional<AssetDatabase::AssetReference> ParseAssetReference(const Json &json) {
+	if (!json.is_object()) { return std::nullopt; }
+
+	const auto guidIt = json.find("guid");
+	if (guidIt == json.end() || !guidIt->is_string()) { return std::nullopt; }
+	const auto guid = Guid::Parse(guidIt->get<std::string>());
+	if (!guid) { return std::nullopt; }
+
+	AssetDatabase::AssetReference reference{*guid, {}};
+	if (const auto subIt = json.find("sub"); subIt != json.end()) {
+		if (!subIt->is_string()) { return std::nullopt; }
+		reference.subAsset = subIt->get<std::string>();
+	}
+	return reference;
 }
 
 } // namespace
@@ -147,13 +165,25 @@ const Json *ou::JsonReader::FindReadingJson() const {
 }
 
 
-void ou::JsonReader::ObjectReference(std::string_view name, Object *&value, ObjectFilter) {
+void ou::JsonReader::ObjectReference(std::string_view name, Object *&value, ObjectFilter accepts) {
 	const auto *json = FindValue(name);
 	if (!json) { return; }
 
 	// null チェック
 	if (json->is_null()) {
 		value = nullptr;
+		return;
+	}
+
+	// プレハブのようなアセットは guid で書かれている
+	if (json->is_object() && json->contains("guid")) {
+		const auto reference = ParseAssetReference(*json);
+		const auto asset = reference ? AssetDatabase::LoadAsset(reference->guid, reference->subAsset) : nullptr;
+		if (asset && accepts && !accepts(asset.get())) {
+			value = nullptr;
+			return WarnWrongType(name);
+		}
+		value = asset.get();
 		return;
 	}
 
@@ -184,27 +214,13 @@ void ou::JsonReader::AssetObject(std::string_view name, std::shared_ptr<Object> 
 		return;
 	}
 
-	std::optional<Guid> guid;
-	if (json->is_object()) {
-		if (const auto it = json->find("guid"); it != json->end() && it->is_string()) {
-			guid = Guid::Parse(it->get<std::string>());
-		}
-	}
-	if (!guid) {
+	const auto reference = ParseAssetReference(*json);
+	if (!reference) {
 		value = nullptr;
 		return WarnWrongType(name);
 	}
 
-	std::string subAsset;
-	if (const auto it = json->find("sub"); it != json->end()) {
-		if (!it->is_string()) {
-			value = nullptr;
-			return WarnWrongType(name);
-		}
-		subAsset = it->get<std::string>();
-	}
-
-	value = AssetDatabase::LoadAsset(*guid, subAsset);
+	value = AssetDatabase::LoadAsset(reference->guid, reference->subAsset);
 }
 
 

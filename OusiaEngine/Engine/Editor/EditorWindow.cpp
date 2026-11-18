@@ -38,7 +38,7 @@ void ou::EditorWindow::DrawAll() {
 			ImGui::SetNextWindowFocus();
 		}
 
-		if (ImGui::Begin(window->title_.c_str(), &window->isOpen_)) {
+		if (ImGui::Begin(window->title_.c_str(), &window->isOpen_, ImGuiWindowFlags_NoCollapse)) {
 			window->OnGui();
 		}
 		ImGui::End();

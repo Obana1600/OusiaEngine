@@ -52,6 +52,12 @@ GameObject *FindGameObjectByFileId(Scene &scene, uint64_t fileId) {
 	return nullptr;
 }
 
+void ReimportPrefabs() {
+	for (const auto &guid : AssetDatabase::FindAssets("t:Prefab")) {
+		AssetDatabase::ImportAsset(AssetDatabase::GuidToAssetPath(guid));
+	}
+}
+
 } // namespace
 
 
@@ -123,6 +129,7 @@ void ou::EditorApplication::ReloadScriptsIfChanged() {
 	auto *scene = SceneManager::GetActiveScene();
 	if (!scene) {
 		ScriptEngine::Compile();
+		ReimportPrefabs();
 		return;
 	}
 
@@ -136,6 +143,7 @@ void ou::EditorApplication::ReloadScriptsIfChanged() {
 	const auto selectedFileId = selected ? selected->GetFileId() : 0;
 
 	ScriptEngine::Compile();
+	ReimportPrefabs();
 	SceneManager::ReplaceActiveScene(name, path, buildIndex, json);
 
 	auto *reloaded = SceneManager::GetActiveScene();

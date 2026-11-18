@@ -9,7 +9,11 @@
 namespace ou {
 
 // 前方宣言
+class GameObject;
 class Serializer;
+class Transform;
+struct Quaternion;
+struct Vector3;
 
 class Object {
 	friend class GameObject;
@@ -19,8 +23,11 @@ class Object {
 
 public: // 静的メンバ関数
 
-	static void Destroy(Object *obj);
+	static GameObject *Instantiate(GameObject *original);
+	static GameObject *Instantiate(GameObject *original, Transform *parent, bool instantiateInWorldSpace = false);
+	static GameObject *Instantiate(GameObject *original, const Vector3 &position, const Quaternion &rotation, Transform *parent = nullptr);
 
+	static void Destroy(Object *obj);
 	static void DontDestroyOnLoad(Object *obj);
 
 	static Object *FindObjectFromInstanceId(uint32_t instanceId);

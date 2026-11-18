@@ -14,6 +14,12 @@ void ou::Button::Update() {
 }
 
 
+void ou::Button::Serialize(Serializer &serializer) {
+	Selectable::Serialize(serializer);
+	onClick_.Serialize(serializer, "onClick");
+}
+
+
 void ou::Button::OnPointerClick(PointerEventData &eventData) {
 	if (eventData.button != PointerEventData::InputButton::Left) { return; }
 	Press();
@@ -23,7 +29,7 @@ void ou::Button::OnPointerClick(PointerEventData &eventData) {
 void ou::Button::OnSubmit(BaseEventData &) {
 	Press();
 
-	if (!IsActiveAndEnabled() || !IsInteractable()) { false; }
+	if (!IsActiveAndEnabled() || !IsInteractable()) { return; }
 
 	DoStateTransition(SelectionState::Pressed, false);
 	finishSubmitTimer_ = GetColors().fadeDuration;

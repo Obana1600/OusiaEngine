@@ -1,16 +1,20 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 
 // 前方宣言
+class asIScriptFunction;
 class asIScriptEngine;
+class asIScriptGeneric;
 
 
 namespace ou {
 
 // 前方宣言
 class Collision;
+class GameObject;
 class Object;
 class Serializer;
 
@@ -32,9 +36,11 @@ private: // 静的メンバ関数
 	// ScriptBindings.cpp
 	static void RegisterDebug(asIScriptEngine *engine);
 	static void RegisterMathf(asIScriptEngine *engine);
+	static void RegisterRandom(asIScriptEngine *engine);
 	static void RegisterTime(asIScriptEngine *engine);
 	static void RegisterInput(asIScriptEngine *engine);
 	static void RegisterScreen(asIScriptEngine *engine);
+	static void RegisterApplication(asIScriptEngine *engine);
 
 	// ScriptBindingsMath.cpp
 	static void RegisterValueTypes(asIScriptEngine *engine);
@@ -42,11 +48,18 @@ private: // 静的メンバ関数
 	// ScriptBindingsObject.cpp
 	static void RegisterObjectTypes(asIScriptEngine *engine);
 	static void RegisterObjectMembers(asIScriptEngine *engine);
-	static void RegisterTryGetComponent(asIScriptEngine *engine);
+	static void RegisterGetComponent(asIScriptEngine *engine);
 
 	// ScriptBindingsPhysics.cpp
 	static void RegisterPhysicsTypes(asIScriptEngine *engine);
 	static void RegisterPhysicsMembers(asIScriptEngine *engine);
+
+	// ScriptBindingsScene.cpp
+	static void RegisterSceneTypes(asIScriptEngine *engine);
+	static void RegisterSceneManager(asIScriptEngine *engine);
+
+	// ScriptBindingsComponents.cpp（AudioSource・Renderer・Material・UI）
+	static void RegisterComponentMembers(asIScriptEngine *engine);
 
 	// C++ のオブジェクトをスクリプトに渡す持ち手を作る（参照の数を 1 増やして返す。nullptr なら nullptr）
 	static void *CreateObjectHandle(Object *object);
@@ -62,8 +75,25 @@ private: // 静的メンバ関数
 	// AngelScript Language Server（VS Code）が補完に使う as.predefined を、プロジェクトのフォルダに書き出す（エディタだけ）
 	static void WritePredefined(asIScriptEngine *engine);
 
-	// Unity の TryGetComponent(out T)（スクリプトの MonoBehavior のオブジェクトも探すので、MonoBehavior の friend）
+	// ---- GetComponent・AddComponent（スクリプトの MonoBehavior のオブジェクトも扱うので MonoBehavior の friend、付けるので GameObject の friend） ----
+
+	// 型の id の Component を探す。見つけたものは参照を 1 つ持たせて返す（スクリプトのクラスなら asIScriptObject、C++ の型なら持ち手）
+	static void *FindComponentOfType(asIScriptEngine *engine, GameObject *gameObject, int typeId);
+	// 型の id の Component を付ける。返すものは FindComponentOfType と同じ
+	static void *AddComponentOfType(asIScriptEngine *engine, GameObject *gameObject, int typeId);
+
+	// Unity の TryGetComponent(out T)・GetComponent<T>()・AddComponent<T>()
 	static bool TryGetComponent(void *out, int typeId, void *selfHandle);
+	static void GetComponentGeneric(asIScriptGeneric *generic);
+	static void AddComponentGeneric(asIScriptGeneric *generic);
+
+	// Unity の GameObject.Find（DontDestroyOnLoad のシーンも見るので SceneManager の friend）
+	static void *FindGameObject(const std::string &name);
+
+	// ---- UnityEvent（スクリプトの関数をつなぐ・外す。UnityEvent の friend） ----
+
+	static void AddUnityEventListener(asIScriptFunction *action, void *self);
+	static void RemoveUnityEventListener(asIScriptFunction *action, void *self);
 };
 
 } // namespace ou

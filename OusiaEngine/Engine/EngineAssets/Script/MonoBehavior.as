@@ -10,4 +10,8 @@ abstract class MonoBehavior {
 	bool isActiveAndEnabled { get const { return native_.isActiveAndEnabled; } }
 
 	void Destroy(Object@ obj) { Object::Destroy(obj); }
+	void DontDestroyOnLoad(Object@ target) { Object::DontDestroyOnLoad(target); }
+	GameObject@ Instantiate(GameObject@ original) { return Object::Instantiate(original); }
+	GameObject@ Instantiate(GameObject@ original, Transform@ parent, bool instantiateInWorldSpace = false) { return Object::Instantiate(original, parent, instantiateInWorldSpace); }
+	GameObject@ Instantiate(GameObject@ original, const Vector3 &in position, const Quaternion &in rotation, Transform@ parent = null) { return Object::Instantiate(original, position, rotation, parent); }
 }

@@ -1,8 +1,11 @@
-#include "EditorGUILayout.h"
+#include "EditorGuiLayout.h"
 #include "Asset/AssetDatabase.h"
 #include "Asset/AssetImporter.h"
+#include "Editor/EditorFunc.h"
 #include "Editor/EditorPayload.h"
+#include "Editor/PrefabUtility.h"
 #include "Math/Mathf.h"
+#include "Render/Asset/Texture.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
 
@@ -16,6 +19,7 @@
 #include <vector>
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h> // BeginComboPreview
 #include <imgui/imgui_stdlib.h>
 
 using namespace ou;
@@ -26,6 +30,45 @@ namespace {
 // Inspector の幅の 45% から 40 を引く (最低 120)
 float CalcLabelWidth(float viewWidth) {
 	return std::max(viewWidth * 0.45f - 40.0f, 120.0f);
+}
+
+// 画像は文字の高さにそろえ、横は元の比のまま
+ImVec2 CalcImageSize(const Texture &image) {
+	const auto height = ImGui::GetFontSize();
+	const auto aspect = static_cast<float>(image.GetWidth()) / static_cast<float>(std::max(image.GetHeight(), 1u));
+	return {height * aspect, height};
+}
+
+// 画像と文字を並べたときの幅
+float CalcContentWidth(const GuiContent &content) {
+	auto width = ImGui::CalcTextSize(content.text.c_str()).x;
+	if (content.image) {
+		width += CalcImageSize(*content.image).x;
+		if (!content.text.empty()) { width += ImGui::GetStyle().ItemInnerSpacing.x; }
+	}
+	return width;
+}
+
+// 画像を左に、文字をその右に描く。pos は文字の左上
+void DrawContent(ImDrawList *drawList, ImVec2 pos, const GuiContent &content) {
+	if (content.image) {
+		const auto size = CalcImageSize(*content.image);
+		drawList->AddImage(ToTextureId(content.image->GetGraphicsTexture()), pos, {pos.x + size.x, pos.y + size.y});
+		pos.x += size.x + ImGui::GetStyle().ItemInnerSpacing.x;
+	}
+	drawList->AddText(pos, ImGui::GetColorU32(ImGuiCol_Text), content.text.c_str());
+}
+
+// 直前の項目の中に、縦は真ん中で content を描く。offsetX は項目の左端からのずらし
+void DrawContentInLastItem(const GuiContent &content, float offsetX) {
+	const auto min = ImGui::GetItemRectMin();
+	const auto max = ImGui::GetItemRectMax();
+	const ImVec2 pos{min.x + offsetX, min.y + (max.y - min.y - ImGui::GetFontSize()) * 0.5f};
+
+	auto *drawList = ImGui::GetWindowDrawList();
+	drawList->PushClipRect(min, max, true);
+	DrawContent(drawList, pos, content);
+	drawList->PopClipRect();
 }
 
 // -0.000 と出ないように、ごく小さい値は 0 にする
@@ -49,6 +92,7 @@ std::string DescribeObject(const Object *object) {
 	if (const auto *component = dynamic_cast<const Component *>(object)) {
 		return component->GetGameObject()->GetName() + " (Component)";
 	}
+	if (PrefabUtility::IsPartOfPrefabAsset(object)) { return object->GetName() + " (Prefab)"; }
 	return object->GetName();
 }
 
@@ -164,12 +208,11 @@ std::string DescribeFlags(std::span<const std::string_view> names, int flags) {
 
 
 void ou::EditorGuiLayout::PrefixLabel(std::string_view label) {
-	PrefixLabel(GUIContent(label));
+	PrefixLabel(GuiContent(label));
 }
 
 
-void ou::EditorGuiLayout::PrefixLabel(const GUIContent &content) {
-	const std::string_view label = content.text;
+void ou::EditorGuiLayout::PrefixLabel(const GuiContent &content) {
 	const auto &style = ImGui::GetStyle();
 	const auto startX = ImGui::GetCursorStartPos().x;
 	const auto rowX = ImGui::GetCursorPosX();
@@ -178,18 +221,16 @@ void ou::EditorGuiLayout::PrefixLabel(const GUIContent &content) {
 	const auto valueX = startX + CalcLabelWidth(viewWidth);
 	const auto labelWidth = std::max(valueX - rowX - style.ItemSpacing.x, 1.0f);
 
-	const auto *begin = label.data();
-	const auto *end = label.data() + label.size();
 	const auto pos = ImGui::GetCursorScreenPos();
 	const auto height = ImGui::GetFrameHeight();
 	auto *drawList = ImGui::GetWindowDrawList();
 	drawList->PushClipRect(pos, {pos.x + labelWidth, pos.y + height}, true);
-	drawList->AddText({pos.x, pos.y + style.FramePadding.y}, ImGui::GetColorU32(ImGuiCol_Text), begin, end);
+	DrawContent(drawList, {pos.x, pos.y + style.FramePadding.y}, content);
 	drawList->PopClipRect();
 
 	// 切れているときは全部の文字を、ツールチップがあればそれも出す
 	ImGui::Dummy({labelWidth, height});
-	const auto isCut = ImGui::CalcTextSize(begin, end).x > labelWidth;
+	const auto isCut = CalcContentWidth(content) > labelWidth;
 	if ((isCut || !content.tooltip.empty()) && ImGui::IsItemHovered()) {
 		if (isCut && !content.tooltip.empty()) {
 			ImGui::SetTooltip("%s\n%s", content.text.c_str(), content.tooltip.c_str());
@@ -210,11 +251,11 @@ bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, bool includ
 
 
 bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, std::string_view label, bool includeChildren) {
-	return PropertyField(std::move(property), GUIContent(label), includeChildren);
+	return PropertyField(std::move(property), GuiContent(label), includeChildren);
 }
 
 
-bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, const GUIContent &label, bool includeChildren) {
+bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, const GuiContent &label, bool includeChildren) {
 	const auto *schema = property.FindSchema();
 	if (!schema) { return false; }
 
@@ -353,6 +394,13 @@ bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, const GUICo
 						if (auto *found = FindAcceptable(dropped, schema->accepts)) { property.SetObjectReferenceValue(found); }
 					}
 				}
+				// Unity と同じく、GameObject の欄には Project からプレハブも落とせる（入れられないときは落とせない見た目のまま）
+				if (const auto *peek = ImGui::AcceptDragDropPayload(EditorPayload::kAsset, ImGuiDragDropFlags_AcceptPeekOnly)) {
+					const auto dropped = LoadDroppedAsset(*peek);
+					if (PrefabUtility::IsPartOfPrefabAsset(dropped.get()) && property.Accepts(dropped.get()) && ImGui::AcceptDragDropPayload(EditorPayload::kAsset)) {
+						property.SetObjectReferenceValue(dropped.get());
+					}
+				}
 				ImGui::EndDragDropTarget();
 			}
 			if (ImGui::BeginPopupContextItem("##Menu")) {
@@ -420,7 +468,9 @@ bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, const GUICo
 		ImGuiTreeNodeFlags flags = schema->isArray ? ImGuiTreeNodeFlags_None : ImGuiTreeNodeFlags_DefaultOpen;
 		if (!includeChildren) { flags |= ImGuiTreeNodeFlags_NoTreePushOnOpen; }
 
-		const auto isOpen = ImGui::TreeNodeEx("##Foldout", flags, "%s", label.text.c_str());
+		// 画像があるときは、見出しの文字を空にして、矢印の右に画像と文字を描く
+		const auto isOpen = ImGui::TreeNodeEx("##Foldout", flags, "%s", label.image ? "" : label.text.c_str());
+		if (label.image) { DrawContentInLastItem(label, ImGui::GetTreeNodeToLabelSpacing()); }
 		if (!label.tooltip.empty()) { ImGui::SetItemTooltip("%s", label.tooltip.c_str()); }
 		if (!includeChildren) {
 			isExpanded = isOpen && property.HasVisibleChildren();
@@ -450,26 +500,37 @@ bool ou::EditorGuiLayout::PropertyField(SerializedProperty property, const GUICo
 }
 
 
-int ou::EditorGuiLayout::Popup(const GUIContent &label, int selectedIndex, std::span<const GUIContent> displayedOptions) {
+int ou::EditorGuiLayout::Popup(const GuiContent &label, int selectedIndex, std::span<const GuiContent> displayedOptions) {
 	const auto count = static_cast<int>(displayedOptions.size());
 	const auto *current = selectedIndex >= 0 && selectedIndex < count ? &displayedOptions[selectedIndex] : nullptr;
 
 	ImGui::PushID(label.text.c_str());
 	PrefixLabel(label);
 
+	const auto hasImage = current && current->image;
+	const auto isOpen = ImGui::BeginCombo("##Popup", current && !hasImage ? current->text.c_str() : "", hasImage ? ImGuiComboFlags_CustomPreview : ImGuiComboFlags_None);
+
 	auto result = selectedIndex;
-	if (ImGui::BeginCombo("##Popup", current ? current->text.c_str() : "")) {
+	if (isOpen) {
 		for (int i = 0; i < count; i++) {
+			const auto &option = displayedOptions[i];
 			ImGui::PushID(i);
-			if (ImGui::Selectable(displayedOptions[i].text.c_str(), i == selectedIndex)) { result = i; }
+			if (ImGui::Selectable(option.image ? "##Option" : option.text.c_str(), i == selectedIndex)) { result = i; }
+			if (option.image) { DrawContentInLastItem(option, 0.0f); }
 			if (!displayedOptions[i].tooltip.empty()) { ImGui::SetItemTooltip("%s", displayedOptions[i].tooltip.c_str()); }
 			ImGui::PopID();
 		}
 		ImGui::EndCombo();
-	} else if (current && !current->tooltip.empty()) {
-		// 閉じているときは、今の値の説明を出す
-		ImGui::SetItemTooltip("%s", current->tooltip.c_str());
 	}
+
+	// 今の値に画像があるときは、閉じた欄の中を自分で描く（ImGui では BeginCombo / EndCombo のあとに呼ぶ）
+	if (hasImage && ImGui::BeginComboPreview()) {
+		DrawContent(ImGui::GetWindowDrawList(), ImGui::GetCursorScreenPos(), *current);
+		ImGui::EndComboPreview();
+	}
+
+	// 閉じているときは、今の値の説明を出す
+	if (!isOpen && current && !current->tooltip.empty()) { ImGui::SetItemTooltip("%s", current->tooltip.c_str()); }
 
 	ImGui::PopID();
 	return result;

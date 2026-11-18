@@ -1,9 +1,11 @@
 #include "ScriptBindings.h"
+#include "Core/Application.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Input/Input.h"
 #include "Input/KeyCode.h"
 #include "Math/Mathf.h"
+#include "Math/Random.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Platform/Screen.h"
@@ -85,6 +87,13 @@ int MaxInt(int a, int b) { return std::max(a, b); }
 int ClampInt(int value, int min, int max) { return std::clamp(value, min, std::max(min, max)); }
 
 
+// ---- Random ----
+
+void InitRandomState(int seed) {
+	Random::InitState(static_cast<uint32_t>(seed));
+}
+
+
 // ---- Screen ----
 // スクリプトの enum と int は int で受け渡す
 int GetScreenWidth() { return static_cast<int>(Screen::GetWidth()); }
@@ -158,15 +167,53 @@ void ou::ScriptBindings::Register(asIScriptEngine *engine) {
 	RegisterValueTypes(engine);
 	RegisterObjectTypes(engine);
 	RegisterPhysicsTypes(engine);
+	RegisterSceneTypes(engine);
 	RegisterObjectMembers(engine);
 	RegisterPhysicsMembers(engine);
-	RegisterTryGetComponent(engine);
+	RegisterComponentMembers(engine);
+	RegisterGetComponent(engine);
+	RegisterSceneManager(engine);
 
 	RegisterDebug(engine);
 	RegisterMathf(engine);
+	RegisterRandom(engine);
 	RegisterTime(engine);
 	RegisterInput(engine);
 	RegisterScreen(engine);
+	RegisterApplication(engine);
+}
+
+
+void ou::ScriptBindings::RegisterRandom(asIScriptEngine *engine) {
+	// Unity と同じく、int の Range は max を含まない。float の Range は max を含む
+	engine->SetDefaultNamespace("Random");
+
+	const auto global = [&](const char *declaration, const asSFuncPtr &function) {
+		Check(engine->RegisterGlobalFunction(declaration, function, asCALL_CDECL), declaration);
+	};
+	global("void InitState(int seed)", asFUNCTION(InitRandomState));
+	global("float get_value() property", asFUNCTION(Random::Value));
+	global("float Range(float minInclusive, float maxInclusive)", asFUNCTIONPR(Random::Range, (float, float), float));
+	global("int Range(int minInclusive, int maxExclusive)", asFUNCTIONPR(Random::Range, (int, int), int));
+	global("Vector3 get_insideUnitSphere() property", asFUNCTION(Random::InsideUnitSphere));
+	global("Vector3 get_onUnitSphere() property", asFUNCTION(Random::OnUnitSphere));
+	global("Vector2 get_insideUnitCircle() property", asFUNCTION(Random::InsideUnitCircle));
+
+	engine->SetDefaultNamespace("");
+}
+
+
+void ou::ScriptBindings::RegisterApplication(asIScriptEngine *engine) {
+	// Unity と同じく、エディタでは Quit しても何も起きない（Play を止めるのは EditorApplication.isPlaying）
+	engine->SetDefaultNamespace("Application");
+
+	const auto global = [&](const char *declaration, const asSFuncPtr &function) {
+		Check(engine->RegisterGlobalFunction(declaration, function, asCALL_CDECL), declaration);
+	};
+	global("void Quit()", asFUNCTION(Application::Quit));
+	global("bool get_isPlaying() property", asFUNCTION(Application::IsPlaying));
+
+	engine->SetDefaultNamespace("");
 }
 
 

@@ -1,6 +1,6 @@
 #include "PreferencesWindow.h"
 #include "Core/StringUtil.h"
-#include "Editor/EditorGUILayout.h"
+#include "Editor/EditorGuiLayout.h"
 #include "Editor/ExternalScriptEditor.h"
 
 #include <cfloat>

@@ -5,9 +5,12 @@
 #include "Graphics/DirectX12/GraphicsDevice_DX12.h"
 #include "Platform/Paths.h"
 
+// clang-format off
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_dx12.h>
 #include <imgui/imgui_impl_win32.h>
+#include <ImGuizmo/ImGuizmo.h> // imgui/imgui.h の後ろに置く
+// clang-format on
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
@@ -51,6 +54,8 @@ ou::ImGuiManager::ImGuiManager(Window *window)
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
+	// 折りたたみ（ドッキング時はウィンドウメニュー）のボタンを出さない
+	ImGui::GetStyle().WindowMenuButtonPosition = ImGuiDir_None;
 
 	// ドッキングの有効化 / 日本語フォントの追加
 	auto &io = ImGui::GetIO();
@@ -102,6 +107,7 @@ void ou::ImGuiManager::NewFrame() {
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 #endif
 }
 

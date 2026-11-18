@@ -69,13 +69,22 @@
         </Link>
     </ItemDefinitionGroup>
 
+    <!-- DLL は exe の隣の Runtime/ に置く。起動時に読まれると Runtime/ を探せないので、遅延読み込みにして
+         最初に使う前に SetDllDirectoryW で Runtime/ を足す（Graphics/ShaderCompiler.cpp） -->
+    <ItemDefinitionGroup Condition="'$(ConfigurationType)'=='Application'">
+        <Link>
+            <DelayLoadDLLs>dxcompiler.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+            <AdditionalDependencies>delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+    </ItemDefinitionGroup>
+
     <!-- Copy -->
     <Target Name="CopyRuntimeFiles" AfterTargets="Build" Condition="'$(ConfigurationType)'=='Application'">
         <ItemGroup>
             <RuntimeDll Include="$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" />
             <RuntimeDll Include="$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" />
         </ItemGroup>
-        <Copy SourceFiles="@(RuntimeDll)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="@(RuntimeDll)" DestinationFolder="$(TargetDir)Runtime" SkipUnchangedFiles="true" />
 
         <ItemGroup Condition="'$(Configuration)'=='Release'">
             <ReleaseFile Include="$(SourceRoot)Engine\EngineAssets\**\*" Folder="EngineAssets" />

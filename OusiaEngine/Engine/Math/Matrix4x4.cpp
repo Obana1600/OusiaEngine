@@ -75,17 +75,26 @@ ou::Matrix4x4::Matrix4x4(const Vector4 &row1, const Vector4 &row2, const Vector4
 }
 
 
+void ou::Matrix4x4::SetColumn(int index, const Vector4 &v) {
+	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
+
+	for (int row = 0; row < 4; row++) {
+		m[row][index] = v[row];
+	}
+}
+
+
 Vector4 ou::Matrix4x4::GetColumn(int index) const {
 	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
 	return {m[0][index], m[1][index], m[2][index], m[3][index]};
 }
 
 
-void ou::Matrix4x4::SetColumn(int index, const Vector4 &v) {
+void ou::Matrix4x4::SetRow(int index, const Vector4 &v) {
 	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
 
-	for (int row = 0; row < 4; row++) {
-		m[row][index] = v[row];
+	for (int column = 0; column < 4; column++) {
+		m[index][column] = v[column];
 	}
 }
 
@@ -96,12 +105,44 @@ Vector4 ou::Matrix4x4::GetRow(int index) const {
 }
 
 
-void ou::Matrix4x4::SetRow(int index, const Vector4 &v) {
-	ASSERT(0 <= index && index < 4, "範囲外のインデックスです: {}", index);
+Vector3 ou::Matrix4x4::GetPosition() const {
+	return Vector3(m41, m42, m43);
+}
 
-	for (int column = 0; column < 4; column++) {
-		m[index][column] = v[column];
+
+Quaternion ou::Matrix4x4::GetRotation() const {
+	const auto scale = GetLossyScale();
+	if (scale.x == 0.0f || scale.y == 0.0f || scale.z == 0.0f) { return Quaternion::Identity; }
+
+	const auto ix = 1.0f / scale.x;
+	const auto iy = 1.0f / scale.y;
+	const auto iz = 1.0f / scale.z;
+	const auto r11 = m11 * ix, r12 = m12 * ix, r13 = m13 * ix;
+	const auto r21 = m21 * iy, r22 = m22 * iy, r23 = m23 * iy;
+	const auto r31 = m31 * iz, r32 = m32 * iz, r33 = m33 * iz;
+
+	const auto trace = r11 + r22 + r33;
+	if (trace > 0.0f) {
+		const auto s = Mathf::Sqrt(trace + 1.0f) * 2.0f; // 4w
+		return Quaternion((r23 - r32) / s, (r31 - r13) / s, (r12 - r21) / s, 0.25f * s).Normalized();
 	}
+	if (r11 > r22 && r11 > r33) {
+		const auto s = Mathf::Sqrt(1.0f + r11 - r22 - r33) * 2.0f; // 4x
+		return Quaternion(0.25f * s, (r12 + r21) / s, (r31 + r13) / s, (r23 - r32) / s).Normalized();
+	}
+	if (r22 > r33) {
+		const auto s = Mathf::Sqrt(1.0f + r22 - r11 - r33) * 2.0f; // 4y
+		return Quaternion((r12 + r21) / s, 0.25f * s, (r23 + r32) / s, (r31 - r13) / s).Normalized();
+	}
+	const auto s = Mathf::Sqrt(1.0f + r33 - r11 - r22) * 2.0f; // 4z
+	return Quaternion((r31 + r13) / s, (r23 + r32) / s, 0.25f * s, (r12 - r21) / s).Normalized();
+}
+
+
+Vector3 ou::Matrix4x4::GetLossyScale() const {
+	return Vector3(Vector3(m11, m12, m13).Length(),
+				   Vector3(m21, m22, m23).Length(),
+				   Vector3(m31, m32, m33).Length());
 }
 
 

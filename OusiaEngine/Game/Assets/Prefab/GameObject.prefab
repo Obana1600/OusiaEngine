@@ -1,0 +1,39 @@
+{
+	"version": 1,
+	"gameObjects": [
+		{
+			"$id": 543709270680166,
+			"name": "GameObject",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "Transform",
+					"$id": 7402805846163098,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": null
+				}
+			]
+		}
+	]
+}

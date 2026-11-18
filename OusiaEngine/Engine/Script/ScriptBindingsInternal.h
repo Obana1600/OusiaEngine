@@ -8,12 +8,21 @@
 #include <cstdint>
 #include <format>
 #include <initializer_list>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 #include <angelscript.h>
+
+
+namespace ou {
+class Component;
+class GameObject;
+class Serializer;
+} // namespace ou
 
 
 // ScriptBindings*.cpp の中だけで使う
@@ -47,6 +56,7 @@ struct ObjectHandle {
 	int refCount = 1;
 	uint32_t instanceId = 0;
 	const char *typeName = "Object"; // 消えたあとの例外の文面に使う
+	std::shared_ptr<Object> asset;	 // アセット（プレハブ・Material など）なら、スクリプトが持っているあいだ手放さない
 };
 
 // 同じオブジェクトには同じ持ち手を返す（参照の数を 1 増やして返す。nullptr なら nullptr）
@@ -119,7 +129,7 @@ struct TypeRegistrar {
 	}
 
 	// 参照の数え方と、親の型への暗黙の変換
-	void Reference(std::initializer_list<const char *> baseTypes) const {
+	void Reference(const std::vector<const char *> &baseTypes) const {
 		Behaviour(asBEHAVE_ADDREF, "void f()", asFUNCTION(AddRef));
 		Behaviour(asBEHAVE_RELEASE, "void f()", asFUNCTION(Release));
 		for (const auto *baseType : baseTypes) {
@@ -139,8 +149,29 @@ struct TypeRegistrar {
 	}
 };
 
-// Component の型を登録する（name・gameObject・transform・TryGetComponent など。ScriptBindingsObject.cpp）
-TypeRegistrar RegisterComponentType(asIScriptEngine *engine, const char *type, std::initializer_list<const char *> baseTypes);
+// ---- スクリプトに見せる C++ の型の表（ScriptBindingsObject.cpp） ----
+
+// Object・GameObject・Component の派生など、持ち手で渡す型
+// 型の登録・親への変換（opImplCast）・子への変換（opCast）・GetComponent<T>・変数の保存は、この表から作る
+struct NativeType {
+	const char *name;
+	const char *parent; // Object だけ nullptr
+	bool (*isInstance)(const Object *object);
+	asSFuncPtr downcast;												  // Downcast<T>
+	Component *(*find)(const GameObject *gameObject);					  // Component でなければ nullptr
+	void (*serialize)(Serializer &, std::string_view, ObjectHandle *&); // 保存できなければ nullptr
+	bool canAdd;														  // AddComponent<T> で作れる（名前は TypeRegistry と同じ）
+	int typeId = 0;														  // 登録したあとに引く
+};
+
+// 子の型が親より先に並ぶ（持ち手の型の名前と GetComponent<T> は前から見る）
+std::vector<NativeType> &NativeTypes();
+
+// スクリプトの型の id から表の行を引く（なければ nullptr）
+const NativeType *FindNativeType(int typeId);
+
+// Component の型に name・gameObject・transform を足す（型の登録と親子の変換は RegisterObjectTypes が表から行う）
+TypeRegistrar RegisterComponentType(asIScriptEngine *engine, const char *type);
 
 // Behavior の enabled などを足す（ScriptBindingsObject.cpp）
 void RegisterBehaviorMembers(const TypeRegistrar &registrar);

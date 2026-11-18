@@ -236,6 +236,7 @@ void ou::Engine::Finalize() {
 
 	imGuiManager_.reset();
 	SceneManager::Finalize();
+	AssetDatabase::UnloadAllAssets();
 	ScriptEngine::Finalize();
 
 	PhysicsWorld::Finalize();
@@ -245,8 +246,6 @@ void ou::Engine::Finalize() {
 	Text::StaticFinalize();
 	ParticleSystemRenderer::StaticFinalize();
 	LineRenderer::StaticFinalize();
-
-	AssetDatabase::UnloadAllAssets();
 
 	Audio::Finalize();
 

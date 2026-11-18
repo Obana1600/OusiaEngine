@@ -1,0 +1,184 @@
+{
+	"version": 1,
+	"gameObjects": [
+		{
+			"$id": 1961694688915603,
+			"name": "Canvas",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "RectTransform",
+					"$id": 7834147423102004,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": null,
+					"anchorMin": [
+						0.5,
+						0.5
+					],
+					"anchorMax": [
+						0.5,
+						0.5
+					],
+					"anchoredPosition": [
+						0.0,
+						0.0
+					],
+					"sizeDelta": [
+						1920.0,
+						991.0
+					],
+					"pivot": [
+						0.5,
+						0.5
+					]
+				},
+				{
+					"$type": "Canvas",
+					"$id": 4865791625118751,
+					"enabled": true
+				},
+				{
+					"$type": "MonoBehavior",
+					"$id": 357516107159641,
+					"enabled": true,
+					"script": {
+						"guid": "fa2cb33798dec39b70f1f030656bfad8"
+					},
+					"speed": 3.0,
+					"count": 2,
+					"flag": true,
+					"label": "hello",
+					"offset": [
+						1.0,
+						2.0,
+						3.0
+					],
+					"secret": 7.0
+				}
+			]
+		},
+		{
+			"$id": 4971712812203702,
+			"name": "Text",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "RectTransform",
+					"$id": 8500098631561161,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": {
+						"id": 7834147423102004
+					},
+					"anchorMin": [
+						0.5,
+						0.5
+					],
+					"anchorMax": [
+						0.5,
+						0.5
+					],
+					"anchoredPosition": [
+						0.0,
+						0.0
+					],
+					"sizeDelta": [
+						1280.0,
+						720.0
+					],
+					"pivot": [
+						0.5,
+						0.5
+					]
+				},
+				{
+					"$type": "Text",
+					"$id": 1260622655527872,
+					"enabled": true,
+					"material": null,
+					"color": [
+						1.0,
+						0.0,
+						1.0,
+						1.0
+					],
+					"raycastTarget": true,
+					"text": "多摩川で恋してみたい♡\n横浜と東京を繋いでる♡\nまるで君と僕の関係みたいだね♡",
+					"font": {
+						"guid": "8e731411d63896d87e5a68ffffbc7b86"
+					},
+					"fontSize": 72.0,
+					"alignment": "Center",
+					"wordWrappingEnabled": true,
+					"lineSpacing": 0.0,
+					"characterSpacing": 0.0,
+					"faceDilate": 0.0,
+					"outlineWidth": 0.0,
+					"outlineColor": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"underlayDilate": 0.0,
+					"underlaySoftness": 0.0,
+					"underlayOffset": [
+						0.5,
+						-0.5
+					],
+					"underlayColor": [
+						1.0,
+						1.0,
+						0.0,
+						1.0
+					]
+				},
+				{
+					"$type": "CanvasRenderer",
+					"$id": 8610546197333289
+				}
+			]
+		}
+	]
+}

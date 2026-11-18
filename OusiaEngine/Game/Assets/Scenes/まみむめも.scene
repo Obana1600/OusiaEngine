@@ -1449,8 +1449,8 @@
 						0.0
 					],
 					"sizeDelta": [
-						1920.0,
-						991.0
+						1003.0,
+						564.0
 					],
 					"pivot": [
 						0.5,
@@ -1461,24 +1461,6 @@
 					"$type": "Canvas",
 					"$id": 4865791625118751,
 					"enabled": true
-				},
-				{
-					"$type": "MonoBehavior",
-					"$id": 357516107159641,
-					"enabled": true,
-					"script": {
-						"guid": "fa2cb33798dec39b70f1f030656bfad8"
-					},
-					"speed": 3.0,
-					"count": 2,
-					"flag": true,
-					"label": "hello",
-					"offset": [
-						1.0,
-						2.0,
-						3.0
-					],
-					"secret": 7.0
 				}
 			]
 		},
@@ -1581,6 +1563,238 @@
 				{
 					"$type": "CanvasRenderer",
 					"$id": 8610546197333289
+				}
+			]
+		},
+		{
+			"$id": 7742285951947470,
+			"name": "Button",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "RectTransform",
+					"$id": 7462775424974341,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": {
+						"id": 7834147423102004
+					},
+					"anchorMin": [
+						0.5,
+						0.5
+					],
+					"anchorMax": [
+						0.5,
+						0.5
+					],
+					"anchoredPosition": [
+						0.0,
+						0.0
+					],
+					"sizeDelta": [
+						160.0,
+						30.0
+					],
+					"pivot": [
+						0.5,
+						0.5
+					]
+				},
+				{
+					"$type": "Image",
+					"$id": 6871064446090969,
+					"enabled": true,
+					"material": null,
+					"color": [
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					],
+					"raycastTarget": true,
+					"sprite": {
+						"texture": {
+							"guid": "f7f9d938ed24c9dd8d11314cd13a16cf"
+						},
+						"rect": [
+							0.0,
+							0.0,
+							0.0,
+							0.0
+						],
+						"pivot": [
+							0.5,
+							0.5
+						]
+					}
+				},
+				{
+					"$type": "CanvasRenderer",
+					"$id": 7216408605244090
+				},
+				{
+					"$type": "Button",
+					"$id": 2749803357211420,
+					"enabled": true,
+					"targetGraphic": {
+						"id": 6871064446090969
+					},
+					"interactable": true,
+					"colors": {
+						"normalColor": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"highlightedColor": [
+							1.0,
+							0.0,
+							0.0,
+							1.0
+						],
+						"pressedColor": [
+							0.0,
+							0.08494234,
+							1.0,
+							1.0
+						],
+						"selectedColor": [
+							0.9607843,
+							0.9607843,
+							0.9607843,
+							1.0
+						],
+						"disabledColor": [
+							0.7843137,
+							0.7843137,
+							0.7843137,
+							0.5019608
+						],
+						"colorMultiplier": 1.0,
+						"fadeDuration": 0.1
+					},
+					"onClick": []
+				}
+			]
+		},
+		{
+			"$id": 6057341916860754,
+			"name": "Text",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "RectTransform",
+					"$id": 1175768140855658,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": {
+						"id": 7462775424974341
+					},
+					"anchorMin": [
+						0.0,
+						0.0
+					],
+					"anchorMax": [
+						1.0,
+						1.0
+					],
+					"anchoredPosition": [
+						0.0,
+						0.0
+					],
+					"sizeDelta": [
+						0.0,
+						0.0
+					],
+					"pivot": [
+						0.5,
+						0.5
+					]
+				},
+				{
+					"$type": "Text",
+					"$id": 2712656642197792,
+					"enabled": true,
+					"material": null,
+					"color": [
+						0.2,
+						0.2,
+						0.2,
+						1.0
+					],
+					"raycastTarget": true,
+					"text": "Button",
+					"font": null,
+					"fontSize": 20.0,
+					"alignment": "Center",
+					"wordWrappingEnabled": true,
+					"lineSpacing": 0.0,
+					"characterSpacing": 0.0,
+					"faceDilate": 0.0,
+					"outlineWidth": 0.0,
+					"outlineColor": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"underlayDilate": 0.0,
+					"underlaySoftness": 0.0,
+					"underlayOffset": [
+						0.0,
+						0.0
+					],
+					"underlayColor": [
+						0.0,
+						0.0,
+						0.0,
+						0.0
+					]
+				},
+				{
+					"$type": "CanvasRenderer",
+					"$id": 3538154208707217
 				}
 			]
 		},

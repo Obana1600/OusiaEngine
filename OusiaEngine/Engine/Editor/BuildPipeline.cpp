@@ -141,16 +141,22 @@ bool ou::BuildPipeline::BuildPlayer(const std::filesystem::path &location) {
 	// ---- 書き出す ----
 	std::error_code error;
 	std::filesystem::create_directories(location, error);
-	for (const auto *folder : {L"Assets", L"EngineAssets", L"ProjectSettings"}) {
+	for (const auto *folder : {L"Assets", L"EngineAssets", L"ProjectSettings", L"Runtime"}) {
 		std::filesystem::remove_all(location / folder, error);
+	}
+	// DLL を exe の隣に置いていたころに書き出したものが残っていたら消す
+	for (const auto *dll : {L"dxcompiler.dll", L"dxil.dll"}) {
+		std::filesystem::remove(location / dll, error);
 	}
 
 	const auto exeName = MakeFileName(PlayerSettings::GetProductName()) + L".exe";
 	auto isSucceeded = CopyOneFile(player->exe, location / exeName);
+	std::filesystem::create_directories(location / L"Runtime", error);
 	for (const auto *dll : {L"dxcompiler.dll", L"dxil.dll"}) {
-		// 配ったエディタの Player/ には DLL を置かない（リポジトリを軽くするため）。そのときはエディタの隣のものを使う
-		const auto source = IsFile(player->folder / dll) ? player->folder / dll : ExecutableDirectory() / dll;
-		isSucceeded = isSucceeded && CopyOneFile(source, location / dll);
+		// 配ったエディタの Player/ には DLL を置かない（リポジトリを軽くするため）。そのときはエディタの Runtime/ のものを使う
+		const auto fromPlayer = player->folder / L"Runtime" / dll;
+		const auto source = IsFile(fromPlayer) ? fromPlayer : ExecutableDirectory() / L"Runtime" / dll;
+		isSucceeded = isSucceeded && CopyOneFile(source, location / L"Runtime" / dll);
 	}
 	isSucceeded = isSucceeded && CopyFolder(*engineAssets, location / L"EngineAssets");
 	isSucceeded = isSucceeded && CopyFolder(*assets, location / L"Assets");

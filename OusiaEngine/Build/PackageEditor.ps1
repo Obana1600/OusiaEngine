@@ -6,7 +6,7 @@
 #   -Project    exe のプロジェクト（既定は Game）
 #
 # 置くもの:
-#   Editor/OusiaEditor.exe, dxcompiler.dll, dxil.dll, EngineAssets/, Player/Player.exe, version.txt, README.md
+#   Editor/OusiaEditor.exe, Runtime/（dxcompiler.dll, dxil.dll）, EngineAssets/, Player/Player.exe, version.txt, README.md
 #   リポジトリの直下の .gitignore・.gitattributes・README.md は、ないときだけ置く
 #   Assets/・ProjectSettings/ がなければ、空のプロジェクトとして作る
 
@@ -52,20 +52,23 @@ $running = Get-Process OusiaEditor -ErrorAction SilentlyContinue | Where-Object 
 if ($running) { throw "チームのリポジトリのエディタが開いています。閉じてから実行してください" }
 
 New-Item -ItemType Directory $editor -Force | Out-Null
-foreach ($old in "EngineAssets", "Player") {
+# dxcompiler.dll・dxil.dll は、DLL を exe の隣に置いていたころのもの
+foreach ($old in "EngineAssets", "Player", "Runtime", "dxcompiler.dll", "dxil.dll") {
 	$path = Join-Path $editor $old
 	if (Test-Path $path) { Remove-Item $path -Recurse -Force }
 }
 
 Copy-Item "$develop\$Project.exe" (Join-Path $editor "OusiaEditor.exe") -Force
-Copy-Item "$develop\dxcompiler.dll", "$develop\dxil.dll" $editor -Force
+$runtime = Join-Path $editor "Runtime"
+New-Item -ItemType Directory $runtime | Out-Null
+Copy-Item "$develop\Runtime\dxcompiler.dll", "$develop\Runtime\dxil.dll" $runtime -Force
 Copy-Item (Join-Path $sourceRoot "Engine\EngineAssets") (Join-Path $editor "EngineAssets") -Recurse
 
 # 書き出し（File > Build Settings > Build...）に使う Player
 $player = Join-Path $editor "Player"
 New-Item -ItemType Directory $player | Out-Null
 Copy-Item "$release\$Project.exe" (Join-Path $player "Player.exe")
-# DLL は置かない。書き出すときはエディタの隣のものを使う（同じものを 2 つ入れないため）
+# DLL は置かない。書き出すときはエディタの Runtime/ のものを使う（同じものを 2 つ入れないため）
 
 # どの版かがわかるように、エンジンのコミットを書いておく
 $commit = (git -C $repoRoot rev-parse --short HEAD 2>$null)

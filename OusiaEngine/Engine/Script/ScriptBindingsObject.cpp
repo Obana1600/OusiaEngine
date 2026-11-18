@@ -1,13 +1,22 @@
 #include "ScriptBindings.h"
+#include "Asset/AssetDatabase.h"
+#include "Audio/AudioClip.h"
+#include "Audio/AudioSource.h"
 #include "Core/Object.h"
 #include "Math/Color.h"
 #include "Math/Mathf.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
+#include "Physics/BoxCollider.h"
+#include "Physics/CapsuleCollider.h"
 #include "Physics/CharacterController.h"
 #include "Physics/Collider.h"
 #include "Physics/Rigidbody.h"
+#include "Physics/SphereCollider.h"
+#include "Render/Asset/Material.h"
+#include "Render/MeshRenderer.h"
+#include "Render/Renderer.h"
 #include "Scene/Behavior.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
@@ -15,14 +24,23 @@
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 #include "Script/MonoBehavior.h"
+#include "Script/MonoScript.h"
 #include "Script/ScriptBindingsInternal.h"
 #include "Serialize/Serializer.h"
+#include "Serialize/TypeRegistry.h"
+#include "UI/Button.h"
+#include "UI/Graphic.h"
+#include "UI/Image.h"
+#include "UI/Text.h"
 
 #include <cstdint>
 #include <format>
+#include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 #include <angelscript.h>
 
@@ -40,14 +58,11 @@ std::unordered_map<uint32_t, ObjectHandle *> &Handles() {
 	return handles;
 }
 
+// 消えたあとの例外の文面に使う型の名前（表は子の型が先に並ぶので、最初に当てはまったもの）
 const char *DescribeType(const Object *object) {
-	if (dynamic_cast<const GameObject *>(object)) { return "GameObject"; }
-	if (dynamic_cast<const Transform *>(object)) { return "Transform"; }
-	if (dynamic_cast<const CharacterController *>(object)) { return "CharacterController"; }
-	if (dynamic_cast<const Collider *>(object)) { return "Collider"; }
-	if (dynamic_cast<const Rigidbody *>(object)) { return "Rigidbody"; }
-	if (dynamic_cast<const Behavior *>(object)) { return "Behavior"; }
-	if (dynamic_cast<const Component *>(object)) { return "Component"; }
+	for (const auto &type : NativeTypes()) {
+		if (type.isInstance(object)) { return type.name; }
+	}
 	return "Object";
 }
 
@@ -71,6 +86,31 @@ int GetInstanceID(ObjectHandle *self) {
 void Destroy(ObjectHandle *handle) {
 	if (!handle) { return; }
 	if (auto *object = Resolve<Object>(handle)) { Object::Destroy(object); }
+}
+
+// ---- Instantiate（null は C++ がログに出す） ----
+
+ObjectHandle *Instantiate(ObjectHandle *original) {
+	auto *gameObject = original ? Resolve<GameObject>(original) : nullptr;
+	return MakeHandle(Object::Instantiate(gameObject));
+}
+
+ObjectHandle *InstantiateWithParent(ObjectHandle *original, ObjectHandle *parent, bool instantiateInWorldSpace) {
+	auto *gameObject = original ? Resolve<GameObject>(original) : nullptr;
+	auto *parentTransform = parent ? Resolve<Transform>(parent) : nullptr;
+	return MakeHandle(Object::Instantiate(gameObject, parentTransform, instantiateInWorldSpace));
+}
+
+ObjectHandle *InstantiateAt(ObjectHandle *original, const Vector3 &position, const Quaternion &rotation, ObjectHandle *parent) {
+	auto *gameObject = original ? Resolve<GameObject>(original) : nullptr;
+	auto *parentTransform = parent ? Resolve<Transform>(parent) : nullptr;
+	return MakeHandle(Object::Instantiate(gameObject, position, rotation, parentTransform));
+}
+
+// GameObject か Component を渡すと、その GameObject を次のシーンを読み込んでも残す（Unity と同じくルートの GameObject だけ）
+void DontDestroyOnLoad(ObjectHandle *handle) {
+	if (!handle) { return; }
+	if (auto *object = Resolve<Object>(handle)) { Object::DontDestroyOnLoad(object); }
 }
 
 
@@ -239,27 +279,23 @@ void LookAt(const Vector3 &worldPosition, const Vector3 &worldUp, ObjectHandle *
 }
 
 
-// ---- 型の id（変数の保存と TryGetComponent で型を見分けるのに使う。登録したあとに引いて覚えておく） ----
+// ---- 値の型の id（変数の保存で型を見分けるのに使う。登録したあとに引いて覚えておく） ----
 
-struct ScriptTypeIds {
+struct ValueTypeIds {
 	int string = 0;
 	int vector2 = 0;
 	int vector3 = 0;
 	int quaternion = 0;
 	int color = 0;
-	int gameObject = 0;
-	int component = 0;
-	int behavior = 0;
-	int transform = 0;
-	int collider = 0;
-	int rigidbody = 0;
-	int characterController = 0;
 };
 
-ScriptTypeIds &TypeIds() {
-	static ScriptTypeIds ids;
+ValueTypeIds &TypeIds() {
+	static ValueTypeIds ids;
 	return ids;
 }
+
+
+// ---- 持ち手で渡す型の表を作る手伝い ----
 
 // 持ち手の変数は、C++ のポインタにして Serializer::Reference に渡す（fileId で保存され、Inspector でつなげる）
 template <typename T>
@@ -275,10 +311,81 @@ void SerializeHandle(Serializer &serializer, std::string_view name, ObjectHandle
 	handle = MakeHandle(object);
 }
 
-// TryGetComponent で、C++ の Component の型を見分ける
+// アセットの型（Material・AudioClip）の持ち手は、Serializer::Asset に渡す（guid で保存され、Inspector では Project から落とせる・ピッカーで選べる）
+// 持ち手がアセットの shared_ptr を持っているので、それをそのまま渡す。実行中に作ったもの（renderer.material の複製など）はアセットではないので保存しない
 template <typename T>
-Component *FindComponent(GameObject *gameObject) {
+void SerializeAssetHandle(Serializer &serializer, std::string_view name, ObjectHandle *&handle) {
+	auto asset = handle ? std::dynamic_pointer_cast<T>(handle->asset) : nullptr;
+	const auto *before = asset.get();
+
+	// 書くときは asset が変わらないので、何もしない
+	serializer.Asset(name, asset);
+	if (asset.get() == before) { return; }
+
+	if (handle) { Release(handle); }
+	handle = MakeHandle(asset.get()); // アセットなら、持ち手が shared_ptr も持つ
+}
+
+template <typename T>
+bool IsInstance(const Object *object) {
+	return dynamic_cast<const T *>(object) != nullptr;
+}
+
+template <typename T>
+Component *FindComponent(const GameObject *gameObject) {
 	return gameObject->GetComponent<T>();
+}
+
+// canAdd: AddComponent<T> で作れるか（抽象クラスと Transform は作れない）
+template <typename T>
+NativeType MakeNativeType(const char *name, const char *parent, bool canAdd = false) {
+	NativeType type{name, parent, &IsInstance<T>, asFUNCTION(ScriptBindingsInternal::Downcast<T>), nullptr, nullptr, canAdd};
+	if constexpr (std::is_base_of_v<Component, T>) {
+		type.find = &FindComponent<T>;
+	}
+	if constexpr (std::is_base_of_v<Component, T> || std::is_same_v<T, GameObject>) {
+		type.serialize = &SerializeHandle<T>;
+	} else if constexpr (std::is_same_v<T, Material> || std::is_same_v<T, AudioClip>) {
+		type.serialize = &SerializeAssetHandle<T>;
+	}
+	return type;
+}
+
+const NativeType *FindNativeTypeByName(std::string_view name) {
+	for (const auto &type : NativeTypes()) {
+		if (name == type.name) { return &type; }
+	}
+	return nullptr;
+}
+
+// 親・親の親…の順
+std::vector<const char *> CollectAncestors(const NativeType &type) {
+	std::vector<const char *> ancestors;
+	for (const auto *parent = type.parent; parent;) {
+		ancestors.push_back(parent);
+		const auto *row = FindNativeTypeByName(parent);
+		parent = row ? row->parent : nullptr;
+	}
+	return ancestors;
+}
+
+// GameObject ならそれ、Component なら付いている GameObject
+GameObject *ResolveOwnerGameObject(ObjectHandle *self) {
+	auto *object = Resolve<Object>(self);
+	if (auto *gameObject = dynamic_cast<GameObject *>(object)) { return gameObject; }
+	if (auto *component = dynamic_cast<Component *>(object)) { return component->GetGameObject(); }
+	return nullptr;
+}
+
+// Unity と同じく、スクリプトのクラスはファイル名＝クラス名の .as から探す
+std::shared_ptr<MonoScript> FindMonoScript(const std::string &className) {
+	for (const auto &guid : AssetDatabase::FindAssets(std::format("t:MonoScript {}", className))) {
+		const auto path = AssetDatabase::GuidToAssetPath(guid);
+		const auto slash = path.find_last_of('/');
+		const auto fileName = slash == std::string::npos ? path : path.substr(slash + 1);
+		if (fileName == className + ".as") { return AssetDatabase::LoadAssetAtPath<MonoScript>(path); }
+	}
+	return nullptr;
 }
 
 } // namespace
@@ -296,7 +403,15 @@ ScriptBindingsInternal::ObjectHandle *ou::ScriptBindingsInternal::MakeHandle(Obj
 		return it->second;
 	}
 
-	auto *handle = new ObjectHandle{1, object->GetInstanceId(), DescribeType(object)};
+	auto *handle = new ObjectHandle{1, object->GetInstanceId(), DescribeType(object), nullptr};
+
+	// アセットはアセットのデータベースが shared_ptr で持ち、誰も持たなくなると UnloadUnusedAssets で消える
+	// スクリプトの変数に入れたプレハブが消えないよう、持ち手も同じ shared_ptr を持つ
+	if (const auto reference = AssetDatabase::FindAssetReference(object)) {
+		auto asset = AssetDatabase::LoadAsset(reference->guid, reference->subAsset);
+		if (asset.get() == object) { handle->asset = std::move(asset); }
+	}
+
 	handles.emplace(handle->instanceId, handle);
 	return handle;
 }
@@ -309,10 +424,45 @@ void ou::ScriptBindingsInternal::Release(ObjectHandle *self) {
 }
 
 
-ScriptBindingsInternal::TypeRegistrar ou::ScriptBindingsInternal::RegisterComponentType(
-	asIScriptEngine *engine, const char *type, std::initializer_list<const char *> baseTypes) {
+std::vector<NativeType> &ou::ScriptBindingsInternal::NativeTypes() {
+	// 子の型を親より先に並べる
+	static std::vector<NativeType> types = {
+		MakeNativeType<GameObject>("GameObject", "Object"),
+		MakeNativeType<Transform>("Transform", "Component"),
+		MakeNativeType<CharacterController>("CharacterController", "Collider", true),
+		MakeNativeType<BoxCollider>("BoxCollider", "Collider", true),
+		MakeNativeType<SphereCollider>("SphereCollider", "Collider", true),
+		MakeNativeType<CapsuleCollider>("CapsuleCollider", "Collider", true),
+		MakeNativeType<Collider>("Collider", "Behavior"),
+		MakeNativeType<Rigidbody>("Rigidbody", "Component", true),
+		MakeNativeType<AudioSource>("AudioSource", "Component", true),
+		MakeNativeType<MeshRenderer>("MeshRenderer", "Renderer", true),
+		MakeNativeType<Renderer>("Renderer", "Behavior"),
+		MakeNativeType<Text>("Text", "Graphic", true),
+		MakeNativeType<Image>("Image", "Graphic", true),
+		MakeNativeType<Graphic>("Graphic", "Behavior"),
+		MakeNativeType<Button>("Button", "Selectable", true),
+		MakeNativeType<Selectable>("Selectable", "Behavior"),
+		MakeNativeType<Behavior>("Behavior", "Component"),
+		MakeNativeType<Component>("Component", "Object"),
+		MakeNativeType<Material>("Material", "Object"),
+		MakeNativeType<AudioClip>("AudioClip", "Object"),
+		MakeNativeType<Object>("Object", nullptr),
+	};
+	return types;
+}
+
+
+const NativeType *ou::ScriptBindingsInternal::FindNativeType(int typeId) {
+	for (const auto &type : NativeTypes()) {
+		if (type.typeId == typeId) { return &type; }
+	}
+	return nullptr;
+}
+
+
+ScriptBindingsInternal::TypeRegistrar ou::ScriptBindingsInternal::RegisterComponentType(asIScriptEngine *engine, const char *type) {
 	const TypeRegistrar c{engine, type};
-	c.Reference(baseTypes);
 	c.Method("string get_name() const property", asFUNCTION(GetComponentName));
 	c.Method("void set_name(const string &in value) property", asFUNCTION(SetComponentName));
 	c.Method("int GetInstanceID() const", asFUNCTION(GetInstanceID));
@@ -362,17 +512,77 @@ bool ou::ScriptBindings::SerializeProperty(Serializer &serializer, std::string_v
 	if (typeId & asTYPEID_OBJHANDLE) {
 		const auto baseTypeId = typeId & ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST);
 		auto *&handle = *static_cast<ObjectHandle **>(address);
-		if (baseTypeId == ids.gameObject) { SerializeHandle<GameObject>(serializer, name, handle); return true; }
-		if (baseTypeId == ids.transform) { SerializeHandle<Transform>(serializer, name, handle); return true; }
-		if (baseTypeId == ids.characterController) { SerializeHandle<CharacterController>(serializer, name, handle); return true; }
-		if (baseTypeId == ids.collider) { SerializeHandle<Collider>(serializer, name, handle); return true; }
-		if (baseTypeId == ids.rigidbody) { SerializeHandle<Rigidbody>(serializer, name, handle); return true; }
-		if (baseTypeId == ids.behavior) { SerializeHandle<Behavior>(serializer, name, handle); return true; }
-		if (baseTypeId == ids.component) { SerializeHandle<Component>(serializer, name, handle); return true; }
+		if (const auto *type = FindNativeType(baseTypeId); type && type->serialize) {
+			type->serialize(serializer, name, handle);
+			return true;
+		}
 	}
 
-	// array<T>・enum・ほかのスクリプトのクラスなどは、まだ保存しない
+	// array<T>・enum・ほかのスクリプトのクラス・アセットなどは、まだ保存しない
 	return false;
+}
+
+
+void *ou::ScriptBindings::FindComponentOfType(asIScriptEngine *engine, GameObject *gameObject, int typeId) {
+	const auto baseTypeId = typeId & ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST);
+	const auto *type = engine->GetTypeInfoById(baseTypeId);
+
+	// スクリプトのクラス（Mover など）: MonoBehavior のオブジェクトの中から、その型か派生した型を探す
+	if (type && (type->GetFlags() & asOBJ_SCRIPT_OBJECT)) {
+		for (auto *behavior : gameObject->GetComponents<MonoBehavior>()) {
+			auto *instance = behavior->instance_;
+			if (!instance) { continue; }
+			const auto *instanceType = instance->GetObjectType();
+			if (instanceType == type || instanceType->DerivesFrom(type)) {
+				instance->AddRef();
+				return instance;
+			}
+		}
+		return nullptr;
+	}
+
+	// C++ の Component
+	const auto *native = FindNativeType(baseTypeId);
+	if (!native || !native->find) {
+		ThrowException(std::format("ArgumentException: GetComponent で探せない型です: {}", type ? type->GetName() : "?"));
+		return nullptr;
+	}
+	return MakeHandle(native->find(gameObject));
+}
+
+
+void *ou::ScriptBindings::AddComponentOfType(asIScriptEngine *engine, GameObject *gameObject, int typeId) {
+	const auto *type = engine->GetTypeInfoById(typeId);
+
+	// スクリプトのクラス: C++ の MonoBehavior に .as を入れてから付ける（付けたときに Awake が呼ばれるので、先に入れる）
+	if (type && (type->GetFlags() & asOBJ_SCRIPT_OBJECT)) {
+		auto script = FindMonoScript(type->GetName());
+		if (!script) {
+			ThrowException(std::format("ArgumentException: スクリプト {}.as が見つかりません。ファイル名とクラス名を一致させてください", type->GetName()));
+			return nullptr;
+		}
+		auto behavior = std::make_unique<MonoBehavior>();
+		auto *added = behavior.get();
+		added->SetScript(std::move(script));
+		gameObject->AddComponentInstance(std::move(behavior));
+
+		if (!added->instance_) { return nullptr; }
+		added->instance_->AddRef();
+		return added->instance_;
+	}
+
+	// C++ の Component: Add Component と同じく TypeRegistry の名前で作る
+	const auto *native = FindNativeType(typeId);
+	if (!native || !native->canAdd) {
+		ThrowException(std::format("ArgumentException: AddComponent で付けられない型です: {}", type ? type->GetName() : "?"));
+		return nullptr;
+	}
+	auto component = TypeRegistry::Create(native->name);
+	if (!component) {
+		ThrowException(std::format("ArgumentException: {} が TypeRegistry に登録されていません", native->name));
+		return nullptr;
+	}
+	return MakeHandle(gameObject->AddComponentInstance(std::move(component)));
 }
 
 
@@ -384,58 +594,55 @@ bool ou::ScriptBindings::TryGetComponent(void *out, int typeId, void *selfHandle
 		return false;
 	}
 
-	// 自分は GameObject か Component
-	auto *self = Resolve<Object>(static_cast<ObjectHandle *>(selfHandle));
-	if (!self) { return false; }
-	auto *gameObject = dynamic_cast<GameObject *>(self);
-	if (!gameObject) {
-		if (auto *component = dynamic_cast<Component *>(self)) { gameObject = component->GetGameObject(); }
-	}
-	if (!gameObject) { return false; }
+	auto *gameObject = ResolveOwnerGameObject(static_cast<ObjectHandle *>(selfHandle));
+	auto *context = asGetActiveContext();
+	if (!gameObject || !context) { return false; }
 
-	const auto baseTypeId = typeId & ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST);
-
-	// スクリプトのクラス（Mover@ など）: MonoBehavior のオブジェクトの中から、その型か派生した型を探す
-	auto *engine = asGetActiveContext() ? asGetActiveContext()->GetEngine() : nullptr;
-	const auto *type = engine ? engine->GetTypeInfoById(baseTypeId) : nullptr;
-	if (type && (type->GetFlags() & asOBJ_SCRIPT_OBJECT)) {
-		for (auto *behavior : gameObject->GetComponents<MonoBehavior>()) {
-			auto *instance = behavior->instance_;
-			if (!instance) { continue; }
-			const auto *instanceType = instance->GetObjectType();
-			if (instanceType == type || instanceType->DerivesFrom(type)) {
-				instance->AddRef();
-				*static_cast<asIScriptObject **>(out) = instance;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	// C++ の Component
-	const auto &ids = TypeIds();
-	Component *found = nullptr;
-	if (baseTypeId == ids.transform) { found = FindComponent<Transform>(gameObject); }
-	else if (baseTypeId == ids.rigidbody) { found = FindComponent<Rigidbody>(gameObject); }
-	else if (baseTypeId == ids.characterController) { found = FindComponent<CharacterController>(gameObject); }
-	else if (baseTypeId == ids.collider) { found = FindComponent<Collider>(gameObject); }
-	else if (baseTypeId == ids.behavior) { found = FindComponent<Behavior>(gameObject); }
-	else if (baseTypeId == ids.component) { found = FindComponent<Component>(gameObject); }
-	else {
-		ThrowException(std::format("TryGetComponent で探せない型です: {}", engine && type ? type->GetName() : "?"));
-		return false;
-	}
-
+	auto *found = FindComponentOfType(context->GetEngine(), gameObject, typeId);
 	if (!found) { return false; }
-	*static_cast<ObjectHandle **>(out) = MakeHandle(found);
+	*static_cast<void **>(out) = found;
 	return true;
+}
+
+
+// Unity の GetComponent<T>()。T はテンプレート関数の型（generic で登録したので、呼ばれた型を関数から引く）
+void ou::ScriptBindings::GetComponentGeneric(asIScriptGeneric *generic) {
+	auto *gameObject = ResolveOwnerGameObject(static_cast<ObjectHandle *>(generic->GetObject()));
+	void *found = gameObject ? FindComponentOfType(generic->GetEngine(), gameObject, generic->GetFunction()->GetSubTypeId(0)) : nullptr;
+	// 参照は FindComponentOfType が 1 つ持たせているので、増やさずに返す
+	generic->SetReturnAddress(found);
+}
+
+
+// Unity の AddComponent<T>()
+void ou::ScriptBindings::AddComponentGeneric(asIScriptGeneric *generic) {
+	auto *gameObject = Resolve<GameObject>(static_cast<ObjectHandle *>(generic->GetObject()));
+	void *added = gameObject ? AddComponentOfType(generic->GetEngine(), gameObject, generic->GetFunction()->GetSubTypeId(0)) : nullptr;
+	generic->SetReturnAddress(added);
 }
 
 
 void ou::ScriptBindings::RegisterObjectTypes(asIScriptEngine *engine) {
 	// 中身はどれも同じ持ち手（ObjectHandle）だが、スクリプトからは別の型に見せる
-	for (const auto *type : {"Object", "GameObject", "Component", "Behavior", "Transform", "Collider", "Rigidbody", "CharacterController"}) {
-		Check(engine->RegisterObjectType(type, 0, asOBJ_REF), type);
+	auto &types = NativeTypes();
+	for (auto &type : types) {
+		Check(engine->RegisterObjectType(type.name, 0, asOBJ_REF), type.name);
+		type.typeId = engine->GetTypeIdByDecl(type.name);
+	}
+
+	// 参照の数え方、親の型への暗黙の変換、親から子への cast<T>
+	for (const auto &type : types) {
+		const auto ancestors = CollectAncestors(type);
+		const TypeRegistrar registrar{engine, type.name};
+		registrar.Reference(ancestors);
+
+		const auto declaration = std::format("{}@ opCast()", type.name);
+		const auto constDeclaration = std::format("const {}@ opCast() const", type.name);
+		for (const auto *ancestor : ancestors) {
+			const TypeRegistrar parent{engine, ancestor};
+			parent.Method(declaration.c_str(), type.downcast);
+			parent.Method(constDeclaration.c_str(), type.downcast);
+		}
 	}
 
 	// Transform.Translate などの Space::Self / Space::World
@@ -449,27 +656,22 @@ void ou::ScriptBindings::RegisterObjectMembers(asIScriptEngine *engine) {
 	// ---- Object ----
 	{
 		const TypeRegistrar o{engine, "Object"};
-		o.Reference({});
 		o.Method("string get_name() const property", asFUNCTION(GetName));
 		o.Method("void set_name(const string &in value) property", asFUNCTION(SetName));
 		o.Method("int GetInstanceID() const", asFUNCTION(GetInstanceID));
-		o.Downcast<GameObject>("GameObject");
-		o.Downcast<Component>("Component");
-		o.Downcast<Behavior>("Behavior");
-		o.Downcast<Transform>("Transform");
-		o.Downcast<Collider>("Collider");
-		o.Downcast<Rigidbody>("Rigidbody");
-		o.Downcast<CharacterController>("CharacterController");
 
 		engine->SetDefaultNamespace("Object");
 		Check(engine->RegisterGlobalFunction("void Destroy(Object@+ obj)", asFUNCTION(Destroy), asCALL_CDECL), "Object::Destroy");
+		Check(engine->RegisterGlobalFunction("void DontDestroyOnLoad(Object@+ target)", asFUNCTION(DontDestroyOnLoad), asCALL_CDECL), "Object::DontDestroyOnLoad");
+		Check(engine->RegisterGlobalFunction("GameObject@ Instantiate(GameObject@+ original)", asFUNCTION(Instantiate), asCALL_CDECL), "Object::Instantiate");
+		Check(engine->RegisterGlobalFunction("GameObject@ Instantiate(GameObject@+ original, Transform@+ parent, bool instantiateInWorldSpace = false)", asFUNCTION(InstantiateWithParent), asCALL_CDECL), "Object::Instantiate");
+		Check(engine->RegisterGlobalFunction("GameObject@ Instantiate(GameObject@+ original, const Vector3 &in position, const Quaternion &in rotation, Transform@+ parent = null)", asFUNCTION(InstantiateAt), asCALL_CDECL), "Object::Instantiate");
 		engine->SetDefaultNamespace("");
 	}
 
 	// ---- GameObject ----
 	{
 		const TypeRegistrar g{engine, "GameObject"};
-		g.Reference({"Object"});
 		Check(engine->RegisterObjectBehaviour("GameObject", asBEHAVE_FACTORY, "GameObject@ f(const string &in name = \"GameObject\")", asFUNCTION(CreateGameObject), asCALL_CDECL), "GameObject factory");
 		g.Method("string get_name() const property", asFUNCTION(GetName));
 		g.Method("void set_name(const string &in value) property", asFUNCTION(SetName));
@@ -483,26 +685,14 @@ void ou::ScriptBindings::RegisterObjectMembers(asIScriptEngine *engine) {
 	}
 
 	// ---- Component ----
-	{
-		const auto c = RegisterComponentType(engine, "Component", {"Object"});
-		c.Downcast<Behavior>("Behavior");
-		c.Downcast<Transform>("Transform");
-		c.Downcast<Collider>("Collider");
-		c.Downcast<Rigidbody>("Rigidbody");
-		c.Downcast<CharacterController>("CharacterController");
-	}
+	RegisterComponentType(engine, "Component");
 
 	// ---- Behavior ----
-	{
-		const auto b = RegisterComponentType(engine, "Behavior", {"Component", "Object"});
-		RegisterBehaviorMembers(b);
-		b.Downcast<Collider>("Collider");
-		b.Downcast<CharacterController>("CharacterController");
-	}
+	RegisterBehaviorMembers(RegisterComponentType(engine, "Behavior"));
 
 	// ---- Transform ----
 	{
-		const auto t = RegisterComponentType(engine, "Transform", {"Component", "Object"});
+		const auto t = RegisterComponentType(engine, "Transform");
 		t.Method("Vector3 get_position() const property", asFUNCTION((Get<Transform, Vector3, &Transform::GetWorldPosition>)));
 		t.Method("void set_position(const Vector3 &in value) property", asFUNCTION((Set<Transform, const Vector3 &, &Transform::SetWorldPosition>)));
 		t.Method("Vector3 get_localPosition() const property", asFUNCTION((Get<Transform, const Vector3 &, &Transform::GetLocalPosition>)));
@@ -535,23 +725,48 @@ void ou::ScriptBindings::RegisterObjectMembers(asIScriptEngine *engine) {
 }
 
 
-void ou::ScriptBindings::RegisterTryGetComponent(asIScriptEngine *engine) {
-	for (const auto *type : {"GameObject", "Component", "Behavior", "Transform", "Collider", "Rigidbody", "CharacterController"}) {
-		Check(engine->RegisterObjectMethod(type, "bool TryGetComponent(?&out component) const", asFUNCTION(TryGetComponent), asCALL_CDECL_OBJLAST), type);
-	}
+// Unity の GameObject.Find(name)。今のシーンと DontDestroyOnLoad のシーンから、動いている GameObject を名前で探す
+void *ou::ScriptBindings::FindGameObject(const std::string &name) {
+	// 止めた GameObject の子は探さない（Unity と同じく、動いているものだけ）
+	std::function<GameObject *(Transform *)> findIn = [&](Transform *transform) -> GameObject * {
+		auto *gameObject = transform->GetGameObject();
+		if (!gameObject || !gameObject->IsActiveSelf()) { return nullptr; }
+		if (gameObject->GetName() == name) { return gameObject; }
+		for (auto *child : transform->GetChildren()) {
+			if (auto *found = findIn(child)) { return found; }
+		}
+		return nullptr;
+	};
 
-	// 変数の保存と TryGetComponent で型を見分けるために、型の id を覚えておく
+	for (auto *scene : {SceneManager::GetActiveScene(), SceneManager::GetDontDestroyOnLoadScene()}) {
+		if (!scene) { continue; }
+		for (auto *root : scene->GetRootGameObjects()) {
+			if (auto *found = findIn(root->GetTransform())) { return MakeHandle(found); }
+		}
+	}
+	return nullptr;
+}
+
+
+void ou::ScriptBindings::RegisterGetComponent(asIScriptEngine *engine) {
+	// GameObject と Component の型の全部に付ける（Unity と同じく component.GetComponent<T>() でも探せる）
+	for (const auto &type : NativeTypes()) {
+		if (!type.find && std::string_view(type.name) != "GameObject") { continue; }
+		Check(engine->RegisterObjectMethod(type.name, "bool TryGetComponent(?&out component) const", asFUNCTION(TryGetComponent), asCALL_CDECL_OBJLAST), type.name);
+		// テンプレート関数は generic でしか登録できない
+		Check(engine->RegisterObjectMethod(type.name, "T@ GetComponent<T>() const", asFUNCTION(GetComponentGeneric), asCALL_GENERIC), type.name);
+	}
+	Check(engine->RegisterObjectMethod("GameObject", "T@ AddComponent<T>()", asFUNCTION(AddComponentGeneric), asCALL_GENERIC), "GameObject::AddComponent");
+
+	engine->SetDefaultNamespace("GameObject");
+	Check(engine->RegisterGlobalFunction("GameObject@ Find(const string &in name)", asFUNCTION(FindGameObject), asCALL_CDECL), "GameObject::Find");
+	engine->SetDefaultNamespace("");
+
+	// 変数の保存で型を見分けるために、値の型の id を覚えておく
 	auto &ids = TypeIds();
 	ids.string = engine->GetTypeIdByDecl("string");
 	ids.vector2 = engine->GetTypeIdByDecl("Vector2");
 	ids.vector3 = engine->GetTypeIdByDecl("Vector3");
 	ids.quaternion = engine->GetTypeIdByDecl("Quaternion");
 	ids.color = engine->GetTypeIdByDecl("Color");
-	ids.gameObject = engine->GetTypeIdByDecl("GameObject");
-	ids.component = engine->GetTypeIdByDecl("Component");
-	ids.behavior = engine->GetTypeIdByDecl("Behavior");
-	ids.transform = engine->GetTypeIdByDecl("Transform");
-	ids.collider = engine->GetTypeIdByDecl("Collider");
-	ids.rigidbody = engine->GetTypeIdByDecl("Rigidbody");
-	ids.characterController = engine->GetTypeIdByDecl("CharacterController");
 }

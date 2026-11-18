@@ -41,6 +41,10 @@ private: // メンバ変数
 	std::string creatingName_;
 	bool opensCreatePopup_ = false;
 
+	// Delete の確認のポップアップ
+	std::string deletingPath_;
+	bool opensDeletePopup_ = false;
+
 
 private: // メンバ関数
 
@@ -58,6 +62,14 @@ private: // メンバ関数
 	void DrawCreatePopup();
 	void BeginCreate(CreateKind kind);
 	void OpenAsset(const std::string &assetPath);
+
+	// Unity と同じく、確かめてから消す（ファイルと .meta を Windows のごみ箱へ移す）
+	void BeginDelete(const std::string &assetPath);
+	void DrawDeletePopup();
+
+	// Hierarchy から落とした GameObject を .prefab にする（target はフォルダか .prefab）
+	void AcceptGameObjectDrop(const std::string &target);
+	void SaveDroppedGameObject(const std::string &target);
 };
 
 } // namespace ou

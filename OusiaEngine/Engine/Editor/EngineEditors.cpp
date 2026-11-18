@@ -1,6 +1,7 @@
 #include "EngineEditors.h"
 #include "Editor/EditorGuiLayout.h"
-#include "Editor/GUIContent.h"
+#include "Editor/EditorGuiUtility.h"
+#include "Editor/UnityEventDrawer.h"
 
 #include <algorithm>
 #include <format>
@@ -19,7 +20,7 @@ namespace {
 // path の欄を描く。ラベルは日本語、ツールチップは英語の名前（スクリプトで使う名前）
 void Field(SerializedObject &so, std::string_view path, std::string_view label) {
 	if (auto property = so.FindProperty(path)) {
-		EditorGuiLayout::PropertyField(*property, GUIContent(label, property->GetName()), true);
+		EditorGuiLayout::PropertyField(*property, EditorGuiUtility::TrTextContent(label, property->GetName()), true);
 	}
 }
 
@@ -35,7 +36,7 @@ void EnumField(SerializedObject &so, std::string_view path, std::string_view lab
 	if (!property) { return; }
 
 	const auto names = property->GetEnumNames();
-	std::vector<GUIContent> contents;
+	std::vector<GuiContent> contents;
 	std::vector<int> indices;
 	for (int i = 0; i < static_cast<int>(names.size()); i++) {
 		if (names[i] == "Count") { continue; }
@@ -44,13 +45,13 @@ void EnumField(SerializedObject &so, std::string_view path, std::string_view lab
 		for (const auto &option : options) {
 			if (option.name == names[i]) { tooltip = option.tooltip; }
 		}
-		contents.emplace_back(names[i], tooltip);
+		contents.push_back(EditorGuiUtility::TrTextContent(names[i], tooltip));
 		indices.push_back(i);
 	}
 
 	const auto it = std::find(indices.begin(), indices.end(), property->GetEnumValueIndex());
 	const auto selected = it != indices.end() ? static_cast<int>(it - indices.begin()) : -1;
-	const auto next = EditorGuiLayout::Popup(GUIContent(label, property->GetName()), selected, contents);
+	const auto next = EditorGuiLayout::Popup(EditorGuiUtility::TrTextContent(label, property->GetName()), selected, contents);
 	if (next != selected && next >= 0) { property->SetEnumValueIndex(indices[next]); }
 }
 
@@ -63,7 +64,7 @@ std::string EnumName(SerializedObject &so, std::string_view path) {
 // 入れ子・配列の見出し。開いていれば字下げして true を返す（そのときは呼ぶ側が EndFoldout を呼ぶ）
 bool BeginFoldout(SerializedObject &so, std::string_view path, std::string_view label) {
 	auto property = so.FindProperty(path);
-	if (!property || !EditorGuiLayout::PropertyField(*property, GUIContent(label, property->GetName()), false)) { return false; }
+	if (!property || !EditorGuiLayout::PropertyField(*property, EditorGuiUtility::TrTextContent(label, property->GetName()), false)) { return false; }
 
 	ImGui::Indent();
 	return true;
@@ -80,7 +81,7 @@ void ArraySizeField(SerializedObject &so, std::string_view path) {
 
 	ImGui::PushID(property->GetPropertyPath().c_str());
 	auto size = property->GetArraySize();
-	EditorGuiLayout::PrefixLabel(GUIContent("数", "size"));
+	EditorGuiLayout::PrefixLabel(EditorGuiUtility::TrTextContent("数", "size"));
 	if (ImGui::DragInt("##Size", &size, 0.1f, 0, 1024)) { property->SetArraySize(std::max(size, 0)); }
 	ImGui::PopID();
 }
@@ -436,6 +437,7 @@ void ou::ButtonEditor::OnInspectorGui() {
 		Field(so, "colors/fadeDuration", "色が変わる時間（秒）");
 		EndFoldout();
 	}
+	UnityEventDrawer::Draw(so, "onClick", "押したとき（On Click ()）");
 	so.ApplyModifiedProperties();
 }
 
