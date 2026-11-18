@@ -9,6 +9,7 @@
 #include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
 #include "Render/Asset/Model.h"
+#include "Scene/Component.h"
 #include "Scene/GameObject.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
@@ -112,8 +113,11 @@ void ou::SceneView::OnGui() {
 	CenterNextItem({available.x, available.y}, size);
 	ImGui::Image(ToTextureId(renderTarget_.GetColor()), {size.x, size.y});
 	const auto isImageHovered = ImGui::IsItemHovered();
+	const auto imageMin = ImGui::GetItemRectMin();
 	AcceptAssetDrop();
 	const auto isHandleHot = DrawTransformHandle();
+	// パネルは子ウィンドウなので、上に乗っているあいだは絵の IsItemHovered が false になり、カメラは動かない
+	DrawSceneGuis(Rect(imageMin.x, imageMin.y, size.x, size.y));
 	HandleInput(isImageHovered && !isHandleHot);
 
 	sLastDrawn = this;
@@ -180,6 +184,40 @@ bool ou::SceneView::DrawTransformHandle() {
 	}
 
 	return ImGuizmo::IsOver() || ImGuizmo::IsUsing();
+}
+
+
+void ou::SceneView::DrawSceneGuis(const Rect &sceneRect) {
+	auto *gameObject = Selection::GetActiveGameObject();
+	if (!gameObject) {
+		sceneGuiTargetId_ = 0;
+		sceneGuiComponentIds_.clear();
+		sceneGuiEditors_.clear();
+		return;
+	}
+
+	// Inspector と同じく、選択かコンポーネントが変わったときだけ Editor を作り直す
+	std::vector<Component *> components;
+	std::vector<uint32_t> componentIds;
+	for (auto *component : gameObject->GetComponents<Component>()) {
+		if (component->IsDestroyed()) { continue; }
+		components.push_back(component);
+		componentIds.push_back(component->GetInstanceId());
+	}
+	if (gameObject->GetInstanceId() != sceneGuiTargetId_ || componentIds != sceneGuiComponentIds_) {
+		sceneGuiTargetId_ = gameObject->GetInstanceId();
+		sceneGuiComponentIds_ = std::move(componentIds);
+		sceneGuiEditors_.clear();
+		for (auto *component : components) {
+			sceneGuiEditors_.push_back(Editor::Create(component));
+		}
+	}
+
+	for (size_t i = 0; i < sceneGuiEditors_.size(); i++) {
+		ImGui::PushID(static_cast<int>(i));
+		sceneGuiEditors_[i]->OnSceneGui(sceneRect);
+		ImGui::PopID();
+	}
 }
 
 

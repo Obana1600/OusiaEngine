@@ -51,8 +51,11 @@ void ou::ParticleSystem::Awake() {
 }
 
 void ou::ParticleSystem::Update() {
-	const auto deltaTime = Time::GetDeltaTime();
+	Simulate(Time::GetDeltaTime());
+}
 
+
+void ou::ParticleSystem::Simulate(float deltaTime) {
 	UpdateParticles(deltaTime);
 	if (isPlaying_) {
 		UpdateEmission(deltaTime);
@@ -134,6 +137,11 @@ void ou::ParticleSystem::Emit(uint32_t count) {
 
 bool ou::ParticleSystem::IsPlaying() const {
 	return isPlaying_;
+}
+
+
+float ou::ParticleSystem::GetTime() const {
+	return time_;
 }
 
 

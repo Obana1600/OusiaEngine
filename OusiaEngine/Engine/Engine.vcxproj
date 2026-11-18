@@ -58,6 +58,7 @@
     <ClInclude Include="Editor\EditorPayload.h" />
     <ClInclude Include="Editor\Selection.h" />
     <ClInclude Include="Editor\AssetEditors.h" />
+    <ClInclude Include="Editor\ParticleEffectPreview.h" />
     <ClInclude Include="Editor\PrefabUtility.h" />
     <ClInclude Include="Editor\UnityEventDrawer.h" />
     <ClInclude Include="Events\UnityEvent.h" />
@@ -239,6 +240,7 @@
     <ClCompile Include="Editor\EditorApplication.cpp" />
     <ClCompile Include="Editor\Selection.cpp" />
     <ClCompile Include="Editor\AssetEditors.cpp" />
+    <ClCompile Include="Editor\ParticleEffectPreview.cpp" />
     <ClCompile Include="Editor\PrefabUtility.cpp" />
     <ClCompile Include="Editor\UnityEventDrawer.cpp" />
     <ClCompile Include="Events\UnityEvent.cpp" />

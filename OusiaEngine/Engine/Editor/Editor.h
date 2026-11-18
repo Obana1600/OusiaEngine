@@ -43,6 +43,11 @@ public: // メンバ関数
 	// Preview の中身を描く。rect はスクリーン座標（ImGui::GetWindowDrawList に描くか、カーソルを置いて部品を置く）
 	virtual void OnPreviewGui(const Rect &rect) { (void)rect; }
 
+	// ---- Scene ビュー（Unity の Editor.OnSceneGUI） ----
+
+	// 選んでいる GameObject のコンポーネントの Editor が、Scene ビューに描く。sceneRect は Scene ビューの絵の範囲（スクリーン座標）
+	virtual void OnSceneGui(const Rect &sceneRect) { (void)sceneRect; }
+
 	Object *GetTarget() const;
 	SerializedObject *GetSerializedObject();
 

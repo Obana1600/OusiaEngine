@@ -1,11 +1,16 @@
 #pragma once
 
+#include "Editor/Editor.h"
 #include "Editor/EditorWindow.h"
 #include "Editor/SceneRenderTarget.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Render/Camera.h"
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 
 namespace ou {
@@ -52,6 +57,11 @@ private: // メンバ変数
 
 	DragMode dragMode_ = DragMode::None;
 
+	// 選んでいる GameObject のコンポーネントの Editor（OnSceneGui を呼ぶ）
+	uint32_t sceneGuiTargetId_ = 0;
+	std::vector<uint32_t> sceneGuiComponentIds_;
+	std::vector<std::unique_ptr<Editor>> sceneGuiEditors_;
+
 
 private: // メンバ関数
 
@@ -59,6 +69,7 @@ private: // メンバ関数
 	void SelectToolByKey();
 
 	bool DrawTransformHandle();
+	void DrawSceneGuis(const Rect &sceneRect);
 
 	void HandleInput(bool isHovered);
 	void StartDrag();

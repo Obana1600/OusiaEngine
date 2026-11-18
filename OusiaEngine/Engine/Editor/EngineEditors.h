@@ -143,6 +143,7 @@ public: // メンバ関数
 class ParticleSystemEditor final: public Editor {
 public: // メンバ関数
 	void OnInspectorGui() override;
+	void OnSceneGui(const Rect &sceneRect) override; // Scene ビューの右下に Particle Effect のパネルを出す
 };
 
 class ParticleSystemRendererEditor final: public Editor {

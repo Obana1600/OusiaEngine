@@ -1,6 +1,7 @@
 #include "EngineEditors.h"
 #include "Editor/EditorGuiLayout.h"
 #include "Editor/EditorGuiUtility.h"
+#include "Editor/ParticleEffectPreview.h"
 #include "Editor/UnityEventDrawer.h"
 
 #include <algorithm>
@@ -463,6 +464,12 @@ void ou::StandaloneInputModuleEditor::OnInspectorGui() {
 
 
 // ---- Particle ----
+
+void ou::ParticleSystemEditor::OnSceneGui(const Rect &sceneRect) {
+	// 動かすのは ParticleEffectPreview（選択を見て毎フレーム進める）。ここはパネルを描くだけ
+	ParticleEffectPreview::DrawPanel(sceneRect);
+}
+
 
 void ou::ParticleSystemEditor::OnInspectorGui() {
 	auto &so = *GetSerializedObject();
