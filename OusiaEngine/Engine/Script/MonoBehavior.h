@@ -47,6 +47,8 @@ public: // メンバ関数
 	void OnTriggerStay(Collider *other) override;
 	void OnTriggerExit(Collider *other) override;
 
+	void OnValidate() override;
+
 	void Serialize(Serializer &serializer) override;
 
 
@@ -62,6 +64,7 @@ private: // インナークラス
 		asIScriptFunction *onDestroy = nullptr;
 		asIScriptFunction *onEnable = nullptr;
 		asIScriptFunction *onDisable = nullptr;
+		asIScriptFunction *onValidate = nullptr;
 
 		asIScriptFunction *onCollisionEnter = nullptr;
 		asIScriptFunction *onCollisionStay = nullptr;
