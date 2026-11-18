@@ -9,20 +9,26 @@
 #include "Editor/EditorWindow.h"
 #include "Editor/Undo.h"
 #include "Render/Asset/Model.h"
+#include "Script/MonoScript.h"
+#include "Script/MonoBehavior.h"
+#include "Serialize/TypeRegistry.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cfloat>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imgui/imgui_stdlib.h>
 
 using namespace ou;
@@ -101,6 +107,31 @@ void DrawDropIndicator(DropPosition position) {
 	}
 }
 
+// 大文字・小文字を区別せずに text を探す（なければ npos）
+size_t FindIgnoreCase(std::string_view source, std::string_view text) {
+	if (text.empty()) { return 0; }
+	const auto it = std::search(source.begin(), source.end(), text.begin(), text.end(), [](char a, char b) {
+		return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+	});
+	return it == source.end() ? std::string_view::npos : static_cast<size_t>(it - source.begin());
+}
+
+// コンポーネントの型の名前に type が含まれるか（スクリプトは、スクリプトの名前でも当てる）
+bool HasComponentOfType(const GameObject &gameObject, std::string_view type) {
+	for (auto *component : gameObject.GetComponents<Component>()) {
+		if (component->IsDestroyed()) { continue; }
+
+		if (const auto *name = TypeRegistry::FindName(*component); name && FindIgnoreCase(*name, type) != std::string_view::npos) {
+			return true;
+		}
+		if (auto *behavior = dynamic_cast<MonoBehavior *>(component)) {
+			const auto *script = MonoScript::FromMonoBehavior(behavior);
+			if (script && FindIgnoreCase(script->GetName(), type) != std::string_view::npos) { return true; }
+		}
+	}
+	return false;
+}
+
 GameObject *DecodeGameObject(const ImGuiPayload &payload) {
 	uint32_t instanceId = 0;
 	std::memcpy(&instanceId, payload.Data, sizeof(instanceId));
@@ -133,9 +164,25 @@ void ou::HierarchyWindow::OnGui() {
 	// 名前を変えている間に消されたら、やめる
 	if (renamingId_ != 0 && !FindAlive(renamingId_)) { EndRename(false); }
 
+	DrawSearchField();
+	UpdateSearchResults(scene);
+	// 検索で隠れているものの名前を変えるときは、検索を消して出す
+	if (renamingId_ != 0 && IsSearching() && !visibleIds_.contains(renamingId_)) {
+		ClearSearch();
+		UpdateSearchResults(scene);
+	}
+
+	// 検索欄はスクロールしないように、ツリーは子ウィンドウに描く
+	ImGui::BeginChild("##Tree");
+
+	// 検索中は開いている状態を別に持つ（検索を消したら、元の開き方に戻る）
+	if (IsSearching()) { ImGui::PushID("##Search"); }
 	for (auto *gameObject : scene->GetRootGameObjects()) {
 		DrawGameObject(gameObject);
 	}
+	if (IsSearching()) { ImGui::PopID(); }
+	opensSearchResults_ = false;
+	revealId_ = 0;
 
 	DrawBackground(scene);
 
@@ -146,16 +193,133 @@ void ou::HierarchyWindow::OnGui() {
 	}
 
 	GameObjectCommands::HandleShortcuts();
+
+	ImGui::EndChild();
+}
+
+
+void ou::HierarchyWindow::DrawSearchField() {
+	// Unity と同じく、Hierarchy を選んでいるときの Ctrl+F で検索欄に入る
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_F)) {
+		focusesSearch_ = true;
+	}
+	if (std::exchange(focusesSearch_, false)) { ImGui::SetKeyboardFocusHere(); }
+
+	const auto hasText = !searchText_.empty();
+	const auto clearWidth = ImGui::GetFrameHeight();
+	ImGui::SetNextItemWidth(hasText ? -(clearWidth + ImGui::GetStyle().ItemSpacing.x) : -FLT_MIN);
+	// Esc で消す（もう一度 Esc で欄から出る）
+	ImGui::InputTextWithHint("##Search", "Search (t:Type)", &searchText_, ImGuiInputTextFlags_EscapeClearsAll);
+
+	if (hasText) {
+		ImGui::SameLine();
+		if (ImGui::Button("X##ClearSearch", {clearWidth, 0.0f})) { ClearSearch(); }
+		if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Clear search"); }
+	}
+}
+
+
+void ou::HierarchyWindow::UpdateSearchResults(Scene *scene) {
+	if (searchText_ != previousSearchText_) {
+		// 検索を消したら、選んでいるものが見えるところまで開く
+		if (searchText_.empty()) {
+			if (auto *selected = Selection::GetActiveGameObject(); selected && !selected->IsDestroyed()) {
+				revealId_ = selected->GetInstanceId();
+			}
+		}
+		opensSearchResults_ = true;
+		previousSearchText_ = searchText_;
+
+		// "t:" で始まる語は型、ほかは空白 1 つでつないで名前として探す（"Main Camera" も探せるように）
+		searchQuery_ = {};
+		std::istringstream stream(searchText_);
+		std::string word;
+		while (stream >> word) {
+			if (word.size() >= 2 && (word[0] == 't' || word[0] == 'T') && word[1] == ':') {
+				if (word.size() > 2) { searchQuery_.types.push_back(word.substr(2)); }
+				continue;
+			}
+			if (!searchQuery_.name.empty()) { searchQuery_.name += ' '; }
+			searchQuery_.name += word;
+		}
+	}
+
+	matchedIds_.clear();
+	visibleIds_.clear();
+	if (!IsSearching()) { return; }
+
+	// 子から先に見て、当てはまるものか、当てはまる子孫を持つものを出す
+	const auto visit = [&](auto &self, GameObject *gameObject) -> bool {
+		if (gameObject->IsDestroyed()) { return false; }
+
+		auto hasVisibleChild = false;
+		for (auto *child : gameObject->GetTransform()->GetChildren()) {
+			hasVisibleChild |= self(self, child->GetGameObject());
+		}
+
+		const auto matchesName = FindIgnoreCase(gameObject->GetName(), searchQuery_.name) != std::string_view::npos;
+		const auto matchesTypes = std::all_of(searchQuery_.types.begin(), searchQuery_.types.end(), [&](const std::string &type) {
+			return HasComponentOfType(*gameObject, type);
+		});
+		const auto id = gameObject->GetInstanceId();
+		if (matchesName && matchesTypes) { matchedIds_.insert(id); }
+
+		const auto isVisible = hasVisibleChild || matchedIds_.contains(id);
+		if (isVisible) { visibleIds_.insert(id); }
+		return isVisible;
+	};
+	for (auto *root : scene->GetRootGameObjects()) {
+		visit(visit, root);
+	}
+}
+
+
+void ou::HierarchyWindow::ClearSearch() {
+	searchText_.clear();
+	// 入力中なら欄から出す（入力中の欄は自分で持っている文字を使うので、消したことが伝わらない）
+	if (ImGui::GetActiveID() == ImGui::GetID("##Search")) { ImGui::ClearActiveID(); }
+}
+
+
+void ou::HierarchyWindow::DrawSearchHighlight(const GameObject *gameObject, float labelScreenX) {
+	if (searchQuery_.name.empty() || !matchedIds_.contains(gameObject->GetInstanceId())) { return; }
+
+	const auto &name = gameObject->GetName();
+	const auto position = FindIgnoreCase(name, searchQuery_.name);
+	if (position == std::string_view::npos) { return; }
+
+	const auto *begin = name.c_str();
+	const auto x0 = labelScreenX + ImGui::CalcTextSize(begin, begin + position).x;
+	const auto x1 = x0 + ImGui::CalcTextSize(begin + position, begin + position + searchQuery_.name.size()).x;
+	const auto min = ImGui::GetItemRectMin();
+	const auto max = ImGui::GetItemRectMax();
+	ImGui::GetWindowDrawList()->AddRectFilled({x0, min.y + 1.0f}, {x1, max.y - 1.0f}, ImGui::GetColorU32(ImGuiCol_TextSelectedBg));
 }
 
 
 void ou::HierarchyWindow::DrawGameObject(GameObject *gameObject) {
+	const auto id = gameObject->GetInstanceId();
+	const auto isSearching = IsSearching();
+	if (isSearching && !visibleIds_.contains(id)) { return; }
+
 	const auto &children = gameObject->GetTransform()->GetChildren();
+	// 検索中は、出す子があるときだけ開けるようにする
+	const auto hasVisibleChild = isSearching
+		? std::any_of(children.begin(), children.end(), [&](auto *child) { return visibleIds_.contains(child->GetGameObject()->GetInstanceId()); })
+		: !children.empty();
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow |
 							   ImGuiTreeNodeFlags_OpenOnDoubleClick |
 							   ImGuiTreeNodeFlags_SpanAvailWidth;
-	if (children.empty()) { flags |= ImGuiTreeNodeFlags_Leaf; }
+	if (!hasVisibleChild) { flags |= ImGuiTreeNodeFlags_Leaf; }
+	// 検索の文字が変わったら、当てはまるものが見えるように開く（そのあとは閉じてもよい）
+	if (isSearching && hasVisibleChild && opensSearchResults_) { ImGui::SetNextItemOpen(true, ImGuiCond_Always); }
+	// 検索を消したら、選んでいるものが見えるように親を開く
+	if (revealId_ != 0) {
+		if (const auto *target = FindAlive(revealId_); target && IsAncestorOf(gameObject, target)) {
+			ImGui::SetNextItemOpen(true);
+		}
+	}
 	const auto isSelected = Selection::GetActiveGameObject() == gameObject;
 	if (isSelected) { flags |= ImGuiTreeNodeFlags_Selected; }
 
@@ -172,10 +336,14 @@ void ou::HierarchyWindow::DrawGameObject(GameObject *gameObject) {
 	ImGui::PushID(static_cast<int>(gameObject->GetInstanceId()));
 
 	const auto labelX = ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing();
-	const auto isInactive = !gameObject->IsActiveInHierarchy();
-	if (isInactive) { ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)); }
+	const auto labelScreenX = ImGui::GetCursorScreenPos().x + ImGui::GetTreeNodeToLabelSpacing();
+	// 非アクティブなものと、検索で当てはまらない親（場所を見せるためだけに出す）は薄く出す
+	const auto isDimmed = !gameObject->IsActiveInHierarchy() || (isSearching && !matchedIds_.contains(id));
+	if (isDimmed) { ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)); }
 	const auto isOpen = ImGui::TreeNodeEx("##Node", flags, "%s", isRenaming ? "" : gameObject->GetName().c_str());
-	if (isInactive) { ImGui::PopStyleColor(); }
+	if (isDimmed) { ImGui::PopStyleColor(); }
+	if (isSearching && !isRenaming) { DrawSearchHighlight(gameObject, labelScreenX); }
+	if (revealId_ == id) { ImGui::SetScrollHereY(); }
 
 	if (isRenaming) {
 		DrawRenameField(gameObject, labelX);
