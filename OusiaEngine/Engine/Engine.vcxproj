@@ -76,6 +76,8 @@
     <ClInclude Include="Asset\Importer\PrefabImporter.h" />
     <ClInclude Include="Serialize\PropertySchema.h" />
     <ClInclude Include="Editor\ExternalScriptEditor.h" />
+    <ClInclude Include="Editor\ConsoleWindow.h" />
+    <ClInclude Include="Editor\LogEntries.h" />
     <ClInclude Include="Editor\PreferencesWindow.h" />
     <ClInclude Include="Core\PlayerSettings.h" />
     <ClInclude Include="Core\JsonFile.h" />
@@ -252,6 +254,8 @@
     <ClCompile Include="Editor\SerializedObject.cpp" />
     <ClCompile Include="Editor\SerializedProperty.cpp" />
     <ClCompile Include="Editor\ExternalScriptEditor.cpp" />
+    <ClCompile Include="Editor\ConsoleWindow.cpp" />
+    <ClCompile Include="Editor\LogEntries.cpp" />
     <ClCompile Include="Editor\PreferencesWindow.cpp" />
     <ClCompile Include="Core\PlayerSettings.cpp" />
     <ClCompile Include="Core\JsonFile.cpp" />

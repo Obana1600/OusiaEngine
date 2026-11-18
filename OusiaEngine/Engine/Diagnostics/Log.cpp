@@ -4,8 +4,10 @@
 #include "Platform/Paths.h"
 
 #include <Windows.h>
+#include <atomic>
 #include <chrono>
 #include <memory>
+#include <string>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/dup_filter_sink.h>
@@ -18,6 +20,8 @@ namespace {
 std::shared_ptr<spdlog::logger> gLogger;
 
 auto gMinLevel = ou::LogLevel::Info;
+
+std::atomic<ou::LogListener> gListener = nullptr;
 
 constexpr int kMaxLogFiles = 10;
 
@@ -71,7 +75,25 @@ void ou::FlushLog() {
 }
 
 
-void ou::Log::Write(LogLevel level, const std::source_location &location, std::string_view message) {
+void ou::SetLogListener(LogListener listener) {
+	gListener = listener;
+}
+
+
+void ou::Log::Write(LogLevel level, const std::source_location &location, std::string_view message, const ScriptLocation &script) {
+	const auto isScript = !script.file.empty();
+
+	// コンソールなどに渡す（spdlog の重複を捨てるフィルタより前。Collapse で数えられるように、すべて渡す）
+	if (const auto listener = gListener.load()) {
+		listener({
+			.level = level,
+			.message = message,
+			.file = isScript ? script.file : std::string_view(location.file_name()),
+			.line = isScript ? script.line : static_cast<int>(location.line()),
+			.isScript = isScript,
+		});
+	}
+
 	if (!gLogger) {
 		auto wide = L"[" + ToWString(level) + L"] " + Utf8ToWide(message);
 		OutputDebugStringW(wide.c_str());
@@ -79,8 +101,11 @@ void ou::Log::Write(LogLevel level, const std::source_location &location, std::s
 		return;
 	}
 
-	spdlog::source_loc loc{
-		location.file_name(), static_cast<int>(location.line()), location.function_name()};
+	// スクリプトなら、ファイルに残す場所もスクリプトにする（呼び出した C++ の場所は役に立たない）
+	const std::string scriptFile(script.file);
+	const auto loc = isScript
+		? spdlog::source_loc{scriptFile.c_str(), script.line, ""}
+		: spdlog::source_loc{location.file_name(), static_cast<int>(location.line()), location.function_name()};
 
 	gLogger->log(loc, ToSpdLogLevel(level), "{}", message);
 }

@@ -511,6 +511,12 @@
     <ClInclude Include="Editor\ExternalScriptEditor.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\ConsoleWindow.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\LogEntries.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\PreferencesWindow.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -988,6 +994,12 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Editor\ExternalScriptEditor.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\ConsoleWindow.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\LogEntries.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Editor\PreferencesWindow.cpp">

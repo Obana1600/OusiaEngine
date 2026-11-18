@@ -38,26 +38,27 @@ namespace {
 
 // ---- Debug ----
 
-// 呼び出したスクリプトの場所（Unity のコンソールのスタックトレースの代わり）
-std::string DescribeScriptLocation() {
-	auto *context = asGetActiveContext();
-	if (!context) { return {}; }
-
+// 呼び出したスクリプトの場所（Unity のコンソールのスタックトレースの代わり）。コンソールでダブルクリックすると開く
+void WriteScriptLog(LogLevel level, const std::string &message) {
 	const char *section = nullptr;
-	const auto row = context->GetLineNumber(0, nullptr, &section);
-	return std::format("\n({}:{})", section ? section : "?", row);
+	int row = 0;
+	if (auto *context = asGetActiveContext()) {
+		row = context->GetLineNumber(0, nullptr, &section);
+	}
+
+	Log::Write(level, std::source_location::current(), message, {section ? section : "", row});
 }
 
 void DebugLog(const std::string &message) {
-	Log::Info("{}{}", message, DescribeScriptLocation());
+	WriteScriptLog(LogLevel::Info, message);
 }
 
 void DebugLogWarning(const std::string &message) {
-	Log::Warning("{}{}", message, DescribeScriptLocation());
+	WriteScriptLog(LogLevel::Warning, message);
 }
 
 void DebugLogError(const std::string &message) {
-	Log::Error("{}{}", message, DescribeScriptLocation());
+	WriteScriptLog(LogLevel::Error, message);
 }
 
 

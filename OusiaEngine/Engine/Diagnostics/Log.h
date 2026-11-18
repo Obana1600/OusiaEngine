@@ -20,6 +20,26 @@ enum class LogLevel {
 };
 
 
+// C++ 以外（スクリプト）でログを出した場所。file はアセットのパス
+struct ScriptLocation {
+	std::string_view file;
+	int line = 0;
+};
+
+// ログを受け取る側に渡すもの（Unity の Application.logMessageReceivedThreaded の引数）
+struct LogMessage {
+	LogLevel level = LogLevel::Info;
+	std::string_view message;
+	// isScript なら、アセットのパスとスクリプトの行。そうでなければ C++ のファイルと行
+	std::string_view file;
+	int line = 0;
+	bool isScript = false;
+};
+
+// どのスレッドからも呼ばれる。中でログを出してはいけない
+using LogListener = void (*)(const LogMessage &message);
+
+
 namespace Detail {
 
 // {} の数を数える
@@ -58,11 +78,14 @@ bool IsLogEnabled(LogLevel level);
 
 void FlushLog();
 
+// ログを受け取る関数を登録する（1 つだけ。nullptr で外す）
+void SetLogListener(LogListener listener);
+
 
 namespace Log {
 
-// 
-void Write(LogLevel level, const std::source_location &location, std::string_view message);
+// script を渡すと、場所は C++ ではなくスクリプトのものになる
+void Write(LogLevel level, const std::source_location &location, std::string_view message, const ScriptLocation &script = {});
 
 // 
 template <typename... Args>

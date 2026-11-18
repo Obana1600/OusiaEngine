@@ -26,6 +26,7 @@
 #include "Editor/EditorPrefs.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/EditorWindow.h"
+#include "Editor/LogEntries.h"
 #include "Editor/GameView.h"
 #include "Editor/SceneView.h"
 #endif
@@ -123,7 +124,10 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	PlayerSettings::Load(desc.productName);
 	const auto &productName = PlayerSettings::GetProductName();
 
-	// ログ
+	// ログ（コンソールは起動時のログも拾えるように先に）
+#ifdef WITH_EDITOR
+	LogEntries::Initialize();
+#endif
 	logSystem_ = std::make_unique<LogSystem>(LogDirectory(productName), std::span<const std::string>());
 
 #ifdef WITH_EDITOR
@@ -265,6 +269,9 @@ void ou::Engine::Finalize() {
 	Screen::sWindow_ = nullptr;
 	window_.reset();
 	logSystem_.reset();
+#ifdef WITH_EDITOR
+	LogEntries::Finalize();
+#endif
 
 	CoUninitialize();
 }
@@ -320,6 +327,7 @@ bool ou::Engine::Update() {
 #endif
 	imGuiManager_->NewFrame();
 #ifdef WITH_EDITOR
+	LogEntries::Update();
 	EditorMainWindow::Draw();
 #endif
 #ifdef WITH_EDITOR

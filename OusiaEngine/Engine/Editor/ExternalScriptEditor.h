@@ -11,6 +11,7 @@ namespace ou {
 // .as を開くエディタを探して、開く。選んだエディタは EditorPrefs に覚える
 // Unity にない名前なので、全部 private にして使う画面を friend にする
 class ExternalScriptEditor final {
+	friend class ConsoleWindow;
 	friend class ProjectWindow;
 	friend class PreferencesWindow;
 

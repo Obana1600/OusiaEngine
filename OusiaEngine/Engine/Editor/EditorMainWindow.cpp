@@ -1,6 +1,7 @@
 #include "EditorMainWindow.h"
 #include "Asset/AssetDatabase.h"
 #include "Editor/BuildSettingsWindow.h"
+#include "Editor/ConsoleWindow.h"
 #include "Editor/PreferencesWindow.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorSceneManager.h"
@@ -106,6 +107,7 @@ void HandleShortcuts() {
 	constexpr auto kGlobal = ImGuiInputFlags_RouteGlobal;
 
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_P, kGlobal)) { TogglePlayMode(); }
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_C, kGlobal)) { EditorWindow::GetWindow<ConsoleWindow>(); }
 
 	if (EditorApplication::IsPlaying()) { return; }
 
@@ -160,6 +162,7 @@ void DrawMainMenuBar() {
 		if (ImGui::MenuItem("Game")) { EditorWindow::GetWindow<GameView>(); }
 		if (ImGui::MenuItem("Scene")) { EditorWindow::GetWindow<SceneView>(); }
 		if (ImGui::MenuItem("Project")) { EditorWindow::GetWindow<ProjectWindow>(); }
+		if (ImGui::MenuItem("Console", "Ctrl+Shift+C")) { EditorWindow::GetWindow<ConsoleWindow>(); }
 		ImGui::EndMenu();
 	}
 
@@ -272,6 +275,7 @@ void BuildDefaultLayout(ImGuiID dockspaceId) {
 	ImGui::DockBuilderDockWindow("Scene", center);
 	ImGui::DockBuilderDockWindow("Game", center);
 	ImGui::DockBuilderDockWindow("Project", bottom);
+	ImGui::DockBuilderDockWindow("Console", bottom);
 }
 
 } // namespace
@@ -286,6 +290,7 @@ void ou::EditorMainWindow::Draw() {
 		EditorWindow::GetWindow<GameView>();
 		EditorWindow::GetWindow<SceneView>();
 		EditorWindow::GetWindow<ProjectWindow>();
+		EditorWindow::GetWindow<ConsoleWindow>();
 	}
 
 	HandleShortcuts();

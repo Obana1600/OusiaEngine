@@ -4,6 +4,7 @@
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/LogEntries.h"
 #include "Editor/Selection.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -86,6 +87,8 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 			Log::Warning("シーンがないため Play に入れません");
 			return;
 		}
+
+		LogEntries::ClearOnPlayIfEnabled();
 
 		auto &snapshot = Snapshot();
 		snapshot = SceneSnapshot{scene->GetName(), scene->GetPath(), scene->GetBuildIndex(), scene->IsDirty(), SceneSerializer::ToJson(*scene)};
