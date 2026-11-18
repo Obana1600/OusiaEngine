@@ -2,6 +2,7 @@
 #include "Asset/AssetDatabase.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/Selection.h"
+#include "Editor/Undo.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
 #include "Scene/LayerMask.h"
@@ -31,7 +32,8 @@ using namespace ou;
 
 namespace {
 
-void MarkDirty(GameObject *gameObject) {
+void MarkDirty(GameObject *gameObject, std::string_view undoName) {
+	Undo::SetCurrentGroupName(undoName);
 	EditorSceneManager::MarkSceneDirty(gameObject->GetScene());
 }
 
@@ -260,7 +262,7 @@ void ou::InspectorWindow::DrawGameObjectHeader(GameObject *gameObject) {
 	auto isActive = gameObject->IsActiveSelf();
 	if (ImGui::Checkbox("##Active", &isActive)) {
 		gameObject->SetActive(isActive);
-		MarkDirty(gameObject);
+		MarkDirty(gameObject, "Set Active");
 	}
 
 	ImGui::SameLine();
@@ -268,7 +270,7 @@ void ou::InspectorWindow::DrawGameObjectHeader(GameObject *gameObject) {
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	if (ImGui::InputText("##Name", &name)) {
 		gameObject->SetName(name);
-		MarkDirty(gameObject);
+		MarkDirty(gameObject, "Rename");
 	}
 
 	const auto layer = gameObject->GetLayer();
@@ -282,7 +284,7 @@ void ou::InspectorWindow::DrawGameObjectHeader(GameObject *gameObject) {
 
 			if (ImGui::Selectable(candidate.c_str(), i == layer)) {
 				gameObject->SetLayer(i);
-				MarkDirty(gameObject);
+				MarkDirty(gameObject, "Change Layer");
 			}
 		}
 		ImGui::EndCombo();
@@ -317,7 +319,7 @@ void ou::InspectorWindow::DrawComponentMenu(Component *component) {
 	const auto canRemove = dynamic_cast<Transform *>(component) == nullptr;
 	if (ImGui::MenuItem("Remove Component", nullptr, false, canRemove)) {
 		Object::Destroy(component);
-		MarkDirty(component->GetGameObject());
+		MarkDirty(component->GetGameObject(), "Remove Component");
 	}
 	ImGui::EndPopup();
 }
@@ -346,7 +348,7 @@ void ou::InspectorWindow::DrawAddComponentButton(GameObject *gameObject) {
 			if (ImGui::MenuItem(typeName.c_str())) {
 				if (auto component = TypeRegistry::Create(typeName)) {
 					gameObject->AddComponentInstance(std::move(component));
-					MarkDirty(gameObject);
+					MarkDirty(gameObject, "Add Component");
 				}
 				ImGui::CloseCurrentPopup();
 			}
@@ -386,7 +388,7 @@ void ou::InspectorWindow::DrawAddScriptItems(GameObject *gameObject) {
 		auto behaviour = std::make_unique<MonoBehavior>();
 		behaviour->SetScript(script);
 		gameObject->AddComponentInstance(std::move(behaviour));
-		MarkDirty(gameObject);
+		MarkDirty(gameObject, "Add Component");
 	}
 
 	if (!hasScript) {

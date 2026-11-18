@@ -5,6 +5,7 @@
 #include "Editor/EditorSceneManager.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
+#include "Editor/Undo.h"
 #include "Editor/Tools.h"
 #include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
@@ -180,6 +181,7 @@ bool ou::SceneView::DrawTransformHandle() {
 			default:
 				break;
 		}
+		Undo::SetCurrentGroupName(tool == Tool::Move ? "Move" : tool == Tool::Rotate ? "Rotate" : "Scale");
 		EditorSceneManager::MarkSceneDirty(gameObject->GetScene());
 	}
 
@@ -361,6 +363,7 @@ void ou::SceneView::AcceptAssetDrop() {
 	root->GetTransform()->SetWorldPosition(position);
 
 	Selection::SetActiveGameObject(root);
+	Undo::SetCurrentGroupName("Instantiate " + root->GetName());
 	EditorSceneManager::MarkSceneDirty(scene);
 }
 

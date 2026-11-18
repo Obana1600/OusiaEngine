@@ -12,6 +12,7 @@
 #include "Editor/InspectorWindow.h"
 #include "Editor/ProjectWindow.h"
 #include "Editor/SceneView.h"
+#include "Editor/Undo.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 
@@ -114,6 +115,13 @@ void HandleShortcuts() {
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_N, kGlobal)) { NewScene(); }
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S, kGlobal)) { SaveOrAskPath(); }
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S, kGlobal)) { OpenSaveAs(); }
+
+	// 文字を入力している間は、InputText が Ctrl+Z を先に取るので、ここには来ない
+	constexpr auto kRepeat = kGlobal | ImGuiInputFlags_Repeat;
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, kRepeat)) { Undo::PerformUndo(); }
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, kRepeat) || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, kRepeat)) {
+		Undo::PerformRedo();
+	}
 }
 
 
@@ -147,6 +155,11 @@ void DrawMainMenuBar() {
 	}
 
 	if (ImGui::BeginMenu("Edit")) {
+		const auto undoLabel = Undo::CanUndo() ? "Undo " + Undo::GetUndoName() : std::string("Undo");
+		const auto redoLabel = Undo::CanRedo() ? "Redo " + Undo::GetRedoName() : std::string("Redo");
+		if (ImGui::MenuItem(undoLabel.c_str(), "Ctrl+Z", false, canEdit && Undo::CanUndo())) { Undo::PerformUndo(); }
+		if (ImGui::MenuItem(redoLabel.c_str(), "Ctrl+Y", false, canEdit && Undo::CanRedo())) { Undo::PerformRedo(); }
+		ImGui::Separator();
 		if (ImGui::MenuItem("Preferences...")) { EditorWindow::GetWindow<PreferencesWindow>(); }
 		ImGui::EndMenu();
 	}
@@ -314,6 +327,9 @@ void ou::EditorMainWindow::Draw() {
 
 	DrawSaveChangesPopup();
 	DrawSaveAsPopup();
+
+	// このフレームの変更を、入力が終わっていれば 1 つの操作として Undo に残す
+	Undo::FlushPendingChange(false);
 }
 
 

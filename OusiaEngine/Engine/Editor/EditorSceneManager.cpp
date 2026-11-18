@@ -4,6 +4,7 @@
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorApplication.h"
+#include "Editor/Undo.h"
 #include "Math/Mathf.h"
 #include "Platform/Paths.h"
 #include "Render/Camera.h"
@@ -59,6 +60,7 @@ Scene *ou::EditorSceneManager::NewScene(NewSceneSetup setup) {
 		light->GetTransform()->SetLocalEulerAngles(Vector3(50.0f, -30.0f, 0.0f) * Mathf::Deg2Rad);
 	}
 
+	Undo::ResetHistory(scene, true);
 	return scene;
 }
 
@@ -86,6 +88,7 @@ Scene *ou::EditorSceneManager::OpenScene(std::string_view scenePath) {
 
 	SceneManager::ReplaceActiveScene(MakeSceneName(scenePath), scenePath, SceneManager::FindBuildIndexByPath(scenePath), *json);
 	RememberLastScene(scenePath);
+	Undo::ResetHistory(SceneManager::GetActiveScene(), true);
 	return SceneManager::GetActiveScene();
 }
 
@@ -120,6 +123,7 @@ bool ou::EditorSceneManager::SaveScene(Scene *scene, std::string_view dstScenePa
 	scene->name_ = MakeSceneName(scenePath);
 	scene->buildIndex_ = SceneManager::FindBuildIndexByPath(scenePath);
 	scene->isDirty_ = false;
+	Undo::NotifySceneSaved(scene);
 
 	// 新しいファイルに .meta と GUID を付ける
 	if (isNewFile) {
@@ -136,7 +140,13 @@ bool ou::EditorSceneManager::MarkSceneDirty(Scene *scene) {
 	if (!scene || EditorApplication::IsPlaying()) { return false; }
 
 	scene->isDirty_ = true;
+	Undo::NotifySceneChanged(scene);
 	return true;
+}
+
+
+void ou::EditorSceneManager::SetDirtyFlag(Scene *scene, bool isDirty) {
+	if (scene) { scene->isDirty_ = isDirty; }
 }
 
 

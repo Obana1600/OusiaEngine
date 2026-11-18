@@ -5,6 +5,7 @@
 #include "Editor/EditorSceneManager.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
+#include "Editor/Undo.h"
 #include "Render/Asset/Model.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -14,6 +15,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <string>
+#include <string_view>
 
 #include <imgui/imgui.h>
 
@@ -36,7 +39,8 @@ bool IsSelfOrDescendant(const Transform *target, const Transform *moving) {
 	return false;
 }
 
-void MarkDirty(Scene *scene) {
+void MarkDirty(Scene *scene, std::string_view undoName) {
+	Undo::SetCurrentGroupName(undoName);
 	EditorSceneManager::MarkSceneDirty(scene);
 }
 
@@ -198,7 +202,7 @@ void ou::HierarchyWindow::Delete(GameObject *gameObject) {
 	if (Selection::GetActiveGameObject() == gameObject) {
 		Selection::SetActiveGameObject(nullptr);
 	}
-	MarkDirty(scene);
+	MarkDirty(scene, "Delete " + gameObject->GetName());
 }
 
 
@@ -225,7 +229,7 @@ void ou::HierarchyWindow::AcceptDropOnRow(GameObject *target) {
 		if (movingTransform->GetSiblingIndex() < index) { index--; }
 		movingTransform->SetSiblingIndex(index);
 	}
-	MarkDirty(moving->GetScene());
+	MarkDirty(moving->GetScene(), "Parent Change");
 }
 
 
@@ -239,7 +243,7 @@ void ou::HierarchyWindow::AcceptDropOnBackground() {
 	auto *movingTransform = moving->GetTransform();
 	movingTransform->SetParent(nullptr, true);
 	movingTransform->SetAsLastSibling();
-	MarkDirty(moving->GetScene());
+	MarkDirty(moving->GetScene(), "Parent Change");
 }
 
 
@@ -263,5 +267,5 @@ void ou::HierarchyWindow::AcceptAssetDrop(Scene *scene, GameObject *parent) {
 	}
 
 	Selection::SetActiveGameObject(root);
-	MarkDirty(scene);
+	MarkDirty(scene, "Instantiate " + root->GetName());
 }

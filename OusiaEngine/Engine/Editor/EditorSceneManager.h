@@ -17,6 +17,7 @@ enum class NewSceneSetup {
 
 class EditorSceneManager final {
 	friend class Engine;
+	friend class Undo;
 
 public: // 静的メンバ関数
 
@@ -34,6 +35,9 @@ public: // 静的メンバ関数
 private: // 静的メンバ関数
 
 	static void OpenLastScene();
+
+	// Undo で保存した状態に戻ったときに * を消すため
+	static void SetDirtyFlag(Scene *scene, bool isDirty);
 
 	static void RememberLastScene(std::string_view scenePath);
 	static std::string LoadLastScenePath();

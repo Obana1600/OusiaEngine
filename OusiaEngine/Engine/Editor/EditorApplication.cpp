@@ -6,6 +6,7 @@
 #include "Editor/EditorSceneManager.h"
 #include "Editor/LogEntries.h"
 #include "Editor/Selection.h"
+#include "Editor/Undo.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
@@ -89,6 +90,8 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 		}
 
 		LogEntries::ClearOnPlayIfEnabled();
+		// 編集の途中で Play したときも、そこまでを Undo に残す
+		Undo::FlushPendingChange(true);
 
 		auto &snapshot = Snapshot();
 		snapshot = SceneSnapshot{scene->GetName(), scene->GetPath(), scene->GetBuildIndex(), scene->IsDirty(), SceneSerializer::ToJson(*scene)};
@@ -151,6 +154,8 @@ void ou::EditorApplication::ReloadScriptsIfChanged() {
 
 	auto *reloaded = SceneManager::GetActiveScene();
 	if (isDirty) { EditorSceneManager::MarkSceneDirty(reloaded); }
+	// 読み直しは編集ではないので Undo に残さない（書き出す中身が変わることがあるので、記録だけ取り直す）
+	Undo::RefreshCurrent(reloaded);
 	// アセットを選んでいたときは、そのまま残す
 	if (selected) { Selection::SetActiveGameObject(FindGameObjectByFileId(*reloaded, selectedFileId)); }
 

@@ -4,6 +4,7 @@
 #include "Diagnostics/Log.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/Selection.h"
+#include "Editor/Undo.h"
 #include "Math/Mathf.h"
 #include "Physics/BoxCollider.h"
 #include "Physics/CapsuleCollider.h"
@@ -275,6 +276,7 @@ void ou::GameObjectMenu::DrawItems(Scene *scene, GameObject *parent) {
 
 	if (created) {
 		Selection::SetActiveGameObject(created);
+		Undo::SetCurrentGroupName("Create " + created->GetName());
 		EditorSceneManager::MarkSceneDirty(scene);
 	}
 }

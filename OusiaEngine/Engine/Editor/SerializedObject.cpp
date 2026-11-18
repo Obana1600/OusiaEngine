@@ -1,5 +1,6 @@
 #include "SerializedObject.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/Undo.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
 #include "Serialize/JsonReader.h"
@@ -75,7 +76,10 @@ bool ou::SerializedObject::ApplyModifiedProperties() {
 	target_->AwakeFromLoad();
 	if (auto *component = dynamic_cast<Component *>(target_)) { component->OnValidate(); }
 
-	if (auto *scene = FindScene(target_)) { EditorSceneManager::MarkSceneDirty(scene); }
+	if (auto *scene = FindScene(target_)) {
+		Undo::SetCurrentGroupName("Modify " + target_->GetName());
+		EditorSceneManager::MarkSceneDirty(scene);
+	}
 	return true;
 }
 

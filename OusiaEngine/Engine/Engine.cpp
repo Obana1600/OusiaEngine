@@ -30,6 +30,7 @@
 #include "Editor/ParticleEffectPreview.h"
 #include "Editor/GameView.h"
 #include "Editor/SceneView.h"
+#include "Editor/Undo.h"
 #endif
 
 #include <filesystem>
@@ -325,6 +326,7 @@ bool ou::Engine::Update() {
 #ifdef WITH_EDITOR
 	EditorApplication::ApplyPendingPlayModeChange();
 	EditorApplication::ReloadScriptsIfChanged();
+	Undo::ApplyPendingRequest();
 #endif
 	imGuiManager_->NewFrame();
 #ifdef WITH_EDITOR
