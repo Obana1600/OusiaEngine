@@ -3,6 +3,7 @@
 #include "Editor/EditorFunc.h"
 #include "Editor/EditorPayload.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/GameObjectCommands.h"
 #include "Editor/GizmoRenderer.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
@@ -382,6 +383,8 @@ void ou::SceneView::HandleInput(bool isHovered) {
 		if (ImGui::IsKeyPressed(ImGuiKey_F, false)) { FrameSelected(); }
 		if (dragMode_ == DragMode::None) { SelectToolByKey(); }
 	}
+	// カメラを動かしている間（右ドラッグ + WASD など）は効かせない
+	if (dragMode_ == DragMode::None) { GameObjectCommands::HandleShortcuts(); }
 }
 
 

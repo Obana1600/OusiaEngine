@@ -207,6 +207,38 @@ GameObject *ou::SceneSerializer::Instantiate(GameObject &original, Scene &scene,
 }
 
 
+GameObject *ou::SceneSerializer::InstantiateFromJson(const Json &json, Scene &scene, const std::function<void(GameObject &)> &place) {
+	if (!ValidateRoot(json)) { return nullptr; }
+
+	// 作ったものが先に登録されるので、json の中の id は外のものより新しいものが優先される
+	const auto outside = CollectObjects(scene).objectsById;
+	const auto created = CreateGameObjects(scene, json, outside, false);
+	if (created.empty()) { return nullptr; }
+
+	for (auto *gameObject : created) {
+		gameObject->SetFileId(0);
+		for (const auto &component : gameObject->components_) {
+			component->SetFileId(0);
+		}
+	}
+
+	auto *root = created.front();
+	place(*root);
+
+#ifdef WITH_EDITOR
+	// シーンを読んだときと同じく、エディタで作ったときにも OnValidate を呼ぶ
+	for (auto *gameObject : created) {
+		for (const auto &component : gameObject->components_) {
+			component->OnValidate();
+		}
+	}
+#endif
+
+	root->RefreshActiveInHierarchy();
+	return root;
+}
+
+
 std::vector<GameObject *> ou::SceneSerializer::CreateGameObjects(Scene &scene, const Json &root, const std::unordered_map<uint64_t, Object *> &outside, bool awake) {
 	const auto *gameObjectsJson = FindMember(root, "gameObjects");
 	std::vector<std::pair<GameObject *, const Json *>> loadedGameObjects;

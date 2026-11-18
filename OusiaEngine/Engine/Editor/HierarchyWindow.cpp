@@ -3,6 +3,7 @@
 #include "Editor/EditorPayload.h"
 #include "Editor/GameObjectMenu.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/GameObjectCommands.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
 #include "Editor/Undo.h"
@@ -107,9 +108,7 @@ void ou::HierarchyWindow::OnGui() {
 
 	DrawBackground(scene);
 
-	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-		if (auto *selected = Selection::GetActiveGameObject()) { Delete(selected); }
-	}
+	GameObjectCommands::HandleShortcuts();
 }
 
 
@@ -170,7 +169,7 @@ void ou::HierarchyWindow::DrawContextMenu(GameObject *gameObject) {
 	// Unity と同じく、行の右クリックで作ると、その子になる
 	GameObjectMenu::DrawItems(gameObject->GetScene(), gameObject);
 	ImGui::Separator();
-	if (ImGui::MenuItem("Delete", "Delete")) { Delete(gameObject); }
+	GameObjectCommands::DrawMenuItems(gameObject);
 	ImGui::EndPopup();
 }
 
@@ -189,20 +188,10 @@ void ou::HierarchyWindow::DrawBackground(Scene *scene) {
 	}
 	if (ImGui::BeginPopupContextItem("##BackgroundMenu")) {
 		GameObjectMenu::DrawItems(scene, nullptr);
+		ImGui::Separator();
+		if (ImGui::MenuItem("Paste", "Ctrl+V", false, GameObjectCommands::CanPaste())) { GameObjectCommands::Paste(); }
 		ImGui::EndPopup();
 	}
-}
-
-
-
-void ou::HierarchyWindow::Delete(GameObject *gameObject) {
-	auto *scene = gameObject->GetScene();
-	Object::Destroy(gameObject);
-
-	if (Selection::GetActiveGameObject() == gameObject) {
-		Selection::SetActiveGameObject(nullptr);
-	}
-	MarkDirty(scene, "Delete " + gameObject->GetName());
 }
 
 

@@ -57,6 +57,7 @@
     <ClInclude Include="Editor\EditorApplication.h" />
     <ClInclude Include="Editor\EditorPayload.h" />
     <ClInclude Include="Editor\Selection.h" />
+    <ClInclude Include="Editor\GameObjectCommands.h" />
     <ClInclude Include="Editor\Undo.h" />
     <ClInclude Include="Editor\AssetEditors.h" />
     <ClInclude Include="Editor\ParticleEffectPreview.h" />
@@ -242,6 +243,7 @@
     <ClCompile Include="Editor\EditorSceneManager.cpp" />
     <ClCompile Include="Editor\EditorApplication.cpp" />
     <ClCompile Include="Editor\Selection.cpp" />
+    <ClCompile Include="Editor\GameObjectCommands.cpp" />
     <ClCompile Include="Editor\Undo.cpp" />
     <ClCompile Include="Editor\AssetEditors.cpp" />
     <ClCompile Include="Editor\ParticleEffectPreview.cpp" />

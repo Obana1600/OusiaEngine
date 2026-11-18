@@ -32,7 +32,6 @@ private: // メンバ関数
 	void DrawContextMenu(GameObject *gameObject);
 	void DrawBackground(Scene *scene);
 
-	void Delete(GameObject *gameObject);
 
 	void AcceptDropOnRow(GameObject *target);
 	void AcceptDropOnBackground();

@@ -5,6 +5,8 @@
 #include "Editor/PreferencesWindow.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/GameObjectCommands.h"
+#include "Editor/Selection.h"
 #include "Editor/GameObjectMenu.h"
 #include "Editor/EditorWindow.h"
 #include "Editor/GameView.h"
@@ -159,6 +161,8 @@ void DrawMainMenuBar() {
 		const auto redoLabel = Undo::CanRedo() ? "Redo " + Undo::GetRedoName() : std::string("Redo");
 		if (ImGui::MenuItem(undoLabel.c_str(), "Ctrl+Z", false, canEdit && Undo::CanUndo())) { Undo::PerformUndo(); }
 		if (ImGui::MenuItem(redoLabel.c_str(), "Ctrl+Y", false, canEdit && Undo::CanRedo())) { Undo::PerformRedo(); }
+		ImGui::Separator();
+		GameObjectCommands::DrawMenuItems(Selection::GetActiveGameObject());
 		ImGui::Separator();
 		if (ImGui::MenuItem("Preferences...")) { EditorWindow::GetWindow<PreferencesWindow>(); }
 		ImGui::EndMenu();
