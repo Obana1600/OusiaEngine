@@ -2,8 +2,16 @@
 #include "Math/Mathf.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
+#include "Render/Gizmos.h"
 
 using namespace ou;
+
+namespace {
+
+// Unity のコライダーの Gizmo の色
+const Color kColliderColor{0.57f, 0.96f, 0.54f, 0.75f};
+
+} // namespace
 
 
 void ou::SphereCollider::Serialize(Serializer &serializer) {
@@ -70,4 +78,12 @@ Vector3 ou::SphereCollider::CalculateWorldCenter() const {
 float ou::SphereCollider::CalculateWorldRadius() const {
 	const auto scale = GetTransform()->GetLossyScale();
 	return radius_ * Mathf::Max(scale.x, scale.y, scale.z);
+}
+
+
+void ou::SphereCollider::OnDrawGizmosSelected() {
+	// 物理と同じ、大きさを掛けたあとの球
+	Gizmos::SetColor(kColliderColor);
+	Gizmos::SetMatrix(Matrix4x4::SRT(Vector3::One, GetTransform()->GetWorldRotation(), CalculateWorldCenter()));
+	Gizmos::DrawWireSphere(Vector3::Zero, CalculateWorldRadius());
 }

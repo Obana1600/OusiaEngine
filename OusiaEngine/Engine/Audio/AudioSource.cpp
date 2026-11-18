@@ -3,6 +3,8 @@
 #include "Diagnostics/Log.h"
 #include "Math/Mathf.h"
 #include "Serialize/Serializer.h"
+#include "Render/Gizmos.h"
+#include "Scene/Transform.h"
 
 #include <utility>
 
@@ -214,4 +216,9 @@ void ou::AudioSource::ApplySettingsToAll() {
 	for (auto &oneShot : oneShots_) {
 		ApplySettings(oneShot.instance, oneShot.volumeScale);
 	}
+}
+
+
+void ou::AudioSource::OnDrawGizmos() {
+	Gizmos::DrawIcon(GetTransform()->GetWorldPosition(), "AudioSource");
 }

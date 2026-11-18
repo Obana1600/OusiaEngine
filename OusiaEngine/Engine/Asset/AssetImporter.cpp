@@ -17,6 +17,13 @@ const std::filesystem::path &ou::AssetImporter::GetFullPath() const {
 }
 
 
+void ou::AssetImporter::SetPath(std::string assetPath, std::filesystem::path fullPath) {
+	assetPath_ = std::move(assetPath);
+	fullPath_ = std::move(fullPath);
+	SetName(ToUtf8(fullPath_.filename()));
+}
+
+
 std::string ou::AssetImporter::ResolveAssetPath(std::string_view relativePath) const {
 	const auto slash = assetPath_.find_last_of('/');
 	const auto folder = (slash == std::string::npos) ? std::string()

@@ -11,6 +11,7 @@ class CapsuleCollider final: public Collider {
 public: // メンバ関数
 
 	void Serialize(Serializer &serializer) override;
+	void OnDrawGizmosSelected() override;
 
 	Vector3 ClosestPoint(const Vector3 &position) const override;
 	Bounds GetBounds() const override;

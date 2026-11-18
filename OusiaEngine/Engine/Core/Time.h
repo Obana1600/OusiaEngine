@@ -28,6 +28,10 @@ public: // 静的メンバ関数
 	static void SetTimeScale(float timeScale);
 	static float GetTimeScale();
 
+	// Unity の Time.maximumDeltaTime。1 フレームで進める時間の上限（重いフレームのあとに FixedUpdate が何度も続かないように）
+	static void SetMaximumDeltaTime(float maximumDeltaTime);
+	static float GetMaximumDeltaTime();
+
 	static void SetFixedDeltaTime(float fixedDeltaTime);
 	static float GetFixedDeltaTime();
 	static float GetFixedTime();
@@ -43,6 +47,7 @@ private: // 静的メンバ変数
 	static inline uint64_t sFrameCount_ = 0;
 	static inline float sTimeScale_ = 1.0f;
 
+	static inline float sMaximumDeltaTime_ = 1.0f / 3.0f;
 	static inline float sFixedDeltaTime_ = 0.02f;
 	static inline double sFixedTime_ = 0.0;
 	static inline bool sIsInFixedTimeStep_ = false;
@@ -53,6 +58,9 @@ private: // 静的メンバ関数
 	static void Advance(float unscaledDeltaTime);
 
 	static bool AdvanceFixedTime();
+
+	// エディタの Pause 中。時間は進めず、deltaTime を 0 にする
+	static void Freeze();
 
 	static void ResetForPlayMode();
 };

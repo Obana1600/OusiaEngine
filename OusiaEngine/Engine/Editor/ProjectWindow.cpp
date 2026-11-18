@@ -3,7 +3,9 @@
 #include "Asset/AssetImporter.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
+#include "Editor/EditorApplication.h"
 #include "Editor/EditorMainWindow.h"
+#include "Editor/EditorSceneManager.h"
 #include "Editor/EditorPayload.h"
 #include "Editor/ExternalScriptEditor.h"
 #include "Editor/PrefabUtility.h"
@@ -15,6 +17,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cfloat>
 #include <cstdint>
 #include <cstring>
 #include <format>
@@ -201,6 +204,7 @@ ou::ProjectWindow::ProjectWindow() {
 
 
 void ou::ProjectWindow::OnGui() {
+	auto isTreeFocused = false;
 	constexpr auto kTableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV;
 	if (ImGui::BeginTable("##Project", 2, kTableFlags, ImGui::GetContentRegionAvail())) {
 		ImGui::TableSetupColumn("Folders", ImGuiTableColumnFlags_WidthFixed, 200.0f);
@@ -213,6 +217,7 @@ void ou::ProjectWindow::OnGui() {
 				DrawFolderTree(root.name, root.fullPath);
 			}
 			revealSelectedFolder_ = false;
+			isTreeFocused = ImGui::IsWindowFocused();
 		}
 		ImGui::EndChild();
 
@@ -225,10 +230,23 @@ void ou::ProjectWindow::OnGui() {
 		ImGui::EndTable();
 	}
 
-	// Delete キーで、選んでいるものを消す（サブアセットは消せない）
-	const auto &selectedPath = Selection::GetActiveAssetPath();
-	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete) && !selectedPath.empty()) {
-		if (Selection::GetActiveSubAsset().empty()) { BeginDelete(selectedPath); }
+	// Delete キーで、選んでいるものを消す（サブアセットは消せない）。F2 で名前を変える
+	// フォルダツリーを選んでいるときは、ツリーで選んでいるフォルダが相手
+	const auto isFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput;
+	if (isFocused && isTreeFocused) {
+		if (ImGui::IsKeyPressed(ImGuiKey_Delete)) { BeginDelete(selectedFolder_); }
+		if (ImGui::IsKeyPressed(ImGuiKey_F2, false) && CanRename(selectedFolder_)) { BeginRename(selectedFolder_, true); }
+	} else if (const auto selectedPath = Selection::GetActiveAssetPath(); isFocused && !selectedPath.empty() && Selection::GetActiveSubAsset().empty()) {
+		if (ImGui::IsKeyPressed(ImGuiKey_Delete)) { BeginDelete(selectedPath); }
+		if (ImGui::IsKeyPressed(ImGuiKey_F2, false) && CanRename(selectedPath)) { BeginRename(selectedPath); }
+	}
+
+	// 選んでいるものを、間を空けてもう一度クリックしたら名前を変える
+	if (const auto path = slowClick_.Update(); path && renamingPath_.empty()) {
+		if (Selection::IsAssetSelected(*path) && CanRename(*path)) { BeginRename(*path); }
+	}
+	if (const auto path = treeSlowClick_.Update(); path && renamingPath_.empty()) {
+		if (*path == selectedFolder_ && CanRename(*path)) { BeginRename(*path, true); }
 	}
 
 	DrawCreatePopup();
@@ -247,14 +265,37 @@ void ou::ProjectWindow::DrawFolderTree(const std::string &assetPath, const std::
 		ImGui::SetNextItemOpen(true);
 	}
 
-	const auto isOpen = ImGui::TreeNodeEx(assetPath.c_str(), flags, "%s", ToUtf8(fullPath.filename()).c_str());
+	const auto isRenaming = isRenamingInTree_ && renamingPath_ == assetPath;
+	if (isRenaming) { flags |= ImGuiTreeNodeFlags_AllowOverlap; }
+
+	const auto labelX = ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing();
+	const auto isSelected = assetPath == selectedFolder_;
+	const auto isOpen = ImGui::TreeNodeEx(assetPath.c_str(), flags, "%s", isRenaming ? "" : ToUtf8(fullPath.filename()).c_str());
 	if (revealSelectedFolder_ && assetPath == selectedFolder_) {
 		ImGui::SetScrollHereY();
 	}
-	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-		selectedFolder_ = assetPath;
+
+	if (isRenaming) {
+		DrawRenameField(assetPath, labelX);
+	} else {
+		treeSlowClick_.TrackItem(assetPath, isSelected);
+		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+			selectedFolder_ = assetPath;
+		}
+
+		// Assets の中のフォルダは、ドラッグでほかのフォルダへ動かせる
+		if (IsDeletable(assetPath) && ImGui::BeginDragDropSource()) {
+			const auto payload = EditorPayload::EncodeAsset(assetPath, {});
+			ImGui::SetDragDropPayload(EditorPayload::kAssetFolder, payload.c_str(), payload.size() + 1);
+			ImGui::Text("%s", assetPath.c_str());
+			ImGui::EndDragDropSource();
+		}
+		if (ImGui::BeginDragDropTarget()) {
+			AcceptDropOnFolder(assetPath);
+			ImGui::EndDragDropTarget();
+		}
+		DrawFolderTreeMenu(assetPath);
 	}
-	AcceptGameObjectDrop(assetPath);
 
 	if (!isOpen) { return; }
 	for (const auto &entry : subFolders) {
@@ -289,7 +330,7 @@ void ou::ProjectWindow::DrawContents() {
 	// 何もないところに落とすと、開いているフォルダに作る
 	// 窓全体を受け手にする（重なったときは ImGui が小さいほうを選ぶので、フォルダや .prefab の行が勝つ）
 	if (auto *window = ImGui::GetCurrentWindow(); ImGui::BeginDragDropTargetCustom(window->InnerRect, window->ID)) {
-		SaveDroppedGameObject(currentFolder);
+		AcceptDropOnFolder(currentFolder);
 		ImGui::EndDragDropTarget();
 	}
 
@@ -304,30 +345,52 @@ void ou::ProjectWindow::DrawContents() {
 
 
 void ou::ProjectWindow::DrawFolderItem(const std::string &assetPath, const std::string &name) {
+	if (!isRenamingInTree_ && assetPath == renamingPath_) {
+		DrawRenameRow(assetPath);
+		return;
+	}
+
 	constexpr auto kFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
 	const auto isSelected = Selection::IsAssetSelected(assetPath);
 	ImGui::TreeNodeEx(assetPath.c_str(), kFlags | (isSelected ? ImGuiTreeNodeFlags_Selected : 0), "%s/", name.c_str());
 
+	slowClick_.TrackItem(assetPath, isSelected);
 	if (ImGui::IsItemClicked()) {
 		Selection::SetActiveAsset(assetPath);
+	}
+	if (IsDeletable(assetPath) && ImGui::BeginDragDropSource()) {
+		const auto payload = EditorPayload::EncodeAsset(assetPath, {});
+		ImGui::SetDragDropPayload(EditorPayload::kAssetFolder, payload.c_str(), payload.size() + 1);
+		ImGui::Text("%s", assetPath.c_str());
+		ImGui::EndDragDropSource();
 	}
 	if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 		selectedFolder_ = assetPath;
 		revealSelectedFolder_ = true;
 	}
 	DrawItemMenu(assetPath);
-	AcceptGameObjectDrop(assetPath);
+	if (ImGui::BeginDragDropTarget()) {
+		AcceptDropOnFolder(assetPath);
+		ImGui::EndDragDropTarget();
+	}
 }
 
 
 void ou::ProjectWindow::DrawFileItem(const std::string &assetPath, const std::filesystem::path &fullPath) {
+	if (!isRenamingInTree_ && assetPath == renamingPath_) {
+		DrawRenameRow(assetPath);
+		return;
+	}
+
 	const auto isModel = IsModelFile(fullPath);
+	const auto isSelected = Selection::IsAssetSelected(assetPath);
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth;
 	flags |= isModel ? ImGuiTreeNodeFlags_OpenOnArrow : (ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
-	if (Selection::IsAssetSelected(assetPath)) { flags |= ImGuiTreeNodeFlags_Selected; }
+	if (isSelected) { flags |= ImGuiTreeNodeFlags_Selected; }
 
 	const auto isOpen = ImGui::TreeNodeEx(assetPath.c_str(), flags, "%s", ToUtf8(fullPath.filename()).c_str());
+	slowClick_.TrackItem(assetPath, isSelected);
 	HandleItem(assetPath, {});
 	DrawItemMenu(assetPath);
 	// Unity と同じく、プレハブの上に落とすと置き換える
@@ -389,6 +452,7 @@ void ou::ProjectWindow::DrawItemMenu(const std::string &assetPath) {
 		if (const auto fullPath = ToFullPath(assetPath)) { ShowInExplorer(*fullPath); }
 	}
 	ImGui::Separator();
+	if (ImGui::MenuItem("Rename", "F2", false, CanRename(assetPath))) { BeginRename(assetPath); }
 	if (ImGui::MenuItem("Delete", "Delete", false, IsDeletable(assetPath))) { BeginDelete(assetPath); }
 	ImGui::EndPopup();
 }
@@ -511,6 +575,229 @@ void ou::ProjectWindow::SaveDroppedGameObject(const std::string &target) {
 
 	if (PrefabUtility::SaveAsPrefabAsset(gameObject, *assetPath)) {
 		Selection::SetActiveAsset(*assetPath);
+	}
+}
+
+
+bool ou::ProjectWindow::CanRename(const std::string &assetPath) const {
+	// Play を止めたときに、Play 前のシーンのパスへ戻ってしまうので、Play 中は変えない
+	return IsDeletable(assetPath) && !EditorApplication::IsPlaying();
+}
+
+
+void ou::ProjectWindow::BeginRename(const std::string &assetPath, bool inTree) {
+	if (!CanRename(assetPath)) { return; }
+
+	const auto fullPath = ToFullPath(assetPath);
+	std::error_code error;
+	if (!fullPath || !std::filesystem::exists(*fullPath, error)) { return; }
+
+	// 行が見えるように、ツリーなら親を開き、一覧なら親のフォルダを出す
+	if (inTree) {
+		selectedFolder_ = assetPath;
+		revealSelectedFolder_ = true;
+	} else if (const auto parent = assetPath.substr(0, assetPath.find_last_of('/')); selectedFolder_ != parent) {
+		selectedFolder_ = parent;
+		revealSelectedFolder_ = true;
+	}
+	isRenamingInTree_ = inTree;
+
+	const auto path = std::filesystem::path(Utf8ToWide(assetPath));
+	const auto isFolder = std::filesystem::is_directory(*fullPath, error);
+	renamingPath_ = assetPath;
+	renamingName_ = ToUtf8(isFolder ? path.filename() : path.stem());
+	renamingExtension_ = isFolder ? std::string() : ToUtf8(path.extension());
+	focusesRename_ = true;
+	renameInactiveFrames_ = 0;
+	slowClick_.Cancel();
+	Focus();
+}
+
+
+void ou::ProjectWindow::DrawRenameRow(const std::string &assetPath) {
+	// 行と同じ並びに見えるように、選んだ行の上に名前の欄を重ねる
+	constexpr auto kFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth |
+							ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_AllowOverlap;
+	const auto labelX = ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing();
+	ImGui::TreeNodeEx(assetPath.c_str(), kFlags, "%s", "");
+	DrawRenameField(assetPath, labelX);
+}
+
+
+void ou::ProjectWindow::DrawRenameField(const std::string &assetPath, float labelX) {
+	ImGui::SameLine(labelX);
+
+	if (std::exchange(focusesRename_, false)) {
+		ImGui::SetKeyboardFocusHere();
+		ImGui::SetScrollHereY();
+	}
+
+	const auto extensionWidth = renamingExtension_.empty() ? 0.0f : ImGui::CalcTextSize(renamingExtension_.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {ImGui::GetStyle().FramePadding.x, 0.0f});
+	ImGui::SetNextItemWidth(std::max(ImGui::GetContentRegionAvail().x - extensionWidth, 40.0f));
+	ImGui::InputText("##Rename", &renamingName_, ImGuiInputTextFlags_AutoSelectAll);
+	ImGui::PopStyleVar();
+	const auto isDeactivated = ImGui::IsItemDeactivated();
+	const auto isActive = ImGui::IsItemActive();
+
+	// 拡張子は変えないので、欄の外に出しておく
+	if (!renamingExtension_.empty()) {
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s", renamingExtension_.c_str());
+	}
+
+	const auto problem = FindRenameProblem();
+	if (!problem.empty()) {
+		ImGui::TextColored({1.0f, 0.4f, 0.4f, 1.0f}, "%s", problem.c_str());
+	} else if (IsScriptFile(assetPath) && renamingName_ != ToUtf8(std::filesystem::path(Utf8ToWide(assetPath)).stem())) {
+		// ファイル名をクラス名として探すので、中の class の名前と違うと見つからない（Unity と同じく、中身は書き換えない）
+		ImGui::TextColored({1.0f, 0.8f, 0.3f, 1.0f}, "クラス名は書き換えません。ファイル名とクラス名が違うと、付けているコンポーネントは Missing になります");
+	}
+
+	if (isDeactivated) {
+		const auto isEscape = ImGui::IsKeyPressed(ImGuiKey_Escape);
+		const auto isEnter = ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter);
+		if (isEscape) {
+			EndRename(false);
+		} else if (problem.empty()) {
+			EndRename(true);
+		} else if (isEnter) {
+			// 変えられない名前で Enter を押したときは、直せるように欄に戻る
+			focusesRename_ = true;
+		} else {
+			// ほかをクリックしたときは、元の名前のまま
+			EndRename(false);
+		}
+		return;
+	}
+
+	// 入力が入らないまま（ウィンドウが隠れていたなど）残らないようにする
+	renameInactiveFrames_ = (isActive || focusesRename_) ? 0 : renameInactiveFrames_ + 1;
+	if (renameInactiveFrames_ > 2) { EndRename(false); }
+}
+
+
+std::string ou::ProjectWindow::FindRenameProblem() const {
+	if (renamingName_.empty()) { return "名前を入れてください"; }
+	if (renamingName_.find_first_of("\\/:*?\"<>|") != std::string::npos) { return "使えない文字があります（\\ / : * ? \" < > |）"; }
+	if (renamingName_.back() == '.' || renamingName_.back() == ' ') { return "最後を . や空白にはできません"; }
+	if (renamingName_ == "." || renamingName_ == "..") { return "この名前は使えません"; }
+
+	const auto parent = renamingPath_.substr(0, renamingPath_.find_last_of('/'));
+	const auto newPath = parent + "/" + renamingName_ + renamingExtension_;
+	if (newPath == renamingPath_) { return {}; }
+
+	// 大文字と小文字だけを変えるときは、Windows では同じものとして見つかるので、それは許す
+	const auto oldFull = ToFullPath(renamingPath_);
+	const auto newFull = ToFullPath(newPath);
+	std::error_code error;
+	if (!oldFull || !newFull) { return "パスが正しくありません"; }
+	if (std::filesystem::exists(*newFull, error) && !std::filesystem::equivalent(*oldFull, *newFull, error)) {
+		return "同じ名前のものがもうあります";
+	}
+	return {};
+}
+
+
+void ou::ProjectWindow::EndRename(bool commits) {
+	const auto oldPath = std::exchange(renamingPath_, std::string());
+	focusesRename_ = false;
+	if (!commits || oldPath.empty()) { return; }
+
+	const auto parent = oldPath.substr(0, oldPath.find_last_of('/'));
+	const auto newPath = parent + "/" + renamingName_ + renamingExtension_;
+	if (newPath == oldPath) { return; }
+
+	if (const auto error = AssetDatabase::MoveAsset(oldPath, newPath); !error.empty()) {
+		Log::Error("名前を変えられませんでした: {}", error);
+		return;
+	}
+	AfterAssetMoved(oldPath, newPath);
+
+	if (IsScriptFile(oldPath)) {
+		const auto oldName = ToUtf8(std::filesystem::path(Utf8ToWide(oldPath)).stem());
+		Log::Warning("スクリプトのファイル名を {} にしました。中の class {} も {} にしないと、付けているコンポーネントは Missing になります", renamingName_, oldName, renamingName_);
+	}
+}
+
+
+void ou::ProjectWindow::DrawFolderTreeMenu(const std::string &assetPath) {
+	if (!ImGui::BeginPopupContextItem(("##TreeMenu" + assetPath).c_str())) { return; }
+
+	// Create は開いているフォルダに作るので、先にこのフォルダを開く
+	selectedFolder_ = assetPath;
+	DrawCreateMenu();
+	ImGui::Separator();
+	if (ImGui::MenuItem("Show in Explorer")) {
+		if (const auto fullPath = ToFullPath(assetPath)) { ShowInExplorer(*fullPath); }
+	}
+	ImGui::Separator();
+	if (ImGui::MenuItem("Rename", "F2", false, CanRename(assetPath))) { BeginRename(assetPath, true); }
+	if (ImGui::MenuItem("Delete", "Delete", false, IsDeletable(assetPath))) { BeginDelete(assetPath); }
+	ImGui::EndPopup();
+}
+
+
+bool ou::ProjectWindow::CanMove(const std::string &source, const std::string &folder) const {
+	if (!IsDeletable(source) || !IsInAssets(folder) || EditorApplication::IsPlaying()) { return false; }
+
+	// 今と同じフォルダ、自分自身、自分の中へは動かさない
+	const auto parent = source.substr(0, source.find_last_of('/'));
+	return parent != folder && !IsSameOrInside(folder, source);
+}
+
+
+void ou::ProjectWindow::AcceptDropOnFolder(const std::string &folder) {
+	// Hierarchy から GameObject を落としたら、プレハブを作る
+	SaveDroppedGameObject(folder);
+
+	// ファイル・フォルダを落としたら、このフォルダへ動かす
+	const auto *peek = ImGui::GetDragDropPayload();
+	if (!peek) { return; }
+
+	const char *type = nullptr;
+	if (peek->IsDataType(EditorPayload::kAsset)) {
+		type = EditorPayload::kAsset;
+	} else if (peek->IsDataType(EditorPayload::kAssetFolder)) {
+		type = EditorPayload::kAssetFolder;
+	} else {
+		return;
+	}
+
+	// 動かせないところでは受けない（枠が光らない）
+	const auto source = EditorPayload::DecodeAsset(peek->Data, peek->DataSize);
+	if (!source.subAsset.empty() || !CanMove(source.path, folder)) { return; }
+
+	if (const auto *payload = ImGui::AcceptDragDropPayload(type)) {
+		MoveAssetInto(source.path, folder);
+	}
+}
+
+
+void ou::ProjectWindow::MoveAssetInto(const std::string &source, const std::string &folder) {
+	if (!CanMove(source, folder)) { return; }
+
+	const auto newPath = folder + "/" + source.substr(source.find_last_of('/') + 1);
+	if (const auto error = AssetDatabase::MoveAsset(source, newPath); !error.empty()) {
+		// 同じ名前のものがあるときなど。Unity と同じく、動かさずに知らせる
+		Log::Error("動かせませんでした: {}", error);
+		return;
+	}
+	AfterAssetMoved(source, newPath);
+}
+
+
+void ou::ProjectWindow::AfterAssetMoved(const std::string &oldPath, const std::string &newPath) {
+	EditorSceneManager::NotifyAssetMoved(oldPath, newPath);
+
+	// 選んでいるもの・開いているフォルダが、動かしたものかその中なら、新しいパスにする
+	const auto movePath = [&](const std::string &path) { return newPath + path.substr(oldPath.size()); };
+	if (const auto selected = Selection::GetActiveAssetPath(); IsSameOrInside(selected, oldPath)) {
+		Selection::SetActiveAsset(movePath(selected), Selection::GetActiveSubAsset());
+	}
+	if (IsSameOrInside(selectedFolder_, oldPath)) {
+		selectedFolder_ = movePath(selectedFolder_);
+		revealSelectedFolder_ = true;
 	}
 }
 

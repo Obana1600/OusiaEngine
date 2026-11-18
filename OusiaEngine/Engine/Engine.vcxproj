@@ -57,6 +57,9 @@
     <ClInclude Include="Editor\EditorApplication.h" />
     <ClInclude Include="Editor\EditorPayload.h" />
     <ClInclude Include="Editor\Selection.h" />
+    <ClInclude Include="Editor\SlowClick.h" />
+    <ClInclude Include="Editor\GameObjectCommands.h" />
+    <ClInclude Include="Editor\Undo.h" />
     <ClInclude Include="Editor\AssetEditors.h" />
     <ClInclude Include="Editor\ParticleEffectPreview.h" />
     <ClInclude Include="Editor\PrefabUtility.h" />
@@ -81,6 +84,9 @@
     <ClInclude Include="Editor\ConsoleWindow.h" />
     <ClInclude Include="Editor\LogEntries.h" />
     <ClInclude Include="Editor\PreferencesWindow.h" />
+    <ClInclude Include="Core\TimeManager.h" />
+    <ClInclude Include="Scene\TagManager.h" />
+    <ClInclude Include="Editor\ProjectSettingsWindow.h" />
     <ClInclude Include="Core\PlayerSettings.h" />
     <ClInclude Include="Core\JsonFile.h" />
     <ClInclude Include="Script\MonoBehavior.h" />
@@ -135,6 +141,8 @@
     <ClInclude Include="UI\EventSystem\EventInterfaces.h" />
     <ClInclude Include="Render\Light.h" />
     <ClInclude Include="Render\LineRenderer.h" />
+    <ClInclude Include="Render\Gizmos.h" />
+    <ClInclude Include="Editor\GizmoRenderer.h" />
     <ClInclude Include="Physics\Collision.h" />
     <ClInclude Include="Input\GamepadButton.h" />
     <ClInclude Include="Input\Input.h" />
@@ -239,6 +247,8 @@
     <ClCompile Include="Editor\EditorSceneManager.cpp" />
     <ClCompile Include="Editor\EditorApplication.cpp" />
     <ClCompile Include="Editor\Selection.cpp" />
+    <ClCompile Include="Editor\GameObjectCommands.cpp" />
+    <ClCompile Include="Editor\Undo.cpp" />
     <ClCompile Include="Editor\AssetEditors.cpp" />
     <ClCompile Include="Editor\ParticleEffectPreview.cpp" />
     <ClCompile Include="Editor\PrefabUtility.cpp" />
@@ -261,6 +271,9 @@
     <ClCompile Include="Editor\ConsoleWindow.cpp" />
     <ClCompile Include="Editor\LogEntries.cpp" />
     <ClCompile Include="Editor\PreferencesWindow.cpp" />
+    <ClCompile Include="Core\TimeManager.cpp" />
+    <ClCompile Include="Scene\TagManager.cpp" />
+    <ClCompile Include="Editor\ProjectSettingsWindow.cpp" />
     <ClCompile Include="Core\PlayerSettings.cpp" />
     <ClCompile Include="Core\JsonFile.cpp" />
     <ClCompile Include="Asset\Importer\PrefabImporter.cpp" />
@@ -312,6 +325,8 @@
     <ClCompile Include="UI\EventSystem\EventSystem.cpp" />
     <ClCompile Include="Render\Light.cpp" />
     <ClCompile Include="Render\LineRenderer.cpp" />
+    <ClCompile Include="Render\Gizmos.cpp" />
+    <ClCompile Include="Editor\GizmoRenderer.cpp" />
     <ClCompile Include="Physics\Collision.cpp" />
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Input\Windows\RawInput.cpp" />
@@ -397,6 +412,8 @@
     <None Include="EngineAssets\Shader\Error.shader" />
     <None Include="EngineAssets\Shader\Line.hlsli" />
     <None Include="EngineAssets\Shader\Line.shader" />
+    <None Include="EngineAssets\Shader\Gizmo.hlsli" />
+    <None Include="EngineAssets\Shader\Gizmo.shader" />
     <None Include="EngineAssets\Shader\Particle.hlsli" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
     <None Include="EngineAssets\Shader\Standard.hlsli" />
@@ -495,7 +512,25 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <FileType>Document</FileType>
     </None>
+    <None Include="EngineAssets\Shader\Gizmo.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
     <None Include="EngineAssets\Shader\Line.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\Gizmo.VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>

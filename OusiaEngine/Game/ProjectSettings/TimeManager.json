@@ -1,0 +1,5 @@
+{
+	"fixedTimestep": 0.02,
+	"maximumAllowedTimestep": 0.33333334,
+	"timeScale": 1.0
+}

@@ -1,11 +1,15 @@
 #include "EditorApplication.h"
+#include "Core/TimeManager.h"
+#include "Physics/Physics.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/JsonFile.h"
 #include "Core/Time.h"
+#include "Audio/XAudio2/Audio.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/LogEntries.h"
 #include "Editor/Selection.h"
+#include "Editor/Undo.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
@@ -78,6 +82,56 @@ void ou::EditorApplication::ExitPlayMode() {
 }
 
 
+void ou::EditorApplication::SetPaused(bool isPaused) {
+	sIsPaused_ = isPaused;
+	if (!isPaused) { sIsStepRequested_ = false; }
+}
+
+
+bool ou::EditorApplication::IsPaused() {
+	return sIsPaused_;
+}
+
+
+void ou::EditorApplication::Step() {
+	if (!sIsPlaying_) { return; }
+	sIsPaused_ = true;
+	sIsStepRequested_ = true;
+}
+
+
+bool ou::EditorApplication::IsGameFrameSkipped() {
+	return sIsPlaying_ && sSkipsGameFrame_;
+}
+
+
+void ou::EditorApplication::BeginGameFrame(float unscaledDeltaTime) {
+	sIsStepFrame_ = false;
+	sSkipsGameFrame_ = false;
+	if (sIsPlaying_ && sIsPaused_) {
+		sIsStepFrame_ = std::exchange(sIsStepRequested_, false);
+		sSkipsGameFrame_ = !sIsStepFrame_;
+	}
+
+	// 止めている間は時間を進めない。Step は、押すたびに同じだけ進むように fixedDeltaTime だけ進める
+	// （FixedUpdate と物理がちょうど 1 回、Update が 1 回動く）
+	if (sSkipsGameFrame_) {
+		Time::Freeze();
+	} else if (sIsStepFrame_) {
+		Time::Advance(Time::GetFixedDeltaTime());
+	} else {
+		Time::Advance(unscaledDeltaTime);
+	}
+
+	// Unity と同じく、止めている間は音も止める（Play を止めたら戻す）
+	const auto pausesAudio = sIsPlaying_ && sIsPaused_;
+	if (pausesAudio != sIsAudioPaused_) {
+		sIsAudioPaused_ = pausesAudio;
+		Audio::SetEnginePaused(pausesAudio);
+	}
+}
+
+
 void ou::EditorApplication::ApplyPendingPlayModeChange() {
 	const auto request = std::exchange(sRequest_, Request::None);
 
@@ -89,12 +143,16 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 		}
 
 		LogEntries::ClearOnPlayIfEnabled();
+		// 編集の途中で Play したときも、そこまでを Undo に残す
+		Undo::FlushPendingChange(true);
 
 		auto &snapshot = Snapshot();
 		snapshot = SceneSnapshot{scene->GetName(), scene->GetPath(), scene->GetBuildIndex(), scene->IsDirty(), SceneSerializer::ToJson(*scene)};
 
 		sIsPlaying_ = true;
 		Time::ResetForPlayMode();
+		// Project Settings の Time の値から始める
+		TimeManager::Apply();
 		SceneManager::ReplaceActiveScene(snapshot->name, snapshot->path, snapshot->buildIndex, snapshot->json);
 		Log::Info("Play: {}", snapshot->name);
 		return;
@@ -102,6 +160,11 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 
 	if (request == Request::Exit && sIsPlaying_) {
 		sIsPlaying_ = false;
+
+		// Play 中にスクリプトで変えた Time・物理の設定を、Project Settings の値に戻す
+		// （Project Settings のウィンドウで変えたものは、ファイルに書いてあるので残る）
+		TimeManager::Apply();
+		Physics::LoadDynamicsManager();
 
 		auto &snapshot = Snapshot();
 		if (snapshot) {
@@ -151,6 +214,8 @@ void ou::EditorApplication::ReloadScriptsIfChanged() {
 
 	auto *reloaded = SceneManager::GetActiveScene();
 	if (isDirty) { EditorSceneManager::MarkSceneDirty(reloaded); }
+	// 読み直しは編集ではないので Undo に残さない（書き出す中身が変わることがあるので、記録だけ取り直す）
+	Undo::RefreshCurrent(reloaded);
 	// アセットを選んでいたときは、そのまま残す
 	if (selected) { Selection::SetActiveGameObject(FindGameObjectByFileId(*reloaded, selectedFileId)); }
 

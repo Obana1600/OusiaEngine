@@ -3,8 +3,16 @@
 #include "Math/Matrix4x4.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
+#include "Render/Gizmos.h"
 
 using namespace ou;
+
+namespace {
+
+// Unity のコライダーの Gizmo の色
+const Color kColliderColor{0.57f, 0.96f, 0.54f, 0.75f};
+
+} // namespace
 
 
 void ou::BoxCollider::Serialize(Serializer &serializer) {
@@ -93,4 +101,11 @@ BoxCollider::WorldBox ou::BoxCollider::CalculateWorldBox() const {
 	}
 
 	return box;
+}
+
+
+void ou::BoxCollider::OnDrawGizmosSelected() {
+	Gizmos::SetColor(kColliderColor);
+	Gizmos::SetMatrix(GetTransform()->GetLocalToWorldMatrix());
+	Gizmos::DrawWireCube(center_, size_);
 }

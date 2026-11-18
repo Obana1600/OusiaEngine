@@ -55,7 +55,10 @@ public: // 静的メンバ関数
 	static void IgnoreLayerCollision(int layer1, int layer2, bool ignore = true);
 	static bool GetIgnoreLayerCollision(int layer1, int layer2);
 
+	// ProjectSettings/DynamicsManager.json を読む（読む前に既定の値に戻す。Play を止めたときにも読み直す）
 	static void LoadDynamicsManager();
+	// 今の重力・queriesHitTriggers・当たらないレイヤーの組を書く（組はレイヤーの名前で書くので、名前のないレイヤーの組は書かない）
+	static void SaveDynamicsManager();
 
 
 	static bool Raycast(

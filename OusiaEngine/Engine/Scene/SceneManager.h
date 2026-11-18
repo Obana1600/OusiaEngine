@@ -27,8 +27,10 @@ class SceneManager final {
 	friend class Engine;
 	friend class EditorApplication;
 	friend class EditorSceneManager;
+	friend class Undo;
 	friend class EditorBuildSettings;
 	friend class ScriptBindings;
+	friend class GameObject; // FindWithTag で DontDestroyOnLoad のシーンも探す
 
 
 public: // 静的メンバ変数

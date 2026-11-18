@@ -26,6 +26,8 @@ public: // メンバ関数
 	void Awake() override;
 	void OnDestroy() override;
 	void Serialize(Serializer &serializer) override;
+	void OnDrawGizmos() override;
+	void OnDrawGizmosSelected() override;
 
 	Matrix4x4 GetWorldToCameraMatrix() const;
 	Matrix4x4 GetProjectionMatrix() const;

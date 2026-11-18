@@ -6,8 +6,6 @@ using namespace ou;
 
 namespace {
 
-constexpr float kMaxDeltaTime = 1.0f / 3.0f;
-
 constexpr float kMinFixedDeltaTime = 0.0001f;
 
 } // namespace
@@ -49,6 +47,16 @@ float ou::Time::GetTimeScale() {
 }
 
 
+void ou::Time::SetMaximumDeltaTime(float maximumDeltaTime) {
+	sMaximumDeltaTime_ = Mathf::Max(maximumDeltaTime, kMinFixedDeltaTime);
+}
+
+
+float ou::Time::GetMaximumDeltaTime() {
+	return sMaximumDeltaTime_;
+}
+
+
 void ou::Time::SetFixedDeltaTime(float fixedDeltaTime) {
 	sFixedDeltaTime_ = Mathf::Max(fixedDeltaTime, kMinFixedDeltaTime);
 }
@@ -75,10 +83,16 @@ bool ou::Time::IsInFixedTimeStep() {
 
 
 void ou::Time::Advance(float unscaledDeltaTime) {
-	sUnscaledDeltaTime_ = Mathf::Min(unscaledDeltaTime, kMaxDeltaTime);
+	sUnscaledDeltaTime_ = Mathf::Min(unscaledDeltaTime, sMaximumDeltaTime_);
 	sDeltaTime_ = sUnscaledDeltaTime_ * sTimeScale_;
 	sTime_ += sDeltaTime_;
 	sFrameCount_++;
+}
+
+
+void ou::Time::Freeze() {
+	sUnscaledDeltaTime_ = 0.0f;
+	sDeltaTime_ = 0.0f;
 }
 
 

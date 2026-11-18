@@ -104,6 +104,18 @@ void ou::Mesh::Upload() {
 
 void ou::Mesh::SetVertices(std::vector<Vertex> vertices) {
 	vertices_ = std::move(vertices);
+
+	bounds_ = Bounds();
+	if (vertices_.empty()) { return; }
+	bounds_.SetMinMax(vertices_.front().position, vertices_.front().position);
+	for (const auto &vertex : vertices_) {
+		bounds_.Encapsulate(vertex.position);
+	}
+}
+
+
+const Bounds &ou::Mesh::GetBounds() const {
+	return bounds_;
 }
 
 

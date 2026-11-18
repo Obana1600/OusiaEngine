@@ -38,6 +38,11 @@ public: // メンバ関数
 	// Awake より先に呼ばれることもあるので、ほかのコンポーネントがまだ準備できていなくても落ちないように書く
 	virtual void OnValidate() {};
 
+	// Unity の OnDrawGizmos / OnDrawGizmosSelected。エディタの Scene ビューを描くたびに呼ぶ（Play 中でも）
+	// この中でだけ Gizmos で描ける。Selected は、この GameObject か親を選んでいるときだけ呼ぶ
+	virtual void OnDrawGizmos() {};
+	virtual void OnDrawGizmosSelected() {};
+
 	GameObject *GetGameObject() const;
 	Transform *GetTransform() const;
 

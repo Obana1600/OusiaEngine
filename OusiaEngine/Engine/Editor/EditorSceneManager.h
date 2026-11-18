@@ -17,6 +17,7 @@ enum class NewSceneSetup {
 
 class EditorSceneManager final {
 	friend class Engine;
+	friend class Undo;
 
 public: // 静的メンバ関数
 
@@ -30,10 +31,16 @@ public: // 静的メンバ関数
 
 	static bool MarkSceneDirty(Scene *scene);
 
+	// AssetDatabase::MoveAsset のあとに呼ぶ。開いているシーン・Build Settings・次に開くシーンのパスを新しくする
+	static void NotifyAssetMoved(const std::string &oldPath, const std::string &newPath);
+
 
 private: // 静的メンバ関数
 
 	static void OpenLastScene();
+
+	// Undo で保存した状態に戻ったときに * を消すため
+	static void SetDirtyFlag(Scene *scene, bool isDirty);
 
 	static void RememberLastScene(std::string_view scenePath);
 	static std::string LoadLastScenePath();

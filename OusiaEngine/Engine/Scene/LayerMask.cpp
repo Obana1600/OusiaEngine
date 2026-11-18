@@ -8,6 +8,7 @@
 #include <array>
 #include <charconv>
 #include <filesystem>
+#include <system_error>
 #include <utility>
 
 using namespace ou;
@@ -17,6 +18,7 @@ namespace {
 
 constexpr std::string_view kTagManagerKeys[] = {
 	"layers",
+	"tags", // TagManager が読む
 };
 
 constexpr std::pair<int, std::string_view> kBuiltinLayers[] = {
@@ -28,13 +30,6 @@ constexpr std::pair<int, std::string_view> kBuiltinLayers[] = {
 std::array<std::string, LayerMask::kLayerCount> &LayerNames() {
 	static std::array<std::string, LayerMask::kLayerCount> names;
 	return names;
-}
-
-bool IsBuiltinLayer(int layer) {
-	for (const auto &[builtin, name] : kBuiltinLayers) {
-		if (builtin == layer) { return true; }
-	}
-	return false;
 }
 
 int ParseLayerIndex(std::string_view text) {
@@ -101,7 +96,7 @@ void ou::LayerMask::LoadLayerNames() {
 				Log::Warning("レイヤーの番号は 0~31 で書いてください: {}: \"{}\"", pathUtf8, key);
 				continue;
 			}
-			if (IsBuiltinLayer(layer)) {
+			if (LayerMask::IsBuiltinLayer(layer)) {
 				Log::Warning("組み込みのレイヤー {} ({}) は変えられません: {}", layer, names[layer], pathUtf8);
 				continue;
 			}
@@ -117,6 +112,49 @@ void ou::LayerMask::LoadLayerNames() {
 	} catch (const Json::exception &e) {
 		Log::Error("TagManager.json の読み込みに失敗しました: {}\n{}", pathUtf8, e.what());
 	}
+}
+
+
+bool ou::LayerMask::IsBuiltinLayer(int layer) {
+	for (const auto &[builtin, name] : kBuiltinLayers) {
+		if (builtin == layer) { return true; }
+	}
+	return false;
+}
+
+
+bool ou::LayerMask::SetLayerName(int layer, std::string_view name) {
+	if (layer < 0 || layer >= kLayerCount || IsBuiltinLayer(layer)) { return false; }
+	if (!name.empty()) {
+		if (const auto other = NameToLayer(name); other >= 0 && other != layer) { return false; }
+	}
+
+	LayerNames()[layer] = name;
+	return true;
+}
+
+
+void ou::LayerMask::SaveLayerNames() {
+	const auto folder = FindProjectSettingsFolder();
+	if (!folder) { return; }
+
+	// 番号の順に書く
+	Json layers = Json::object();
+	const auto &names = LayerNames();
+	for (int layer = 0; layer < kLayerCount; layer++) {
+		if (IsBuiltinLayer(layer) || names[layer].empty()) { continue; }
+		layers[std::to_string(layer)] = names[layer];
+	}
+
+	// タグも同じファイルにあるので、"layers" だけを書き換える
+	const auto path = *folder / L"TagManager.json";
+	Json json = Json::object();
+	std::error_code error;
+	if (std::filesystem::exists(path, error)) {
+		if (auto loaded = JsonFile::Load(path); loaded && loaded->is_object()) { json = std::move(*loaded); }
+	}
+	json["layers"] = std::move(layers);
+	JsonFile::Save(path, json);
 }
 
 

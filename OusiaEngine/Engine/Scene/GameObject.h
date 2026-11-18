@@ -5,6 +5,7 @@
 #include "Scene/Transform.h"
 
 #include <memory>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -50,6 +51,16 @@ public: // メンバ関数
 	void SetLayer(int layer);
 	int GetLayer() const;
 
+	// Unity の tag。TagManager にないタグは付けられない（エラーを出して変えない）
+	void SetTag(std::string_view tag);
+	const std::string &GetTag() const;
+	// tag と同じタグか（TagManager にないタグを渡すとエラーを出す。Unity と同じ）
+	bool CompareTag(std::string_view tag) const;
+
+	// Unity の GameObject.FindWithTag / FindGameObjectsWithTag。今のシーンと DontDestroyOnLoad のシーンの、動いているものから探す
+	static GameObject *FindWithTag(std::string_view tag);
+	static std::vector<GameObject *> FindGameObjectsWithTag(std::string_view tag);
+
 
 protected: // メンバ関数
 
@@ -62,6 +73,8 @@ private: // メンバ変数
 
 	bool isActiveSelf_ = true;
 	int layer_ = 0;
+	// シーンには文字で書く（タグを消しても、ほかのタグがずれないように）
+	std::string tag_{"Untagged"};
 
 	Transform *transform_ = nullptr;
 	Scene *scene_ = nullptr;

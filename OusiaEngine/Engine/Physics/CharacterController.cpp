@@ -8,10 +8,18 @@
 #include "Scene/GameObject.h"
 #include "Serialize/Serializer.h"
 #include "Scene/Transform.h"
+#include "Render/Gizmos.h"
 
 #include <algorithm>
 
 using namespace ou;
+
+namespace {
+
+// Unity のコライダーの Gizmo の色
+const Color kColliderColor{0.57f, 0.96f, 0.54f, 0.75f};
+
+} // namespace
 
 
 namespace {
@@ -326,4 +334,11 @@ void ou::CharacterController::SendControllerColliderHits(const std::vector<Physi
 			component->OnControllerColliderHit(controllerHit);
 		});
 	}
+}
+
+
+void ou::CharacterController::OnDrawGizmosSelected() {
+	const auto capsule = CalculateWorldCapsule();
+	Gizmos::SetColor(kColliderColor);
+	Gizmos::DrawWireCapsule(capsule.point0, capsule.point1, capsule.radius);
 }

@@ -1,9 +1,12 @@
 #include "EditorSceneManager.h"
+#include "Scene/TagManager.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorApplication.h"
+#include "Editor/EditorBuildSettings.h"
+#include "Editor/Undo.h"
 #include "Math/Mathf.h"
 #include "Platform/Paths.h"
 #include "Render/Camera.h"
@@ -14,6 +17,7 @@
 #include "Scene/Transform.h"
 #include "Serialize/SceneSerializer.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -52,6 +56,8 @@ Scene *ou::EditorSceneManager::NewScene(NewSceneSetup setup) {
 		auto *camera = scene->CreateGameObject("Main Camera");
 		camera->AddComponent<Camera>();
 		camera->GetTransform()->SetLocalPosition({0.0f, 1.0f, -10.0f});
+		// Unity と同じく、新しいシーンのカメラを Camera.main にする
+		camera->SetTag(TagManager::kMainCamera);
 
 		auto *light = scene->CreateGameObject("Directional Light");
 		light->AddComponent<Light>()->SetType(LightType::Directional);
@@ -59,6 +65,7 @@ Scene *ou::EditorSceneManager::NewScene(NewSceneSetup setup) {
 		light->GetTransform()->SetLocalEulerAngles(Vector3(50.0f, -30.0f, 0.0f) * Mathf::Deg2Rad);
 	}
 
+	Undo::ResetHistory(scene, true);
 	return scene;
 }
 
@@ -86,6 +93,7 @@ Scene *ou::EditorSceneManager::OpenScene(std::string_view scenePath) {
 
 	SceneManager::ReplaceActiveScene(MakeSceneName(scenePath), scenePath, SceneManager::FindBuildIndexByPath(scenePath), *json);
 	RememberLastScene(scenePath);
+	Undo::ResetHistory(SceneManager::GetActiveScene(), true);
 	return SceneManager::GetActiveScene();
 }
 
@@ -120,6 +128,7 @@ bool ou::EditorSceneManager::SaveScene(Scene *scene, std::string_view dstScenePa
 	scene->name_ = MakeSceneName(scenePath);
 	scene->buildIndex_ = SceneManager::FindBuildIndexByPath(scenePath);
 	scene->isDirty_ = false;
+	Undo::NotifySceneSaved(scene);
 
 	// 新しいファイルに .meta と GUID を付ける
 	if (isNewFile) {
@@ -136,7 +145,34 @@ bool ou::EditorSceneManager::MarkSceneDirty(Scene *scene) {
 	if (!scene || EditorApplication::IsPlaying()) { return false; }
 
 	scene->isDirty_ = true;
+	Undo::NotifySceneChanged(scene);
 	return true;
+}
+
+
+void ou::EditorSceneManager::NotifyAssetMoved(const std::string &oldPath, const std::string &newPath) {
+	const auto isSameOrInside = [&](const std::string &path) { return path == oldPath || path.starts_with(oldPath + "/"); };
+
+	// 開いているシーン（直さないと、保存したときに古いパスへ書き戻す）
+	if (auto *scene = SceneManager::GetActiveScene(); scene && !scene->path_.empty() && isSameOrInside(scene->path_)) {
+		scene->path_ = newPath + scene->path_.substr(oldPath.size());
+		scene->name_ = MakeSceneName(scene->path_);
+		RememberLastScene(scene->path_);
+	} else if (const auto lastPath = LoadLastScenePath(); !lastPath.empty() && isSameOrInside(lastPath)) {
+		RememberLastScene(newPath + lastPath.substr(oldPath.size()));
+	}
+
+	// Build Settings は GUID から今のパスを引き直して書き直す（シーンを含まないときは何も変わらない）
+	auto scenes = EditorBuildSettings::GetScenes();
+	const auto hasMovedScene = std::any_of(scenes.begin(), scenes.end(), [&](const EditorBuildSettingsScene &scene) {
+		return isSameOrInside(scene.path) || scene.path.starts_with(newPath);
+	});
+	if (hasMovedScene) { EditorBuildSettings::SetScenes(scenes); }
+}
+
+
+void ou::EditorSceneManager::SetDirtyFlag(Scene *scene, bool isDirty) {
+	if (scene) { scene->isDirty_ = isDirty; }
 }
 
 

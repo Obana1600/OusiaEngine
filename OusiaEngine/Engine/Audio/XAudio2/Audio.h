@@ -84,4 +84,7 @@ float GetSubmixVolume(SubmixType type);
 void SetPitch(float pitch, SoundInstance *instance);
 float GetPitch(const SoundInstance *instance);
 
+// すべての音をまとめて止める・続きから鳴らす（エディタの Pause。XAudio2 の StopEngine / StartEngine）
+void SetEnginePaused(bool isPaused);
+
 } // namespace ou::Audio

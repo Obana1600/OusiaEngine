@@ -18,6 +18,7 @@ public: // メンバ関数
 	void Start() override;
 	void Update() override;
 	void Serialize(Serializer &serializer) override;
+	void OnDrawGizmos() override;
 
 	void Play();
 	void Stop();

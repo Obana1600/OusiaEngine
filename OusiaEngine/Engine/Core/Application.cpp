@@ -21,6 +21,15 @@ bool ou::Application::IsPlaying() {
 }
 
 
+bool ou::Application::IsPaused() {
+#ifdef WITH_EDITOR
+	return EditorApplication::IsGameFrameSkipped();
+#else
+	return false;
+#endif
+}
+
+
 void ou::Application::Quit() {
 	sIsQuitRequested = true;
 }

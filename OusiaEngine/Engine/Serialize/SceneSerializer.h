@@ -38,6 +38,12 @@ public: // 静的メンバ関数
 	static SceneObjects CollectObjects(Scene &scene);
 
 	static GameObject *Instantiate(GameObject &original, Scene &scene, const std::function<void(GameObject &)> &place);
+
+	// ToJson(root, true) で書いた json から、新しい GameObject を作る（エディタの複製・ペースト）
+	// 中どうしの参照は新しいものどうしに、外への参照は scene の今のものにつなぐ（見つからなければ null）
+	// 元と fileId が重ならないように、作ったものの fileId は 0 にする（保存するときに振り直す）
+	// place で親と並びを決めてから、アクティブかどうかを決める
+	static GameObject *InstantiateFromJson(const Json &json, Scene &scene, const std::function<void(GameObject &)> &place);
 	static std::vector<GameObject *> CreateGameObjects(Scene &scene, const Json &root, const std::unordered_map<uint64_t, Object *> &outside, bool awake);
 
 

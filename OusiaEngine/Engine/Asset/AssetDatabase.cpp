@@ -512,3 +512,78 @@ std::vector<Guid> ou::AssetDatabase::FindAssets(std::string_view filter) {
 	}
 	return guids;
 }
+
+
+std::string ou::AssetDatabase::MoveAsset(std::string_view oldPath, std::string_view newPath) {
+	const auto from = NormalizeAssetPath(oldPath);
+	const auto to = NormalizeAssetPath(newPath);
+
+	// path が folder 自身か、その中か
+	const auto isSameOrInside = [](const std::string &path, const std::string &folder) {
+		return path == folder || path.starts_with(folder + "/");
+	};
+
+	if (!from.starts_with("Assets/") || !to.starts_with("Assets/")) { return "動かせるのは Assets の中だけです"; }
+	if (from == to) { return {}; }
+	if (isSameOrInside(to, from)) { return "フォルダを自分の中へは動かせません"; }
+
+	const auto fromFull = ToFullPath(from);
+	const auto toFull = ToFullPath(to);
+	if (!fromFull || !toFull) { return "パスが正しくありません"; }
+
+	std::error_code error;
+	if (!std::filesystem::exists(*fromFull, error)) { return "元のファイルが見つかりません: " + from; }
+	// 大文字と小文字だけを変えるときは、Windows では同じものとして見つかるので、それは許す
+	if (std::filesystem::exists(*toFull, error) && !std::filesystem::equivalent(*fromFull, *toFull, error)) {
+		return "同じ名前のものがもうあります: " + to;
+	}
+	if (!std::filesystem::is_directory(toFull->parent_path(), error)) { return "動かす先のフォルダがありません"; }
+
+	const auto isFolder = std::filesystem::is_directory(*fromFull, error);
+	std::filesystem::rename(*fromFull, *toFull, error);
+	if (error) { return "動かせませんでした: " + error.message(); }
+
+	// ファイルは .meta も一緒に（フォルダは .meta を持たない）
+	if (!isFolder) {
+		auto fromMeta = *fromFull;
+		fromMeta += L".meta";
+		auto toMeta = *toFull;
+		toMeta += L".meta";
+		if (std::filesystem::exists(fromMeta, error)) {
+			std::filesystem::rename(fromMeta, toMeta, error);
+			if (error) { Log::Error(".meta を動かせませんでした (GUID が変わります): {}.meta", from); }
+		}
+	}
+
+	const auto movePath = [&](const std::string &path) { return to + path.substr(from.size()); };
+
+	// 読み込み済みのものを、新しいパスで引けるようにする（読み直すと、別のオブジェクトになって参照が外れるため）
+	auto &entries = Entries();
+	std::vector<std::string> movedKeys;
+	for (const auto &[key, entry] : entries) {
+		if (isSameOrInside(key, from)) { movedKeys.push_back(key); }
+	}
+	for (const auto &key : movedKeys) {
+		auto node = entries.extract(key);
+		const auto newKey = movePath(key);
+		if (const auto newFull = ToFullPath(newKey); newFull && node.mapped().importer) {
+			node.mapped().importer->SetPath(newKey, *newFull);
+		}
+		// Unity と同じく、アセットの名前はファイル名（拡張子なし）
+		if (node.mapped().asset) {
+			node.mapped().asset->SetName(WideToUtf8(std::filesystem::path(Utf8ToWide(newKey)).stem().wstring()));
+		}
+		node.key() = newKey;
+		entries.insert(std::move(node));
+	}
+
+	for (auto &[instanceId, origin] : Origins()) {
+		if (isSameOrInside(origin.assetPath, from)) { origin.assetPath = movePath(origin.assetPath); }
+	}
+
+	// GUID の表を作り直す（.meta ごと動かしたので、同じ GUID が新しいパスを指す）
+	Refresh();
+
+	Log::Info("{} を {} にしました", from, to);
+	return {};
+}

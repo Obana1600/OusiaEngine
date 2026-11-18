@@ -30,6 +30,9 @@ public: // メンバ関数
 	const std::string &GetAssetPath() const;
 	const std::filesystem::path &GetFullPath() const;
 
+	// ファイルを動かした・名前を変えたときに、AssetDatabase::MoveAsset から呼ぶ
+	void SetPath(std::string assetPath, std::filesystem::path fullPath);
+
 	std::string ResolveAssetPath(std::string_view relativePath) const;
 
 	const std::vector<SubAsset> &GetSubAssets() const;
