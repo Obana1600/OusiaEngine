@@ -97,6 +97,11 @@ void ou::ParticleSystemRenderer::Awake() {
 
 
 void ou::ParticleSystemRenderer::LateUpdate() {
+	if (!particleSystem_) {
+		particleCount_ = 0;
+		return;
+	}
+
 	const auto &particles = particleSystem_->GetParticles();
 	particleCount_ = static_cast<uint32_t>(particles.size());
 	if (particleCount_ == 0) { return; }

@@ -366,6 +366,19 @@ AssetImporter *ou::AssetDatabase::GetImporterAtPath(std::string_view assetPath) 
 }
 
 
+bool ou::AssetDatabase::CanImport(std::string_view assetPath) {
+	const auto key = NormalizeAssetPath(assetPath);
+	if (Entries().contains(key)) { return true; }
+
+	const auto fullPath = ToFullPath(key);
+	std::error_code error;
+	if (!fullPath || std::filesystem::is_directory(*fullPath, error)) { return false; }
+
+	// 拡張子だけを見る（インポーターは作ってすぐ捨てる）
+	return CreateImporter(key, *fullPath) != nullptr;
+}
+
+
 void ou::AssetDatabase::ImportAsset(std::string_view assetPath) {
 	const auto key = NormalizeAssetPath(assetPath);
 	auto *entry = FindOrCreateEntry(key);

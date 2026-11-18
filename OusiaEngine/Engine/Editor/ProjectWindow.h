@@ -32,7 +32,6 @@ protected: // メンバ関数
 private: // メンバ変数
 
 	std::string selectedFolder_ = "Assets";
-	std::string selectedItem_;
 	bool revealSelectedFolder_ = false;
 
 	// Create の名前を聞くポップアップ

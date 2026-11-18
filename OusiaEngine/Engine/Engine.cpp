@@ -27,6 +27,7 @@
 #include "Editor/EditorSceneManager.h"
 #include "Editor/EditorWindow.h"
 #include "Editor/LogEntries.h"
+#include "Editor/ParticleEffectPreview.h"
 #include "Editor/GameView.h"
 #include "Editor/SceneView.h"
 #endif
@@ -329,6 +330,7 @@ bool ou::Engine::Update() {
 #ifdef WITH_EDITOR
 	LogEntries::Update();
 	EditorMainWindow::Draw();
+	ParticleEffectPreview::Update(); // Play していないときに、選んでいるパーティクルを Scene ビューで動かす
 #endif
 #ifdef WITH_EDITOR
 	return EditorMainWindow::IsQuitApproved() || Application::IsQuitRequested();

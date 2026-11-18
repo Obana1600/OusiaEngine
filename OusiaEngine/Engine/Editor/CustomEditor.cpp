@@ -1,9 +1,11 @@
 #include "CustomEditor.h"
 #include "Core/Object.h"
+#include "Editor/AssetEditors.h"
 #include "Editor/Editor.h"
 #include "Editor/EngineEditors.h"
 
 #include "Animation/Skeletal/SkeletalAnimator.h"
+#include "Audio/AudioClip.h"
 #include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"
 #include "Particle/ParticleSystem.h"
@@ -13,6 +15,7 @@
 #include "Physics/CharacterController.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
+#include "Render/Asset/Texture.h"
 #include "Render/Camera.h"
 #include "Render/Light.h"
 #include "Render/LineRenderer.h"
@@ -64,6 +67,10 @@ void ou::CustomEditor::RegisterEngineEditors() {
 
 	Register<ParticleSystemEditor, ParticleSystem>();
 	Register<ParticleSystemRendererEditor, ParticleSystemRenderer>();
+
+	// アセット（AssetEditors.h）
+	Register<TextureEditor, Texture>();
+	Register<AudioClipEditor, AudioClip>();
 }
 
 

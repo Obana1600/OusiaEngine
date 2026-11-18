@@ -111,7 +111,11 @@ public: // メンバ関数
 	void Clear();
 	void Emit(uint32_t count);
 
+	// deltaTime 秒だけ進める（Update と同じ処理。エディタの Scene ビューでの再生に使う）
+	void Simulate(float deltaTime);
+
 	bool IsPlaying() const;
+	float GetTime() const; // 1 周の中での経過時間（秒）
 
 	MainModule &GetMain();
 	const MainModule &GetMain() const;

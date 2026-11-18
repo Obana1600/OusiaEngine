@@ -39,6 +39,9 @@ std::shared_ptr<T> LoadAssetAtPath(std::string_view assetPath) {
 // インポーターの取得 (アセットの設定を変更できる)
 AssetImporter *GetImporterAtPath(std::string_view assetPath);
 
+// インポートできるファイルか（フォルダや対応していない拡張子なら false。ログは出さない）
+bool CanImport(std::string_view assetPath);
+
 // アセットをインポートし直す
 void ImportAsset(std::string_view assetPath);
 
