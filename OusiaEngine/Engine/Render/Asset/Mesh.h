@@ -2,6 +2,7 @@
 
 #include "Core/Object.h"
 #include "Graphics/GraphicsTypes.h"
+#include "Math/Bounds.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Matrix4x4.h"
@@ -47,6 +48,9 @@ public: // メンバ関数
 	void SetVertices(std::vector<Vertex> vertices);
 	const std::vector<Vertex> &GetVertices() const;
 
+	// Unity の Mesh.bounds。頂点を囲む、メッシュの空間での箱（SetVertices で計算する）
+	const Bounds &GetBounds() const;
+
 	void SetIndices(std::vector<uint32_t> indices);
 	const std::vector<uint32_t> &GetIndices() const;
 
@@ -71,6 +75,7 @@ private: // メンバ変数
 	std::vector<SubMesh> subMeshes_;
 	std::vector<BoneWeight> boneWeights_;
 	std::vector<Matrix4x4> bindPoses_;
+	Bounds bounds_;
 
 	Graphics::GpuBuffer vertexBuffer_;
 	Graphics::GpuBuffer indexBuffer_;

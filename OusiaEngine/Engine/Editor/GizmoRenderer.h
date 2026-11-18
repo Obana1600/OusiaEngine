@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 
 struct ImDrawList;
@@ -41,6 +42,9 @@ public: // 静的メンバ関数
 	// sceneRect は Scene ビューの絵の、画面上の場所
 	static void DrawIcons(const Camera::PerCamera &camera, const Rect &sceneRect, ImDrawList *drawList);
 
+	// 画面の (x, y) にある、いちばん手前のアイコンの GameObject の instanceId（なければ 0）。DrawIcons で描いたものから探す
+	static uint32_t PickIcon(float x, float y);
+
 
 private: // インナークラス
 
@@ -59,6 +63,14 @@ private: // 静的メンバ変数
 	static inline std::shared_ptr<Shader> sShader_;
 	static inline Graphics::GpuBuffer sVertexBuffers_[Graphics::GraphicsDevice::BUFFER_COUNT];
 	static inline uint32_t sCapacity_ = 0;
+
+	// DrawIcons で描いたアイコン（PickIcon で使う）
+	struct DrawnIcon {
+		float depth = 0.0f;
+		Rect rect;
+		uint32_t gameObjectId = 0;
+	};
+	static inline std::vector<DrawnIcon> sDrawnIcons_;
 
 	// アイコンの名前から画像を引く（見つからなかったものは nullptr を入れて、毎フレーム探さない）
 	static inline std::unordered_map<std::string, std::shared_ptr<Texture>> sIconTextures_;

@@ -10,7 +10,10 @@
 #include "Editor/Tools.h"
 #include "Math/Mathf.h"
 #include "Math/Matrix4x4.h"
+#include "Render/Asset/Mesh.h"
 #include "Render/Asset/Model.h"
+#include "Render/MeshRenderer.h"
+#include "Render/SkinnedMeshRenderer.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
 #include "Scene/SceneManager.h"
@@ -18,6 +21,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <optional>
 #include <utility>
 
 // clang-format off
@@ -53,6 +58,97 @@ constexpr std::pair<Tool, const char *> kToolButtons[] = {
 
 float AxisValue(ImGuiKey positive, ImGuiKey negative) {
 	return (ImGui::IsKeyDown(positive) ? 1.0f : 0.0f) - (ImGui::IsKeyDown(negative) ? 1.0f : 0.0f);
+}
+
+// localToWorld で置いた箱 bounds（OBB）に、origin から direction へのレイを当てる。当たった距離を返す
+// レイを箱の空間に移して、ただの箱との当たり（スラブ法）にする。移しても t はそのままワールドの距離として比べられる
+// カメラが箱の中にいるときは当たらないことにする（部屋の中から、中の物を選べるように）
+std::optional<float> IntersectRayObb(const Vector3 &origin, const Vector3 &direction, const Bounds &bounds, const Matrix4x4 &localToWorld) {
+	const auto scale = localToWorld.GetLossyScale();
+	if (Mathf::Abs(scale.x) < 1e-6f || Mathf::Abs(scale.y) < 1e-6f || Mathf::Abs(scale.z) < 1e-6f) { return std::nullopt; }
+
+	const auto worldToLocal = localToWorld.Inverse();
+	const auto o = worldToLocal.MultiplyPoint3x4(origin);
+	const auto d = worldToLocal.MultiplyVector(direction);
+	const auto min = bounds.GetMin();
+	const auto max = bounds.GetMax();
+
+	auto tMin = -std::numeric_limits<float>::infinity();
+	auto tMax = std::numeric_limits<float>::infinity();
+	for (int i = 0; i < 3; i++) {
+		if (Mathf::Abs(d[i]) < 1e-8f) {
+			// この軸には進まないので、始まりが板の間になければ当たらない
+			if (o[i] < min[i] || o[i] > max[i]) { return std::nullopt; }
+			continue;
+		}
+		auto t1 = (min[i] - o[i]) / d[i];
+		auto t2 = (max[i] - o[i]) / d[i];
+		if (t1 > t2) { std::swap(t1, t2); }
+		tMin = std::max(tMin, t1);
+		tMax = std::min(tMax, t2);
+		if (tMin > tMax) { return std::nullopt; }
+	}
+
+	if (tMin < 0.0f) { return std::nullopt; }
+	return tMin;
+}
+
+// スキンメッシュは骨で頂点が動くので、今のポーズの頂点を CPU で求めて、ワールドの箱にする（クリックしたときだけなので重くてもよい）
+std::optional<Bounds> MakeSkinnedWorldBounds(const SkinnedMeshRenderer &renderer, const Mesh &mesh) {
+	const auto &vertices = mesh.GetVertices();
+	const auto &weights = mesh.GetBoneWeights();
+	const auto &boneMatrices = renderer.GetBoneMatrices();
+	if (vertices.empty() || weights.size() != vertices.size() || boneMatrices.empty()) { return std::nullopt; }
+
+	std::optional<Bounds> bounds;
+	for (size_t i = 0; i < vertices.size(); i++) {
+		auto position = Vector3::Zero;
+		for (int j = 0; j < 4; j++) {
+			const auto weight = weights[i].weights[j];
+			const auto bone = weights[i].boneIndices[j];
+			if (weight <= 0.0f || bone >= boneMatrices.size()) { continue; }
+			position += boneMatrices[bone].MultiplyPoint3x4(vertices[i].position) * weight;
+		}
+		if (!bounds) {
+			bounds = Bounds(position, Vector3::Zero);
+		} else {
+			bounds->Encapsulate(position);
+		}
+	}
+	return bounds;
+}
+
+// gameObject と子のメッシュにレイを当て、いちばん手前のものを nearest に入れる
+void PickMesh(GameObject *gameObject, const Vector3 &origin, const Vector3 &direction, float &nearestDistance, GameObject *&nearest) {
+	if (gameObject->IsDestroyed() || !gameObject->IsActiveInHierarchy()) { return; }
+
+	const auto consider = [&](const std::optional<float> &distance) {
+		if (distance && *distance < nearestDistance) {
+			nearestDistance = *distance;
+			nearest = gameObject;
+		}
+	};
+
+	const auto &localToWorld = gameObject->GetTransform()->GetLocalToWorldMatrix();
+	for (const auto *renderer : gameObject->GetComponents<MeshRenderer>()) {
+		const auto &mesh = renderer->GetMesh();
+		if (!renderer->IsActiveAndEnabled() || !mesh || mesh->GetVertices().empty()) { continue; }
+		consider(IntersectRayObb(origin, direction, mesh->GetBounds(), localToWorld));
+	}
+	for (const auto *renderer : gameObject->GetComponents<SkinnedMeshRenderer>()) {
+		const auto &mesh = renderer->GetMesh();
+		if (!renderer->IsActiveAndEnabled() || !mesh || mesh->GetVertices().empty()) { continue; }
+		if (const auto bounds = MakeSkinnedWorldBounds(*renderer, *mesh)) {
+			consider(IntersectRayObb(origin, direction, *bounds, Matrix4x4::Identity));
+		} else {
+			// 骨がまだ求まっていなければ、動かす前の形で当てる
+			consider(IntersectRayObb(origin, direction, mesh->GetBounds(), localToWorld));
+		}
+	}
+
+	for (auto *child : gameObject->GetTransform()->GetChildren()) {
+		PickMesh(child->GetGameObject(), origin, direction, nearestDistance, nearest);
+	}
 }
 
 ImGuizmo::OPERATION ToOperation(Tool tool) {
@@ -134,6 +230,7 @@ void ou::SceneView::OnGui() {
 	// パネルは子ウィンドウなので、上に乗っているあいだは絵の IsItemHovered が false になり、カメラは動かない
 	DrawSceneGuis(sceneRect);
 	HandleInput(isImageHovered && !isHandleHot);
+	HandleClickSelection(isImageHovered && !isHandleHot, {imageMin.x, imageMin.y}, {size.x, size.y});
 
 	sLastDrawn = this;
 	sLastDrawnFrame = ImGui::GetFrameCount();
@@ -355,6 +452,7 @@ void ou::SceneView::AcceptAssetDrop() {
 	// 直前の項目は Scene の画像なので、その矩形とマウスの位置から、マウスの先を求める
 	const auto min = ImGui::GetItemRectMin();
 	const auto itemSize = ImGui::GetItemRectSize();
+	const auto mouse = ImGui::GetMousePos();
 
 	GameObject *root = nullptr;
 	if (const auto model = AssetDatabase::LoadAssetAtPath<Model>(asset.path)) {
@@ -366,12 +464,7 @@ void ou::SceneView::AcceptAssetDrop() {
 
 	// マウスの先の、高さ 0 の面に置く（面に当たらなければ、注視点と同じ距離の先）
 	// Unity はコライダーに当てるが、ここでは地面の面だけを見る
-	const auto mouse = ImGui::GetMousePos();
-	const auto x = (mouse.x - min.x) / std::max(itemSize.x, 1.0f) * 2.0f - 1.0f;
-	const auto y = 1.0f - (mouse.y - min.y) / std::max(itemSize.y, 1.0f) * 2.0f;
-	const auto tanHalf = std::tan(kFieldOfView * 0.5f * Mathf::Deg2Rad);
-	const auto aspect = itemSize.x / std::max(itemSize.y, 1.0f);
-	const auto direction = (MakeRotation() * Vector3{x * tanHalf * aspect, y * tanHalf, 1.0f}).Normalized();
+	const auto direction = MakeRayDirection({mouse.x, mouse.y}, {min.x, min.y}, {itemSize.x, itemSize.y});
 	const auto origin = MakePosition();
 
 	auto position = origin + direction * distance_;
@@ -405,4 +498,54 @@ Quaternion ou::SceneView::MakeRotation() const {
 
 Vector3 ou::SceneView::MakePosition() const {
 	return pivot_ - MakeRotation() * Vector3::Forward * distance_;
+}
+
+
+Vector3 ou::SceneView::MakeRayDirection(const Vector2 &mouse, const Vector2 &imageMin, const Vector2 &imageSize) const {
+	const auto x = (mouse.x - imageMin.x) / std::max(imageSize.x, 1.0f) * 2.0f - 1.0f;
+	const auto y = 1.0f - (mouse.y - imageMin.y) / std::max(imageSize.y, 1.0f) * 2.0f;
+	const auto tanHalf = std::tan(kFieldOfView * 0.5f * Mathf::Deg2Rad);
+	const auto aspect = imageSize.x / std::max(imageSize.y, 1.0f);
+	return (MakeRotation() * Vector3{x * tanHalf * aspect, y * tanHalf, 1.0f}).Normalized();
+}
+
+
+void ou::SceneView::HandleClickSelection(bool isHovered, const Vector2 &imageMin, const Vector2 &imageSize) {
+	const auto &io = ImGui::GetIO();
+
+	// Alt + 左ドラッグはカメラを回すので、選ばない
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		isSelectPressed_ = isHovered && !io.KeyAlt && dragMode_ == DragMode::None;
+	}
+	if (!ImGui::IsMouseReleased(ImGuiMouseButton_Left)) { return; }
+	if (!std::exchange(isSelectPressed_, false)) { return; }
+
+	// 押してから動かしていたら、クリックではない
+	const auto threshold = io.MouseDragThreshold;
+	if (io.MouseDragMaxDistanceSqr[ImGuiMouseButton_Left] >= threshold * threshold || !isHovered) { return; }
+
+	const auto mouse = ImGui::GetMousePos();
+	Selection::SetActiveGameObject(PickGameObject({mouse.x, mouse.y}, imageMin, imageSize));
+}
+
+
+GameObject *ou::SceneView::PickGameObject(const Vector2 &mouse, const Vector2 &imageMin, const Vector2 &imageSize) const {
+	// アイコンは物より手前に描くので、先に見る
+	if (const auto id = GizmoRenderer::PickIcon(mouse.x, mouse.y); id != 0) {
+		auto *gameObject = dynamic_cast<GameObject *>(Object::FindObjectFromInstanceId(id));
+		if (gameObject && !gameObject->IsDestroyed()) { return gameObject; }
+	}
+
+	auto *scene = SceneManager::GetActiveScene();
+	if (!scene) { return nullptr; }
+
+	const auto origin = MakePosition();
+	const auto direction = MakeRayDirection(mouse, imageMin, imageSize);
+
+	auto nearestDistance = std::numeric_limits<float>::infinity();
+	GameObject *nearest = nullptr;
+	for (auto *root : scene->GetRootGameObjects()) {
+		PickMesh(root, origin, direction, nearestDistance, nearest);
+	}
+	return nearest;
 }

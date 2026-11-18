@@ -48,6 +48,7 @@ bool ou::GizmoRenderer::IsEnabled() {
 
 void ou::GizmoRenderer::Collect(Scene *scene) {
 	Gizmos::Clear();
+	sDrawnIcons_.clear();
 	if (!sIsEnabled_ || !scene) { return; }
 
 	const auto *selected = Selection::GetActiveGameObject();
@@ -58,6 +59,7 @@ void ou::GizmoRenderer::Collect(Scene *scene) {
 
 
 void ou::GizmoRenderer::DrawIcons(const Camera::PerCamera &camera, const Rect &sceneRect, ImDrawList *drawList) {
+	sDrawnIcons_.clear();
 	if (!sIsEnabled_ || Gizmos::sIcons_.empty()) { return; }
 
 	struct Item {
@@ -66,6 +68,7 @@ void ou::GizmoRenderer::DrawIcons(const Camera::PerCamera &camera, const Rect &s
 		ImVec2 max;
 		Texture *texture;
 		ImU32 color;
+		uint32_t gameObjectId;
 	};
 	std::vector<Item> items;
 
@@ -88,7 +91,7 @@ void ou::GizmoRenderer::DrawIcons(const Camera::PerCamera &camera, const Rect &s
 		const auto half = size * 0.5f;
 
 		const ImVec4 tint{icon.tint.r, icon.tint.g, icon.tint.b, icon.tint.a};
-		items.push_back(Item{w, {screenX - half, screenY - half}, {screenX + half, screenY + half}, texture, ImGui::GetColorU32(tint)});
+		items.push_back(Item{w, {screenX - half, screenY - half}, {screenX + half, screenY + half}, texture, ImGui::GetColorU32(tint), icon.gameObjectId});
 	}
 
 	// 遠いものから描き、近いものを上に重ねる
@@ -97,8 +100,20 @@ void ou::GizmoRenderer::DrawIcons(const Camera::PerCamera &camera, const Rect &s
 	drawList->PushClipRect({sceneRect.x, sceneRect.y}, {sceneRect.x + sceneRect.width, sceneRect.y + sceneRect.height}, true);
 	for (const auto &item : items) {
 		drawList->AddImage(ToTextureId(item.texture->GetGraphicsTexture()), item.min, item.max, {0.0f, 0.0f}, {1.0f, 1.0f}, item.color);
+		sDrawnIcons_.push_back(DrawnIcon{item.depth, Rect::MinMaxRect(item.min.x, item.min.y, item.max.x, item.max.y), item.gameObjectId});
 	}
 	drawList->PopClipRect();
+}
+
+
+uint32_t ou::GizmoRenderer::PickIcon(float x, float y) {
+	const DrawnIcon *nearest = nullptr;
+	for (const auto &icon : sDrawnIcons_) {
+		const auto &r = icon.rect;
+		const auto isInside = x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
+		if (isInside && icon.gameObjectId != 0 && (!nearest || icon.depth < nearest->depth)) { nearest = &icon; }
+	}
+	return nearest ? nearest->gameObjectId : 0;
 }
 
 
