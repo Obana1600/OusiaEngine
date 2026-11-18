@@ -51,7 +51,10 @@ private: // メンバ変数
 	std::string renamingExtension_;
 	bool focusesRename_ = false;
 	int renameInactiveFrames_ = 0;
+	// 左のフォルダツリーで変えているか（右の一覧と同じフォルダが両方に出るため）
+	bool isRenamingInTree_ = false;
 	SlowClick<std::string> slowClick_;
+	SlowClick<std::string> treeSlowClick_;
 
 
 private: // メンバ関数
@@ -73,12 +76,25 @@ private: // メンバ関数
 
 	// Unity と同じく、その場で名前の欄にする（ファイルは .meta も一緒に名前を変えるので、参照は切れない）
 	bool CanRename(const std::string &assetPath) const;
-	void BeginRename(const std::string &assetPath);
+	void BeginRename(const std::string &assetPath, bool inTree = false);
 	// 行を名前の欄にして描く（行の代わりに呼ぶ）
 	void DrawRenameRow(const std::string &assetPath);
+	// 直前の行の上に名前の欄を重ねる（labelX は名前を出す位置）
+	void DrawRenameField(const std::string &assetPath, float labelX);
 	// 今の名前で変えられないなら、その理由
 	std::string FindRenameProblem() const;
 	void EndRename(bool commits);
+
+	// フォルダツリーの行の右クリック
+	void DrawFolderTreeMenu(const std::string &assetPath);
+
+	// ドラッグで、ファイルとフォルダを folder の中へ動かす（同じ名前のものがあれば、動かさずにエラー）
+	bool CanMove(const std::string &source, const std::string &folder) const;
+	// folder の行を、動かす先・プレハブを作る先として受ける（BeginDragDropTarget の中で呼ぶ）
+	void AcceptDropOnFolder(const std::string &folder);
+	void MoveAssetInto(const std::string &source, const std::string &folder);
+	// 動かした・名前を変えたあとに、開いているシーン・選んでいるもの・開いているフォルダを新しいパスにする
+	void AfterAssetMoved(const std::string &oldPath, const std::string &newPath);
 
 	// Unity と同じく、確かめてから消す（ファイルと .meta を Windows のごみ箱へ移す）
 	void BeginDelete(const std::string &assetPath);
