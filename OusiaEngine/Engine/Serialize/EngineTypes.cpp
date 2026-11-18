@@ -15,6 +15,7 @@
 #include "Render/MeshRenderer.h"
 #include "Render/SkinnedMeshRenderer.h"
 #include "Scene/Transform.h"
+#include "Script/MonoBehavior.h"
 #include "Serialize/TypeRegistry.h"
 #include "UI/Button.h"
 #include "UI/Canvas.h"
@@ -60,4 +61,6 @@ void ou::RegisterEngineTypes() {
 	TypeRegistry::Register<ParticleSystem>("ParticleSystem");
 	TypeRegistry::Register<ParticleSystemRenderer>("ParticleSystemRenderer");
 	TypeRegistry::Register<LineRenderer>("LineRenderer");
+
+	TypeRegistry::Register<MonoBehavior>("MonoBehavior");
 }

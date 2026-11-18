@@ -6,7 +6,6 @@
 #include "Graphics/GraphicsTypes.h"
 
 #include <d3d12.h>
-#include <deque>
 #include <dxgi1_6.h>
 #include <memory>
 #include <mutex>
@@ -36,6 +35,7 @@ public: // メンバ関数
 	void SetName(GpuResource *resource, std::string_view name) const override;
 
 	int GetDescriptorIndex(const GpuResource *resource, ViewType type, int subresource = -1) const override;
+
 
 	// ----- フレーム -----
 
@@ -67,6 +67,7 @@ public: // メンバ関数
 	void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) override;
 
 	void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) override;
+
 
 	// ----- ネイティブ -----
 

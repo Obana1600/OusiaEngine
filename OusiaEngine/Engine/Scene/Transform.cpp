@@ -258,23 +258,29 @@ void ou::Transform::Serialize(Serializer &serializer) {
 	serializer.RotationField("localRotation", localRotation_, "localEulerAnglesHint", localEulerAnglesHint_);
 	serializer.Field("localScale", localScale_);
 
-	auto *parent = parent_;
-	serializer.Reference("parent", parent);
+	// 親は子の一覧と一緒に付け替えるので、今の親を写してから運び、AwakeFromLoad でつなぐ
+	serializedParent_ = parent_;
+	serializer.Reference("parent", serializedParent_);
+}
 
-	if (serializer.IsReading()) {
-		constexpr float kHintTolerance = 1e-3f;
-		if (Quaternion::Angle(Quaternion::Euler(localEulerAnglesHint_), localRotation_) > kHintTolerance) {
-			localEulerAnglesHint_ = localRotation_.EulerAngles();
-		}
 
-		MarkDirty();
+void ou::Transform::AwakeFromLoad() {
+	Component::AwakeFromLoad();
 
-		if (parent == this || (parent && parent->IsDescendantOf(this))) {
-			Log::Warning("親子関係が循環するため、親を参照できません: {}", GetGameObject()->GetName());
-			parent = nullptr;
-		}
-		SetParent(parent);
+	// ヒントが回転と合わなければ、回転から作り直す
+	constexpr float kHintTolerance = 1e-3f;
+	if (Quaternion::Angle(Quaternion::Euler(localEulerAnglesHint_), localRotation_) > kHintTolerance) {
+		localEulerAnglesHint_ = localRotation_.EulerAngles();
 	}
+
+	MarkDirty();
+
+	auto *parent = serializedParent_;
+	if (parent == this || (parent && parent->IsDescendantOf(this))) {
+		Log::Warning("親子関係が循環するため、親を参照できません: {}", GetGameObject()->GetName());
+		parent = nullptr;
+	}
+	SetParent(parent);
 }
 
 

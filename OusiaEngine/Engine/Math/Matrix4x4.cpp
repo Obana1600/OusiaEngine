@@ -113,7 +113,7 @@ float ou::Matrix4x4::Determinant() const {
 Matrix4x4 ou::Matrix4x4::Inverse() const {
 	const MinorTerms t(m);
 	const auto det = t.Determinant();
-	ASSERT(Mathf::Abs(det) > Mathf::Epsilon, "逆行列が存在しない行列です"); // TODO: 行列を出力するようにしたい
+	if (Mathf::Abs(det) < Mathf::Epsilon) { return Matrix4x4::Identity; }
 
 	Matrix4x4 result = {
 		+m[1][1] * t.c5 - m[1][2] * t.c4 + m[1][3] * t.c3,

@@ -1,0 +1,14 @@
+{
+	"scenes": [
+		{
+			"enabled": true,
+			"guid": "48c4515e8ed37d535c1bb75389b645c4",
+			"path": "Assets/Scenes/あいうえお.scene"
+		},
+		{
+			"enabled": true,
+			"guid": "f4501f0e1bba851abf3c7e3169a1d13a",
+			"path": "Assets/Scenes/まみむめも.scene"
+		}
+	]
+}

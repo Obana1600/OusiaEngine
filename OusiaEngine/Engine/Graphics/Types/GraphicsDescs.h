@@ -8,7 +8,6 @@
 #include <cstdint>
 
 
-// グラフィクスの設定
 namespace ou::Graphics {
 
 // 前方宣言

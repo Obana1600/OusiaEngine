@@ -1,13 +1,16 @@
 #include "SceneManager.h"
+#include "Core/JsonFile.h"
 #include "Animation/Skeletal/SkeletalAnimator.h"
 #include "Animation/Tween/TweenManager.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/Application.h"
+#include "Core/Guid.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Physics/Physics.h"
+#include "Platform/Paths.h"
 #include "Render/Camera.h"
 #include "Render/Light.h"
 #include "Render/Renderer.h"
@@ -26,25 +29,14 @@
 using namespace ou;
 
 
-void ou::SceneManager::AddScene(std::string_view scenePath) {
-	const auto name = WideToUtf8(std::filesystem::path(Utf8ToWide(scenePath)).stem().wstring());
+namespace {
 
-	sBuildScenes_.push_back(
-		{name, std::string(scenePath), [path = std::string(scenePath)](Scene &scene) {
-			 const auto fullPath = AssetDatabase::AssetPathToFullPath(path);
-			 if (!fullPath) {
-				 Log::Error("シーンのパスは Assets/ か EngineAssets/ で始めてください: {}", path);
-				 return;
-			 }
-
-			 SceneSerializer::Load(scene, *fullPath);
-		 }});
+std::string MakeSceneName(std::string_view scenePath) {
+	return WideToUtf8(std::filesystem::path(Utf8ToWide(scenePath)).stem().wstring());
 }
 
+} // namespace
 
-void ou::SceneManager::AddScene(std::string_view name, SceneBuilder builder) {
-	sBuildScenes_.push_back({std::string(name), {}, std::move(builder)});
-}
 
 
 int32_t ou::SceneManager::GetSceneCountInBuildSettings() {
@@ -148,6 +140,41 @@ void ou::SceneManager::RegisterSkeletalAnimator(SkeletalAnimator *animator) {
 
 void ou::SceneManager::UnregisterSkeletalAnimator(SkeletalAnimator *animator) {
 	std::erase(sSkeletalAnimators_, animator);
+}
+
+
+void ou::SceneManager::LoadBuildSettings() {
+	sBuildScenes_.clear();
+
+	const auto folder = FindProjectSettingsFolder();
+	if (!folder) { return; }
+	const auto path = *folder / L"EditorBuildSettings.json";
+	if (!std::filesystem::exists(path)) { return; }
+
+	const auto json = JsonFile::Load(path);
+	if (!json) { return; }
+
+	try {
+		const auto it = json->find("scenes");
+		if (it == json->end() || !it->is_array()) { return; }
+
+		for (const auto &entry : *it) {
+			if (!entry.value("enabled", true)) { continue; }
+
+			// guid を先に見る
+			auto scenePath = entry.value("path", std::string{});
+			if (const auto guid = Guid::Parse(entry.value("guid", std::string{}))) {
+				if (auto found = AssetDatabase::GuidToAssetPath(*guid); !found.empty()) {
+					scenePath = std::move(found);
+				}
+			}
+			if (scenePath.empty()) { continue; }
+
+			sBuildScenes_.push_back({MakeSceneName(scenePath), scenePath});
+		}
+	} catch (const Json::exception &e) {
+		Log::Error("EditorBuildSettings.json の読み込みに失敗しました: {}\n{}", ToUtf8(path), e.what());
+	}
 }
 
 
@@ -283,7 +310,12 @@ void ou::SceneManager::LoadPendingScene() {
 	const auto &buildScene = sBuildScenes_[buildIndex];
 	sActiveScene_ = std::make_unique<Scene>(buildScene.name, buildIndex);
 	sActiveScene_->path_ = buildScene.path;
-	buildScene.builder(*sActiveScene_);
+
+	if (const auto fullPath = AssetDatabase::AssetPathToFullPath(buildScene.path)) {
+		SceneSerializer::Load(*sActiveScene_, *fullPath);
+	} else {
+		Log::Error("シーンのパスは Assets/ か EngineAssets/ で始めてください: {}", buildScene.path);
+	}
 
 	activeSceneChanged_.Invoke(nullptr, sActiveScene_.get());
 	sceneLoaded_.Invoke(sActiveScene_.get());
@@ -313,7 +345,7 @@ void ou::SceneManager::MoveHierarchy(GameObject *gameObject, Scene *scene) {
 }
 
 
-void ou::SceneManager::ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const nlohmann::ordered_json &json) {
+void ou::SceneManager::ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const Json &json) {
 	sPendingBuildIndex_ = -1;
 
 	if (sDontDestroyOnLoadScene_) {

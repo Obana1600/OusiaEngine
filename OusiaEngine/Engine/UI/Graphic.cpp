@@ -92,10 +92,12 @@ void ou::Graphic::Serialize(Serializer &serializer) {
 	serializer.Asset("material", material_);
 	serializer.Field("color", color_);
 	serializer.Field("raycastTarget", raycastTarget_);
+}
 
-	if (serializer.IsReading()) {
-		SetAllDirty();
-	}
+
+void ou::Graphic::AwakeFromLoad() {
+	Behavior::AwakeFromLoad();
+	SetAllDirty();
 }
 
 

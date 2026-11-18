@@ -68,12 +68,24 @@ std::unique_ptr<Window> Window::Create(const WindowDesc &desc) {
 		w.get());
 
 	if (!w->hwnd_) {
-		Log::Error("HWND が作成されませんでした。");
+		Log::Error("HWND の作成に失敗しました");
 		return nullptr;
 	}
 
+	if (desc.windowedRect) {
+		WINDOWPLACEMENT placement{.length = sizeof(WINDOWPLACEMENT)};
+		GetWindowPlacement(w->hwnd_, &placement);
+		placement.showCmd = SW_HIDE;
+		placement.rcNormalPosition = *desc.windowedRect;
+
+		// モニタを外したなどで、どの画面にも入らないときは OS に任せる
+		if (MonitorFromRect(&*desc.windowedRect, MONITOR_DEFAULTTONULL)) {
+			SetWindowPlacement(w->hwnd_, &placement);
+		}
+	}
+
 	// ウィンドウの表示
-	ShowWindow(w->hwnd_, SW_SHOW);
+	w->SetFullScreenMode(desc.fullScreenMode);
 
 	return w;
 }
@@ -116,6 +128,57 @@ void Window::RemoveMessageHandler(MessageHandlerId id) {
 }
 
 
+void ou::Window::SetFullScreenMode(FullScreenMode mode) {
+	// TODO: 排他的フルスクリーンの対応
+	if (mode == FullScreenMode::ExclusiveFullScreen) {
+		mode = FullScreenMode::FullScreenWindow;
+	}
+
+	if (mode == FullScreenMode::FullScreenWindow) {
+		if (isFullScreen_) { return; }
+
+		// 戻すときのために、今の位置と状態を覚える
+		GetWindowPlacement(hwnd_, &windowedPlacement_);
+
+		// 枠をなくして、ウィンドウがあるモニタ全体に広げる
+		MONITORINFO monitor{.cbSize = sizeof(MONITORINFO)};
+		GetMonitorInfoW(MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST), &monitor);
+		const auto &rect = monitor.rcMonitor;
+
+		SetWindowLongPtrW(hwnd_, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+		SetWindowPos(
+			hwnd_, HWND_TOP,
+			rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+			SWP_FRAMECHANGED | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+
+		isFullScreen_ = true;
+		return;
+	}
+
+	// 全画面から戻すときは、枠と前の位置を戻す
+	if (isFullScreen_) {
+		SetWindowLongPtrW(hwnd_, GWL_STYLE, kStyle);
+		windowedPlacement_.showCmd = SW_HIDE;
+		SetWindowPlacement(hwnd_, &windowedPlacement_);
+		SetWindowPos(hwnd_, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+		isFullScreen_ = false;
+	}
+
+	ShowWindow(hwnd_, mode == FullScreenMode::MaximizedWindow ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+}
+
+
+FullScreenMode ou::Window::GetFullScreenMode() const {
+	if (isFullScreen_) { return FullScreenMode::FullScreenWindow; }
+	return IsZoomed(hwnd_) ? FullScreenMode::MaximizedWindow : FullScreenMode::Windowed;
+}
+
+
+void Window::CancelClose() {
+	closeRequested_ = false;
+}
+
+
 HWND Window::Hwnd() const {
 	return hwnd_;
 }
@@ -128,6 +191,15 @@ uint32_t Window::ClientWidth() const {
 
 uint32_t Window::ClientHeight() const {
 	return clientHeight_;
+}
+
+
+RECT ou::Window::GetWindowedRect() const {
+	if (isFullScreen_) { return windowedPlacement_.rcNormalPosition; }
+
+	WINDOWPLACEMENT placement{.length = sizeof(WINDOWPLACEMENT)};
+	GetWindowPlacement(hwnd_, &placement);
+	return placement.rcNormalPosition;
 }
 
 

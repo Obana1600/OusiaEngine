@@ -134,24 +134,23 @@ void ou::ParticleSystemRenderer::LateUpdate() {
 
 
 void ou::ParticleSystemRenderer::Serialize(Serializer &serializer) {
-	SerializeAssetMaterials(serializer);
+	Renderer::Serialize(serializer);
 
-	auto blendMode = blendMode_;
-	serializer.Enum("blendMode", blendMode);
+	serializer.Enum("blendMode", blendMode_);
 	serializer.Enum("sortMode", sortMode_);
+}
 
-	if (!serializer.IsReading()) { return; }
 
-	if (blendMode == BlendMode::Count) {
+void ou::ParticleSystemRenderer::AwakeFromLoad() {
+	Renderer::AwakeFromLoad();
+
+	if (blendMode_ == BlendMode::Count) {
 		Log::Warning("blendMode に Count は使えません");
-		blendMode = blendMode_;
+		blendMode_ = BlendMode::Additive;
 	}
 
-	if (GetSharedMaterial()) {
-		SetBlendMode(blendMode);
-	} else {
-		blendMode_ = blendMode;
-	}
+	// マテリアルが変わっていることもあるので、毎回マテリアルに入れ直す
+	if (GetSharedMaterial()) { SetBlendMode(blendMode_); }
 }
 
 

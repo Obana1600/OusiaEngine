@@ -1,4 +1,5 @@
 #include "ShaderImporter.h"
+#include "Core/JsonFile.h"
 #include "Asset/AssetDatabase.h"
 #include "Asset/Format/AssetJson.h"
 #include "Core/StringUtil.h"
@@ -11,10 +12,7 @@
 #include <string_view>
 #include <utility>
 
-#include <nlohmann/json.hpp>
-
 using namespace ou;
-using ou::AssetJson::Json;
 
 
 namespace {
@@ -56,7 +54,7 @@ Graphics::Shader ImportStage(
 	const auto it = pass.find(key);
 	if (it == pass.end()) {
 		if (required) {
-			throw AssetJson::FormatError(std::format("Pass に \"{}\" がありません", key));
+			throw JsonFile::FormatError(std::format("Pass に \"{}\" がありません", key));
 		}
 		return {};
 	}
@@ -65,12 +63,12 @@ Graphics::Shader ImportStage(
 	const auto fileName = it->get<std::string>();
 	const auto module = AssetDatabase::LoadAssetAtPath<ShaderModule>(importer.ResolveAssetPath(fileName));
 	if (!module) {
-		throw AssetJson::FormatError(std::format("\"{}\" の HLSL をコンパイルできませんでした: {}", key, fileName));
+		throw JsonFile::FormatError(std::format("\"{}\" の HLSL をコンパイルできませんでした: {}", key, fileName));
 	}
 
 	// キーと同じステージか調べる
 	if (module->GetStage() != stage) {
-		throw AssetJson::FormatError(std::format("\"{}\" に書けるのは、このステージの HLSL だけです: {}", key, fileName));
+		throw JsonFile::FormatError(std::format("\"{}\" に書けるのは、このステージの HLSL だけです: {}", key, fileName));
 	}
 
 	return module->GetGraphicsShader();
@@ -112,19 +110,19 @@ Shader::PropertyType ToPropertyType(const std::string &name) {
 	if (name == "Color") { return Shader::PropertyType::Color; }
 	if (name == "Vector") { return Shader::PropertyType::Vector; }
 	if (name == "Float") { return Shader::PropertyType::Float; }
-	throw AssetJson::FormatError(std::format("\"type\" に \"{}\" は使えません (使えるもの: Color, Vector, Float)", name));
+	throw JsonFile::FormatError(std::format("\"type\" に \"{}\" は使えません (使えるもの: Color, Vector, Float)", name));
 }
 
 Vector4 ToDefaultValue(const Json &value, Shader::PropertyType type) {
 	if (type == Shader::PropertyType::Float) {
 		if (!value.is_number()) {
-			throw AssetJson::FormatError("\"Float\" の \"default\" は数で書いてください");
+			throw JsonFile::FormatError("\"Float\" の \"default\" は数で書いてください");
 		}
 		return {value.get<float>(), 0.0f, 0.0f, 0.0f};
 	}
 
 	if (!value.is_array() || value.size() != 4) {
-		throw AssetJson::FormatError("\"Color\" と \"Vector\" の \"default\" は [x, y, z, w] と書いてください");
+		throw JsonFile::FormatError("\"Color\" と \"Vector\" の \"default\" は [x, y, z, w] と書いてください");
 	}
 	return {value[0].get<float>(), value[1].get<float>(), value[2].get<float>(), value[3].get<float>()};
 }
@@ -156,11 +154,11 @@ std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
 	const auto &path = GetFullPath();
 	const auto pathUtf8 = ToUtf8(path);
 
-	const auto json = AssetJson::Load(path);
+	const auto json = JsonFile::Load(path);
 	if (!json) { return nullptr; }
 
 	try {
-		AssetJson::WarnUnknownKeys(*json, kShaderKeys, pathUtf8);
+		JsonFile::WarnUnknownKeys(*json, kShaderKeys, pathUtf8);
 
 		// Render Queue
 		auto renderQueue = Shader::RenderQueue::Geometry;
@@ -171,15 +169,15 @@ std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
 		// Pass
 		const auto &passesJson = json->at("passes");
 		if (!passesJson.is_array() || passesJson.empty()) {
-			throw AssetJson::FormatError("\"passes\" には Pass を 1 つ以上、配列で書いてください");
+			throw JsonFile::FormatError("\"passes\" には Pass を 1 つ以上、配列で書いてください");
 		}
 
 		std::vector<Shader::Pass> passes;
 		for (const auto &passJson : passesJson) {
 			if (!passJson.is_object()) {
-				throw AssetJson::FormatError("\"passes\" の中身は {...} と書いてください");
+				throw JsonFile::FormatError("\"passes\" の中身は {...} と書いてください");
 			}
-			AssetJson::WarnUnknownKeys(passJson, kPassKeys, pathUtf8);
+			JsonFile::WarnUnknownKeys(passJson, kPassKeys, pathUtf8);
 			passes.push_back(ParsePass(*this, passJson));
 		}
 
@@ -187,14 +185,14 @@ std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
 		std::vector<Shader::Property> properties;
 		if (const auto it = json->find("properties"); it != json->end()) {
 			if (!it->is_array()) {
-				throw AssetJson::FormatError("\"properties\" は配列で書いてください");
+				throw JsonFile::FormatError("\"properties\" は配列で書いてください");
 			}
 
 			for (const auto &propertyJson : *it) {
 				if (!propertyJson.is_object()) {
-					throw AssetJson::FormatError("\"properties\" の中身は {...} と書いてください");
+					throw JsonFile::FormatError("\"properties\" の中身は {...} と書いてください");
 				}
-				AssetJson::WarnUnknownKeys(propertyJson, kPropertyKeys, pathUtf8);
+				JsonFile::WarnUnknownKeys(propertyJson, kPropertyKeys, pathUtf8);
 				properties.push_back(ParseProperty(propertyJson));
 			}
 		}

@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Scene/Component.h"
-#include "Scene/Scene.h"
 
 
 namespace ou {
 
-void BuildGameScene(Scene &scene);
+// ゲームの Component を TypeRegistry に登録する（.scene を読む前に呼ぶ）
+void RegisterGameTypes();
 
 // 確認用。数フレーム後に終了する
 class QuitAfterFrames final: public Component {

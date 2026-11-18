@@ -118,6 +118,11 @@ public: // メンバ関数
 	Vector3 GetWorldCenterOfMass() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // メンバ変数
 
 	float mass_ = 1.0f;

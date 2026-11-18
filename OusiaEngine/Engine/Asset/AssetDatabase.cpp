@@ -1,10 +1,11 @@
 #include "AssetDatabase.h"
+#include "Core/JsonFile.h"
 #include "Asset/AssetImporter.h"
-#include "Asset/Format/AssetJson.h"
 #include "Asset/Importer/AudioImporter.h"
 #include "Asset/Importer/FontImporter.h"
 #include "Asset/Importer/MaterialImporter.h"
 #include "Asset/Importer/ModelImporter.h"
+#include "Asset/Importer/MonoScriptImporter.h"
 #include "Asset/Importer/PhysicsMaterialImporter.h"
 #include "Asset/Importer/ShaderImporter.h"
 #include "Asset/Importer/ShaderModuleImporter.h"
@@ -16,7 +17,6 @@
 #include <algorithm>
 #include <cwctype>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <optional>
 #include <string>
@@ -94,6 +94,7 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, cons
 		{L".ttf", &MakeImporter<FontImporter>},
 		{L".otf", &MakeImporter<FontImporter>},
 		{L".physicsmaterial", &MakeImporter<PhysicsMaterialImporter>},
+		{L".as", &MakeImporter<MonoScriptImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる
@@ -170,7 +171,7 @@ bool IsHidden(const std::filesystem::path &path) {
 }
 
 // json から GUID を読む
-Guid ReadGuid(const AssetJson::Json &meta) {
+Guid ReadGuid(const Json &meta) {
 	const auto it = meta.find("guid");
 	if (it == meta.end() || !it->is_string()) { return Guid::Invalid; }
 
@@ -178,14 +179,9 @@ Guid ReadGuid(const AssetJson::Json &meta) {
 }
 
 // GUID を入れて .meta を書く
-bool WriteMeta(const std::filesystem::path &metaPath, AssetJson::Json meta, const Guid &guid) {
+bool WriteMeta(const std::filesystem::path &metaPath, Json meta, const Guid &guid) {
 	meta["guid"] = guid.ToString();
-
-	std::ofstream file(metaPath, std::ios::binary);
-	if (!file) { return false; }
-
-	file << meta.dump(1, '\t') << '\n';
-	return file.good();
+	return JsonFile::Save(metaPath, meta);
 }
 
 // folder の下のファイルを table に足す
@@ -217,10 +213,10 @@ void ScanFolder(std::string_view root, const std::filesystem::path &folder, Guid
 		auto metaPath = fullPath;
 		metaPath += L".meta";
 
-		auto meta = AssetJson::Json::object();
+		auto meta = Json::object();
 		auto guid = Guid::Invalid;
 		if (std::filesystem::exists(metaPath, ec)) {
-			if (auto loaded = AssetJson::Load(metaPath); loaded && loaded->is_object()) {
+			if (auto loaded = JsonFile::Load(metaPath); loaded && loaded->is_object()) {
 				meta = std::move(*loaded);
 				guid = ReadGuid(meta);
 			}
@@ -330,6 +326,8 @@ bool MatchesAssetType(const std::filesystem::path &path, std::string_view typeNa
 		{".glb", "gameobject"},
 		{".obj", "model"},
 		{".obj", "gameobject"},
+		{".as", "monoscript"},
+		{".as", "script"},
 	};
 
 	const auto extension = ToLowerAscii(ToUtf8(path.extension()));
@@ -369,7 +367,7 @@ void ou::AssetDatabase::ImportAsset(std::string_view assetPath) {
 	auto *entry = FindOrCreateEntry(key);
 	if (!entry) { return; }
 
-		auto asset = ImportEntry(key, *entry);
+	auto asset = ImportEntry(key, *entry);
 	if (!asset) { return; }
 	entry->asset = std::move(asset);
 }

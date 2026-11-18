@@ -50,6 +50,11 @@ public: // メンバ関数
 	int GetLayer() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // メンバ変数
 
 	std::vector<std::unique_ptr<Component>> components_;

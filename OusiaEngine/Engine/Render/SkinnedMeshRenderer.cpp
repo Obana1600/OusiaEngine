@@ -16,27 +16,23 @@ void ou::SkinnedMeshRenderer::Serialize(Serializer &serializer) {
 	Renderer::Serialize(serializer);
 
 	serializer.Asset("mesh", mesh_);
-
-	auto *boneRoot = boneRoot_;
-	auto bonePaths = bonePaths_;
-	serializer.Reference("boneRoot", boneRoot);
-	serializer.Array("bonePaths", bonePaths, [&](std::string &path) {
+	serializer.Reference("boneRoot", boneRoot_);
+	serializer.Array("bonePaths", bonePaths_, [&](std::string &path) {
 		serializer.Field("", path);
 	});
+}
 
-	if (!serializer.IsReading()) { return; }
 
-	if (!boneRoot) {
-		boneRoot_ = nullptr;
-		boneGeneration_ = kStaleBoneGeneration;
-		return;
-	}
+void ou::SkinnedMeshRenderer::AwakeFromLoad() {
+	Renderer::AwakeFromLoad();
 
-	if (!bonePaths.empty()) {
-		SetBones(boneRoot, std::move(bonePaths));
+	// 骨は次に描くときに探し直す
+	boneGeneration_ = kStaleBoneGeneration;
+	if (!boneRoot_ || bonePaths_.empty()) { return; }
 
-		boneGeneration_ = kStaleBoneGeneration;
-	}
+	// 骨の行列とバッファを、読んだ骨の数で作り直す
+	SetBones(boneRoot_, bonePaths_);
+	boneGeneration_ = kStaleBoneGeneration;
 }
 
 

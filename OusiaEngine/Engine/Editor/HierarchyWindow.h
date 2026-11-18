@@ -20,13 +20,18 @@ protected: // メンバ関数
 	void OnGui() override;
 
 
+private: // メンバ変数
+
+	// 行の矢印を押したか（矢印で開いたときは選ばない）
+	bool isPressedOnArrow_ = false;
+
+
 private: // メンバ関数
 
 	void DrawGameObject(GameObject *gameObject);
 	void DrawContextMenu(GameObject *gameObject);
 	void DrawBackground(Scene *scene);
 
-	void CreateEmpty(Scene *scene, GameObject *parent);
 	void Delete(GameObject *gameObject);
 
 	void AcceptDropOnRow(GameObject *target);

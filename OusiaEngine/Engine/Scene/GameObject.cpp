@@ -31,15 +31,19 @@ ou::GameObject::~GameObject() {
 
 
 void ou::GameObject::Serialize(Serializer &serializer) {
-	auto name = GetName();
-	serializer.Field("name", name);
-	if (serializer.IsReading()) { SetName(name); }
-
+	serializer.Field("name", name_);
 	serializer.Field("active", isActiveSelf_);
+	serializer.Field("layer", layer_);
+}
 
-	auto layer = layer_;
-	serializer.Field("layer", layer);
-	if (serializer.IsReading()) { SetLayer(layer); }
+
+void ou::GameObject::AwakeFromLoad() {
+	Object::AwakeFromLoad();
+
+	if (layer_ < 0 || layer_ >= LayerMask::kLayerCount) {
+		Log::Error("レイヤーは 0~31 で指定してください: {} ({})", layer_, GetName());
+		layer_ = 0;
+	}
 }
 
 

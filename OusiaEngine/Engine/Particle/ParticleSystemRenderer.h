@@ -74,6 +74,11 @@ public: // メンバ関数
 	SortMode GetSortMode() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // 静的メンバ変数
 
 	static inline std::shared_ptr<Shader> sShader_;

@@ -57,21 +57,23 @@ void ou::SkeletalAnimator::OnDestroy() {
 void ou::SkeletalAnimator::Serialize(Serializer &serializer) {
 	Behavior::Serialize(serializer);
 
-	auto clip = clip_;
-	serializer.Asset("clip", clip);
+	// clip は付け替えると止めるので、speed は再生位置の側にあるので、今の値を写してから運ぶ
+	serializedClip_ = clip_;
+	serializedSpeed_ = GetSpeed();
+
+	serializer.Asset("clip", serializedClip_);
 	serializer.Field("playAutomatically", playAutomatically_);
+	serializer.Enum("wrapMode", wrapMode_);
+	serializer.Field("speed", serializedSpeed_);
+}
 
-	auto wrapMode = wrapMode_;
-	serializer.Enum("wrapMode", wrapMode);
 
-	auto speed = GetSpeed();
-	serializer.Field("speed", speed);
+void ou::SkeletalAnimator::AwakeFromLoad() {
+	Behavior::AwakeFromLoad();
 
-	if (serializer.IsReading()) {
-		if (clip != clip_) { SetClip(std::move(clip)); }
-		SetWrapMode(wrapMode);
-		SetSpeed(speed);
-	}
+	if (serializedClip_ != clip_) { SetClip(serializedClip_); }
+	SetWrapMode(wrapMode_);
+	SetSpeed(serializedSpeed_);
 }
 
 

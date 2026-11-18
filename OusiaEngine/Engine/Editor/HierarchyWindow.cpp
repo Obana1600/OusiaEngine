@@ -1,6 +1,7 @@
 #include "HierarchyWindow.h"
 #include "Asset/AssetDatabase.h"
 #include "Editor/EditorPayload.h"
+#include "Editor/GameObjectMenu.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/Selection.h"
 #include "Render/Asset/Model.h"
@@ -19,6 +20,12 @@ using namespace ou;
 
 
 namespace {
+
+// 押してから離すまでに、ImGui がドラッグとみなす距離を超えて動かしたか
+bool WasMouseDragged() {
+	const auto &io = ImGui::GetIO();
+	return io.MouseDragMaxDistanceSqr[ImGuiMouseButton_Left] >= io.MouseDragThreshold * io.MouseDragThreshold;
+}
 
 // target が moving 自身か、その子孫か
 bool IsSelfOrDescendant(const Transform *target, const Transform *moving) {
@@ -117,7 +124,11 @@ void ou::HierarchyWindow::DrawGameObject(GameObject *gameObject) {
 	const auto isOpen = ImGui::TreeNodeEx("##Node", flags, "%s", gameObject->GetName().c_str());
 	if (isInactive) { ImGui::PopStyleColor(); }
 
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGui::IsItemToggledOpen()) {
+	// Unity と同じく、選ぶのはマウスを離したとき（押した瞬間に選ぶと Inspector が切り替わり、参照の欄へ引けない）
+	if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+		isPressedOnArrow_ = ImGui::IsItemToggledOpen();
+	}
+	if (ImGui::IsItemDeactivated() && !isPressedOnArrow_ && !WasMouseDragged()) {
 		Selection::SetActiveGameObject(gameObject);
 	}
 
@@ -151,7 +162,9 @@ void ou::HierarchyWindow::DrawContextMenu(GameObject *gameObject) {
 	if (!ImGui::BeginPopupContextItem()) { return; }
 
 	Selection::SetActiveGameObject(gameObject);
-	if (ImGui::MenuItem("Create Empty Child")) { CreateEmpty(gameObject->GetScene(), gameObject); }
+	// Unity と同じく、行の右クリックで作ると、その子になる
+	GameObjectMenu::DrawItems(gameObject->GetScene(), gameObject);
+	ImGui::Separator();
 	if (ImGui::MenuItem("Delete", "Delete")) { Delete(gameObject); }
 	ImGui::EndPopup();
 }
@@ -170,21 +183,11 @@ void ou::HierarchyWindow::DrawBackground(Scene *scene) {
 		ImGui::EndDragDropTarget();
 	}
 	if (ImGui::BeginPopupContextItem("##BackgroundMenu")) {
-		if (ImGui::MenuItem("Create Empty")) { CreateEmpty(scene, nullptr); }
+		GameObjectMenu::DrawItems(scene, nullptr);
 		ImGui::EndPopup();
 	}
 }
 
-
-void ou::HierarchyWindow::CreateEmpty(Scene *scene, GameObject *parent) {
-	auto *gameObject = scene->CreateGameObject("GameObject");
-	if (parent) {
-		gameObject->GetTransform()->SetParent(parent->GetTransform(), false);
-	}
-
-	Selection::SetActiveGameObject(gameObject);
-	MarkDirty(scene);
-}
 
 
 void ou::HierarchyWindow::Delete(GameObject *gameObject) {

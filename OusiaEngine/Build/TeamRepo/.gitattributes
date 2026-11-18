@@ -1,0 +1,12 @@
+# ビルド済みのエディタはマージしない（更新するのはエンジンの担当の人だけ）
+/Editor/** binary
+
+# 画像・音・フォントもマージしない
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.wav binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.glb binary

@@ -65,6 +65,8 @@ private: // メンバ変数
 
 private: // メンバ関数
 
+	void OpenFirstScene();
+
 	bool Update();
 
 	void Render();

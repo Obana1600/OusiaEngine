@@ -1,18 +1,16 @@
 #pragma once
 
 #include "Core/Event.h"
+#include "Core/JsonFile.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Render/Camera.h"
 #include "Scene/Scene.h"
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <nlohmann/json_fwd.hpp>
 
 
 namespace ou {
@@ -29,10 +27,7 @@ class SceneManager final {
 	friend class Engine;
 	friend class EditorApplication;
 	friend class EditorSceneManager;
-
-public: // エイリアス
-
-	using SceneBuilder = std::function<void(Scene &)>;
+	friend class EditorBuildSettings;
 
 
 public: // 静的メンバ変数
@@ -44,8 +39,6 @@ public: // 静的メンバ変数
 
 public: // 静的メンバ関数
 
-	static void AddScene(std::string_view scenePath);
-	static void AddScene(std::string_view name, SceneBuilder builder);
 	static int32_t GetSceneCountInBuildSettings();
 
 	static void LoadScene(std::string_view name);
@@ -76,7 +69,6 @@ private: // インナークラス
 	struct BuildScene {
 		std::string name;
 		std::string path;
-		SceneBuilder builder;
 	};
 
 
@@ -96,6 +88,8 @@ private: // 静的メンバ変数
 
 private: // 静的メンバ関数
 
+	static void LoadBuildSettings();
+
 	static void Update();
 	static void Finalize();
 
@@ -108,7 +102,7 @@ private: // 静的メンバ関数
 	static Scene *GetDontDestroyOnLoadScene();
 	static void MoveHierarchy(GameObject *gameObject, Scene *scene);
 
-	static void ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const nlohmann::ordered_json &json);
+	static void ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const Json &json);
 	static int32_t FindBuildIndexByPath(std::string_view path);
 };
 

@@ -1,6 +1,7 @@
 #include "GameView.h"
 #include "Editor/EditorFunc.h"
 #include "Editor/ImGuiManager.h"
+#include "Math/Vector2.h"
 
 #include <imgui/imgui.h>
 
@@ -48,14 +49,18 @@ bool ou::GameView::IsImageHovered() const {
 
 
 void ou::GameView::OnGui() {
-	const auto size = ImGui::GetContentRegionAvail();
-	if (size.x < 1.0f || size.y < 1.0f) { return; }
+	const auto available = ImGui::GetContentRegionAvail();
+	if (available.x < 1.0f || available.y < 1.0f) { return; }
 
+	// Player と同じ比で描き、余りは帯にする（Screen.width / height も、この大きさになる）
+	const auto size = FitToPlayerAspect({available.x, available.y});
 	renderTarget_.Resize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
+	CenterNextItem({available.x, available.y}, size);
+
 	const auto origin = ImGui::GetCursorScreenPos();
 	imageOrigin_ = {origin.x, origin.y};
 	hasFocus_ = ImGui::IsWindowFocused();
-	ImGui::Image(::ToTextureId(renderTarget_.GetColor()), size);
+	ImGui::Image(::ToTextureId(renderTarget_.GetColor()), {size.x, size.y});
 	isImageHovered_ = ImGui::IsItemHovered();
 
 	sLastDrawn = this;

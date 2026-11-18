@@ -11,10 +11,19 @@
 
 namespace ou {
 
+enum class FullScreenMode {
+	ExclusiveFullScreen, // フルスクリーン (現在未対応)
+	FullScreenWindow,	 // 疑似フルスクリーン
+	MaximizedWindow,	 // 最大化
+	Windowed,			 // 普通のウィンドウ
+};
+
 struct WindowDesc {
 	std::string title;
 	uint32_t width = 1280;
 	uint32_t height = 720;
+	FullScreenMode fullScreenMode = FullScreenMode::Windowed;
+	std::optional<RECT> windowedRect;
 };
 
 
@@ -39,9 +48,15 @@ public: // メンバ関数
 	MessageHandlerId AddMessageHandler(MessageHandler handler);
 	void RemoveMessageHandler(MessageHandlerId id);
 
+	void SetFullScreenMode(FullScreenMode mode);
+	FullScreenMode GetFullScreenMode() const;
+
+	void CancelClose();
+
 	HWND Hwnd() const;
 	uint32_t ClientWidth() const;
 	uint32_t ClientHeight() const;
+	RECT GetWindowedRect() const;
 	bool IsCloseRequested() const;
 	bool IsMinimized() const;
 
@@ -60,10 +75,12 @@ private: // メンバ変数
 
 	uint32_t clientWidth_ = 0;
 	uint32_t clientHeight_ = 0;
+	WINDOWPLACEMENT windowedPlacement_{.length = sizeof(WINDOWPLACEMENT)};
 
 	std::vector<HandlerEntry> handlers_;
 	MessageHandlerId nextHandlerId_ = 1;
 
+	bool isFullScreen_ = false;
 	bool closeRequested_ = false;
 	bool minimized_ = false;
 	bool resized_ = false;

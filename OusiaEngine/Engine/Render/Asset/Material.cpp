@@ -39,6 +39,7 @@ void ou::Material::StaticFinalize() {
 	sWhiteTexture_ = nullptr;
 }
 
+
 std::shared_ptr<Material> ou::Material::Create(std::shared_ptr<Shader> shader) {
 	auto material = std::make_shared<Material>();
 	material->SetShader(shader ? std::move(shader) : sStandardShader_);

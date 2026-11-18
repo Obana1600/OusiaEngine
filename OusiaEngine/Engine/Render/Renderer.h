@@ -60,7 +60,7 @@ protected: // メンバ関数
 
 	Material *FindMaterialForSubMesh(uint32_t subMeshIndex) const;
 
-	void SerializeAssetMaterials(Serializer &serializer);
+	void AwakeFromLoad() override;
 
 
 private: // メンバ変数
@@ -68,8 +68,13 @@ private: // メンバ変数
 	std::vector<std::shared_ptr<Material>> materials_;
 	std::vector<bool> isInstanced_;
 
+	std::vector<std::shared_ptr<Material>> serializedMaterials_; // 保存する形（複製は None）。読んだものは AwakeFromLoad で付け替える
+
 
 private: // メンバ関数
+
+	// 複製したマテリアルを None にしたもの（複製は保存できない）
+	std::vector<std::shared_ptr<Material>> MakeAssetMaterials() const;
 
 	void InstantiateMaterial(size_t index);
 };

@@ -81,7 +81,7 @@ void ou::LineRenderer::LateUpdate() {
 
 
 void ou::LineRenderer::Serialize(Serializer &serializer) {
-	SerializeAssetMaterials(serializer);
+	Renderer::Serialize(serializer);
 
 	serializer.Array("positions", positions_, [&](Vector3 &position) {
 		serializer.Field("", position);

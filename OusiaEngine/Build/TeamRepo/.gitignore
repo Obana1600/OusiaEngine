@@ -1,0 +1,7 @@
+# OusiaEngine のエディタが人ごとに作るもの
+/UserSettings/
+/as.predefined
+/Editor/Logs/
+
+# 書き出した exe（File > Build Settings > Build... の場所をここにしたとき）
+/Builds/

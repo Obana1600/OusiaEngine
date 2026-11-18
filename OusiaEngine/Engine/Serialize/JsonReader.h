@@ -1,12 +1,11 @@
 #pragma once
 
+#include "Core/JsonFile.h"
 #include "Serialize/Serializer.h"
 
 #include <cstddef>
 #include <unordered_map>
 #include <vector>
-
-#include <nlohmann/json_fwd.hpp>
 
 
 namespace ou {
@@ -14,7 +13,7 @@ namespace ou {
 class JsonReader final: public Serializer {
 public: // メンバ関数
 
-	JsonReader(const nlohmann::ordered_json &source, const std::unordered_map<uint64_t, Object *> &objectsById);
+	JsonReader(const Json &source, const std::unordered_map<uint64_t, Object *> &objectsById);
 
 	bool IsReading() const override;
 
@@ -35,11 +34,13 @@ public: // メンバ関数
 	bool BeginArray(std::string_view name, size_t &count) override;
 	void EndArray() override;
 
+	const Json *FindReadingJson() const override;
+
 
 private: // インナークラス
 
 	struct Frame {
-		const nlohmann::ordered_json *node = nullptr;
+		const Json *node = nullptr;
 		size_t next = 0; // 配列のとき、次に読む要素の番号
 	};
 
@@ -55,7 +56,7 @@ private: // メンバ関数
 	void ObjectReference(std::string_view name, Object *&value, ObjectFilter) override;
 	void AssetObject(std::string_view name, std::shared_ptr<Object> &value, const AssetType &) override;
 
-	const nlohmann::ordered_json *FindValue(std::string_view name);
+	const Json *FindValue(std::string_view name);
 
 	bool ReadFloats(std::string_view name, float *out, size_t count);
 };

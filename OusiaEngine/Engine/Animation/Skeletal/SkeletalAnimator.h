@@ -49,6 +49,11 @@ public: // メンバ関数
 	bool IsPlayAutomatically() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // インナークラス
 
 	struct BoneBinding {
@@ -80,6 +85,10 @@ private: // メンバ変数
 	std::vector<FadeOutBone> fadeOutBones_;
 	float fadeLength_ = 0.0f;
 	float fadeElapsed_ = 0.0f;
+
+	// 読んだ clip と speed（clip は違えば止めて付け替え、speed は再生位置の側に入れる）
+	std::shared_ptr<SkeletalAnimationClip> serializedClip_;
+	float serializedSpeed_ = 1.0f;
 
 
 private: // メンバ関数

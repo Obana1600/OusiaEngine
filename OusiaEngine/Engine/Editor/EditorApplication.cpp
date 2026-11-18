@@ -1,17 +1,22 @@
 #include "EditorApplication.h"
+#include "Asset/AssetDatabase.h"
+#include "Core/JsonFile.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/Selection.h"
+#include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/Transform.h"
+#include "Script/ScriptEngine.h"
 #include "Serialize/SceneSerializer.h"
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <utility>
-
-#include <nlohmann/json.hpp>
 
 using namespace ou;
 
@@ -23,12 +28,28 @@ struct SceneSnapshot {
 	std::string path;
 	int32_t buildIndex = -1;
 	bool isDirty = false;
-	nlohmann::ordered_json json;
+	Json json;
 };
 
 std::optional<SceneSnapshot> &Snapshot() {
 	static std::optional<SceneSnapshot> snapshot;
 	return snapshot;
+}
+
+GameObject *FindGameObjectByFileId(GameObject *gameObject, uint64_t fileId) {
+	if (gameObject->GetFileId() == fileId) { return gameObject; }
+	for (auto *child : gameObject->GetTransform()->GetChildren()) {
+		if (auto *found = FindGameObjectByFileId(child->GetGameObject(), fileId)) { return found; }
+	}
+	return nullptr;
+}
+
+GameObject *FindGameObjectByFileId(Scene &scene, uint64_t fileId) {
+	if (fileId == 0) { return nullptr; }
+	for (auto *root : scene.GetRootGameObjects()) {
+		if (auto *found = FindGameObjectByFileId(root, fileId)) { return found; }
+	}
+	return nullptr;
 }
 
 } // namespace
@@ -83,4 +104,43 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 		}
 		snapshot.reset();
 	}
+}
+
+
+void ou::EditorApplication::ReloadScriptsIfChanged() {
+	if (sIsPlaying_) { return; }
+
+	// 1 秒ごとにフォルダを見る
+	static auto lastCheck = std::chrono::steady_clock::now();
+	const auto now = std::chrono::steady_clock::now();
+	if (now - lastCheck < std::chrono::seconds(1)) { return; }
+	lastCheck = now;
+
+	if (!ScriptEngine::IsOutdated()) { return; }
+
+	AssetDatabase::Refresh();
+
+	auto *scene = SceneManager::GetActiveScene();
+	if (!scene) {
+		ScriptEngine::Compile();
+		return;
+	}
+
+	const auto json = SceneSerializer::ToJson(*scene);
+	const auto name = scene->GetName();
+	const auto path = scene->GetPath();
+	const auto buildIndex = scene->GetBuildIndex();
+	const auto isDirty = scene->IsDirty();
+
+	const auto *selected = Selection::GetActiveGameObject();
+	const auto selectedFileId = selected ? selected->GetFileId() : 0;
+
+	ScriptEngine::Compile();
+	SceneManager::ReplaceActiveScene(name, path, buildIndex, json);
+
+	auto *reloaded = SceneManager::GetActiveScene();
+	if (isDirty) { EditorSceneManager::MarkSceneDirty(reloaded); }
+	Selection::SetActiveGameObject(FindGameObjectByFileId(*reloaded, selectedFileId));
+
+	Log::Info("スクリプトを読み直しました");
 }

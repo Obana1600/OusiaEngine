@@ -7,7 +7,6 @@
 #include <memory>
 
 
-// グラフィクスの実体
 namespace ou::Graphics {
 
 // デバイスが作るすべてのオブジェクトの基底

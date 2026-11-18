@@ -2,6 +2,8 @@
 
 #include "Graphics/Types/GraphicsEnums.h"
 
+#include <cstdint>
+
 #include <d3d12.h>
 #include <dxgiformat.h>
 

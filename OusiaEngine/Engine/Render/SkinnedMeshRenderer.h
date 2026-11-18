@@ -30,6 +30,11 @@ public: // メンバ関数
 	const std::vector<Matrix4x4> &GetBoneMatrices() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // 定数
 
 	static constexpr uint64_t kStaleBoneGeneration = ~0ull;

@@ -24,9 +24,15 @@ bool ou::Behavior::IsActiveAndEnabled() const {
 
 
 void ou::Behavior::Serialize(Serializer &serializer) {
-	auto isEnabled = isEnabled_;
-	serializer.Field("enabled", isEnabled);
-	if (serializer.IsReading()) { SetEnabled(isEnabled); }
+	serializer.Field("enabled", isEnabled_);
+}
+
+
+void ou::Behavior::AwakeFromLoad() {
+	Component::AwakeFromLoad();
+
+	// OnEnable を呼んだかどうか（wasActiveAndEnabled_）と食い違えば、OnEnable / OnDisable を呼ぶ
+	RefreshActiveAndEnabled();
 }
 
 

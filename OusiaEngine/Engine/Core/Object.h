@@ -12,6 +12,11 @@ namespace ou {
 class Serializer;
 
 class Object {
+	friend class GameObject;
+	friend class SceneSerializer;
+	friend class SerializedObject;
+
+
 public: // 静的メンバ関数
 
 	static void Destroy(Object *obj);
@@ -38,6 +43,11 @@ public: // メンバ関数
 
 	void SetName(std::string_view name);
 	const std::string &GetName() const;
+
+
+protected: // メンバ関数
+
+	virtual void AwakeFromLoad() {}
 
 
 private: // 静的メンバ変数

@@ -28,6 +28,11 @@ public: // メンバ関数
 	int GetDirection() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // インナークラス
 
 	struct WorldCapsule {

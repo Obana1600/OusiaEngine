@@ -1,0 +1,677 @@
+// エンジンが書き出したファイル。手で書き換えても、エディタを起動するたびに上書きされます
+enum Space {
+	World = 0,
+	Self = 1
+}
+enum ForceMode {
+	Force = 0,
+	Acceleration = 1,
+	Impulse = 2,
+	VelocityChange = 3
+}
+enum CollisionFlags {
+	None = 0,
+	Sides = 1,
+	Above = 2,
+	Below = 4
+}
+enum KeyCode {
+	None = 0,
+	Backspace = 8,
+	Tab = 9,
+	Return = 13,
+	Pause = 19,
+	CapsLock = 20,
+	Escape = 27,
+	Space = 32,
+	PageUp = 33,
+	PageDown = 34,
+	End = 35,
+	Home = 36,
+	LeftArrow = 37,
+	UpArrow = 38,
+	RightArrow = 39,
+	DownArrow = 40,
+	Insert = 45,
+	Delete = 46,
+	Alpha0 = 48,
+	Alpha1 = 49,
+	Alpha2 = 50,
+	Alpha3 = 51,
+	Alpha4 = 52,
+	Alpha5 = 53,
+	Alpha6 = 54,
+	Alpha7 = 55,
+	Alpha8 = 56,
+	Alpha9 = 57,
+	A = 65,
+	B = 66,
+	C = 67,
+	D = 68,
+	E = 69,
+	F = 70,
+	G = 71,
+	H = 72,
+	I = 73,
+	J = 74,
+	K = 75,
+	L = 76,
+	M = 77,
+	N = 78,
+	O = 79,
+	P = 80,
+	Q = 81,
+	R = 82,
+	S = 83,
+	T = 84,
+	U = 85,
+	V = 86,
+	W = 87,
+	X = 88,
+	Y = 89,
+	Z = 90,
+	LeftWindows = 91,
+	RightWindows = 92,
+	Keypad0 = 96,
+	Keypad1 = 97,
+	Keypad2 = 98,
+	Keypad3 = 99,
+	Keypad4 = 100,
+	Keypad5 = 101,
+	Keypad6 = 102,
+	Keypad7 = 103,
+	Keypad8 = 104,
+	Keypad9 = 105,
+	KeypadMultiply = 106,
+	KeypadPlus = 107,
+	KeypadMinus = 109,
+	KeypadPeriod = 110,
+	KeypadDivide = 111,
+	F1 = 112,
+	F2 = 113,
+	F3 = 114,
+	F4 = 115,
+	F5 = 116,
+	F6 = 117,
+	F7 = 118,
+	F8 = 119,
+	F9 = 120,
+	F10 = 121,
+	F11 = 122,
+	F12 = 123,
+	Numlock = 144,
+	ScrollLock = 145,
+	LeftShift = 160,
+	RightShift = 161,
+	LeftControl = 162,
+	RightControl = 163,
+	LeftAlt = 164,
+	RightAlt = 165
+}
+enum FullScreenMode {
+	ExclusiveFullScreen = 0,
+	FullScreenWindow = 1,
+	MaximizedWindow = 2,
+	Windowed = 3
+}
+class string {
+	~string();
+	string();
+	string(const string&in);
+	string& opAssign(const string&in);
+	string& opAddAssign(const string&in);
+	bool opEquals(const string&in) const;
+	int opCmp(const string&in) const;
+	string opAdd(const string&in) const;
+	uint length() const;
+	void resize(uint);
+	bool isEmpty() const;
+	uint8& opIndex(uint);
+	const uint8& opIndex(uint) const;
+	string& opAssign(double);
+	string& opAddAssign(double);
+	string opAdd(double) const;
+	string opAdd_r(double) const;
+	string& opAssign(float);
+	string& opAddAssign(float);
+	string opAdd(float) const;
+	string opAdd_r(float) const;
+	string& opAssign(int64);
+	string& opAddAssign(int64);
+	string opAdd(int64) const;
+	string opAdd_r(int64) const;
+	string& opAssign(uint64);
+	string& opAddAssign(uint64);
+	string opAdd(uint64) const;
+	string opAdd_r(uint64) const;
+	string& opAssign(bool);
+	string& opAddAssign(bool);
+	string opAdd(bool) const;
+	string opAdd_r(bool) const;
+	string substr(uint start = 0, int count = -1) const;
+	int findFirst(const string&in, uint start = 0) const;
+	int findFirstOf(const string&in, uint start = 0) const;
+	int findFirstNotOf(const string&in, uint start = 0) const;
+	int findLast(const string&in, int start = -1) const;
+	int findLastOf(const string&in, int start = -1) const;
+	int findLastNotOf(const string&in, int start = -1) const;
+	void insert(uint pos, const string&in other);
+	void erase(uint pos, int count = -1);
+	int regexFind(const string&in regex, uint start = 0, uint&out lengthOfMatch = void) const;
+}
+class array<T> {
+	array(int&in);
+	array(int&in, uint length);
+	array(int&in, uint length, const T&in value);
+	T& opIndex(uint index);
+	const T& opIndex(uint index) const;
+	uint opForBegin() const;
+	bool opForEnd(uint) const;
+	uint opForNext(uint) const;
+	const T& opForValue0(uint index) const;
+	uint opForValue1(uint index) const;
+	T[]& opAssign(const T[]&in);
+	void insertAt(uint index, const T&in value);
+	void insertAt(uint index, const T[]&inout arr);
+	void insertLast(const T&in value);
+	void removeAt(uint index);
+	void removeLast();
+	void removeRange(uint start, uint count);
+	uint length() const;
+	void reserve(uint length);
+	void resize(uint length);
+	void sortAsc();
+	void sortAsc(uint startAt, uint count);
+	void sortDesc();
+	void sortDesc(uint startAt, uint count);
+	void reverse();
+	int find(const T&in value) const;
+	int find(uint startAt, const T&in value) const;
+	int findByRef(const T&in value) const;
+	int findByRef(uint startAt, const T&in value) const;
+	bool opEquals(const T[]&in) const;
+	bool isEmpty() const;
+	void sort(T[]::less&in, uint startAt = 0, uint count = uint(-1));
+}
+class Vector2 {
+	Vector2();
+	Vector2(float x, float y);
+	Vector2 opAdd(const Vector2&in) const;
+	Vector2 opSub(const Vector2&in) const;
+	Vector2 opMul(float) const;
+	Vector2 opMul_r(float) const;
+	Vector2 opDiv(float) const;
+	bool opEquals(const Vector2&in) const;
+	Vector2& opAddAssign(const Vector2&in);
+	Vector2& opSubAssign(const Vector2&in);
+	Vector2& opMulAssign(float);
+	Vector2& opDivAssign(float);
+	string ToString() const;
+	Vector2 opNeg() const;
+	float get_magnitude() const property;
+	float get_sqrMagnitude() const property;
+	Vector2 get_normalized() const property;
+	Vector3 opImplConv() const;
+	float x;
+	float y;
+}
+class Vector3 {
+	Vector3();
+	Vector3(float x, float y, float z);
+	Vector3(float x, float y);
+	Vector3 opAdd(const Vector3&in) const;
+	Vector3 opSub(const Vector3&in) const;
+	Vector3 opMul(float) const;
+	Vector3 opMul_r(float) const;
+	Vector3 opDiv(float) const;
+	bool opEquals(const Vector3&in) const;
+	Vector3& opAddAssign(const Vector3&in);
+	Vector3& opSubAssign(const Vector3&in);
+	Vector3& opMulAssign(float);
+	Vector3& opDivAssign(float);
+	string ToString() const;
+	Vector3 opNeg() const;
+	float get_magnitude() const property;
+	float get_sqrMagnitude() const property;
+	Vector3 get_normalized() const property;
+	float x;
+	float y;
+	float z;
+}
+class Quaternion {
+	Quaternion();
+	Quaternion(float x, float y, float z, float w);
+	Quaternion opMul(const Quaternion&in) const;
+	Vector3 opMul(const Vector3&in) const;
+	bool opEquals(const Quaternion&in) const;
+	string ToString() const;
+	Vector3 get_eulerAngles() const property;
+	void set_eulerAngles(const Vector3&in value) property;
+	Quaternion get_normalized() const property;
+	float x;
+	float y;
+	float z;
+	float w;
+}
+class Color {
+	Color();
+	Color(float r, float g, float b);
+	Color(float r, float g, float b, float a);
+	Color opAdd(const Color&in) const;
+	Color opSub(const Color&in) const;
+	Color opMul(float) const;
+	Color opMul_r(float) const;
+	Color opDiv(float) const;
+	bool opEquals(const Color&in) const;
+	Color& opAddAssign(const Color&in);
+	Color& opSubAssign(const Color&in);
+	Color& opMulAssign(float);
+	Color& opDivAssign(float);
+	string ToString() const;
+	Color opMul(const Color&in) const;
+	float r;
+	float g;
+	float b;
+	float a;
+}
+class Object {
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ opCast();
+	const GameObject@ opCast() const;
+	Component@ opCast();
+	const Component@ opCast() const;
+	Behavior@ opCast();
+	const Behavior@ opCast() const;
+	Transform@ opCast();
+	const Transform@ opCast() const;
+	Collider@ opCast();
+	const Collider@ opCast() const;
+	Rigidbody@ opCast();
+	const Rigidbody@ opCast() const;
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+}
+class GameObject {
+	GameObject(const string&in name = "GameObject");
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	bool get_activeSelf() const property;
+	bool get_activeInHierarchy() const property;
+	void SetActive(bool value);
+	int get_layer() const property;
+	void set_layer(int value) property;
+	Transform@ get_transform() const property;
+	bool TryGetComponent(?&out component) const;
+}
+class Component {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	Behavior@ opCast();
+	const Behavior@ opCast() const;
+	Transform@ opCast();
+	const Transform@ opCast() const;
+	Collider@ opCast();
+	const Collider@ opCast() const;
+	Rigidbody@ opCast();
+	const Rigidbody@ opCast() const;
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+	bool TryGetComponent(?&out component) const;
+}
+class Behavior {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Collider@ opCast();
+	const Collider@ opCast() const;
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+	bool TryGetComponent(?&out component) const;
+}
+class Transform {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	Vector3 get_position() const property;
+	void set_position(const Vector3&in value) property;
+	Vector3 get_localPosition() const property;
+	void set_localPosition(const Vector3&in value) property;
+	Quaternion get_rotation() const property;
+	void set_rotation(const Quaternion&in value) property;
+	Quaternion get_localRotation() const property;
+	void set_localRotation(const Quaternion&in value) property;
+	Vector3 get_eulerAngles() const property;
+	void set_eulerAngles(const Vector3&in value) property;
+	Vector3 get_localEulerAngles() const property;
+	void set_localEulerAngles(const Vector3&in value) property;
+	Vector3 get_localScale() const property;
+	void set_localScale(const Vector3&in value) property;
+	Vector3 get_lossyScale() const property;
+	Vector3 get_forward() const property;
+	Vector3 get_right() const property;
+	Vector3 get_up() const property;
+	Transform@ get_parent() const property;
+	void set_parent(Transform@ value) property;
+	int get_childCount() const property;
+	Transform@ GetChild(int index) const;
+	Transform@ Find(const string&in name) const;
+	void Translate(const Vector3&in translation, Space relativeTo = Space::Self);
+	void Translate(float x, float y, float z, Space relativeTo = Space::Self);
+	void Rotate(const Vector3&in eulers, Space relativeTo = Space::Self);
+	void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space::Self);
+	void LookAt(const Vector3&in worldPosition, const Vector3&in worldUp = Vector3::up);
+	bool TryGetComponent(?&out component) const;
+}
+class Collider {
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool get_isTrigger() const property;
+	void set_isTrigger(bool value) property;
+	Rigidbody@ get_attachedRigidbody() const property;
+	Vector3 ClosestPoint(const Vector3&in position) const;
+	CharacterController@ opCast();
+	const CharacterController@ opCast() const;
+	bool TryGetComponent(?&out component) const;
+}
+class Rigidbody {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	float get_mass() const property;
+	void set_mass(float value) property;
+	bool get_useGravity() const property;
+	void set_useGravity(bool value) property;
+	bool get_isKinematic() const property;
+	void set_isKinematic(bool value) property;
+	float get_linearDamping() const property;
+	void set_linearDamping(float value) property;
+	float get_angularDamping() const property;
+	void set_angularDamping(float value) property;
+	Vector3 get_linearVelocity() const property;
+	void set_linearVelocity(const Vector3&in value) property;
+	Vector3 get_velocity() const property;
+	void set_velocity(const Vector3&in value) property;
+	Vector3 get_angularVelocity() const property;
+	void set_angularVelocity(const Vector3&in value) property;
+	Vector3 get_position() const property;
+	Quaternion get_rotation() const property;
+	Vector3 get_worldCenterOfMass() const property;
+	void AddForce(const Vector3&in force, ForceMode mode = ForceMode::Force);
+	void AddTorque(const Vector3&in torque, ForceMode mode = ForceMode::Force);
+	void AddRelativeForce(const Vector3&in force, ForceMode mode = ForceMode::Force);
+	void AddRelativeTorque(const Vector3&in torque, ForceMode mode = ForceMode::Force);
+	void AddForceAtPosition(const Vector3&in force, const Vector3&in position, ForceMode mode = ForceMode::Force);
+	void MovePosition(const Vector3&in position);
+	void MoveRotation(const Quaternion&in rotation);
+	void Sleep();
+	void WakeUp();
+	bool IsSleeping() const;
+	bool TryGetComponent(?&out component) const;
+}
+class CharacterController {
+	Collider@ opImplCast();
+	const Collider@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool get_isTrigger() const property;
+	void set_isTrigger(bool value) property;
+	Rigidbody@ get_attachedRigidbody() const property;
+	Vector3 ClosestPoint(const Vector3&in position) const;
+	CollisionFlags Move(const Vector3&in motion);
+	bool SimpleMove(const Vector3&in speed);
+	bool get_isGrounded() const property;
+	Vector3 get_velocity() const property;
+	Vector3 get_center() const property;
+	void set_center(const Vector3&in value) property;
+	float get_radius() const property;
+	void set_radius(float value) property;
+	float get_height() const property;
+	void set_height(float value) property;
+	float get_slopeLimit() const property;
+	void set_slopeLimit(float value) property;
+	float get_stepOffset() const property;
+	void set_stepOffset(float value) property;
+	bool TryGetComponent(?&out component) const;
+}
+class ContactPoint {
+	ContactPoint();
+	Collider@ get_thisCollider() const property;
+	Collider@ get_otherCollider() const property;
+	Vector3 point;
+	Vector3 normal;
+	float separation;
+}
+class RaycastHit {
+	RaycastHit();
+	Collider@ get_collider() const property;
+	Rigidbody@ get_rigidbody() const property;
+	Transform@ get_transform() const property;
+	Vector3 point;
+	Vector3 normal;
+	float distance;
+}
+class Collision {
+	~Collision();
+	Collision();
+	Collision(const Collision&in other);
+	Collision& opAssign(const Collision&in other);
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	Collider@ get_collider() const property;
+	Rigidbody@ get_rigidbody() const property;
+	Vector3 get_relativeVelocity() const property;
+	Vector3 get_impulse() const property;
+	int get_contactCount() const property;
+	ContactPoint GetContact(int index) const;
+}
+uint scan(const string&in str, ?&out...);
+string format(const string&in fmt, const ?&in...);
+string formatInt(int64 val, const string&in options = "", uint width = 0);
+string formatUInt(uint64 val, const string&in options = "", uint width = 0);
+string formatFloat(double val, const string&in options = "", uint width = 0, uint precision = 0);
+int64 parseInt(const string&in, uint base = 10, uint&out byteCount = 0);
+uint64 parseUInt(const string&in, uint base = 10, uint&out byteCount = 0);
+double parseFloat(const string&in, uint&out byteCount = 0);
+namespace Vector2 { float Dot(const Vector2&in lhs, const Vector2&in rhs); }
+namespace Vector2 { float Distance(const Vector2&in a, const Vector2&in b); }
+namespace Vector2 { Vector2 Lerp(const Vector2&in a, const Vector2&in b, float t); }
+namespace Vector2 { Vector2 LerpUnclamped(const Vector2&in a, const Vector2&in b, float t); }
+namespace Vector2 { Vector2 MoveTowards(const Vector2&in current, const Vector2&in target, float maxDistanceDelta); }
+namespace Vector2 { Vector2 Scale(const Vector2&in a, const Vector2&in b); }
+namespace Vector2 { Vector2 Min(const Vector2&in lhs, const Vector2&in rhs); }
+namespace Vector2 { Vector2 Max(const Vector2&in lhs, const Vector2&in rhs); }
+namespace Vector3 { float Dot(const Vector3&in lhs, const Vector3&in rhs); }
+namespace Vector3 { Vector3 Cross(const Vector3&in lhs, const Vector3&in rhs); }
+namespace Vector3 { float Distance(const Vector3&in a, const Vector3&in b); }
+namespace Vector3 { float Angle(const Vector3&in from, const Vector3&in to); }
+namespace Vector3 { Vector3 Lerp(const Vector3&in a, const Vector3&in b, float t); }
+namespace Vector3 { Vector3 LerpUnclamped(const Vector3&in a, const Vector3&in b, float t); }
+namespace Vector3 { Vector3 MoveTowards(const Vector3&in current, const Vector3&in target, float maxDistanceDelta); }
+namespace Vector3 { Vector3 Normalize(const Vector3&in value); }
+namespace Vector3 { Vector3 ClampMagnitude(const Vector3&in vector, float maxLength); }
+namespace Vector3 { Vector3 Scale(const Vector3&in a, const Vector3&in b); }
+namespace Vector3 { Vector3 Min(const Vector3&in lhs, const Vector3&in rhs); }
+namespace Vector3 { Vector3 Max(const Vector3&in lhs, const Vector3&in rhs); }
+namespace Quaternion { Quaternion Euler(float x, float y, float z); }
+namespace Quaternion { Quaternion Euler(const Vector3&in euler); }
+namespace Quaternion { Quaternion AngleAxis(float angle, const Vector3&in axis); }
+namespace Quaternion { float Angle(const Quaternion&in a, const Quaternion&in b); }
+namespace Quaternion { float Dot(const Quaternion&in a, const Quaternion&in b); }
+namespace Quaternion { Quaternion Inverse(const Quaternion&in rotation); }
+namespace Quaternion { Quaternion Lerp(const Quaternion&in a, const Quaternion&in b, float t); }
+namespace Quaternion { Quaternion Slerp(const Quaternion&in a, const Quaternion&in b, float t); }
+namespace Quaternion { Quaternion FromToRotation(const Vector3&in fromDirection, const Vector3&in toDirection); }
+namespace Quaternion { Quaternion LookRotation(const Vector3&in forward, const Vector3&in upwards = Vector3::up); }
+namespace Color { Color Lerp(const Color&in a, const Color&in b, float t); }
+namespace Color { Color LerpUnclamped(const Color&in a, const Color&in b, float t); }
+namespace Color { Color HSVToRGB(float h, float s, float v); }
+namespace Object { void Destroy(Object@ obj); }
+namespace Physics { Vector3 get_gravity() property; }
+namespace Physics { void set_gravity(const Vector3&in value) property; }
+namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
+namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
+namespace Debug { void Log(const string&in message); }
+namespace Debug { void LogWarning(const string&in message); }
+namespace Debug { void LogError(const string&in message); }
+namespace Mathf { float Abs(float f); }
+namespace Mathf { int Abs(int value); }
+namespace Mathf { float Acos(float f); }
+namespace Mathf { float Asin(float f); }
+namespace Mathf { float Atan2(float y, float x); }
+namespace Mathf { bool Approximately(float a, float b); }
+namespace Mathf { float Ceil(float f); }
+namespace Mathf { int CeilToInt(float f); }
+namespace Mathf { float Clamp(float value, float min, float max); }
+namespace Mathf { int Clamp(int value, int min, int max); }
+namespace Mathf { float Clamp01(float value); }
+namespace Mathf { float Cos(float f); }
+namespace Mathf { float Exp(float power); }
+namespace Mathf { float Floor(float f); }
+namespace Mathf { int FloorToInt(float f); }
+namespace Mathf { float InverseLerp(float a, float b, float value); }
+namespace Mathf { float Lerp(float a, float b, float t); }
+namespace Mathf { float LerpUnclamped(float a, float b, float t); }
+namespace Mathf { float Log(float f); }
+namespace Mathf { float Max(float a, float b); }
+namespace Mathf { int Max(int a, int b); }
+namespace Mathf { float Min(float a, float b); }
+namespace Mathf { int Min(int a, int b); }
+namespace Mathf { float MoveTowards(float current, float target, float maxDelta); }
+namespace Mathf { float PingPong(float t, float length); }
+namespace Mathf { float Pow(float f, float p); }
+namespace Mathf { float Repeat(float t, float length); }
+namespace Mathf { float Round(float f); }
+namespace Mathf { int RoundToInt(float f); }
+namespace Mathf { float Sign(float f); }
+namespace Mathf { float Sin(float f); }
+namespace Mathf { float Sqrt(float f); }
+namespace Mathf { float Tan(float f); }
+namespace Time { float get_deltaTime() property; }
+namespace Time { float get_unscaledDeltaTime() property; }
+namespace Time { float get_time() property; }
+namespace Time { int get_frameCount() property; }
+namespace Time { float get_timeScale() property; }
+namespace Time { void set_timeScale(float value) property; }
+namespace Time { float get_fixedDeltaTime() property; }
+namespace Time { void set_fixedDeltaTime(float value) property; }
+namespace Input { bool GetKey(KeyCode key); }
+namespace Input { bool GetKeyDown(KeyCode key); }
+namespace Input { bool GetKeyUp(KeyCode key); }
+namespace Input { bool GetMouseButton(int button); }
+namespace Input { bool GetMouseButtonDown(int button); }
+namespace Input { bool GetMouseButtonUp(int button); }
+namespace Input { Vector3 get_mousePosition() property; }
+namespace Input { Vector2 get_mouseScrollDelta() property; }
+namespace Input { float GetAxis(const string&in axisName); }
+namespace Input { float GetAxisRaw(const string&in axisName); }
+namespace Screen { int get_width() property; }
+namespace Screen { int get_height() property; }
+namespace Screen { FullScreenMode get_fullScreenMode() property; }
+namespace Screen { void set_fullScreenMode(FullScreenMode value) property; }
+namespace Screen { bool get_fullScreen() property; }
+namespace Screen { void set_fullScreen(bool value) property; }
+namespace Screen { void SetResolution(int width, int height, FullScreenMode mode); }
+namespace Vector2 { const Vector2 zero; }
+namespace Vector2 { const Vector2 one; }
+namespace Vector2 { const Vector2 up; }
+namespace Vector2 { const Vector2 down; }
+namespace Vector2 { const Vector2 left; }
+namespace Vector2 { const Vector2 right; }
+namespace Vector3 { const Vector3 zero; }
+namespace Vector3 { const Vector3 one; }
+namespace Vector3 { const Vector3 up; }
+namespace Vector3 { const Vector3 down; }
+namespace Vector3 { const Vector3 left; }
+namespace Vector3 { const Vector3 right; }
+namespace Vector3 { const Vector3 forward; }
+namespace Vector3 { const Vector3 back; }
+namespace Quaternion { const Quaternion identity; }
+namespace Color { const Color white; }
+namespace Color { const Color black; }
+namespace Color { const Color clear; }
+namespace Color { const Color red; }
+namespace Color { const Color green; }
+namespace Color { const Color blue; }
+namespace Color { const Color yellow; }
+namespace Color { const Color cyan; }
+namespace Color { const Color magenta; }
+namespace Color { const Color gray; }
+namespace Physics { const int DefaultRaycastLayers; }
+namespace Physics { const int AllLayers; }
+namespace Mathf { const float PI; }
+namespace Mathf { const float Deg2Rad; }
+namespace Mathf { const float Rad2Deg; }
+namespace Mathf { const float Infinity; }
+namespace Mathf { const float NegativeInfinity; }
+namespace Mathf { const float Epsilon; }
+
+// MonoBehavior.as
+abstract class MonoBehavior {
+	private Behavior@ native_;
+
+	// テスト
+
+	GameObject@ gameObject { get const { return native_.gameObject; } }
+	Transform@ transform { get const { return native_.transform; } }
+	string name { get const { return native_.name; } set { native_.name = value; } }
+	bool enabled { get const { return native_.enabled; } set { native_.enabled = value; } }
+	bool isActiveAndEnabled { get const { return native_.isActiveAndEnabled; } }
+
+	void Destroy(Object@ obj) { Object::Destroy(obj); }
+}
+

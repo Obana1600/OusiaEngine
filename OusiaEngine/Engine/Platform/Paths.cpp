@@ -68,6 +68,11 @@ std::optional<std::filesystem::path> ou::FindAssetsFolder() {
 
 
 std::optional<std::filesystem::path> ou::FindEngineAssetsFolder() {
+#ifdef WITH_EDITOR
+	if (const auto beside = ExecutableDirectory() / L"EngineAssets"; std::filesystem::is_directory(beside)) {
+		return beside;
+	}
+#endif
 	return FindFolder(std::filesystem::path(Utf8ToWide(SOURCE_DIR)) / L"Engine/EngineAssets", L"EngineAssets");
 }
 

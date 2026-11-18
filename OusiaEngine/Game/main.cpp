@@ -1,6 +1,5 @@
 #include "Engine.h"
 #include "GameScene.h"
-#include "Scene/SceneManager.h"
 
 #include <Windows.h>
 
@@ -12,8 +11,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Engine engine;
 	engine.Initialize({.title = "OusiaEngine", .productName = "OusiaEngine", .projectDir = PROJECT_DIR});
 
-	SceneManager::AddScene("Game", BuildGameScene);
-	SceneManager::LoadScene("Game");
+	RegisterGameTypes();
 
 	engine.Run();
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <string>
 #include <string_view>
 
 
@@ -16,6 +16,8 @@ enum class NewSceneSetup {
 };
 
 class EditorSceneManager final {
+	friend class Engine;
+
 public: // 静的メンバ関数
 
 	EditorSceneManager() = delete;
@@ -28,6 +30,13 @@ public: // 静的メンバ関数
 
 	static bool MarkSceneDirty(Scene *scene);
 
+
+private: // 静的メンバ関数
+
+	static void OpenLastScene();
+
+	static void RememberLastScene(std::string_view scenePath);
+	static std::string LoadLastScenePath();
 };
 
 } // namespace ou

@@ -50,6 +50,11 @@ public: // メンバ関数
 	Audio::SubmixType GetSubmixType() const;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // インナークラス
 
 	struct OneShot {
@@ -70,6 +75,10 @@ private: // メンバ変数
 	bool mute_ = false;
 	bool playOnAwake_ = true;
 	Audio::SubmixType submixType_ = Audio::SubmixType::SoundEffect;
+
+	// 読んだ clip と submixType（違えば AwakeFromLoad でインスタンスを作り直す）
+	std::shared_ptr<AudioClip> serializedClip_;
+	Audio::SubmixType serializedSubmixType_ = Audio::SubmixType::SoundEffect;
 
 
 private: // メンバ関数

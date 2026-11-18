@@ -33,6 +33,8 @@ public: // メンバ関数
 
 protected: // メンバ関数
 
+	void AwakeFromLoad() override;
+
 	void OnTransformParentChanged() override;
 
 

@@ -16,12 +16,16 @@ void ou::CapsuleCollider::Serialize(Serializer &serializer) {
 	serializer.Field("radius", radius_);
 	serializer.Field("height", height_);
 	serializer.Field("direction", direction_);
+}
 
-	if (serializer.IsReading()) {
-		SetRadius(radius_);
-		SetHeight(height_);
-		SetDirection(direction_);
-	}
+
+void ou::CapsuleCollider::AwakeFromLoad() {
+	Collider::AwakeFromLoad();
+
+	// セッターで範囲に収め、形を作り直す
+	SetRadius(radius_);
+	SetHeight(height_);
+	SetDirection(direction_);
 }
 
 

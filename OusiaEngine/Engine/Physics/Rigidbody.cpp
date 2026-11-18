@@ -55,9 +55,13 @@ void ou::Rigidbody::Serialize(Serializer &serializer) {
 	serializer.Enum("collisionDetectionMode", collisionDetectionMode_);
 	serializer.Enum("interpolation", interpolation_);
 	serializer.Flags("constraints", constraints_);
+}
 
-	if (!serializer.IsReading()) { return; }
 
+void ou::Rigidbody::AwakeFromLoad() {
+	Component::AwakeFromLoad();
+
+	// 物理のボディがまだなければ範囲に収めるだけ（Awake でボディを作るときに渡す）
 	if (bodyId_ == PhysicsWorld::kInvalidBodyId) {
 		mass_ = Mathf::Max(mass_, kMinMass);
 		linearDamping_ = Mathf::Max(linearDamping_, 0.0f);

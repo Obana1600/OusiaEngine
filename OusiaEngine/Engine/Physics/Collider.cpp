@@ -36,10 +36,6 @@ void ou::Collider::Serialize(Serializer &serializer) {
 
 	serializer.Field("isTrigger", isTrigger_);
 	serializer.Asset("material", sharedMaterial_);
-
-	if (serializer.IsReading()) {
-		isMaterialInstanced_ = false;
-	}
 }
 
 
@@ -90,6 +86,13 @@ const std::shared_ptr<PhysicsMaterial> &ou::Collider::GetMaterial() {
 	sharedMaterial_ = std::move(instance);
 	isMaterialInstanced_ = true;
 	return sharedMaterial_;
+}
+
+
+void ou::Collider::AwakeFromLoad() {
+	Behavior::AwakeFromLoad();
+
+	isMaterialInstanced_ = false;
 }
 
 

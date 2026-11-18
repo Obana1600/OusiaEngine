@@ -21,6 +21,11 @@ public: // メンバ関数
 	void Serialize(Serializer &serializer) override;
 
 
+protected: // メンバ関数
+
+	void AwakeFromLoad() override;
+
+
 private: // メンバ変数
 
 	bool isEnabled_ = true;

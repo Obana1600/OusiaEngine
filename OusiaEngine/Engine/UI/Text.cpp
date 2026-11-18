@@ -88,10 +88,6 @@ void ou::Text::Serialize(Serializer &serializer) {
 	serializer.Field("underlaySoftness", underlaySoftness_);
 	serializer.Field("underlayOffset", underlayOffset_);
 	serializer.Field("underlayColor", underlayColor_);
-
-	if (serializer.IsReading()) {
-		SetAllDirty();
-	}
 }
 
 

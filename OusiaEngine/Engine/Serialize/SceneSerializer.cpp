@@ -1,4 +1,5 @@
 #include "SceneSerializer.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Scene/GameObject.h"
@@ -7,7 +8,6 @@
 #include "Serialize/JsonWriter.h"
 #include "Serialize/TypeRegistry.h"
 
-#include <fstream>
 #include <random>
 #include <typeinfo>
 #include <unordered_map>
@@ -15,15 +15,10 @@
 #include <utility>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
 using namespace ou;
 
 
 namespace {
-
-// TODO: Json の共通操作をまとめる util を作る
-using Json = nlohmann::ordered_json;
 
 // TODO: version管理をどうするか決める
 constexpr int kVersion = 1;
@@ -76,7 +71,7 @@ void RegisterFileId(Object *object, const Json &json, std::unordered_map<uint64_
 
 
 
-nlohmann::ordered_json ou::SceneSerializer::ToJson(Scene &scene) {
+Json ou::SceneSerializer::ToJson(Scene &scene) {
 	std::vector<GameObject *> gameObjects;
 	for (auto *root : scene.GetRootGameObjects()) {
 		CollectHierarchy(root, &scene, gameObjects);
@@ -135,18 +130,11 @@ nlohmann::ordered_json ou::SceneSerializer::ToJson(Scene &scene) {
 
 
 bool ou::SceneSerializer::Save(Scene &scene, const std::filesystem::path &path) {
-	std::ofstream file(path, std::ios::binary);
-	if (!file) {
-		Log::Error("シーン \"{}\" の保存に失敗しました: {}", scene.GetName(), ToUtf8(path));
-		return false;
-	}
-
-	file << ToJson(scene).dump(1, '\t') << '\n';
-	return true;
+	return JsonFile::Save(path, ToJson(scene));
 }
 
 
-bool ou::SceneSerializer::FromJson(Scene &scene, const nlohmann::ordered_json &root) {
+bool ou::SceneSerializer::FromJson(Scene &scene, const Json &root) {
 	if (!ValidateRoot(root)) { return false; }
 
 	const auto *gameObjectsJson = FindMember(root, "gameObjects");
@@ -212,11 +200,16 @@ bool ou::SceneSerializer::FromJson(Scene &scene, const nlohmann::ordered_json &r
 		component->Serialize(reader);
 	}
 
+	for (const auto &[component, json] : loadedComponents) {
+		component->AwakeFromLoad();
+	}
+
 	for (const auto &[gameObject, json] : loadedGameObjects) {
 		gameObject->isActiveSelf_ = true;
 
 		JsonReader reader(*json, objectsById);
 		gameObject->Serialize(reader);
+		gameObject->AwakeFromLoad();
 	}
 
 	for (const auto &[gameObject, json] : loadedGameObjects) {
@@ -230,23 +223,40 @@ bool ou::SceneSerializer::FromJson(Scene &scene, const nlohmann::ordered_json &r
 
 
 bool ou::SceneSerializer::Load(Scene &scene, const std::filesystem::path &path) {
-	std::ifstream file(path, std::ios::binary);
-	if (!file) {
-		Log::Error("シーン \"{}\" のロードに失敗しました: {}", scene.GetName(), ToUtf8(path));
-		return false;
-	}
+	const auto root = JsonFile::Load(path);
+	if (!root) { return false; }
 
-	const auto root = Json::parse(file, nullptr, false, true);
-	if (root.is_discarded()) {
-		Log::Error("シーン \"{}\" の json の書き方が間違っています: {}", scene.GetName(), ToUtf8(path));
-		return false;
-	}
-
-	return FromJson(scene, root);
+	return FromJson(scene, *root);
 }
 
 
-bool ou::SceneSerializer::ValidateRoot(const nlohmann::ordered_json &root) {
+SceneObjects ou::SceneSerializer::CollectObjects(Scene &scene) {
+	std::vector<GameObject *> gameObjects;
+	for (auto *root : scene.GetRootGameObjects()) {
+		CollectHierarchy(root, &scene, gameObjects);
+	}
+
+	SceneObjects objects;
+	std::unordered_set<uint64_t> usedIds;
+	const auto add = [&](Object *object) {
+		AssignFileId(object, usedIds);
+		objects.savedObjects.insert(object);
+		objects.objectsById.emplace(object->GetFileId(), object);
+	};
+
+	for (auto *gameObject : gameObjects) {
+		add(gameObject);
+		for (const auto &component : gameObject->components_) {
+			const Object &object = *component;
+			if (component->IsDestroyed() || !TypeRegistry::FindName(object)) { continue; }
+			add(component.get());
+		}
+	}
+	return objects;
+}
+
+
+bool ou::SceneSerializer::ValidateRoot(const Json &root) {
 	if (!root.is_object()) {
 		Log::Error("json の一番外側がオブジェクトではありません");
 		return false;

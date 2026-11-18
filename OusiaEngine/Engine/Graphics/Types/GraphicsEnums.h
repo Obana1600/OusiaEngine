@@ -5,7 +5,6 @@
 #include <cstdint>
 
 
-// グラフィクスの列挙子
 namespace ou::Graphics {
 
 // デバッグレイヤーの強さ
@@ -17,6 +16,8 @@ enum class ValidationMode : uint8_t {
 };
 
 
+// コマンドキューの種類
+// この値を直接配列のインデックスとして渡すため、enum class にはしない
 enum QueueType {
 	QUEUE_GRAPHICS, // ダイレクトキュー
 	QUEUE_COMPUTE,	// コンピュートキュー

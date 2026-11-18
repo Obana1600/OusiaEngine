@@ -19,10 +19,12 @@ void ou::RectTransform::Serialize(Serializer &serializer) {
 	serializer.Field("anchoredPosition", anchoredPosition_);
 	serializer.Field("sizeDelta", sizeDelta_);
 	serializer.Field("pivot", pivot_);
+}
 
-	if (serializer.IsReading()) {
-		RecalculateLayout();
-	}
+
+void ou::RectTransform::AwakeFromLoad() {
+	Transform::AwakeFromLoad();
+	RecalculateLayout();
 }
 
 

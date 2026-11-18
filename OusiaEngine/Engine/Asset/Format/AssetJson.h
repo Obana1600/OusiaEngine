@@ -1,33 +1,15 @@
 #pragma once
 
+#include "Core/JsonFile.h"
 #include "Graphics/GraphicsTypes.h"
 
-#include <filesystem>
-#include <optional>
-#include <span>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
-#include <nlohmann/json.hpp>
 
-
+// アセットの json に書く描画の設定の名前を変換する（読み書きは JsonFile）
+// 名前が間違っていれば JsonFile::FormatError を投げる
 namespace ou::AssetJson {
-
-// json のエイリアス
-using Json = nlohmann::json;
-
-// 書き方の間違いを投げる
-class FormatError: public std::runtime_error {
-public:
-	using std::runtime_error::runtime_error;
-};
-
-// コメント付きの json を読む
-std::optional<Json> Load(const std::filesystem::path &path);
-
-// KnownKeys にないキーを書き間違いとしてログに出力する
-void WarnUnknownKeys(const Json &object, std::span<const std::string_view> knownKeys, const std::string &pathUtf8);
 
 Graphics::Blend ToBlend(const std::string &name, std::string_view key);
 Graphics::BlendOp ToBlendOp(const std::string &name, std::string_view key);

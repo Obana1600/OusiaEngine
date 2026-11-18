@@ -1,7 +1,10 @@
 #include "EditorMainWindow.h"
 #include "Asset/AssetDatabase.h"
+#include "Editor/BuildSettingsWindow.h"
+#include "Editor/PreferencesWindow.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/GameObjectMenu.h"
 #include "Editor/EditorWindow.h"
 #include "Editor/GameView.h"
 #include "Editor/HierarchyWindow.h"
@@ -34,6 +37,11 @@ bool sOpensSaveChangesPopup = false;
 bool sOpensSaveAsPopup = false;
 
 std::string sSaveAsPath;
+
+// ウィンドウの × で閉じようとした（Play 中なら Stop してから聞く）
+bool sIsQuitRequested = false;
+// 保存を聞き終えて、閉じてよくなった
+bool sIsQuitApproved = false;
 
 
 Scene *ActiveScene() {
@@ -130,6 +138,19 @@ void DrawMainMenuBar() {
 		ImGui::Separator();
 		if (ImGui::MenuItem("Save", "Ctrl+S", false, canEdit)) { SaveOrAskPath(); }
 		if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S", false, canEdit)) { OpenSaveAs(); }
+
+		ImGui::Separator();
+		if (ImGui::MenuItem("Build Settings...")) { EditorWindow::GetWindow<BuildSettingsWindow>(); }
+		ImGui::EndMenu();
+	}
+
+	if (ImGui::BeginMenu("Edit")) {
+		if (ImGui::MenuItem("Preferences...")) { EditorWindow::GetWindow<PreferencesWindow>(); }
+		ImGui::EndMenu();
+	}
+
+	if (ImGui::BeginMenu("GameObject", canEdit)) {
+		GameObjectMenu::DrawItems(ActiveScene(), nullptr);
 		ImGui::EndMenu();
 	}
 
@@ -280,6 +301,12 @@ void ou::EditorMainWindow::Draw() {
 
 	EditorWindow::DrawAll();
 
+	// Unity と同じく、Play 中の変更は保存しないので、Stop してから Edit のシーンについて聞く
+	if (sIsQuitRequested && !EditorApplication::IsPlaying()) {
+		sIsQuitRequested = false;
+		RunAfterSaveCheck([] { sIsQuitApproved = true; });
+	}
+
 	DrawSaveChangesPopup();
 	DrawSaveAsPopup();
 }
@@ -288,4 +315,17 @@ void ou::EditorMainWindow::Draw() {
 void ou::EditorMainWindow::RequestOpenScene(const std::string &scenePath) {
 	if (EditorApplication::IsPlaying()) { return; }
 	OpenScene(scenePath);
+}
+
+
+void ou::EditorMainWindow::RequestQuit() {
+	sIsQuitRequested = true;
+	if (EditorApplication::IsPlaying()) {
+		EditorApplication::ExitPlayMode();
+	}
+}
+
+
+bool ou::EditorMainWindow::IsQuitApproved() {
+	return sIsQuitApproved;
 }

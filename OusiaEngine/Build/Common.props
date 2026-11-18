@@ -17,6 +17,8 @@
         <ExternalIncludePath>$(SourceRoot)External;
                              $(SourceRoot)External\freetype\include;
                              $(SourceRoot)External\box3d\include;
+                             $(SourceRoot)External\angelscript\sdk\angelscript\include;
+                             $(SourceRoot)External\angelscript\sdk\add_on;
         $(ExternalIncludePath)</ExternalIncludePath>
     </PropertyGroup>
 

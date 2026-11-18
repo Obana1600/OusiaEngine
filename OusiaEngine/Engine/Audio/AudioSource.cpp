@@ -25,29 +25,33 @@ void ou::AudioSource::Update() {
 
 
 void ou::AudioSource::Serialize(Serializer &serializer) {
-	auto clip = clip_;
-	auto submixType = submixType_;
+	// clip と submixType はインスタンスを作り直すので、今の値を写してから運び、AwakeFromLoad で比べる
+	serializedClip_ = clip_;
+	serializedSubmixType_ = submixType_;
 
-	serializer.Asset("clip", clip);
+	serializer.Asset("clip", serializedClip_);
 	serializer.Field("volume", volume_);
 	serializer.Field("pitch", pitch_);
 	serializer.Field("loop", loop_);
 	serializer.Field("mute", mute_);
 	serializer.Field("playOnAwake", playOnAwake_);
-	serializer.Enum("submixType", submixType);
+	serializer.Enum("submixType", serializedSubmixType_);
+}
 
-	if (!serializer.IsReading()) { return; }
+
+void ou::AudioSource::AwakeFromLoad() {
+	Component::AwakeFromLoad();
 
 	volume_ = Mathf::Clamp01(volume_);
 
-	if (submixType == Audio::SubmixType::Count) {
+	if (serializedSubmixType_ == Audio::SubmixType::Count) {
 		Log::Warning("submixType に Count は使えません");
-		submixType = submixType_;
+		serializedSubmixType_ = submixType_;
 	}
 
-	if (clip != clip_ || submixType != submixType_) {
-		clip_ = std::move(clip);
-		submixType_ = submixType;
+	if (serializedClip_ != clip_ || serializedSubmixType_ != submixType_) {
+		clip_ = serializedClip_;
+		submixType_ = serializedSubmixType_;
 		RecreateInstance();
 	}
 	ApplySettingsToAll();

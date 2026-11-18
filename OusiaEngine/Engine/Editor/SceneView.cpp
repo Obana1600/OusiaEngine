@@ -70,11 +70,14 @@ Camera::PerCamera ou::SceneView::MakePerCamera() const {
 
 
 void ou::SceneView::OnGui() {
-	const auto size = ImGui::GetContentRegionAvail();
-	if (size.x < 1.0f || size.y < 1.0f) { return; }
+	const auto available = ImGui::GetContentRegionAvail();
+	if (available.x < 1.0f || available.y < 1.0f) { return; }
 
+	// Game ビューと同じ比で描き、余りは帯にする（見える範囲を Game ビューとそろえる）
+	const auto size = FitToPlayerAspect({available.x, available.y});
 	renderTarget_.Resize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
-	ImGui::Image(ToTextureId(renderTarget_.GetColor()), size);
+	CenterNextItem({available.x, available.y}, size);
+	ImGui::Image(ToTextureId(renderTarget_.GetColor()), {size.x, size.y});
 	HandleInput(ImGui::IsItemHovered());
 
 	sLastDrawn = this;

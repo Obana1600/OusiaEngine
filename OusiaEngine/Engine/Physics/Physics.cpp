@@ -1,5 +1,5 @@
 #include "Physics.h"
-#include "Asset/Format/AssetJson.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
@@ -18,7 +18,6 @@
 #include <utility>
 
 using namespace ou;
-using AssetJson::Json;
 
 
 namespace {
@@ -152,6 +151,8 @@ void ou::Physics::SyncTransform() {
 	for (auto *collider : sColliders_) {
 		collider->SyncToPhysics();
 	}
+
+	sPendingColliders_.clear();
 }
 
 
@@ -205,7 +206,7 @@ void ou::Physics::LoadDynamicsManager() {
 	const auto path = *folder / L"DynamicsManager.json";
 	if (!std::filesystem::exists(path)) { return; }
 
-	const auto json = AssetJson::Load(path);
+	const auto json = JsonFile::Load(path);
 	if (!json) { return; }
 
 	const auto pathUtf8 = ToUtf8(path);
@@ -214,7 +215,7 @@ void ou::Physics::LoadDynamicsManager() {
 		return;
 	}
 
-	AssetJson::WarnUnknownKeys(*json, kDynamicsManagerKeys, pathUtf8);
+	JsonFile::WarnUnknownKeys(*json, kDynamicsManagerKeys, pathUtf8);
 	LoadGravity(*json, pathUtf8);
 	LoadQueriesHitTriggers(*json, pathUtf8);
 	LoadIgnoreLayerCollisions(*json, pathUtf8);
@@ -231,6 +232,8 @@ bool ou::Physics::Raycast(const Vector3 &origin, const Vector3 &direction, Rayca
 
 
 std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
+
 	std::vector<RaycastHit> hits;
 	for (const auto &result : PhysicsWorld::RaycastAll(origin, direction, maxDistance, layerMask, HitsTriggers(queryTriggerInteraction))) {
 		if (auto *collider = FindCollider(result.shapeId)) {
@@ -242,16 +245,19 @@ std::vector<RaycastHit> ou::Physics::RaycastAll(const Vector3 &origin, const Vec
 
 
 std::vector<Collider *> ou::Physics::OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
 	return FindColliders(PhysicsWorld::OverlapBox(center, halfExtents, orientation, layerMask, HitsTriggers(queryTriggerInteraction)));
 }
 
 
 std::vector<Collider *> ou::Physics::OverlapSphere(const Vector3 &center, float radius, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
 	return FindColliders(PhysicsWorld::OverlapSphere(center, radius, layerMask, HitsTriggers(queryTriggerInteraction)));
 }
 
 
 std::vector<Collider *> ou::Physics::OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
 	return FindColliders(PhysicsWorld::OverlapCapsule(point0, point1, radius, layerMask, HitsTriggers(queryTriggerInteraction)));
 }
 
@@ -262,6 +268,7 @@ bool ou::Physics::BoxCast(const Vector3 &center, const Vector3 &halfExtents, con
 
 
 std::vector<RaycastHit> ou::Physics::BoxCastAll(const Vector3 &center, const Vector3 &halfExtents, const Vector3 &direction, const Quaternion &orientation, float maxDistance, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
 	return ToCastHits(PhysicsWorld::BoxCastAll(center, halfExtents, orientation, direction, maxDistance, layerMask, HitsTriggers(queryTriggerInteraction)), direction);
 }
 
@@ -272,6 +279,7 @@ bool ou::Physics::SphereCast(const Vector3 &origin, float radius, const Vector3 
 
 
 std::vector<RaycastHit> ou::Physics::SphereCastAll(const Vector3 &origin, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
 	return ToCastHits(PhysicsWorld::SphereCastAll(origin, radius, direction, maxDistance, layerMask, HitsTriggers(queryTriggerInteraction)), direction);
 }
 
@@ -282,6 +290,7 @@ bool ou::Physics::CapsuleCast(const Vector3 &point1, const Vector3 &point2, floa
 
 
 std::vector<RaycastHit> ou::Physics::CapsuleCastAll(const Vector3 &point1, const Vector3 &point2, float radius, const Vector3 &direction, float maxDistance, uint32_t layerMask, QueryTriggerInteracation queryTriggerInteraction) {
+	SyncPendingColliders();
 	return ToCastHits(PhysicsWorld::CapsuleCastAll(point1, point2, radius, direction, maxDistance, layerMask, HitsTriggers(queryTriggerInteraction)), direction);
 }
 
@@ -303,11 +312,20 @@ bool ou::Physics::CheckCapsule(const Vector3 &start, const Vector3 &end, float r
 
 void ou::Physics::RegisterCollider(Collider *collider) {
 	sColliders_.push_back(collider);
+	sPendingColliders_.push_back(collider);
 }
 
 
 void ou::Physics::UnregisterCollider(Collider *collider) {
 	std::erase(sColliders_, collider);
+	std::erase(sPendingColliders_, collider);
+}
+
+
+void ou::Physics::SyncPendingColliders() {
+	for (auto *collider : std::exchange(sPendingColliders_, {})) {
+		collider->SyncToPhysics();
+	}
 }
 
 

@@ -65,6 +65,8 @@ protected: // 静的メンバ関数
 
 protected: // メンバ関数
 
+	void AwakeFromLoad() override;
+
 	RectTransform *GetRectTransform() const;
 
 	virtual void UpdateGeometry();

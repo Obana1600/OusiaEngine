@@ -155,6 +155,7 @@ public: // 静的メンバ関数
 private: // 静的メンバ変数
 
 	static inline std::vector<Collider *> sColliders_;
+	static inline std::vector<Collider *> sPendingColliders_;
 	static inline std::vector<Rigidbody *> sRigidbodies_;
 	static inline bool sQueryHitTriggers_ = true;
 	static inline std::array<uint32_t, LayerMask::kLayerCount> sIgnoreLayerMasks_{};
@@ -164,6 +165,8 @@ private: // 静的メンバ関数
 
 	static void RegisterCollider(Collider *collider);
 	static void UnregisterCollider(Collider *collider);
+
+	static void SyncPendingColliders();
 
 	static void RegisterRigidbody(Rigidbody *rigidbody);
 	static void UnregisterRigidbody(Rigidbody *rigidbody);

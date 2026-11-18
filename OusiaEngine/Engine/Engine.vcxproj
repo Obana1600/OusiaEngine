@@ -15,6 +15,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\External\angelscript\angelscript.vcxproj">
+      <Project>{630d0672-e499-4d3f-85c7-716a701f67e8}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\External\box3d\box3d.vcxproj">
       <Project>{47b742b4-b553-48df-94d4-03ca98bb68d8}</Project>
     </ProjectReference>
@@ -37,25 +40,43 @@
     <ClInclude Include="Animation\Core\Easing.h" />
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
+    <ClInclude Include="Editor\CustomEditor.h" />
+    <ClInclude Include="Editor\EngineEditors.h" />
+    <ClInclude Include="Editor\GUIContent.h" />
+    <ClInclude Include="Editor\Editor.h" />
     <ClInclude Include="Editor\EditorGuiLayout.h" />
     <ClInclude Include="Editor\EditorFunc.h" />
-    <ClInclude Include="Editor\NewFolder1\ChangeApplier.h" />
     <ClInclude Include="Core\Guid.h" />
     <ClInclude Include="Editor\EditorWindow.h" />
     <ClInclude Include="Editor\EditorMainWindow.h" />
     <ClInclude Include="Editor\EditorSceneManager.h" />
     <ClInclude Include="Editor\EditorApplication.h" />
     <ClInclude Include="Editor\EditorPayload.h" />
-    <ClInclude Include="Editor\NewFolder1\InspectorField.h" />
     <ClInclude Include="Editor\Selection.h" />
     <ClInclude Include="Editor\HierarchyWindow.h" />
     <ClInclude Include="Editor\InspectorWindow.h" />
-    <ClInclude Include="Editor\NewFolder1\FieldDrawer.h" />
-    <ClInclude Include="Editor\NewFolder1\PathSerializer.h" />
     <ClInclude Include="Editor\GameView.h" />
     <ClInclude Include="Editor\SceneRenderTarget.h" />
     <ClInclude Include="Editor\SceneView.h" />
     <ClInclude Include="Editor\ProjectWindow.h" />
+    <ClInclude Include="Editor\EditorBuildSettings.h" />
+    <ClInclude Include="Editor\BuildSettingsWindow.h" />
+    <ClInclude Include="Editor\BuildPipeline.h" />
+    <ClInclude Include="Editor\GameObjectMenu.h" />
+    <ClInclude Include="Editor\EditorPrefs.h" />
+    <ClInclude Include="Editor\SerializedObject.h" />
+    <ClInclude Include="Editor\SerializedProperty.h" />
+    <ClInclude Include="Serialize\PropertySchema.h" />
+    <ClInclude Include="Editor\ExternalScriptEditor.h" />
+    <ClInclude Include="Editor\PreferencesWindow.h" />
+    <ClInclude Include="Core\PlayerSettings.h" />
+    <ClInclude Include="Core\JsonFile.h" />
+    <ClInclude Include="Script\MonoBehavior.h" />
+    <ClInclude Include="Asset\Importer\MonoScriptImporter.h" />
+    <ClInclude Include="Script\MonoScript.h" />
+    <ClInclude Include="Script\ScriptEngine.h" />
+    <ClInclude Include="Script\ScriptBindings.h" />
+    <ClInclude Include="Script\ScriptBindingsInternal.h" />
     <ClInclude Include="Serialize\EngineTypes.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="Serialize\JsonReader.h" />
@@ -192,10 +213,12 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="Editor\CustomEditor.cpp" />
+    <ClCompile Include="Editor\EngineEditors.cpp" />
+    <ClCompile Include="Editor\Editor.cpp" />
     <ClCompile Include="Editor\EditorGuiLayout.cpp" />
     <ClCompile Include="Editor\EditorFunc.cpp" />
     <ClCompile Include="Editor\EditorPayload.cpp" />
-    <ClCompile Include="Editor\NewFolder1\ChangeApplier.cpp" />
     <ClCompile Include="Core\Guid.cpp" />
     <ClCompile Include="Editor\EditorWindow.cpp" />
     <ClCompile Include="Editor\EditorMainWindow.cpp" />
@@ -204,12 +227,30 @@
     <ClCompile Include="Editor\Selection.cpp" />
     <ClCompile Include="Editor\HierarchyWindow.cpp" />
     <ClCompile Include="Editor\InspectorWindow.cpp" />
-    <ClCompile Include="Editor\NewFolder1\FieldDrawer.cpp" />
-    <ClCompile Include="Editor\NewFolder1\PathSerializer.cpp" />
     <ClCompile Include="Editor\GameView.cpp" />
     <ClCompile Include="Editor\SceneRenderTarget.cpp" />
     <ClCompile Include="Editor\SceneView.cpp" />
     <ClCompile Include="Editor\ProjectWindow.cpp" />
+    <ClCompile Include="Editor\EditorBuildSettings.cpp" />
+    <ClCompile Include="Editor\BuildSettingsWindow.cpp" />
+    <ClCompile Include="Editor\BuildPipeline.cpp" />
+    <ClCompile Include="Editor\GameObjectMenu.cpp" />
+    <ClCompile Include="Editor\EditorPrefs.cpp" />
+    <ClCompile Include="Editor\SerializedObject.cpp" />
+    <ClCompile Include="Editor\SerializedProperty.cpp" />
+    <ClCompile Include="Editor\ExternalScriptEditor.cpp" />
+    <ClCompile Include="Editor\PreferencesWindow.cpp" />
+    <ClCompile Include="Core\PlayerSettings.cpp" />
+    <ClCompile Include="Core\JsonFile.cpp" />
+    <ClCompile Include="Script\ScriptBindingsPredefined.cpp" />
+    <ClCompile Include="Script\MonoBehavior.cpp" />
+    <ClCompile Include="Asset\Importer\MonoScriptImporter.cpp" />
+    <ClCompile Include="Script\MonoScript.cpp" />
+    <ClCompile Include="Script\ScriptEngine.cpp" />
+    <ClCompile Include="Script\ScriptBindings.cpp" />
+    <ClCompile Include="Script\ScriptBindingsMath.cpp" />
+    <ClCompile Include="Script\ScriptBindingsObject.cpp" />
+    <ClCompile Include="Script\ScriptBindingsPhysics.cpp" />
     <ClCompile Include="Serialize\EngineTypes.cpp" />
     <ClCompile Include="Resources.cpp" />
     <ClCompile Include="Serialize\JsonReader.cpp" />

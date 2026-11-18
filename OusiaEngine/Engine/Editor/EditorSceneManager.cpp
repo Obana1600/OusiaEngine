@@ -1,9 +1,11 @@
 #include "EditorSceneManager.h"
 #include "Asset/AssetDatabase.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorApplication.h"
 #include "Math/Mathf.h"
+#include "Platform/Paths.h"
 #include "Render/Camera.h"
 #include "Render/Light.h"
 #include "Scene/GameObject.h"
@@ -13,11 +15,9 @@
 #include "Serialize/SceneSerializer.h"
 
 #include <filesystem>
-#include <fstream>
+#include <optional>
 #include <string>
 #include <system_error>
-
-#include <nlohmann/json.hpp>
 
 using namespace ou;
 
@@ -26,6 +26,12 @@ namespace {
 
 std::string MakeSceneName(std::string_view scenePath) {
 	return WideToUtf8(std::filesystem::path(Utf8ToWide(scenePath)).stem().wstring());
+}
+
+std::optional<std::filesystem::path> FindLastScenePath() {
+	const auto folder = FindUserSettingsFolder();
+	if (!folder) { return std::nullopt; }
+	return *folder / L"LastScene.json";
 }
 
 } // namespace
@@ -50,7 +56,7 @@ Scene *ou::EditorSceneManager::NewScene(NewSceneSetup setup) {
 		auto *light = scene->CreateGameObject("Directional Light");
 		light->AddComponent<Light>()->SetType(LightType::Directional);
 		light->GetTransform()->SetLocalPosition({0.0f, 3.0f, 0.0f});
-		light->GetTransform()->SetLocalEulerAngles(Vector3{50.0f, -30.0f, 0.0f} * Mathf::Deg2Rad);
+		light->GetTransform()->SetLocalEulerAngles(Vector3(50.0f, -30.0f, 0.0f) * Mathf::Deg2Rad);
 	}
 
 	return scene;
@@ -69,24 +75,17 @@ Scene *ou::EditorSceneManager::OpenScene(std::string_view scenePath) {
 		return nullptr;
 	}
 
-	std::ifstream file(*fullPath, std::ios::binary);
-	if (!file) {
-		Log::Error("シーンのファイルを開けませんでした: {}", scenePath);
-		return nullptr;
-	}
+	// 開けない・書き方が間違っているときは JsonFile がパス付きでログに出す
+	const auto json = JsonFile::Load(*fullPath);
+	if (!json) { return nullptr; }
 
-	const auto json = nlohmann::ordered_json::parse(file, nullptr, false, true);
-	if (json.is_discarded()) {
-		Log::Error("シーンの json の書き方が間違っています: {}", scenePath);
-		return nullptr;
-	}
-
-	if (!SceneSerializer::ValidateRoot(json)) {
+	if (!SceneSerializer::ValidateRoot(*json)) {
 		Log::Error("シーンのファイルではありません: {}", scenePath);
 		return nullptr;
 	}
 
-	SceneManager::ReplaceActiveScene(MakeSceneName(scenePath), scenePath, SceneManager::FindBuildIndexByPath(scenePath), json);
+	SceneManager::ReplaceActiveScene(MakeSceneName(scenePath), scenePath, SceneManager::FindBuildIndexByPath(scenePath), *json);
+	RememberLastScene(scenePath);
 	return SceneManager::GetActiveScene();
 }
 
@@ -127,6 +126,7 @@ bool ou::EditorSceneManager::SaveScene(Scene *scene, std::string_view dstScenePa
 		AssetDatabase::Refresh();
 	}
 
+	RememberLastScene(scenePath);
 	Log::Info("シーンを保存しました: {}", scenePath);
 	return true;
 }
@@ -137,4 +137,35 @@ bool ou::EditorSceneManager::MarkSceneDirty(Scene *scene) {
 
 	scene->isDirty_ = true;
 	return true;
+}
+
+
+void ou::EditorSceneManager::OpenLastScene() {
+	if (const auto lastPath = LoadLastScenePath(); !lastPath.empty() && OpenScene(lastPath)) { return; }
+	if (!SceneManager::sBuildScenes_.empty() && OpenScene(SceneManager::sBuildScenes_.front().path)) { return; }
+
+	NewScene(NewSceneSetup::DefaultGameObjects);
+}
+
+
+void ou::EditorSceneManager::RememberLastScene(std::string_view scenePath) {
+	const auto path = FindLastScenePath();
+	if (!path) { return; }
+
+	auto json = Json::object();
+	json["path"] = std::string(scenePath);
+	JsonFile::Save(*path, json);
+}
+
+
+std::string ou::EditorSceneManager::LoadLastScenePath() {
+	const auto path = FindLastScenePath();
+	if (!path) { return {}; }
+
+	std::error_code error;
+	if (!std::filesystem::exists(*path, error)) { return {}; }
+
+	const auto json = JsonFile::Load(*path);
+	if (!json || !json->is_object()) { return {}; }
+	return json->value("path", std::string{});
 }

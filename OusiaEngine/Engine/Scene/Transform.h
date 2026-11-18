@@ -58,6 +58,8 @@ public: // メンバ関数
 
 protected: // メンバ関数
 
+	void AwakeFromLoad() override;
+
 	virtual void OnTransformParentChanged() {};
 
 
@@ -73,6 +75,8 @@ private: // メンバ変数
 
 	mutable Matrix4x4 localToWorld_ = Matrix4x4::Identity;
 	mutable bool isDirty_ = true;
+
+	Transform *serializedParent_ = nullptr; // 読んだ親（子の一覧と一緒に付け替えるので、AwakeFromLoad でつなぐ）
 
 
 private: // メンバ関数

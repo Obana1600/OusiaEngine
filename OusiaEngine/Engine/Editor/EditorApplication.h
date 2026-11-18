@@ -6,6 +6,8 @@
 namespace ou {
 
 class EditorApplication final {
+	friend class Engine;
+
 public: // メンバ関数
 
 	static bool IsPlaying();
@@ -30,6 +32,11 @@ private: // 静的メンバ変数
 
 	static inline bool sIsPlaying_ = false;
 	static inline Request sRequest_ = Request::None;
+
+
+private: // 静的メンバ関数
+
+	static void ReloadScriptsIfChanged();
 };
 
 } // namespace ou

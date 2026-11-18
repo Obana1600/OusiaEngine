@@ -1,17 +1,14 @@
 #include "JsonReader.h"
 #include "Asset/AssetDatabase.h"
+#include "Core/JsonFile.h"
 #include "Diagnostics/Log.h"
 
 #include <cstdint>
-
-#include <nlohmann/json.hpp>
 
 using namespace ou;
 
 
 namespace {
-
-using Json = nlohmann::ordered_json;
 
 void WarnWrongType(std::string_view name) {
 	Log::Warning("値の型が違います: \"{}\"", name);
@@ -21,7 +18,7 @@ void WarnWrongType(std::string_view name) {
 
 
 
-ou::JsonReader::JsonReader(const nlohmann::ordered_json &source, const std::unordered_map<uint64_t, Object *> &objectsById)
+ou::JsonReader::JsonReader(const Json &source, const std::unordered_map<uint64_t, Object *> &objectsById)
 	: stack_{Frame(&source, 0)},
 	  objectsById_(&objectsById) {}
 
@@ -145,6 +142,11 @@ void ou::JsonReader::EndArray() {
 }
 
 
+const Json *ou::JsonReader::FindReadingJson() const {
+	return stack_.empty() ? nullptr : stack_.back().node;
+}
+
+
 void ou::JsonReader::ObjectReference(std::string_view name, Object *&value, ObjectFilter) {
 	const auto *json = FindValue(name);
 	if (!json) { return; }
@@ -206,7 +208,7 @@ void ou::JsonReader::AssetObject(std::string_view name, std::shared_ptr<Object> 
 }
 
 
-const nlohmann::ordered_json *ou::JsonReader::FindValue(std::string_view name) {
+const Json *ou::JsonReader::FindValue(std::string_view name) {
 	auto &frame = stack_.back();
 
 	if (frame.node->is_array()) {

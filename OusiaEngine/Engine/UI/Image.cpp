@@ -14,25 +14,28 @@ void ou::Image::Serialize(Serializer &serializer) {
 	Graphic::Serialize(serializer);
 
 	// TODO: Sprite をサブアセットにする
-	auto texture = sprite_ ? sprite_->GetTexture() : nullptr;
-	auto rect = sprite_ ? sprite_->GetRect() : Rect::Zero;
-	auto pivot = sprite_ ? sprite_->GetPivot() : Vector2{0.5f, 0.5f};
-
-	const auto oldTexture = texture;
-	const auto oldRect = rect;
-	const auto oldPivot = pivot;
+	// Sprite そのものは保存できないので、中身を写してから運び、AwakeFromLoad で比べる
+	spriteTexture_ = sprite_ ? sprite_->GetTexture() : nullptr;
+	spriteRect_ = sprite_ ? sprite_->GetRect() : Rect::Zero;
+	spritePivot_ = sprite_ ? sprite_->GetPivot() : Vector2{0.5f, 0.5f};
 
 	serializer.Struct("sprite", [&] {
-		serializer.Asset("texture", texture);
-		serializer.Field("rect", rect);
-		serializer.Field("pivot", pivot);
+		serializer.Asset("texture", spriteTexture_);
+		serializer.Field("rect", spriteRect_);
+		serializer.Field("pivot", spritePivot_);
 	});
+}
 
-	if (!serializer.IsReading()) { return; }
 
-	if (texture == oldTexture && rect == oldRect && pivot == oldPivot) { return; }
+void ou::Image::AwakeFromLoad() {
+	Graphic::AwakeFromLoad();
 
-	SetSprite(texture ? Sprite::Create(texture, rect, pivot) : nullptr);
+	const auto texture = sprite_ ? sprite_->GetTexture() : nullptr;
+	const auto rect = sprite_ ? sprite_->GetRect() : Rect::Zero;
+	const auto pivot = sprite_ ? sprite_->GetPivot() : Vector2{0.5f, 0.5f};
+	if (spriteTexture_ == texture && spriteRect_ == rect && spritePivot_ == pivot) { return; }
+
+	SetSprite(spriteTexture_ ? Sprite::Create(spriteTexture_, spriteRect_, spritePivot_) : nullptr);
 }
 
 

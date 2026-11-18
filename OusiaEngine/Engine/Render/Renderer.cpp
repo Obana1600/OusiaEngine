@@ -26,12 +26,20 @@ void ou::Renderer::OnDestroy() {
 void ou::Renderer::Serialize(Serializer &serializer) {
 	Behavior::Serialize(serializer);
 
-	serializer.Array("materials", materials_, [&](std::shared_ptr<Material> &material) {
+	// 複製したマテリアルは保存できないので None にして運ぶ。読んだものは AwakeFromLoad で付け替える
+	serializedMaterials_ = MakeAssetMaterials();
+	serializer.Array("materials", serializedMaterials_, [&](std::shared_ptr<Material> &material) {
 		serializer.Asset("", material);
 	});
+}
 
-	if (serializer.IsReading()) {
-		isInstanced_.assign(materials_.size(), false);
+
+void ou::Renderer::AwakeFromLoad() {
+	Behavior::AwakeFromLoad();
+
+	// 変わっていなければ、複製したマテリアルをそのまま使い続ける
+	if (serializedMaterials_ != MakeAssetMaterials()) {
+		SetSharedMaterials(serializedMaterials_);
 	}
 }
 
@@ -135,25 +143,14 @@ Material *ou::Renderer::FindMaterialForSubMesh(uint32_t subMeshIndex) const {
 }
 
 
-void ou::Renderer::SerializeAssetMaterials(Serializer &serializer) {
-	Behavior::Serialize(serializer);
-
+std::vector<std::shared_ptr<Material>> ou::Renderer::MakeAssetMaterials() const {
 	auto materials = materials_;
-	if (!serializer.IsReading()) {
-		for (auto &material : materials) {
-			if (material && !AssetDatabase::FindAssetReference(material.get())) {
-				material = nullptr;
-			}
+	for (auto &material : materials) {
+		if (material && !AssetDatabase::FindAssetReference(material.get())) {
+			material = nullptr;
 		}
 	}
-
-	serializer.Array("materials", materials, [&](std::shared_ptr<Material> &material) {
-		serializer.Asset("", material);
-	});
-
-	if (serializer.IsReading()) {
-		SetSharedMaterials(std::move(materials));
-	}
+	return materials;
 }
 
 

@@ -49,15 +49,19 @@ void ou::CharacterController::Serialize(Serializer &serializer) {
 	serializer.Field("stepOffset", stepOffset_);
 	serializer.Field("skinWidth", skinWidth_);
 	serializer.Field("minMoveDistance", minMoveDistance_);
+}
 
-	if (serializer.IsReading()) {
-		SetRadius(radius_);
-		SetHeight(height_);
-		SetSlopeLimit(slopeLimit_);
-		SetStepOffset(stepOffset_);
-		SetSkinWidth(skinWidth_);
-		SetMinMoveDistance(minMoveDistance_);
-	}
+
+void ou::CharacterController::AwakeFromLoad() {
+	Collider::AwakeFromLoad();
+
+	// セッターで範囲に収め、形を作り直す
+	SetRadius(radius_);
+	SetHeight(height_);
+	SetSlopeLimit(slopeLimit_);
+	SetStepOffset(stepOffset_);
+	SetSkinWidth(skinWidth_);
+	SetMinMoveDistance(minMoveDistance_);
 }
 
 

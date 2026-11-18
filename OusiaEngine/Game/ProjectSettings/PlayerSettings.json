@@ -1,3 +1,5 @@
 {
-	"enableFrameTimingStats": true
+	"productName": "Sandbox",
+	"enableFrameTimingStats": true,
+	"fullScreenMode": "FullScreenWindow"
 }

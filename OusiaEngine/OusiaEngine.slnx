@@ -6,6 +6,7 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/External/">
+    <Project Path="External/angelscript/angelscript.vcxproj" Id="630d0672-e499-4d3f-85c7-716a701f67e8" />
     <Project Path="External/box3d/box3d.vcxproj" Id="47b742b4-b553-48df-94d4-03ca98bb68d8" />
     <Project Path="External/DirectXTex/DirectXTex_Desktop_2022_Win10.vcxproj" Id="371b9fa9-4c90-4ac6-a123-aced756d6c77" />
     <Project Path="External/freetype/freetype.vcxproj" Id="6f340305-fe44-4c76-bc50-93767f3c7245" />

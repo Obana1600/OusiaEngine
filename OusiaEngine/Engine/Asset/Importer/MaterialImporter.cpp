@@ -1,4 +1,5 @@
 #include "MaterialImporter.h"
+#include "Core/JsonFile.h"
 #include "Asset/AssetDatabase.h"
 #include "Asset/Format/AssetJson.h"
 #include "Core/StringUtil.h"
@@ -16,7 +17,6 @@
 #include <utility>
 
 using namespace ou;
-using AssetJson::Json;
 
 
 namespace {
@@ -42,7 +42,7 @@ std::shared_ptr<T> LoadReferencedAsset(const Json &json, const char *key) {
 	const auto assetPath = json.at(key).get<std::string>();
 	auto asset = AssetDatabase::LoadAssetAtPath<T>(assetPath);
 	if (!asset) {
-		throw AssetJson::FormatError(std::format("\"{}\" のアセットを読めませんでした: {}", key, assetPath));
+		throw JsonFile::FormatError(std::format("\"{}\" のアセットを読めませんでした: {}", key, assetPath));
 	}
 	return asset;
 }
@@ -50,7 +50,7 @@ std::shared_ptr<T> LoadReferencedAsset(const Json &json, const char *key) {
 // [x, y]
 Vector2 ToVector2(const Json &value, const char *key) {
 	if (!value.is_array() || value.size() != 2) {
-		throw AssetJson::FormatError(std::format("\"{}\" は [x, y] で書いてください", key));
+		throw JsonFile::FormatError(std::format("\"{}\" は [x, y] で書いてください", key));
 	}
 	return {value[0].get<float>(), value[1].get<float>()};
 }
@@ -58,7 +58,7 @@ Vector2 ToVector2(const Json &value, const char *key) {
 // [r, g, b] or [r, g, b, a]
 Color ToColor(const Json &value, const char *key) {
 	if (!value.is_array() || (value.size() != 3 && value.size() != 4)) {
-		throw AssetJson::FormatError(std::format("\"{}\" は [r, g, b] もしくは [r, g, b, a] と書いてください", key));
+		throw JsonFile::FormatError(std::format("\"{}\" は [r, g, b] もしくは [r, g, b, a] と書いてください", key));
 	}
 	const auto a = (value.size() == 4) ? value[3].get<float>() : 1.0f;
 	return {value[0].get<float>(), value[1].get<float>(), value[2].get<float>(), a};
@@ -68,7 +68,7 @@ Material::LightingMode ToLightingMode(const std::string &name) {
 	if (name == "None") { return Material::LightingMode::None; }
 	if (name == "Lambert") { return Material::LightingMode::Lambert; }
 	if (name == "HalfLambert") { return Material::LightingMode::HalfLambert; }
-	throw AssetJson::FormatError(std::format("\"lightingMode\" に \"{}\" は使えません (使えるもの: None, Lambert, HalfLambert)", name));
+	throw JsonFile::FormatError(std::format("\"lightingMode\" に \"{}\" は使えません (使えるもの: None, Lambert, HalfLambert)", name));
 }
 
 Shader::RenderStateOverride ParseRenderStateOverride(const Json &json) {
@@ -108,11 +108,11 @@ std::shared_ptr<Material> ou::MaterialImporter::ImportMaterial() {
 	const auto &path = GetFullPath();
 	const auto pathUtf8 = ToUtf8(path);
 
-	const auto json = AssetJson::Load(path);
+	const auto json = JsonFile::Load(path);
 	if (!json) { return nullptr; }
 
 	try {
-		AssetJson::WarnUnknownKeys(*json, kMaterialKeys, pathUtf8);
+		JsonFile::WarnUnknownKeys(*json, kMaterialKeys, pathUtf8);
 
 		// シェーダ
 		std::shared_ptr<Shader> shader;

@@ -21,6 +21,11 @@
 						0.0,
 						1.0
 					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -59,6 +64,11 @@
 						0.10938166,
 						0.8754261
 					],
+					"localEulerAnglesHint": [
+						0.8726648,
+						-0.52359885,
+						-2.3182094e-08
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -70,17 +80,35 @@
 					"$type": "Light",
 					"$id": 7887511613745683,
 					"enabled": true,
-					"type": "Directional",
+					"type": "Point",
 					"color": [
 						1.0,
 						1.0,
 						1.0,
 						1.0
 					],
-					"intensity": 1.0,
+					"intensity": 10.0,
 					"range": 10.0,
 					"spotAngle": 30.0,
 					"innerSpotAngle": 21.80208
+				},
+				{
+					"$type": "MonoBehavior",
+					"$id": 8004155165861070,
+					"enabled": true,
+					"script": {
+						"guid": "fa2cb33798dec39b70f1f030656bfad8"
+					},
+					"speed": 5.5,
+					"count": 2,
+					"flag": true,
+					"label": "hello",
+					"offset": [
+						1.0,
+						2.0,
+						3.0
+					],
+					"secret": 7.0
 				}
 			]
 		},
@@ -103,6 +131,11 @@
 						0.0,
 						0.0,
 						1.0
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
 					],
 					"localScale": [
 						1.0,
@@ -150,10 +183,15 @@
 						0.0,
 						0.7071068
 					],
+					"localEulerAnglesHint": [
+						-0.0,
+						1.5707965,
+						0.0
+					],
 					"localScale": [
-						0.012,
-						0.012,
-						0.012
+						0.01,
+						0.01,
+						0.01
 					],
 					"parent": null
 				},
@@ -163,11 +201,11 @@
 					"enabled": true,
 					"clip": {
 						"guid": "f3f37be41eda09207d3e1a71b6a19f8a",
-						"sub": "SkeletalAnimationClip/Run"
+						"sub": "SkeletalAnimationClip/Walk"
 					},
 					"playAutomatically": true,
 					"wrapMode": "Loop",
-					"speed": 1.0
+					"speed": 0.09
 				}
 			]
 		},
@@ -190,6 +228,11 @@
 						-0.0,
 						-0.0,
 						1.0
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
 					],
 					"localScale": [
 						1.0,
@@ -222,6 +265,11 @@
 						-0.0,
 						1.0
 					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -252,6 +300,11 @@
 						-0.0,
 						-0.0,
 						0.70710546
+					],
+					"localEulerAnglesHint": [
+						-1.570451,
+						-0.0,
+						0.0
 					],
 					"localScale": [
 						1.0,
@@ -284,6 +337,11 @@
 						0.12769023,
 						0.69548184
 					],
+					"localEulerAnglesHint": [
+						9.536743e-07,
+						1.5707968,
+						0.36315578
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -314,6 +372,11 @@
 						-0.0,
 						0.5904158,
 						0.8070993
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						1.2631478
 					],
 					"localScale": [
 						1.0,
@@ -346,6 +409,11 @@
 						-0.017411953,
 						0.9998484
 					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-0.034825668
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -376,6 +444,11 @@
 						-0.0,
 						-0.30337915,
 						0.95286995
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-0.6164739
 					],
 					"localScale": [
 						1.0,
@@ -408,6 +481,11 @@
 						0.40028542,
 						0.91639054
 					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.8236566
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -438,6 +516,11 @@
 						0.00044614848,
 						0.7121793,
 						0.70199734
+					],
+					"localEulerAnglesHint": [
+						2.0649633e-05,
+						0.0012920322,
+						1.585196
 					],
 					"localScale": [
 						1.0,
@@ -470,6 +553,11 @@
 						-0.0371259,
 						0.9993106
 					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-0.07426887
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -500,6 +588,11 @@
 						0.007822211,
 						-0.46056235,
 						0.8875113
+					],
+					"localEulerAnglesHint": [
+						-0.014161913,
+						0.024977656,
+						-0.9575411
 					],
 					"localScale": [
 						1.0,
@@ -532,6 +625,11 @@
 						0.7120875,
 						0.70209
 					],
+					"localEulerAnglesHint": [
+						-0.000558151,
+						0.0019469465,
+						1.5849346
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -562,6 +660,11 @@
 						-0.0,
 						-0.0371259,
 						0.9993106
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-0.07426887
 					],
 					"localScale": [
 						1.0,
@@ -594,6 +697,11 @@
 						-0.4600756,
 						0.8876155
 					],
+					"localEulerAnglesHint": [
+						0.016429095,
+						-0.040092755,
+						-0.9567333
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -624,6 +732,11 @@
 						-0.0,
 						-0.9818929,
 						0.18943690999999999
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-2.7604153
 					],
 					"localScale": [
 						1.0,
@@ -656,6 +769,11 @@
 						0.06961717,
 						0.9975738
 					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.13934705
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -686,6 +804,11 @@
 						-0.0,
 						0.053832747,
 						0.99855
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.10771757
 					],
 					"localScale": [
 						1.0,
@@ -718,6 +841,11 @@
 						-0.9700159,
 						-0.24304147
 					],
+					"localEulerAnglesHint": [
+						0.00033320484,
+						-8.348585e-05,
+						2.6505923
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -748,6 +876,11 @@
 						-0.0,
 						0.3680438,
 						0.9298085
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.7538086
 					],
 					"localScale": [
 						1.0,
@@ -780,6 +913,11 @@
 						-0.4584841,
 						0.8887026
 					],
+					"localEulerAnglesHint": [
+						0.00044152627,
+						-0.00022778465,
+						-0.95257753
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -810,6 +948,11 @@
 						-0.0,
 						-0.5472883,
 						0.83694416
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-1.1582416
 					],
 					"localScale": [
 						1.0,
@@ -842,6 +985,11 @@
 						-0.9699586,
 						-0.24327007
 					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						2.650121
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -872,6 +1020,11 @@
 						-0.0,
 						0.3680438,
 						0.92980844
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.75380856
 					],
 					"localScale": [
 						1.0,
@@ -904,6 +1057,11 @@
 						-0.45790938,
 						0.88899887
 					],
+					"localEulerAnglesHint": [
+						-0.00027284186,
+						0.00014053658,
+						-0.9512843
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -935,6 +1093,11 @@
 						-0.5472883,
 						0.83694416
 					],
+					"localEulerAnglesHint": [
+						-0.0,
+						-0.0,
+						-1.1582416
+					],
 					"localScale": [
 						1.0,
 						1.0,
@@ -965,6 +1128,11 @@
 						-0.0,
 						-0.0,
 						1.0
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
 					],
 					"localScale": [
 						1.0,
@@ -1041,6 +1209,11 @@
 						0.0,
 						1.0
 					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
+					],
 					"localScale": [
 						0.3,
 						0.3,
@@ -1075,6 +1248,109 @@
 					"collisionDetectionMode": "Discrete",
 					"interpolation": "None",
 					"constraints": ""
+				},
+				{
+					"$type": "ParticleSystemRenderer",
+					"$id": 594251506843588,
+					"enabled": true,
+					"materials": [
+						null
+					],
+					"blendMode": "Additive",
+					"sortMode": "None"
+				},
+				{
+					"$type": "ParticleSystem",
+					"$id": 5586701690900115,
+					"main": {
+						"duration": 5.0,
+						"looping": true,
+						"playOnAwake": true,
+						"startLifetime": {
+							"min": 2.0,
+							"max": 2.0
+						},
+						"startSpeed": {
+							"min": -5.0,
+							"max": -1.0
+						},
+						"startSize": {
+							"min": 1.0,
+							"max": 1.0
+						},
+						"startColor": {
+							"min": [
+								1.0,
+								1.0,
+								1.0,
+								1.0
+							],
+							"max": [
+								1.0,
+								0.0,
+								0.0,
+								1.0
+							]
+						},
+						"gravityModifier": 0.0,
+						"maxParticles": 1000,
+						"simulationSpace": "Local"
+					},
+					"emission": {
+						"enabled": true,
+						"rateOverTime": 10.0,
+						"bursts": [
+							{
+								"time": 0.0,
+								"count": 30
+							}
+						]
+					},
+					"shape": {
+						"enabled": true,
+						"shapeType": "Sphere",
+						"angle": 25.0,
+						"radius": 10.0,
+						"radiusThickness": 1.0
+					},
+					"colorOverLifetime": {
+						"enabled": true,
+						"start": [
+							1.0,
+							1.0,
+							1.0,
+							1.0
+						],
+						"end": [
+							1.0,
+							1.0,
+							1.0,
+							0.0
+						]
+					},
+					"sizeOverLifetime": {
+						"enabled": false,
+						"start": 1.0,
+						"end": 0.0
+					}
+				},
+				{
+					"$type": "MonoBehavior",
+					"$id": 7954694179859573,
+					"enabled": true,
+					"script": {
+						"guid": "fa2cb33798dec39b70f1f030656bfad8"
+					},
+					"speed": 12.72,
+					"count": 5,
+					"flag": true,
+					"label": "hello",
+					"offset": [
+						1.0,
+						2.0,
+						3.0
+					],
+					"secret": 9.18
 				}
 			]
 		},
@@ -1097,6 +1373,11 @@
 						0.0,
 						0.0,
 						1.0
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
 					],
 					"localScale": [
 						1.0,
@@ -1121,6 +1402,252 @@
 						"guid": "9fe5c8c9b5b8b22689f688aa7950ded9",
 						"sub": "Mesh/球"
 					}
+				}
+			]
+		},
+		{
+			"$id": 1961694688915603,
+			"name": "Canvas",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "RectTransform",
+					"$id": 7834147423102004,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": null,
+					"anchorMin": [
+						0.5,
+						0.5
+					],
+					"anchorMax": [
+						0.5,
+						0.5
+					],
+					"anchoredPosition": [
+						0.0,
+						0.0
+					],
+					"sizeDelta": [
+						1920.0,
+						991.0
+					],
+					"pivot": [
+						0.5,
+						0.5
+					]
+				},
+				{
+					"$type": "Canvas",
+					"$id": 4865791625118751,
+					"enabled": true
+				},
+				{
+					"$type": "MonoBehavior",
+					"$id": 357516107159641,
+					"enabled": true,
+					"script": {
+						"guid": "fa2cb33798dec39b70f1f030656bfad8"
+					},
+					"speed": 3.0,
+					"count": 2,
+					"flag": true,
+					"label": "hello",
+					"offset": [
+						1.0,
+						2.0,
+						3.0
+					],
+					"secret": 7.0
+				}
+			]
+		},
+		{
+			"$id": 4971712812203702,
+			"name": "Text",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "RectTransform",
+					"$id": 8500098631561161,
+					"localPosition": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						-0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": {
+						"id": 7834147423102004
+					},
+					"anchorMin": [
+						0.5,
+						0.5
+					],
+					"anchorMax": [
+						0.5,
+						0.5
+					],
+					"anchoredPosition": [
+						0.0,
+						0.0
+					],
+					"sizeDelta": [
+						1280.0,
+						720.0
+					],
+					"pivot": [
+						0.5,
+						0.5
+					]
+				},
+				{
+					"$type": "Text",
+					"$id": 1260622655527872,
+					"enabled": true,
+					"material": null,
+					"color": [
+						1.0,
+						0.0,
+						1.0,
+						1.0
+					],
+					"raycastTarget": true,
+					"text": "多摩川で恋してみたい♡\n横浜と東京を繋いでる♡\nまるで君と僕の関係みたいだね♡",
+					"font": {
+						"guid": "8e731411d63896d87e5a68ffffbc7b86"
+					},
+					"fontSize": 72.0,
+					"alignment": "Center",
+					"wordWrappingEnabled": true,
+					"lineSpacing": 0.0,
+					"characterSpacing": 0.0,
+					"faceDilate": 0.0,
+					"outlineWidth": 0.0,
+					"outlineColor": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"underlayDilate": 0.0,
+					"underlaySoftness": 0.0,
+					"underlayOffset": [
+						0.5,
+						-0.5
+					],
+					"underlayColor": [
+						1.0,
+						1.0,
+						0.0,
+						1.0
+					]
+				},
+				{
+					"$type": "CanvasRenderer",
+					"$id": 8610546197333289
+				}
+			]
+		},
+		{
+			"$id": 3836262281713376,
+			"name": "GameObject",
+			"active": true,
+			"layer": 0,
+			"components": [
+				{
+					"$type": "Transform",
+					"$id": 3230955706949490,
+					"localPosition": [
+						-3.17,
+						0.0,
+						0.0
+					],
+					"localRotation": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"localEulerAnglesHint": [
+						0.0,
+						0.0,
+						0.0
+					],
+					"localScale": [
+						1.0,
+						1.0,
+						1.0
+					],
+					"parent": null
+				},
+				{
+					"$type": "MeshRenderer",
+					"$id": 6926373187918213,
+					"enabled": true,
+					"materials": [
+						{
+							"guid": "9fe5c8c9b5b8b22689f688aa7950ded9",
+							"sub": "Material/マテリアル"
+						}
+					],
+					"mesh": {
+						"guid": "9fe5c8c9b5b8b22689f688aa7950ded9",
+						"sub": "Mesh/球"
+					}
+				},
+				{
+					"$type": "MonoBehavior",
+					"$id": 6426050075968404,
+					"enabled": true,
+					"script": {
+						"guid": "fa2cb33798dec39b70f1f030656bfad8"
+					},
+					"speed": 3.0,
+					"count": 2,
+					"flag": true,
+					"label": "hello",
+					"offset": [
+						1.0,
+						2.0,
+						3.0
+					],
+					"secret": 7.0
 				}
 			]
 		}

@@ -1212,7 +1212,7 @@ void ou::Graphics::GraphicsDevice_DX12::RenderPassEnd(CommandList cmd) {
 
 
 void ou::Graphics::GraphicsDevice_DX12::BindViewports(uint32_t numViewports, const Viewport *viewports, CommandList cmd) {
-	ASSERT(numViewports <= D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "D3D12 のビューポート上限を超過しています。");
+	ASSERT(numViewports <= D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "D3D12 のビューポート上限を超過しています");
 
 	D3D12_VIEWPORT d3dViewports[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
 	for (uint32_t i = 0; i < numViewports; i++) {

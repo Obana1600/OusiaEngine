@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/JsonFile.h"
 #include "Core/Object.h"
 #include "Diagnostics/Log.h"
 #include "Math/Color.h"
@@ -12,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -19,7 +21,6 @@
 
 #include <magic_enum/magic_enum.hpp>
 #include <magic_enum/magic_enum_flags.hpp>
-#include <span>
 
 
 namespace ou {
@@ -52,9 +53,11 @@ public: // メンバ関数
 
 	virtual bool BeginObject(std::string_view name) = 0;
 	virtual void EndObject() = 0;
-
 	virtual bool BeginArray(std::string_view name, size_t &count) = 0;
 	virtual void EndArray() = 0;
+
+	virtual const Json *FindReadingJson() const;
+	virtual Json *FindWritingJson();
 
 	template <typename T>
 	void Reference(std::string_view name, T *&value);

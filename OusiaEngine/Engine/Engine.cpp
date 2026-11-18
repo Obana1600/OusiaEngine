@@ -2,6 +2,7 @@
 #include "Asset/AssetDatabase.h"
 #include "Audio/XAudio2/Audio.h"
 #include "Core/Application.h"
+#include "Core/PlayerSettings.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
@@ -15,18 +16,23 @@
 #include "Render/LineRenderer.h"
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
+#include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
 #include "UI/Text.h"
 #ifdef WITH_EDITOR
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorMainWindow.h"
+#include "Editor/EditorPrefs.h"
+#include "Editor/EditorSceneManager.h"
 #include "Editor/EditorWindow.h"
 #include "Editor/GameView.h"
 #include "Editor/SceneView.h"
 #endif
 
 #include <filesystem>
+
+#include <magic_enum/magic_enum.hpp>
 #include <thread>
 
 #pragma comment(lib, "winmm.lib")
@@ -49,6 +55,51 @@ struct BlitConstants {
 	uint32_t sourceIndex;
 };
 
+#ifdef WITH_EDITOR
+// エディタのウィンドウの状態を覚える EditorPrefs のキー（PC ごと。Unity も閉じたときの状態に戻す）
+constexpr const char *kEditorWindowModeKey = "EditorWindow.Mode";
+constexpr const char *kEditorWindowRectKeys[] = {"EditorWindow.Left", "EditorWindow.Top", "EditorWindow.Right", "EditorWindow.Bottom"};
+
+// 前回閉じたときの状態。初めては最大化
+WindowDesc MakeEditorWindowDesc(const std::string &title, uint32_t width, uint32_t height) {
+	WindowDesc desc{.title = title, .width = width, .height = height, .fullScreenMode = FullScreenMode::MaximizedWindow};
+
+	desc.fullScreenMode = magic_enum::enum_cast<FullScreenMode>(EditorPrefs::GetString(kEditorWindowModeKey)).value_or(desc.fullScreenMode);
+
+	if (EditorPrefs::HasKey(kEditorWindowRectKeys[0])) {
+		RECT rect{
+			EditorPrefs::GetInt(kEditorWindowRectKeys[0]), EditorPrefs::GetInt(kEditorWindowRectKeys[1]),
+			EditorPrefs::GetInt(kEditorWindowRectKeys[2]), EditorPrefs::GetInt(kEditorWindowRectKeys[3])};
+		if (rect.right > rect.left && rect.bottom > rect.top) { desc.windowedRect = rect; }
+	}
+	return desc;
+}
+
+void SaveEditorWindow(const Window &window) {
+	EditorPrefs::SetString(kEditorWindowModeKey, magic_enum::enum_name(window.GetFullScreenMode()));
+
+	const auto rect = window.GetWindowedRect();
+	const LONG values[] = {rect.left, rect.top, rect.right, rect.bottom};
+	for (int i = 0; i < 4; i++) {
+		EditorPrefs::SetInt(kEditorWindowRectKeys[i], static_cast<int>(values[i]));
+	}
+}
+#else
+// Alt+Enter で全画面とウィンドウを切り替える（Unity の Player と同じ）
+std::optional<LRESULT> ToggleFullScreenOnAltEnter(HWND, UINT msg, WPARAM wparam, LPARAM lparam) {
+	constexpr LPARAM kAltDown = 1 << 29;
+	constexpr LPARAM kRepeat = 1 << 30;
+
+	if (msg == WM_SYSKEYDOWN && wparam == VK_RETURN && (lparam & kAltDown)) {
+		if (!(lparam & kRepeat)) { Screen::SetFullScreen(!Screen::IsFullScreen()); }
+		return 0;
+	}
+	// Alt+Enter の文字は捨てる（そのままだと警告音が鳴る）
+	if (msg == WM_SYSCHAR && wparam == VK_RETURN) { return 0; }
+	return std::nullopt;
+}
+#endif
+
 } // namespace
 
 
@@ -57,10 +108,22 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
 	// プロジェクトのフォルダ
+#ifdef WITH_EDITOR
+	const auto distributedProject = ExecutableDirectory().parent_path();
+	if (std::filesystem::is_directory(distributedProject / L"Assets")) {
+		SetProjectDirectory(distributedProject);
+	} else {
+		SetProjectDirectory(std::filesystem::path(Utf8ToWide(desc.projectDir)));
+	}
+#else
 	SetProjectDirectory(std::filesystem::path(Utf8ToWide(desc.projectDir)));
+#endif
+
+	// アプリ名
+	PlayerSettings::Load(desc.productName);
+	const auto &productName = PlayerSettings::GetProductName();
 
 	// ログ
-	const auto productName = desc.productName.empty() ? "OusiaEngine_Project" : desc.productName;
 	logSystem_ = std::make_unique<LogSystem>(LogDirectory(productName), std::span<const std::string>());
 
 #ifdef WITH_EDITOR
@@ -75,6 +138,12 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// レイヤー
 	LayerMask::LoadLayerNames();
 
+	// Build Settings
+	SceneManager::LoadBuildSettings();
+
+	// スクリプト
+	ScriptEngine::Initialize();
+
 	// オーディオ
 	if (!Audio::Initialize()) {
 		Log::Error("オーディオを初期化できませんでした。音は鳴りません");
@@ -85,7 +154,17 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	Physics::LoadDynamicsManager();
 
 	// ウィンドウ
-	window_ = Window::Create({.title = desc.title, .width = desc.width, .height = desc.height});
+#ifdef WITH_EDITOR
+	window_ = Window::Create(MakeEditorWindowDesc(productName, desc.width, desc.height));
+#else
+	window_ = Window::Create({
+		.title = productName,
+		.width = PlayerSettings::GetDefaultScreenWidth(),
+		.height = PlayerSettings::GetDefaultScreenHeight(),
+		.fullScreenMode = PlayerSettings::GetFullScreenMode()});
+	window_->AddMessageHandler(ToggleFullScreenOnAltEnter);
+#endif
+	Screen::sWindow_ = window_.get();
 
 	// デバイス
 	device_ = std::make_unique<Graphics::GraphicsDevice_DX12>(desc.validationMode);
@@ -157,6 +236,7 @@ void ou::Engine::Finalize() {
 
 	imGuiManager_.reset();
 	SceneManager::Finalize();
+	ScriptEngine::Finalize();
 
 	PhysicsWorld::Finalize();
 
@@ -180,6 +260,10 @@ void ou::Engine::Finalize() {
 
 	Graphics::GetDevice() = nullptr;
 	device_.reset();
+#ifdef WITH_EDITOR
+	SaveEditorWindow(*window_);
+#endif
+	Screen::sWindow_ = nullptr;
 	window_.reset();
 	logSystem_.reset();
 
@@ -188,6 +272,8 @@ void ou::Engine::Finalize() {
 
 
 void ou::Engine::Run() {
+	OpenFirstScene();
+
 	while (!Update()) {
 		SceneManager::Update();
 		Render();
@@ -195,6 +281,19 @@ void ou::Engine::Run() {
 }
 
 
+void ou::Engine::OpenFirstScene() {
+#ifdef WITH_EDITOR
+	EditorSceneManager::OpenLastScene();
+#else
+	if (SceneManager::GetSceneCountInBuildSettings() == 0) {
+		Log::Error("Build Settings にシーンがありません (ProjectSettings/EditorBuildSettings.json)");
+		return;
+	}
+	SceneManager::LoadScene(0);
+#endif
+}
+
+// TODO: ぐちゃぐちゃスギ
 bool ou::Engine::Update() {
 	const auto now = std::chrono::steady_clock::now();
 	const auto duration = std::chrono::duration<float>(now - lastUpdateTime_).count();
@@ -202,6 +301,13 @@ bool ou::Engine::Update() {
 	lastUpdateTime_ = now;
 
 	window_->PumpMessages();
+#ifdef WITH_EDITOR
+	// エディタは閉じる前に保存していない変更を聞く。キャンセルできるように、閉じる要求をいったん取り消す
+	if (window_->IsCloseRequested()) {
+		window_->CancelClose();
+		EditorMainWindow::RequestQuit();
+	}
+#endif
 #ifdef WITH_EDITOR
 	const auto *gameView = GameView::FindVisible();
 	Input::SetGameView(gameView ? gameView->GetImageOrigin() : Vector2::Zero,
@@ -211,12 +317,17 @@ bool ou::Engine::Update() {
 	Input::Update();
 #ifdef WITH_EDITOR
 	EditorApplication::ApplyPendingPlayModeChange();
+	EditorApplication::ReloadScriptsIfChanged();
 #endif
 	imGuiManager_->NewFrame();
 #ifdef WITH_EDITOR
 	EditorMainWindow::Draw();
 #endif
+#ifdef WITH_EDITOR
+	return EditorMainWindow::IsQuitApproved() || Application::IsQuitRequested();
+#else
 	return window_->IsCloseRequested() || Application::IsQuitRequested();
+#endif
 }
 
 

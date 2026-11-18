@@ -1,5 +1,5 @@
 #include "LayerMask.h"
-#include "Asset/Format/AssetJson.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Platform/Paths.h"
@@ -11,7 +11,6 @@
 #include <utility>
 
 using namespace ou;
-using AssetJson::Json;
 
 
 namespace {
@@ -86,12 +85,12 @@ void ou::LayerMask::LoadLayerNames() {
 	const auto path = *folder / L"TagManager.json";
 	if (!std::filesystem::exists(path)) { return; }
 
-	const auto json = AssetJson::Load(path);
+	const auto json = JsonFile::Load(path);
 	if (!json) { return; }
 
 	const auto pathUtf8 = ToUtf8(path);
 	try {
-		AssetJson::WarnUnknownKeys(*json, kTagManagerKeys, pathUtf8);
+		JsonFile::WarnUnknownKeys(*json, kTagManagerKeys, pathUtf8);
 
 		const auto it = json->find("layers");
 		if (it == json->end()) { return; }
