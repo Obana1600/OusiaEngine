@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <typeinfo>
 
 #include <imgui/imgui.h>
@@ -51,6 +52,16 @@ std::string MakeComponentTitle(Component *component, const std::string *typeName
 	return typeName ? *typeName : std::string(typeid(componentRef).name());
 }
 
+// MSVC の typeid の名前（"class ou::Texture"）から、型の名前（"Texture"）だけにする
+std::string MakeTypeName(const Object &object) {
+	std::string name = typeid(object).name();
+	for (const std::string_view prefix : {"class ", "struct "}) {
+		if (name.starts_with(prefix)) { name.erase(0, prefix.size()); }
+	}
+	if (const auto colon = name.rfind("::"); colon != std::string::npos) { name.erase(0, colon + 2); }
+	return name;
+}
+
 } // namespace
 
 
@@ -61,15 +72,24 @@ ou::InspectorWindow::InspectorWindow() {
 
 
 void ou::InspectorWindow::OnGui() {
-	auto *gameObject = Selection::GetActiveGameObject();
-	if (!gameObject) {
-		inspectedId_ = 0;
-		componentIds_.clear();
-		editors_.clear();
-		ImGui::TextDisabled("Hierarchy で GameObject を選んでください");
+	// Unity と同じく、選んでいるのが GameObject ならコンポーネントを並べ、アセットならそのアセットの Editor を 1 つ出す
+	if (auto *gameObject = Selection::GetActiveGameObject()) {
+		ClearAssetEditor();
+		DrawGameObjectInspector(gameObject);
 		return;
 	}
 
+	ClearGameObjectEditors();
+	if (Selection::GetActiveAssetPath().empty()) {
+		ClearAssetEditor();
+		ImGui::TextDisabled("Hierarchy で GameObject を、Project でアセットを選んでください");
+		return;
+	}
+	DrawAssetInspector();
+}
+
+
+void ou::InspectorWindow::DrawGameObjectInspector(GameObject *gameObject) {
 	RebuildEditorsIfNeeded(gameObject);
 
 	DrawGameObjectHeader(gameObject);
@@ -78,6 +98,13 @@ void ou::InspectorWindow::OnGui() {
 	}
 
 	DrawAddComponentButton(gameObject);
+}
+
+
+void ou::InspectorWindow::ClearGameObjectEditors() {
+	inspectedId_ = 0;
+	componentIds_.clear();
+	editors_.clear();
 }
 
 
@@ -98,6 +125,134 @@ void ou::InspectorWindow::RebuildEditorsIfNeeded(GameObject *gameObject) {
 	for (auto *component : components) {
 		editors_.push_back(Editor::Create(component));
 	}
+}
+
+
+void ou::InspectorWindow::DrawAssetInspector() {
+	auto *asset = Selection::GetActiveObject();
+	RebuildAssetEditorIfNeeded(asset);
+	DrawAssetHeader(asset);
+
+	if (!asset) {
+		if (!isFolder_) { ImGui::TextDisabled("このファイルは Inspector に出せません"); }
+		return;
+	}
+
+	// TODO: プレハブは Unity と同じく、ルートのコンポーネントを出して Open Prefab で開けるようにする
+	if (dynamic_cast<GameObject *>(asset)) {
+		ImGui::TextDisabled("プレハブの中身は、まだ Inspector で編集できません");
+		return;
+	}
+
+	auto *editor = assetEditor_.get();
+	const auto hasPreview = editor && editor->HasPreviewGui();
+
+	// Preview があるときは、その分を下に空けて、上の欄はスクロールさせる
+	const auto previewTotal = hasPreview ? (isPreviewOpen_ ? previewHeight_ : 0.0f) + ImGui::GetFrameHeightWithSpacing() + 6.0f : 0.0f;
+	const auto bodyHeight = hasPreview ? std::max(ImGui::GetContentRegionAvail().y - previewTotal, ImGui::GetFrameHeight()) : 0.0f;
+	if (ImGui::BeginChild("##AssetBody", {0.0f, bodyHeight})) {
+		// 専用の Editor がない型は、値を見せるだけにする（ファイルへ書き戻す仕組みがまだないので、変えても保存されない）
+		// TODO: Material などは専用の Editor を作り、変えたらファイルへ書き戻す
+		const auto isReadOnly = editor && typeid(*editor) == typeid(Editor);
+		ImGui::BeginDisabled(isReadOnly);
+		if (editor) { editor->OnInspectorGui(); }
+		ImGui::EndDisabled();
+	}
+	ImGui::EndChild();
+
+	if (hasPreview) { DrawPreview(editor); }
+}
+
+
+void ou::InspectorWindow::RebuildAssetEditorIfNeeded(Object *asset) {
+	const auto &assetPath = Selection::GetActiveAssetPath();
+	const auto &subAsset = Selection::GetActiveSubAsset();
+	const auto assetId = asset ? asset->GetInstanceId() : 0;
+	if (assetPath == inspectedAssetPath_ && subAsset == inspectedSubAsset_ && assetId == inspectedAssetId_) { return; }
+
+	inspectedAssetPath_ = assetPath;
+	inspectedSubAsset_ = subAsset;
+	inspectedAssetId_ = assetId;
+
+	// フォルダかは選び直したときだけ調べる（毎フレーム、ファイルを見に行かない）
+	std::error_code error;
+	const auto fullPath = AssetDatabase::AssetPathToFullPath(assetPath);
+	isFolder_ = !asset && fullPath && std::filesystem::is_directory(*fullPath, error);
+
+	// インポートし直したときも、別のオブジェクトになるので作り直す
+	assetEditor_ = (asset && !dynamic_cast<GameObject *>(asset)) ? Editor::Create(asset) : nullptr;
+}
+
+
+void ou::InspectorWindow::ClearAssetEditor() {
+	inspectedAssetPath_.clear();
+	inspectedSubAsset_.clear();
+	inspectedAssetId_ = 0;
+	isFolder_ = false;
+	assetEditor_.reset();
+}
+
+
+void ou::InspectorWindow::DrawAssetHeader(Object *asset) {
+	// 名前はファイル名（サブアセットならその名前）。型はその下に小さく出す（Unity の「Texture2D Import Settings」の行）
+	const auto &assetPath = Selection::GetActiveAssetPath();
+	const auto &subAsset = Selection::GetActiveSubAsset();
+	const auto fileName = WideToUtf8(std::filesystem::path(Utf8ToWide(assetPath)).filename().wstring());
+	const auto &name = subAsset.empty() ? fileName : subAsset;
+
+	ImGui::TextUnformatted(name.c_str());
+	const auto typeName = asset ? MakeTypeName(*asset) : std::string(isFolder_ ? "Folder" : "File");
+	ImGui::TextDisabled("%s  %s", typeName.c_str(), assetPath.c_str());
+	ImGui::SetItemTooltip("%s%s%s", assetPath.c_str(), subAsset.empty() ? "" : " : ", subAsset.c_str());
+	ImGui::Separator();
+}
+
+
+void ou::InspectorWindow::DrawPreview(Editor *editor) {
+	// 境目。ドラッグで Preview の高さを変える
+	ImGui::InvisibleButton("##PreviewSplitter", {-FLT_MIN, 6.0f});
+	if (ImGui::IsItemHovered() || ImGui::IsItemActive()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); }
+	if (ImGui::IsItemActive() && isPreviewOpen_) {
+		previewHeight_ -= ImGui::GetIO().MouseDelta.y;
+	}
+	{
+		const auto min = ImGui::GetItemRectMin();
+		const auto max = ImGui::GetItemRectMax();
+		const auto y = (min.y + max.y) * 0.5f;
+		ImGui::GetWindowDrawList()->AddLine({min.x, y}, {max.x, y}, ImGui::GetColorU32(ImGuiCol_Separator));
+	}
+
+	// 見出し（クリックで開け閉め）と、Editor の設定のボタン
+	const auto title = editor->GetPreviewTitle();
+	if (ImGui::ArrowButton("##PreviewToggle", isPreviewOpen_ ? ImGuiDir_Down : ImGuiDir_Right)) {
+		isPreviewOpen_ = !isPreviewOpen_;
+	}
+	ImGui::SameLine();
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted(title.empty() ? "Preview" : title.c_str());
+	if (ImGui::IsItemClicked()) { isPreviewOpen_ = !isPreviewOpen_; }
+	ImGui::SameLine();
+	ImGui::PushID("##PreviewSettings");
+	editor->OnPreviewSettings();
+	ImGui::PopID();
+
+	if (!isPreviewOpen_) { return; }
+
+	// 高さは、上の欄を少しは残す
+	const auto available = ImGui::GetContentRegionAvail();
+	previewHeight_ = std::clamp(previewHeight_, 40.0f, std::max(ImGui::GetWindowHeight() - 120.0f, 40.0f));
+
+	constexpr auto kFlags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(32, 32, 32, 255));
+	if (ImGui::BeginChild("##Preview", {0.0f, std::max(available.y, 1.0f)}, ImGuiChildFlags_None, kFlags)) {
+		const auto pos = ImGui::GetCursorScreenPos();
+		const auto size = ImGui::GetContentRegionAvail();
+		ImGui::GetWindowDrawList()->PushClipRect(pos, {pos.x + size.x, pos.y + size.y}, true);
+		editor->OnPreviewGui(Rect(pos.x, pos.y, size.x, size.y));
+		ImGui::GetWindowDrawList()->PopClipRect();
+	}
+	ImGui::EndChild();
+	ImGui::PopStyleColor();
 }
 
 

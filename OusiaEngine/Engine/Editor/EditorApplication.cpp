@@ -151,7 +151,8 @@ void ou::EditorApplication::ReloadScriptsIfChanged() {
 
 	auto *reloaded = SceneManager::GetActiveScene();
 	if (isDirty) { EditorSceneManager::MarkSceneDirty(reloaded); }
-	Selection::SetActiveGameObject(FindGameObjectByFileId(*reloaded, selectedFileId));
+	// アセットを選んでいたときは、そのまま残す
+	if (selected) { Selection::SetActiveGameObject(FindGameObjectByFileId(*reloaded, selectedFileId)); }
 
 	Log::Info("スクリプトを読み直しました");
 }

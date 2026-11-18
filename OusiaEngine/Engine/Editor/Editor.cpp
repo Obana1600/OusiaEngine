@@ -1,5 +1,6 @@
 #include "Editor.h"
 #include "Editor/CustomEditor.h"
+#include "Core/Object.h"
 #include "Editor/EditorGuiLayout.h"
 
 using namespace ou;
@@ -32,6 +33,11 @@ bool ou::Editor::DrawDefaultInspector() {
 	}
 
 	return serializedObject_->ApplyModifiedProperties();
+}
+
+
+std::string ou::Editor::GetPreviewTitle() const {
+	return target_ ? target_->GetName() : std::string();
 }
 
 

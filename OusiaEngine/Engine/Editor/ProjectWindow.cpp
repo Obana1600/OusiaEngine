@@ -7,6 +7,7 @@
 #include "Editor/EditorPayload.h"
 #include "Editor/ExternalScriptEditor.h"
 #include "Editor/PrefabUtility.h"
+#include "Editor/Selection.h"
 #include "Platform/Paths.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -225,9 +226,9 @@ void ou::ProjectWindow::OnGui() {
 	}
 
 	// Delete キーで、選んでいるものを消す（サブアセットは消せない）
-	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete) && !selectedItem_.empty()) {
-		const auto selected = EditorPayload::DecodeAsset(selectedItem_.c_str(), static_cast<int>(selectedItem_.size()) + 1);
-		if (selected.subAsset.empty()) { BeginDelete(selected.path); }
+	const auto &selectedPath = Selection::GetActiveAssetPath();
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete) && !selectedPath.empty()) {
+		if (Selection::GetActiveSubAsset().empty()) { BeginDelete(selectedPath); }
 	}
 
 	DrawCreatePopup();
@@ -304,11 +305,11 @@ void ou::ProjectWindow::DrawContents() {
 
 void ou::ProjectWindow::DrawFolderItem(const std::string &assetPath, const std::string &name) {
 	constexpr auto kFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
-	const auto isSelected = selectedItem_ == EditorPayload::EncodeAsset(assetPath, {});
+	const auto isSelected = Selection::IsAssetSelected(assetPath);
 	ImGui::TreeNodeEx(assetPath.c_str(), kFlags | (isSelected ? ImGuiTreeNodeFlags_Selected : 0), "%s/", name.c_str());
 
 	if (ImGui::IsItemClicked()) {
-		selectedItem_ = EditorPayload::EncodeAsset(assetPath, {});
+		Selection::SetActiveAsset(assetPath);
 	}
 	if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 		selectedFolder_ = assetPath;
@@ -324,7 +325,7 @@ void ou::ProjectWindow::DrawFileItem(const std::string &assetPath, const std::fi
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth;
 	flags |= isModel ? ImGuiTreeNodeFlags_OpenOnArrow : (ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
-	if (selectedItem_ == EditorPayload::EncodeAsset(assetPath, {})) { flags |= ImGuiTreeNodeFlags_Selected; }
+	if (Selection::IsAssetSelected(assetPath)) { flags |= ImGuiTreeNodeFlags_Selected; }
 
 	const auto isOpen = ImGui::TreeNodeEx(assetPath.c_str(), flags, "%s", ToUtf8(fullPath.filename()).c_str());
 	HandleItem(assetPath, {});
@@ -347,7 +348,8 @@ void ou::ProjectWindow::DrawSubAssets(const std::string &assetPath) {
 	constexpr auto kFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
 	for (const auto &sub : importer->GetSubAssets()) {
 		const auto key = EditorPayload::EncodeAsset(assetPath, sub.name);
-		ImGui::TreeNodeEx(key.c_str(), kFlags | (selectedItem_ == key ? ImGuiTreeNodeFlags_Selected : 0), "%s", sub.name.c_str());
+		const auto isSelected = Selection::IsAssetSelected(assetPath, sub.name);
+		ImGui::TreeNodeEx(key.c_str(), kFlags | (isSelected ? ImGuiTreeNodeFlags_Selected : 0), "%s", sub.name.c_str());
 		HandleItem(assetPath, sub.name);
 	}
 }
@@ -357,7 +359,7 @@ void ou::ProjectWindow::HandleItem(const std::string &assetPath, const std::stri
 	const auto payload = EditorPayload::EncodeAsset(assetPath, subAsset);
 
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-		selectedItem_ = payload;
+		Selection::SetActiveAsset(assetPath, subAsset);
 	}
 
 	// ダブルクリックで開く（.scene はシーン、.as は外部のエディタ）
@@ -377,7 +379,7 @@ void ou::ProjectWindow::DrawItemMenu(const std::string &assetPath) {
 	// 行は TreePush しないので、名前にパスを入れないと、すべての行が同じポップアップになる（開くと全部の行の分が並ぶ）
 	if (!ImGui::BeginPopupContextItem(("##ItemMenu" + assetPath).c_str())) { return; }
 
-	selectedItem_ = EditorPayload::EncodeAsset(assetPath, {});
+	Selection::SetActiveAsset(assetPath);
 	DrawCreateMenu();
 	ImGui::Separator();
 
@@ -459,7 +461,7 @@ void ou::ProjectWindow::DrawCreatePopup() {
 		if (isCreated) {
 			// .meta を作る。スクリプトのコンパイルは、書き換えを見ているエディタが 1 秒以内にする
 			AssetDatabase::Refresh();
-			selectedItem_ = EditorPayload::EncodeAsset(creatingFolder_ + "/" + fileName, {});
+			Selection::SetActiveAsset(creatingFolder_ + "/" + fileName);
 			Log::Info("{}を作りました: {}/{}", isScript ? "スクリプト" : "フォルダ", creatingFolder_, fileName);
 		} else {
 			Log::Error("作れませんでした: {}", ToUtf8(fullPath));
@@ -508,7 +510,7 @@ void ou::ProjectWindow::SaveDroppedGameObject(const std::string &target) {
 	if (!assetPath) { return; }
 
 	if (PrefabUtility::SaveAsPrefabAsset(gameObject, *assetPath)) {
-		selectedItem_ = EditorPayload::EncodeAsset(*assetPath, {});
+		Selection::SetActiveAsset(*assetPath);
 	}
 }
 
@@ -558,7 +560,7 @@ void ou::ProjectWindow::DrawDeletePopup() {
 			if (IsSameOrInside(selectedFolder_, deletingPath_)) {
 				selectedFolder_ = deletingPath_.substr(0, deletingPath_.find_last_of('/'));
 			}
-			selectedItem_.clear();
+			if (IsSameOrInside(Selection::GetActiveAssetPath(), deletingPath_)) { Selection::Clear(); }
 			Log::Info("ごみ箱に移しました: {}", deletingPath_);
 		} else {
 			Log::Error("削除できませんでした: {}", deletingPath_);

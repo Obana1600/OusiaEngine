@@ -54,6 +54,7 @@ struct SoundInstanceInternal {
 	std::shared_ptr<SoundInternal> sound;
 	IXAudio2SourceVoice *voice = nullptr;
 	PlayState state = PlayState::Stopped;
+	uint64_t startSamplesPlayed = 0; // 頭から鳴らしはじめたときの SamplesPlayed（再生位置はここからの差）
 
 	~SoundInstanceInternal() {
 		if (voice && sXAudio) {
@@ -228,6 +229,52 @@ Audio::SoundInfo ou::Audio::GetSoundInfo(const Sound &sound) {
 }
 
 
+std::vector<Audio::WaveformPeak> ou::Audio::GetWaveformPeaks(const Sound &sound, uint32_t channel, uint32_t bucketCount) {
+	const auto *internal = static_cast<const SoundInternal *>(sound.internalState.get());
+	if (!internal || bucketCount == 0) { return {}; }
+
+	// Media Foundation に PCM（整数）で出させているので、整数の PCM だけを読む
+	const auto *format = internal->GetFormat();
+	const auto blockAlign = static_cast<size_t>(format->nBlockAlign);
+	const auto bytesPerSample = static_cast<size_t>(format->wBitsPerSample / 8);
+	if (blockAlign == 0 || bytesPerSample == 0 || bytesPerSample > 4 || channel >= format->nChannels) { return {}; }
+
+	const auto *data = internal->audioData.data();
+	const auto frames = internal->audioData.size() / blockAlign;
+	const auto readSample = [&](size_t frame) {
+		const auto *bytes = data + frame * blockAlign + channel * bytesPerSample;
+		switch (bytesPerSample) {
+		case 1: return (static_cast<float>(bytes[0]) - 128.0f) / 128.0f; // 8 ビットだけ符号なし
+		case 2: return static_cast<float>(static_cast<int16_t>(bytes[0] | (bytes[1] << 8))) / 32768.0f;
+		case 3: {
+			const auto value = static_cast<int32_t>((static_cast<uint32_t>(bytes[0]) << 8) | (static_cast<uint32_t>(bytes[1]) << 16) | (static_cast<uint32_t>(bytes[2]) << 24));
+			return static_cast<float>(value >> 8) / 8388608.0f;
+		}
+		default: {
+			const auto value = static_cast<int32_t>(static_cast<uint32_t>(bytes[0]) | (static_cast<uint32_t>(bytes[1]) << 8) | (static_cast<uint32_t>(bytes[2]) << 16) | (static_cast<uint32_t>(bytes[3]) << 24));
+			return static_cast<float>(static_cast<double>(value) / 2147483648.0);
+		}
+		}
+	};
+
+	std::vector<WaveformPeak> peaks(bucketCount);
+	for (uint32_t i = 0; i < bucketCount; i++) {
+		const auto begin = frames * i / bucketCount;
+		const auto end = std::max(frames * (i + 1) / bucketCount, begin + 1);
+		if (begin >= frames) { break; }
+
+		auto &peak = peaks[i];
+		peak.min = peak.max = readSample(begin);
+		for (auto frame = begin + 1; frame < std::min(end, frames); frame++) {
+			const auto sample = readSample(frame);
+			peak.min = std::min(peak.min, sample);
+			peak.max = std::max(peak.max, sample);
+		}
+	}
+	return peaks;
+}
+
+
 bool ou::Audio::CreateSoundInstance(const Sound *sound, SoundInstance *instance) {
 	if (!sXAudio || !sound || !sound->IsValid() || !instance) { return false; }
 
@@ -272,6 +319,11 @@ void ou::Audio::Play(SoundInstance *instance) {
 	buffer.LoopCount = instance->loop ? XAUDIO2_LOOP_INFINITE : 0;
 	internal->voice->SubmitSourceBuffer(&buffer);
 
+	// SamplesPlayed は途中で止めても 0 に戻らないので、鳴らしはじめの値を覚えておく
+	XAUDIO2_VOICE_STATE state{};
+	internal->voice->GetState(&state);
+	internal->startSamplesPlayed = state.SamplesPlayed;
+
 	internal->voice->Start();
 	internal->state = PlayState::Playing;
 }
@@ -309,6 +361,24 @@ bool ou::Audio::IsPlaying(const SoundInstance *instance) {
 bool ou::Audio::IsPaused(const SoundInstance *instance) {
 	const auto *internal = ToInternal(instance);
 	return internal && internal->state == PlayState::Paused;
+}
+
+
+uint64_t ou::Audio::GetPlaybackPosition(const SoundInstance *instance) {
+	const auto *internal = ToInternal(instance);
+	if (!internal || internal->state == PlayState::Stopped) { return 0; }
+
+	const auto blockAlign = internal->sound->GetFormat()->nBlockAlign;
+	const auto frames = blockAlign ? internal->sound->audioData.size() / blockAlign : 0;
+	if (frames == 0) { return 0; }
+
+	// 終わりまで鳴ると SamplesPlayed は 0 に戻るので、そのときは終わりにしておく
+	XAUDIO2_VOICE_STATE state{};
+	internal->voice->GetState(&state);
+	if (state.SamplesPlayed < internal->startSamplesPlayed) { return frames; }
+
+	const auto played = state.SamplesPlayed - internal->startSamplesPlayed;
+	return instance->loop ? played % frames : std::min<uint64_t>(played, frames);
 }
 
 
