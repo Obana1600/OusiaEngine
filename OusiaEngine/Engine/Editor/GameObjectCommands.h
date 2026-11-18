@@ -41,7 +41,7 @@ public: // 静的メンバ関数
 	// Ctrl+C / Ctrl+V / Ctrl+Shift+V / Ctrl+D / Delete。ウィンドウの OnGui の中で呼ぶ（そのウィンドウを選んでいるときだけ効く）
 	static void HandleShortcuts();
 
-	// Unity と同じく "Cube" → "Cube (1)"。兄弟（self は除く）と重ならない、いちばん小さい番号を付ける
+	// 兄弟（self は除く）に同じ名前があるときだけ、重ならないいちばん小さい番号を付ける（"Cube" → "Cube (1)"）
 	static std::string MakeUniqueName(const std::string &name, const GameObject *self);
 
 

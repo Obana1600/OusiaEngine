@@ -9,6 +9,7 @@
 #include "Scene/Transform.h"
 #include "Serialize/SceneSerializer.h"
 
+#include <algorithm>
 #include <cctype>
 #include <limits>
 #include <string_view>
@@ -207,13 +208,21 @@ void ou::GameObjectCommands::HandleShortcuts() {
 
 
 std::string ou::GameObjectCommands::MakeUniqueName(const std::string &name, const GameObject *self) {
+	const auto siblings = CollectSiblings(self);
+
+	// 兄弟に同じ名前がなければ、そのまま使う（番号は重なりを避けるためだけに付ける）
+	const auto isTaken = std::any_of(siblings.begin(), siblings.end(), [&](const GameObject *sibling) {
+		return sibling != self && !sibling->IsDestroyed() && sibling->GetName() == name;
+	});
+	if (!isTaken) { return name; }
+
 	std::string_view base = name;
 	int number = 0;
 	SplitNumberedName(name, base, number);
 
 	// 兄弟で使っている番号（番号なしの同じ名前は 0）
 	std::unordered_set<int> used;
-	for (const auto *sibling : CollectSiblings(self)) {
+	for (const auto *sibling : siblings) {
 		if (sibling == self || sibling->IsDestroyed()) { continue; }
 
 		const std::string_view siblingName = sibling->GetName();
