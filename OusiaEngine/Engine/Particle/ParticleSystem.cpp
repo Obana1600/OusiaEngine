@@ -4,6 +4,7 @@
 #include "Math/Random.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
+#include "Render/Gizmos.h"
 
 #include <utility>
 
@@ -289,4 +290,9 @@ ParticleSystem::Particle ou::ParticleSystem::MakeParticle() const {
 	}
 
 	return particle;
+}
+
+
+void ou::ParticleSystem::OnDrawGizmos() {
+	Gizmos::DrawIcon(GetTransform()->GetWorldPosition(), "ParticleSystem");
 }

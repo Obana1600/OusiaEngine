@@ -136,6 +136,8 @@
     <ClInclude Include="UI\EventSystem\EventInterfaces.h" />
     <ClInclude Include="Render\Light.h" />
     <ClInclude Include="Render\LineRenderer.h" />
+    <ClInclude Include="Render\Gizmos.h" />
+    <ClInclude Include="Editor\GizmoRenderer.h" />
     <ClInclude Include="Physics\Collision.h" />
     <ClInclude Include="Input\GamepadButton.h" />
     <ClInclude Include="Input\Input.h" />
@@ -314,6 +316,8 @@
     <ClCompile Include="UI\EventSystem\EventSystem.cpp" />
     <ClCompile Include="Render\Light.cpp" />
     <ClCompile Include="Render\LineRenderer.cpp" />
+    <ClCompile Include="Render\Gizmos.cpp" />
+    <ClCompile Include="Editor\GizmoRenderer.cpp" />
     <ClCompile Include="Physics\Collision.cpp" />
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Input\Windows\RawInput.cpp" />
@@ -399,6 +403,8 @@
     <None Include="EngineAssets\Shader\Error.shader" />
     <None Include="EngineAssets\Shader\Line.hlsli" />
     <None Include="EngineAssets\Shader\Line.shader" />
+    <None Include="EngineAssets\Shader\Gizmo.hlsli" />
+    <None Include="EngineAssets\Shader\Gizmo.shader" />
     <None Include="EngineAssets\Shader\Particle.hlsli" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
     <None Include="EngineAssets\Shader\Standard.hlsli" />
@@ -497,7 +503,25 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <FileType>Document</FileType>
     </None>
+    <None Include="EngineAssets\Shader\Gizmo.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
     <None Include="EngineAssets\Shader\Line.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\Gizmo.VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>

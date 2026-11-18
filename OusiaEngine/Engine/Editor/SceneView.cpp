@@ -3,6 +3,7 @@
 #include "Editor/EditorFunc.h"
 #include "Editor/EditorPayload.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/GizmoRenderer.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
 #include "Editor/Undo.h"
@@ -116,9 +117,22 @@ void ou::SceneView::OnGui() {
 	const auto isImageHovered = ImGui::IsItemHovered();
 	const auto imageMin = ImGui::GetItemRectMin();
 	AcceptAssetDrop();
+
+	// アイコンを Transform のハンドルの下に敷くため、描く順と重なる順を分ける（ハンドルは上の層に描く）
+	auto *drawList = ImGui::GetWindowDrawList();
+	ImDrawListSplitter splitter;
+	splitter.Split(drawList, 2);
+	splitter.SetCurrentChannel(drawList, 1);
 	const auto isHandleHot = DrawTransformHandle();
+	// ハンドルで動かしたあとの位置で描く
+	splitter.SetCurrentChannel(drawList, 0);
+	const auto sceneRect = Rect(imageMin.x, imageMin.y, size.x, size.y);
+	GizmoRenderer::Collect(SceneManager::GetActiveScene());
+	GizmoRenderer::DrawIcons(MakePerCamera(), sceneRect, drawList);
+	splitter.Merge(drawList);
+
 	// パネルは子ウィンドウなので、上に乗っているあいだは絵の IsItemHovered が false になり、カメラは動かない
-	DrawSceneGuis(Rect(imageMin.x, imageMin.y, size.x, size.y));
+	DrawSceneGuis(sceneRect);
 	HandleInput(isImageHovered && !isHandleHot);
 
 	sLastDrawn = this;
@@ -136,6 +150,10 @@ void ou::SceneView::DrawToolbar() {
 	if (ImGui::Button(isLocal ? "Local" : "Global")) {
 		Tools::SetPivotRotation(isLocal ? PivotRotation::Global : PivotRotation::Local);
 	}
+
+	ImGui::SameLine();
+	auto isGizmosEnabled = GizmoRenderer::IsEnabled();
+	if (ImGui::Checkbox("Gizmos", &isGizmosEnabled)) { GizmoRenderer::SetEnabled(isGizmosEnabled); }
 }
 
 

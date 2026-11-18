@@ -9,6 +9,7 @@
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Platform/Screen.h"
+#include "Render/Gizmos.h"
 #include "Script/ScriptBindingsInternal.h"
 
 #include <algorithm>
@@ -159,6 +160,19 @@ float GetAxis(const std::string &axisName) {
 	return 0.0f;
 }
 
+
+
+// ---- Gizmos ----
+
+Color GetGizmosColor() { return Gizmos::GetColor(); }
+void SetGizmosColor(const Color &value) { Gizmos::SetColor(value); }
+void GizmosDrawLine(const Vector3 &from, const Vector3 &to) { Gizmos::DrawLine(from, to); }
+void GizmosDrawRay(const Vector3 &from, const Vector3 &direction) { Gizmos::DrawRay(from, direction); }
+void GizmosDrawWireCube(const Vector3 &center, const Vector3 &size) { Gizmos::DrawWireCube(center, size); }
+void GizmosDrawWireSphere(const Vector3 &center, float radius) { Gizmos::DrawWireSphere(center, radius); }
+void GizmosDrawFrustum(const Vector3 &center, float fov, float maxRange, float minRange, float aspect) { Gizmos::DrawFrustum(center, fov, maxRange, minRange, aspect); }
+void GizmosDrawIcon(const Vector3 &center, const std::string &name, bool allowScaling) { Gizmos::DrawIcon(center, name, allowScaling); }
+void GizmosDrawIconTint(const Vector3 &center, const std::string &name, bool allowScaling, const Color &tint) { Gizmos::DrawIcon(center, name, allowScaling, tint); }
 } // namespace
 
 
@@ -182,6 +196,7 @@ void ou::ScriptBindings::Register(asIScriptEngine *engine) {
 	RegisterInput(engine);
 	RegisterScreen(engine);
 	RegisterApplication(engine);
+	RegisterGizmos(engine);
 }
 
 
@@ -356,6 +371,28 @@ void ou::ScriptBindings::RegisterInput(asIScriptEngine *engine) {
 	global("Vector2 get_mouseScrollDelta() property", asFUNCTION(GetMouseScrollDelta));
 	global("float GetAxis(const string &in axisName)", asFUNCTION(GetAxis));
 	global("float GetAxisRaw(const string &in axisName)", asFUNCTION(GetAxis));
+
+	engine->SetDefaultNamespace("");
+}
+
+
+void ou::ScriptBindings::RegisterGizmos(asIScriptEngine *engine) {
+	// Unity と同じく OnDrawGizmos / OnDrawGizmosSelected の中でだけ描ける（Gizmos::color = Color::red; Gizmos::DrawWireSphere(...)）
+	// Gizmos.matrix は、スクリプトに Matrix4x4 がまだないので出していない
+	engine->SetDefaultNamespace("Gizmos");
+
+	const auto global = [&](const char *declaration, const asSFuncPtr &function) {
+		Check(engine->RegisterGlobalFunction(declaration, function, asCALL_CDECL), declaration);
+	};
+	global("Color get_color() property", asFUNCTION(GetGizmosColor));
+	global("void set_color(const Color &in value) property", asFUNCTION(SetGizmosColor));
+	global("void DrawLine(const Vector3 &in from, const Vector3 &in to)", asFUNCTION(GizmosDrawLine));
+	global("void DrawRay(const Vector3 &in from, const Vector3 &in direction)", asFUNCTION(GizmosDrawRay));
+	global("void DrawWireCube(const Vector3 &in center, const Vector3 &in size)", asFUNCTION(GizmosDrawWireCube));
+	global("void DrawWireSphere(const Vector3 &in center, float radius)", asFUNCTION(GizmosDrawWireSphere));
+	global("void DrawFrustum(const Vector3 &in center, float fov, float maxRange, float minRange, float aspect)", asFUNCTION(GizmosDrawFrustum));
+	global("void DrawIcon(const Vector3 &in center, const string &in name, bool allowScaling = true)", asFUNCTION(GizmosDrawIcon));
+	global("void DrawIcon(const Vector3 &in center, const string &in name, bool allowScaling, const Color &in tint)", asFUNCTION(GizmosDrawIconTint));
 
 	engine->SetDefaultNamespace("");
 }

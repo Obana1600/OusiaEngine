@@ -29,6 +29,7 @@
 #include "Editor/LogEntries.h"
 #include "Editor/ParticleEffectPreview.h"
 #include "Editor/GameView.h"
+#include "Editor/GizmoRenderer.h"
 #include "Editor/SceneView.h"
 #include "Editor/Undo.h"
 #endif
@@ -218,6 +219,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	Text::StaticInitialize();
 	ParticleSystemRenderer::StaticInitialize();
 	LineRenderer::StaticInitialize();
+#ifdef WITH_EDITOR
+	GizmoRenderer::StaticInitialize();
+#endif
 
 	// 入力
 	if (!Input::Initialize(window_.get())) {
@@ -238,6 +242,7 @@ void ou::Engine::Finalize() {
 
 #ifdef WITH_EDITOR
 	EditorWindow::DestroyAll();
+	GizmoRenderer::StaticFinalize();
 #endif
 
 	imGuiManager_.reset();
@@ -399,7 +404,10 @@ void ou::Engine::RenderSceneView(const SceneView &sceneView, Graphics::CommandLi
 #ifdef WITH_EDITOR
 	const auto &target = sceneView.GetRenderTarget();
 	target.BeginScenePass(cmd);
-	SceneManager::RenderWithCamera(sceneView.MakePerCamera(), cmd);
+	const auto camera = sceneView.MakePerCamera();
+	SceneManager::RenderWithCamera(camera, cmd);
+	// 深度が残っているうちに、Gizmo の線を描く（物の裏は薄くなる）
+	GizmoRenderer::Render(camera, cmd);
 	device_->RenderPassEnd(cmd);
 #else
 	(void)sceneView;

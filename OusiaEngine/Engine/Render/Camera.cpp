@@ -4,6 +4,7 @@
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
+#include "Render/Gizmos.h"
 
 using namespace ou;
 
@@ -96,4 +97,17 @@ void ou::Camera::SetFarClipPlane(float farClipPlane) {
 
 float ou::Camera::GetFarClipPlane() const {
 	return farClipPlane_;
+}
+
+
+void ou::Camera::OnDrawGizmos() {
+	Gizmos::DrawIcon(GetTransform()->GetWorldPosition(), "Camera");
+}
+
+
+void ou::Camera::OnDrawGizmosSelected() {
+	const auto *transform = GetTransform();
+	Gizmos::SetColor(Color(0.9f, 0.9f, 0.9f, 0.6f));
+	Gizmos::SetMatrix(Matrix4x4::SRT(Vector3::One, transform->GetWorldRotation(), transform->GetWorldPosition()));
+	Gizmos::DrawFrustum(Vector3::Zero, fieldOfView_, farClipPlane_, nearClipPlane_, GetAspect());
 }

@@ -19,8 +19,9 @@ using namespace ou;
 namespace {
 
 // エンジンが呼ぶメッセージは、Inspector の一覧に出さない（C# では private にするのが普通なので、Unity の一覧にも出ない）
-constexpr std::array<std::string_view, 15> kMessageNames = {
+constexpr std::array<std::string_view, 17> kMessageNames = {
 	"Awake", "Start", "FixedUpdate", "Update", "LateUpdate", "OnDestroy", "OnEnable", "OnDisable", "OnValidate",
+	"OnDrawGizmos", "OnDrawGizmosSelected",
 	"OnCollisionEnter", "OnCollisionStay", "OnCollisionExit", "OnTriggerEnter", "OnTriggerStay", "OnTriggerExit"};
 
 // 引数の型から、渡す値の型を決める（使えない型なら false）
@@ -143,6 +144,19 @@ void ou::MonoBehavior::OnValidate() {
 }
 
 
+void ou::MonoBehavior::OnDrawGizmos() {
+	// OnValidate と同じく、編集中（Awake 前）でも呼ぶ
+	if (!instance_ || !methods_.onDrawGizmos) { return; }
+	ScriptEngine::CallMethod(instance_, methods_.onDrawGizmos);
+}
+
+
+void ou::MonoBehavior::OnDrawGizmosSelected() {
+	if (!instance_ || !methods_.onDrawGizmosSelected) { return; }
+	ScriptEngine::CallMethod(instance_, methods_.onDrawGizmosSelected);
+}
+
+
 void ou::MonoBehavior::Serialize(Serializer &serializer) {
 	Behavior::Serialize(serializer);
 
@@ -196,6 +210,8 @@ void ou::MonoBehavior::CreateInstance() {
 	methods_.onEnable = type->GetMethodByDecl("void OnEnable()");
 	methods_.onDisable = type->GetMethodByDecl("void OnDisable()");
 	methods_.onValidate = type->GetMethodByDecl("void OnValidate()");
+	methods_.onDrawGizmos = type->GetMethodByDecl("void OnDrawGizmos()");
+	methods_.onDrawGizmosSelected = type->GetMethodByDecl("void OnDrawGizmosSelected()");
 	methods_.onCollisionEnter = type->GetMethodByDecl("void OnCollisionEnter(Collision)");
 	methods_.onCollisionStay = type->GetMethodByDecl("void OnCollisionStay(Collision)");
 	methods_.onCollisionExit = type->GetMethodByDecl("void OnCollisionExit(Collision)");

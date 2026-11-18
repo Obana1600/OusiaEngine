@@ -48,6 +48,8 @@ public: // メンバ関数
 	void OnTriggerExit(Collider *other) override;
 
 	void OnValidate() override;
+	void OnDrawGizmos() override;
+	void OnDrawGizmosSelected() override;
 
 	void Serialize(Serializer &serializer) override;
 
@@ -65,6 +67,8 @@ private: // インナークラス
 		asIScriptFunction *onEnable = nullptr;
 		asIScriptFunction *onDisable = nullptr;
 		asIScriptFunction *onValidate = nullptr;
+		asIScriptFunction *onDrawGizmos = nullptr;
+		asIScriptFunction *onDrawGizmosSelected = nullptr;
 
 		asIScriptFunction *onCollisionEnter = nullptr;
 		asIScriptFunction *onCollisionStay = nullptr;

@@ -3,10 +3,18 @@
 #include "Math/Matrix4x4.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
+#include "Render/Gizmos.h"
 
 #include <algorithm>
 
 using namespace ou;
+
+namespace {
+
+// Unity のコライダーの Gizmo の色
+const Color kColliderColor{0.57f, 0.96f, 0.54f, 0.75f};
+
+} // namespace
 
 
 void ou::CapsuleCollider::Serialize(Serializer &serializer) {
@@ -132,4 +140,12 @@ CapsuleCollider::WorldCapsule ou::CapsuleCollider::CalculateWorldCapsule() const
 	capsule.point0 = center - offset;
 	capsule.point1 = center + offset;
 	return capsule;
+}
+
+
+void ou::CapsuleCollider::OnDrawGizmosSelected() {
+	// 物理と同じ、大きさを掛けたあとのカプセル
+	const auto capsule = CalculateWorldCapsule();
+	Gizmos::SetColor(kColliderColor);
+	Gizmos::DrawWireCapsule(capsule.point0, capsule.point1, capsule.radius);
 }

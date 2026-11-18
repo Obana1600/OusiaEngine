@@ -41,6 +41,7 @@ private: // 静的メンバ関数
 	static void RegisterInput(asIScriptEngine *engine);
 	static void RegisterScreen(asIScriptEngine *engine);
 	static void RegisterApplication(asIScriptEngine *engine);
+	static void RegisterGizmos(asIScriptEngine *engine);
 
 	// ScriptBindingsMath.cpp
 	static void RegisterValueTypes(asIScriptEngine *engine);

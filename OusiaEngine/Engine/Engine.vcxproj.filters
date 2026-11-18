@@ -292,6 +292,12 @@
     <ClInclude Include="Render\LineRenderer.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Render\Gizmos.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\GizmoRenderer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="Render\Light.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -807,6 +813,12 @@
     <ClCompile Include="Render\LineRenderer.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Render\Gizmos.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\GizmoRenderer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="Render\Light.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -1131,6 +1143,18 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="EngineAssets\Shader\Line.shader">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Gizmo.shader">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Gizmo.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Gizmo.PS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Gizmo.VS.hlsl">
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="EngineAssets\Shader\Error.PS.hlsl">
