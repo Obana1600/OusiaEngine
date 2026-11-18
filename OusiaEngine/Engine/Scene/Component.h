@@ -34,6 +34,10 @@ public: // メンバ関数
 	virtual void OnCollisionExit(const Collision &) {};
 	virtual void OnControllerColliderHit(const ControllerColliderHit &) {};
 
+	// Unity の OnValidate。エディタだけで、Inspector で値を変えたときと、シーンを読んだときに呼ぶ
+	// Awake より先に呼ばれることもあるので、ほかのコンポーネントがまだ準備できていなくても落ちないように書く
+	virtual void OnValidate() {};
+
 	GameObject *GetGameObject() const;
 	Transform *GetTransform() const;
 

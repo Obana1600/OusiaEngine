@@ -34,6 +34,7 @@ public: // メンバ関数
 	void OnDisable() override;
 	void OnDestroy() override;
 	void Serialize(Serializer &serializer) override;
+	void OnValidate() override;
 
 	void SetInteractable(bool interactable);
 	bool IsInteractable() const;

@@ -145,6 +145,9 @@ bool ou::Graphic::GetRaycastTarget() const {
 
 
 void ou::Graphic::CrossFadeColor(const Color &targetColor, float duration, bool ignoreTimeScale, bool useAlpha) {
+	// Awake 前（シーンを読んだときの OnValidate など）は CanvasRenderer がまだない
+	if (!canvasRenderer_) { return; }
+
 	const auto &currentColor = canvasRenderer_->GetColor();
 	auto target = targetColor;
 	if (!useAlpha) { target.a = currentColor.a; }

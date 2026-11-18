@@ -293,6 +293,15 @@ std::vector<GameObject *> ou::SceneSerializer::CreateGameObjects(Scene &scene, c
 		created.push_back(gameObject);
 	}
 
+#ifdef WITH_EDITOR
+	// Unity と同じく、エディタではシーンを読んだときにも OnValidate を呼ぶ（Instantiate やプレハブの読み込みでは呼ばない）
+	if (awake) {
+		for (const auto &[component, json] : loadedComponents) {
+			component->OnValidate();
+		}
+	}
+#endif
+
 	if (awake) {
 		for (auto *gameObject : created) {
 			if (!gameObject->GetTransform()->GetParent()) {

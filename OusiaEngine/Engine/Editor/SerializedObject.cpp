@@ -73,6 +73,7 @@ bool ou::SerializedObject::ApplyModifiedProperties() {
 	JsonReader reader(partial, sceneObjects_.objectsById);
 	target_->Serialize(reader);
 	target_->AwakeFromLoad();
+	if (auto *component = dynamic_cast<Component *>(target_)) { component->OnValidate(); }
 
 	if (auto *scene = FindScene(target_)) { EditorSceneManager::MarkSceneDirty(scene); }
 	return true;

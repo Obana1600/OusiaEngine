@@ -1,4 +1,5 @@
 #include "Selectable.h"
+#include "Core/Application.h"
 #include "Scene/GameObject.h"
 #include "Serialize/Serializer.h"
 #include "UI/EventSystem/EventSystem.h"
@@ -79,6 +80,24 @@ void ou::Selectable::Serialize(Serializer &serializer) {
 		serializer.Field("colorMultiplier", colors_.colorMultiplier);
 		serializer.Field("fadeDuration", colors_.fadeDuration);
 	});
+}
+
+
+void ou::Selectable::OnValidate() {
+	Behavior::OnValidate();
+
+	colors_.fadeDuration = std::max(colors_.fadeDuration, 0.0f);
+
+	if (!IsActiveAndEnabled()) { return; }
+
+	// Inspector で interactable を外したら、選択も外す
+	auto *eventSystem = EventSystem::GetCurrent();
+	if (!interactable_ && eventSystem && eventSystem->GetCurrentSelectedGameObject() == GetGameObject()) {
+		eventSystem->SetSelectedGameObject(nullptr);
+	}
+
+	// Unity と同じく、編集中はすぐに、実行中はフェードして今の状態の色にする
+	DoStateTransition(GetCurrentSelectionState(), !Application::IsPlaying());
 }
 
 
