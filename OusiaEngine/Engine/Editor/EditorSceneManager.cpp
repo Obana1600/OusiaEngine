@@ -1,4 +1,5 @@
 #include "EditorSceneManager.h"
+#include "Scene/TagManager.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
@@ -55,6 +56,8 @@ Scene *ou::EditorSceneManager::NewScene(NewSceneSetup setup) {
 		auto *camera = scene->CreateGameObject("Main Camera");
 		camera->AddComponent<Camera>();
 		camera->GetTransform()->SetLocalPosition({0.0f, 1.0f, -10.0f});
+		// Unity と同じく、新しいシーンのカメラを Camera.main にする
+		camera->SetTag(TagManager::kMainCamera);
 
 		auto *light = scene->CreateGameObject("Directional Light");
 		light->AddComponent<Light>()->SetType(LightType::Directional);

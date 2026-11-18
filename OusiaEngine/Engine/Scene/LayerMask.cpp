@@ -8,6 +8,7 @@
 #include <array>
 #include <charconv>
 #include <filesystem>
+#include <system_error>
 #include <utility>
 
 using namespace ou;
@@ -17,6 +18,7 @@ namespace {
 
 constexpr std::string_view kTagManagerKeys[] = {
 	"layers",
+	"tags", // TagManager が読む
 };
 
 constexpr std::pair<int, std::string_view> kBuiltinLayers[] = {
@@ -144,9 +146,15 @@ void ou::LayerMask::SaveLayerNames() {
 		layers[std::to_string(layer)] = names[layer];
 	}
 
+	// タグも同じファイルにあるので、"layers" だけを書き換える
+	const auto path = *folder / L"TagManager.json";
 	Json json = Json::object();
+	std::error_code error;
+	if (std::filesystem::exists(path, error)) {
+		if (auto loaded = JsonFile::Load(path); loaded && loaded->is_object()) { json = std::move(*loaded); }
+	}
 	json["layers"] = std::move(layers);
-	JsonFile::Save(*folder / L"TagManager.json", json);
+	JsonFile::Save(path, json);
 }
 
 

@@ -22,6 +22,7 @@
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/TagManager.h"
 #include "Scene/Transform.h"
 #include "Script/MonoBehavior.h"
 #include "Script/MonoScript.h"
@@ -39,10 +40,12 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 #include <angelscript.h>
+#include <scriptarray/scriptarray.h>
 
 using namespace ou;
 using namespace ou::ScriptBindingsInternal;
@@ -149,6 +152,62 @@ ObjectHandle *GetComponentGameObject(ObjectHandle *self) {
 ObjectHandle *GetComponentTransform(ObjectHandle *self) {
 	auto *component = Resolve<Component>(self);
 	return component ? MakeHandle(component->GetTransform()) : nullptr;
+}
+
+
+// ---- tag（GameObject と Component の両方。Component は GameObject のタグ） ----
+
+// Unity と同じく、Tags にないタグを使うと例外にする
+bool CheckTagDefined(const std::string &tag) {
+	if (TagManager::IsDefined(tag)) { return true; }
+	ThrowException(std::format("UnityException: Tag: {} is not defined. (Project Settings の Tags and Layers で足してください)", tag));
+	return false;
+}
+
+template <typename T>
+GameObject *ResolveTagOwner(ObjectHandle *self) {
+	if constexpr (std::is_same_v<T, GameObject>) {
+		return Resolve<GameObject>(self);
+	} else {
+		auto *component = Resolve<Component>(self);
+		return component ? component->GetGameObject() : nullptr;
+	}
+}
+
+template <typename T>
+std::string GetTag(ObjectHandle *self) {
+	auto *gameObject = ResolveTagOwner<T>(self);
+	return gameObject ? gameObject->GetTag() : std::string();
+}
+
+template <typename T>
+void SetTag(const std::string &tag, ObjectHandle *self) {
+	auto *gameObject = ResolveTagOwner<T>(self);
+	if (gameObject && CheckTagDefined(tag)) { gameObject->SetTag(tag); }
+}
+
+template <typename T>
+bool CompareTag(const std::string &tag, ObjectHandle *self) {
+	auto *gameObject = ResolveTagOwner<T>(self);
+	return gameObject && CheckTagDefined(tag) && gameObject->GetTag() == tag;
+}
+
+ObjectHandle *FindWithTag(const std::string &tag) {
+	if (!CheckTagDefined(tag)) { return nullptr; }
+	return MakeHandle(GameObject::FindWithTag(tag));
+}
+
+CScriptArray *FindGameObjectsWithTag(const std::string &tag) {
+	if (!CheckTagDefined(tag)) { return nullptr; }
+
+	const auto found = GameObject::FindGameObjectsWithTag(tag);
+	auto *type = asGetActiveContext()->GetEngine()->GetTypeInfoByDecl("array<GameObject@>");
+	auto *array = CScriptArray::Create(type, static_cast<asUINT>(found.size()));
+	for (size_t i = 0; i < found.size(); i++) {
+		// MakeHandle が持たせた参照を、そのまま配列に持たせる
+		*static_cast<void **>(array->At(static_cast<asUINT>(i))) = MakeHandle(found[i]);
+	}
+	return array;
 }
 
 
@@ -468,6 +527,9 @@ ScriptBindingsInternal::TypeRegistrar ou::ScriptBindingsInternal::RegisterCompon
 	c.Method("int GetInstanceID() const", asFUNCTION(GetInstanceID));
 	c.Method("GameObject@ get_gameObject() const property", asFUNCTION(GetComponentGameObject));
 	c.Method("Transform@ get_transform() const property", asFUNCTION(GetComponentTransform));
+	c.Method("string get_tag() const property", asFUNCTION(GetTag<Component>));
+	c.Method("void set_tag(const string &in value) property", asFUNCTION(SetTag<Component>));
+	c.Method("bool CompareTag(const string &in tag) const", asFUNCTION(CompareTag<Component>));
 	return c;
 }
 
@@ -681,6 +743,9 @@ void ou::ScriptBindings::RegisterObjectMembers(asIScriptEngine *engine) {
 		g.Method("void SetActive(bool value)", asFUNCTION((Set<GameObject, bool, &GameObject::SetActive>)));
 		g.Method("int get_layer() const property", asFUNCTION((Get<GameObject, int, &GameObject::GetLayer>)));
 		g.Method("void set_layer(int value) property", asFUNCTION((Set<GameObject, int, &GameObject::SetLayer>)));
+		g.Method("string get_tag() const property", asFUNCTION(GetTag<GameObject>));
+		g.Method("void set_tag(const string &in value) property", asFUNCTION(SetTag<GameObject>));
+		g.Method("bool CompareTag(const string &in tag) const", asFUNCTION(CompareTag<GameObject>));
 		g.Method("Transform@ get_transform() const property", asFUNCTION((GetHandle<GameObject, Transform, &GameObject::GetTransform>)));
 	}
 
@@ -760,6 +825,9 @@ void ou::ScriptBindings::RegisterGetComponent(asIScriptEngine *engine) {
 
 	engine->SetDefaultNamespace("GameObject");
 	Check(engine->RegisterGlobalFunction("GameObject@ Find(const string &in name)", asFUNCTION(FindGameObject), asCALL_CDECL), "GameObject::Find");
+	Check(engine->RegisterGlobalFunction("GameObject@ FindWithTag(const string &in tag)", asFUNCTION(FindWithTag), asCALL_CDECL), "GameObject::FindWithTag");
+	Check(engine->RegisterGlobalFunction("GameObject@ FindGameObjectWithTag(const string &in tag)", asFUNCTION(FindWithTag), asCALL_CDECL), "GameObject::FindGameObjectWithTag");
+	Check(engine->RegisterGlobalFunction("array<GameObject@>@ FindGameObjectsWithTag(const string &in tag)", asFUNCTION(FindGameObjectsWithTag), asCALL_CDECL), "GameObject::FindGameObjectsWithTag");
 	engine->SetDefaultNamespace("");
 
 	// 変数の保存で型を見分けるために、値の型の id を覚えておく

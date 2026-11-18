@@ -47,6 +47,9 @@ private: // メンバ変数
 	std::string productName_;
 	int screenSize_[2] = {};
 	std::array<std::string, LayerMask::kLayerCount> layerNames_;
+	// 足すタグの名前と、足せなかった理由
+	std::string newTag_;
+	std::string tagError_;
 
 
 private: // メンバ関数
@@ -58,6 +61,8 @@ private: // メンバ関数
 	void DrawLayerCollisionMatrix();
 	void DrawPlayer();
 	void DrawTagsAndLayers();
+	void DrawTags();
+	void DrawLayers();
 	void DrawTime();
 };
 

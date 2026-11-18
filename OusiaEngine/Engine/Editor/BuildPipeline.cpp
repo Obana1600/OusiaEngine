@@ -1,4 +1,5 @@
 #include "BuildPipeline.h"
+#include "Core/JsonFile.h"
 #include "Core/PlayerSettings.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
@@ -6,8 +7,13 @@
 #include "Platform/Paths.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/TagManager.h"
 
 #include <algorithm>
+#include <filesystem>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include <optional>
 #include <string>
 #include <system_error>
@@ -97,6 +103,140 @@ uintmax_t FolderSize(const std::filesystem::path &folder) {
 	return size;
 }
 
+// ---- EditorOnly のタグの GameObject を外す ----
+
+// 参照（{"id": 123}）の先を、消したものなら null にする
+void ClearReferences(Json &json, const std::unordered_set<uint64_t> &removedIds) {
+	if (json.is_object()) {
+		if (json.size() == 1) {
+			if (const auto it = json.find("id"); it != json.end() && it->is_number_unsigned() && removedIds.contains(it->get<uint64_t>())) {
+				json = nullptr;
+				return;
+			}
+		}
+		for (auto &[key, value] : json.items()) {
+			ClearReferences(value, removedIds);
+		}
+	} else if (json.is_array()) {
+		for (auto &value : json) {
+			ClearReferences(value, removedIds);
+		}
+	}
+}
+
+// root（シーン・プレハブの JSON）から、EditorOnly の GameObject と、その子を外す。外した数を返す
+// keepsRoot なら、一番上の GameObject（プレハブの元）は外さない
+size_t StripEditorOnly(Json &root, bool keepsRoot) {
+	auto it = root.find("gameObjects");
+	if (it == root.end() || !it->is_array()) { return 0; }
+	auto &gameObjects = *it;
+
+	// GameObject ごとに、Transform の $id と、親の Transform の $id（なければ 0）を引く
+	const auto count = gameObjects.size();
+	std::vector<uint64_t> transformIds(count, 0);
+	std::vector<uint64_t> parentIds(count, 0);
+	std::vector<bool> removes(count, false);
+	std::unordered_map<uint64_t, size_t> indexByTransform;
+	for (size_t i = 0; i < count; i++) {
+		const auto &gameObject = gameObjects[i];
+		if (!gameObject.is_object()) { continue; }
+
+		if (const auto components = gameObject.find("components"); components != gameObject.end() && components->is_array()) {
+			for (const auto &component : *components) {
+				const auto parent = component.is_object() ? component.find("parent") : component.end();
+				if (!component.is_object() || parent == component.end()) { continue; }
+
+				if (const auto id = component.find("$id"); id != component.end() && id->is_number_unsigned()) {
+					transformIds[i] = id->get<uint64_t>();
+					indexByTransform[transformIds[i]] = i;
+				}
+				if (parent->is_object()) {
+					if (const auto parentId = parent->find("id"); parentId != parent->end() && parentId->is_number_unsigned()) {
+						parentIds[i] = parentId->get<uint64_t>();
+					}
+				}
+				break;
+			}
+		}
+
+		const auto tag = gameObject.find("tag");
+		const auto isEditorOnly = tag != gameObject.end() && tag->is_string() && tag->get<std::string>() == TagManager::kEditorOnly;
+		removes[i] = isEditorOnly && !(keepsRoot && parentIds[i] == 0);
+	}
+
+	// 外すものの子も外す（親が後ろに書かれていることもあるので、変わらなくなるまで）
+	for (auto changed = true; changed;) {
+		changed = false;
+		for (size_t i = 0; i < count; i++) {
+			if (removes[i] || parentIds[i] == 0) { continue; }
+			const auto parent = indexByTransform.find(parentIds[i]);
+			if (parent != indexByTransform.end() && removes[parent->second]) {
+				removes[i] = true;
+				changed = true;
+			}
+		}
+	}
+
+	// 外す GameObject とコンポーネントの $id
+	std::unordered_set<uint64_t> removedIds;
+	for (size_t i = 0; i < count; i++) {
+		if (!removes[i]) { continue; }
+		const auto &gameObject = gameObjects[i];
+		if (const auto id = gameObject.find("$id"); id != gameObject.end() && id->is_number_unsigned()) { removedIds.insert(id->get<uint64_t>()); }
+		if (const auto components = gameObject.find("components"); components != gameObject.end() && components->is_array()) {
+			for (const auto &component : *components) {
+				if (!component.is_object()) { continue; }
+				if (const auto id = component.find("$id"); id != component.end() && id->is_number_unsigned()) { removedIds.insert(id->get<uint64_t>()); }
+			}
+		}
+	}
+	if (removedIds.empty()) { return 0; }
+
+	Json kept = Json::array();
+	size_t removedCount = 0;
+	for (size_t i = 0; i < count; i++) {
+		if (removes[i]) {
+			removedCount++;
+			continue;
+		}
+		kept.push_back(std::move(gameObjects[i]));
+	}
+	gameObjects = std::move(kept);
+
+	// 残したものから、外したものへの参照を null にする（読み込むときに「参照先が見つかりません」と出ないように）
+	ClearReferences(root, removedIds);
+	return removedCount;
+}
+
+// 書き出した Assets の、シーンとプレハブから EditorOnly を外す（Unity と同じく、書き出したものだけを変える）
+bool StripEditorOnlyInFolder(const std::filesystem::path &folder) {
+	std::error_code error;
+	size_t removedCount = 0;
+	auto isSucceeded = true;
+	for (std::filesystem::recursive_directory_iterator it(folder, error), end; !error && it != end; it.increment(error)) {
+		if (!it->is_regular_file(error)) { continue; }
+
+		const auto extension = it->path().extension();
+		const auto isScene = extension == L".scene";
+		if (!isScene && extension != L".prefab") { continue; }
+
+		auto json = JsonFile::Load(it->path());
+		if (!json || !json->is_object()) { continue; }
+
+		const auto removed = StripEditorOnly(*json, !isScene);
+		if (removed == 0) { continue; }
+
+		removedCount += removed;
+		if (!JsonFile::Save(it->path(), *json)) {
+			Log::Error("EditorOnly を外したものを書けませんでした: {}", ToUtf8(it->path()));
+			isSucceeded = false;
+		}
+	}
+
+	if (removedCount > 0) { Log::Info("EditorOnly のタグの GameObject を {} 個外しました", removedCount); }
+	return isSucceeded;
+}
+
 } // namespace
 
 
@@ -160,6 +300,7 @@ bool ou::BuildPipeline::BuildPlayer(const std::filesystem::path &location) {
 	}
 	isSucceeded = isSucceeded && CopyFolder(*engineAssets, location / L"EngineAssets");
 	isSucceeded = isSucceeded && CopyFolder(*assets, location / L"Assets");
+	isSucceeded = isSucceeded && StripEditorOnlyInFolder(location / L"Assets");
 	isSucceeded = isSucceeded && CopyFolder(*projectSettings, location / L"ProjectSettings");
 
 	if (!isSucceeded) {

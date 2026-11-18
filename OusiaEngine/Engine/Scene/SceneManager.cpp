@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "Scene/TagManager.h"
 #include "Core/JsonFile.h"
 #include "Animation/Skeletal/SkeletalAnimator.h"
 #include "Animation/Tween/TweenManager.h"
@@ -96,10 +97,15 @@ void ou::SceneManager::UnregisterCamera(Camera *camera) {
 
 
 Camera *ou::SceneManager::GetMainCamera() {
+	// Unity と同じく、MainCamera のタグのカメラを返す
+	// （タグを付けていなかったころのシーンも映るように、なければ、動いている最初のカメラ）
+	Camera *firstEnabled = nullptr;
 	for (auto *camera : sCameras_) {
-		if (camera->IsActiveAndEnabled()) { return camera; }
+		if (!camera->IsActiveAndEnabled()) { continue; }
+		if (camera->GetGameObject()->GetTag() == TagManager::kMainCamera) { return camera; }
+		if (!firstEnabled) { firstEnabled = camera; }
 	}
-	return nullptr;
+	return firstEnabled;
 }
 
 

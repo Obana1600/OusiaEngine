@@ -85,6 +85,7 @@
     <ClInclude Include="Editor\LogEntries.h" />
     <ClInclude Include="Editor\PreferencesWindow.h" />
     <ClInclude Include="Core\TimeManager.h" />
+    <ClInclude Include="Scene\TagManager.h" />
     <ClInclude Include="Editor\ProjectSettingsWindow.h" />
     <ClInclude Include="Core\PlayerSettings.h" />
     <ClInclude Include="Core\JsonFile.h" />
@@ -271,6 +272,7 @@
     <ClCompile Include="Editor\LogEntries.cpp" />
     <ClCompile Include="Editor\PreferencesWindow.cpp" />
     <ClCompile Include="Core\TimeManager.cpp" />
+    <ClCompile Include="Scene\TagManager.cpp" />
     <ClCompile Include="Editor\ProjectSettingsWindow.cpp" />
     <ClCompile Include="Core\PlayerSettings.cpp" />
     <ClCompile Include="Core\JsonFile.cpp" />

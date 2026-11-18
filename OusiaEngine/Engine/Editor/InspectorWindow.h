@@ -60,6 +60,8 @@ private: // メンバ関数
 	void DrawPreview(Editor *editor);
 
 	void DrawGameObjectHeader(GameObject *gameObject);
+	// Tag の選択肢（最後に Add Tag... で Project Settings を開く）
+	void DrawTagCombo(GameObject *gameObject);
 	void DrawComponent(Editor *editor);
 	void DrawComponentMenu(Component *component);
 	void DrawAddComponentButton(GameObject *gameObject);

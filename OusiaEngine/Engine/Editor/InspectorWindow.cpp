@@ -1,11 +1,13 @@
 #include "InspectorWindow.h"
 #include "Asset/AssetDatabase.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/ProjectSettingsWindow.h"
 #include "Editor/Selection.h"
 #include "Editor/Undo.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
 #include "Scene/LayerMask.h"
+#include "Scene/TagManager.h"
 #include "Scene/Transform.h"
 #include "Script/MonoBehavior.h"
 #include "Script/MonoScript.h"
@@ -273,10 +275,27 @@ void ou::InspectorWindow::DrawGameObjectHeader(GameObject *gameObject) {
 		MarkDirty(gameObject, "Rename");
 	}
 
+	// Unity と同じく、Tag と Layer を 1 行に並べる
+	const auto &style = ImGui::GetStyle();
+	const auto halfWidth = (ImGui::GetContentRegionAvail().x - style.ItemSpacing.x) * 0.5f;
+	const auto labelWidth = ImGui::CalcTextSize("Layer").x + style.ItemSpacing.x;
+
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted("Tag");
+	ImGui::SameLine(0.0f, 0.0f);
+	ImGui::SetCursorPosX(ImGui::GetCursorStartPos().x + labelWidth);
+	ImGui::SetNextItemWidth(halfWidth - labelWidth);
+	DrawTagCombo(gameObject);
+
+	ImGui::SameLine();
+	const auto layerX = ImGui::GetCursorPosX();
+	ImGui::TextUnformatted("Layer");
+	ImGui::SameLine(layerX + labelWidth);
+	ImGui::SetNextItemWidth(-FLT_MIN);
+
 	const auto layer = gameObject->GetLayer();
 	const auto layerName = LayerMask::LayerToName(layer);
 	const auto preview = layerName.empty() ? std::to_string(layer) : layerName;
-	EditorGuiLayout::PrefixLabel("Layer");
 	if (ImGui::BeginCombo("##Layer", preview.c_str())) {
 		for (int i = 0; i < LayerMask::kLayerCount; i++) {
 			const auto candidate = LayerMask::LayerToName(i);
@@ -287,10 +306,36 @@ void ou::InspectorWindow::DrawGameObjectHeader(GameObject *gameObject) {
 				MarkDirty(gameObject, "Change Layer");
 			}
 		}
+		ImGui::Separator();
+		if (ImGui::Selectable("Add Layer...")) { ProjectSettingsWindow::Open(ProjectSettingsWindow::Section::TagsAndLayers); }
 		ImGui::EndCombo();
 	}
 
 	ImGui::Separator();
+}
+
+
+void ou::InspectorWindow::DrawTagCombo(GameObject *gameObject) {
+	const auto &tag = gameObject->GetTag();
+	// Tags から消したタグは、警告の色で出す（GameObject には文字のまま残っている）
+	const auto isMissing = !TagManager::IsDefined(tag);
+	if (isMissing) { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.2f, 1.0f)); }
+	const auto isOpen = ImGui::BeginCombo("##Tag", tag.c_str());
+	if (isMissing) {
+		ImGui::PopStyleColor();
+		if (ImGui::IsItemHovered()) { ImGui::SetTooltip("タグ \"%s\" は Tags にありません", tag.c_str()); }
+	}
+	if (!isOpen) { return; }
+
+	for (const auto &candidate : TagManager::GetTags()) {
+		if (ImGui::Selectable(candidate.c_str(), candidate == tag) && candidate != tag) {
+			gameObject->SetTag(candidate);
+			MarkDirty(gameObject, "Change Tag");
+		}
+	}
+	ImGui::Separator();
+	if (ImGui::Selectable("Add Tag...")) { ProjectSettingsWindow::Open(ProjectSettingsWindow::Section::TagsAndLayers); }
+	ImGui::EndCombo();
 }
 
 

@@ -4,6 +4,7 @@
 #include "Core/Application.h"
 #include "Core/PlayerSettings.h"
 #include "Core/TimeManager.h"
+#include "Scene/TagManager.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
@@ -145,6 +146,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 
 	// レイヤー
 	LayerMask::LoadLayerNames();
+	TagManager::Load();
 
 	// Build Settings
 	SceneManager::LoadBuildSettings();

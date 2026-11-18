@@ -3,6 +3,10 @@
 #include "Diagnostics/Log.h"
 #include "Scene/Behavior.h"
 #include "Scene/LayerMask.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
+#include "Scene/TagManager.h"
+#include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
 
 
@@ -34,6 +38,7 @@ void ou::GameObject::Serialize(Serializer &serializer) {
 	serializer.Field("name", name_);
 	serializer.Field("active", isActiveSelf_);
 	serializer.Field("layer", layer_);
+	serializer.Field("tag", tag_);
 }
 
 
@@ -44,6 +49,8 @@ void ou::GameObject::AwakeFromLoad() {
 		Log::Error("レイヤーは 0~31 で指定してください: {} ({})", layer_, GetName());
 		layer_ = 0;
 	}
+	// TagManager にないタグも、消さずにそのまま持つ（Inspector で知らせる）
+	if (tag_.empty()) { tag_ = TagManager::kUntagged; }
 }
 
 
@@ -89,6 +96,59 @@ void ou::GameObject::SetLayer(int layer) {
 
 int ou::GameObject::GetLayer() const {
 	return layer_;
+}
+
+
+void ou::GameObject::SetTag(std::string_view tag) {
+	if (!TagManager::IsDefined(tag)) {
+		Log::Error("タグ \"{}\" は Tags にありません。Project Settings の Tags and Layers で足してください ({})", tag, GetName());
+		return;
+	}
+	tag_ = tag;
+}
+
+
+const std::string &ou::GameObject::GetTag() const {
+	return tag_;
+}
+
+
+bool ou::GameObject::CompareTag(std::string_view tag) const {
+	if (!TagManager::IsDefined(tag)) {
+		Log::Error("タグ \"{}\" は Tags にありません", tag);
+	}
+	return tag_ == tag;
+}
+
+
+std::vector<GameObject *> ou::GameObject::FindGameObjectsWithTag(std::string_view tag) {
+	std::vector<GameObject *> found;
+	if (!TagManager::IsDefined(tag)) {
+		Log::Error("タグ \"{}\" は Tags にありません", tag);
+		return found;
+	}
+
+	// 止めた GameObject とその子は探さない（Unity と同じく、動いているものだけ）
+	const auto visit = [&](auto &self, GameObject *gameObject) -> void {
+		if (!gameObject || gameObject->IsDestroyed() || !gameObject->IsActiveSelf()) { return; }
+		if (gameObject->tag_ == tag) { found.push_back(gameObject); }
+		for (auto *child : gameObject->GetTransform()->GetChildren()) {
+			self(self, child->GetGameObject());
+		}
+	};
+	for (auto *scene : {SceneManager::GetActiveScene(), SceneManager::GetDontDestroyOnLoadScene()}) {
+		if (!scene) { continue; }
+		for (auto *root : scene->GetRootGameObjects()) {
+			visit(visit, root);
+		}
+	}
+	return found;
+}
+
+
+GameObject *ou::GameObject::FindWithTag(std::string_view tag) {
+	const auto found = FindGameObjectsWithTag(tag);
+	return found.empty() ? nullptr : found.front();
 }
 
 

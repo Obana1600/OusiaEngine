@@ -5,6 +5,7 @@
 #include "Editor/EditorGuiLayout.h"
 #include "Editor/GuiContent.h"
 #include "Physics/Physics.h"
+#include "Scene/TagManager.h"
 
 #include <algorithm>
 #include <cfloat>
@@ -259,6 +260,54 @@ void ou::ProjectSettingsWindow::DrawPlayer() {
 
 
 void ou::ProjectSettingsWindow::DrawTagsAndLayers() {
+	DrawTags();
+	ImGui::Spacing();
+	DrawLayers();
+}
+
+
+void ou::ProjectSettingsWindow::DrawTags() {
+	ImGui::SeparatorText("Tags");
+
+	// 組み込みのタグは消せない。Unity と同じく、名前は変えられない（足すか消すだけ）
+	std::string removing;
+	const auto &tags = TagManager::GetTags();
+	const auto buttonWidth = ImGui::GetFrameHeight();
+	for (size_t i = 0; i < tags.size(); i++) {
+		const auto &tag = tags[i];
+		ImGui::PushID(static_cast<int>(i));
+		const auto isBuiltin = TagManager::IsBuiltinTag(tag);
+		EditorGuiLayout::PrefixLabel(std::string(isBuiltin ? "Builtin Tag " : "Tag ") + std::to_string(i));
+
+		ImGui::AlignTextToFramePadding();
+		if (isBuiltin) {
+			ImGui::TextDisabled("%s", tag.c_str());
+		} else {
+			ImGui::TextUnformatted(tag.c_str());
+			ImGui::SameLine(ImGui::GetContentRegionMax().x - buttonWidth);
+			if (ImGui::Button("-", {buttonWidth, 0.0f})) { removing = tag; }
+			if (ImGui::IsItemHovered()) { ImGui::SetTooltip("消す（このタグを付けている GameObject は、タグの文字が残ります）"); }
+		}
+		ImGui::PopID();
+	}
+	if (!removing.empty()) { TagManager::RemoveTag(removing); }
+
+	// 足す（Enter か + で）
+	EditorGuiLayout::PrefixLabel("New Tag");
+	ImGui::SetNextItemWidth(-(buttonWidth + ImGui::GetStyle().ItemSpacing.x));
+	const auto entered = ImGui::InputTextWithHint("##NewTag", "タグの名前", &newTag_, ImGuiInputTextFlags_EnterReturnsTrue);
+	ImGui::SameLine();
+	if (ImGui::Button("+", {buttonWidth, 0.0f}) || entered) {
+		tagError_ = TagManager::AddTag(newTag_);
+		if (tagError_.empty()) { newTag_.clear(); }
+	}
+	if (!tagError_.empty()) {
+		ImGui::TextColored({1.0f, 0.8f, 0.2f, 1.0f}, "%s", tagError_.c_str());
+	}
+}
+
+
+void ou::ProjectSettingsWindow::DrawLayers() {
 	ImGui::SeparatorText("Layers");
 
 	for (int layer = 0; layer < LayerMask::kLayerCount; layer++) {
