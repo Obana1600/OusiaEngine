@@ -6,7 +6,7 @@
 #   -Project    exe のプロジェクト（既定は Game）
 #
 # 置くもの:
-#   Editor/OusiaEditor.exe, Runtime/（dxcompiler.dll, dxil.dll）, EngineAssets/, Player/Player.exe, version.txt, README.md
+#   Editor/OusiaEditor.exe, Runtime/（dxcompiler.dll, dxil.dll）, EngineAssets/, Player/Player.exe, version.txt とドキュメント
 #   リポジトリの直下の .gitignore・.gitattributes・README.md は、ないときだけ置く
 #   Assets/・ProjectSettings/ がなければ、空のプロジェクトとして作る
 
@@ -76,6 +76,7 @@ if ((git -C $repoRoot status --porcelain 2>$null) -ne $null) { $commit = "$commi
 $version = "OusiaEngine $commit  $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
 [IO.File]::WriteAllText((Join-Path $editor "version.txt"), "$version`r`n", (New-Object Text.UTF8Encoding $false))
 Copy-Item (Join-Path $templates "Editor-README.md") (Join-Path $editor "README.md") -Force
+Copy-Item (Join-Path $templates "Scripting.md"), (Join-Path $templates "Script-API.md") $editor -Force
 
 # ---- リポジトリの直下（ないときだけ置く。チームで書き換えたものは上書きしない） ----
 foreach ($name in ".gitignore", ".gitattributes", "README.md") {

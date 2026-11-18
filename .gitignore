@@ -379,6 +379,10 @@ Generated/
 # markdown
 !README.md
 *.md
+!/OusiaEngine/Build/TeamRepo/Editor-README.md
+!/OusiaEngine/Build/TeamRepo/README.md
+!/OusiaEngine/Build/TeamRepo/Scripting.md
+!/OusiaEngine/Build/TeamRepo/Script-API.md
 
 # モデルの OBJ は追跡する
 !OusiaEngine/Game/Assets/**/*.obj

@@ -287,6 +287,9 @@ class GameObject {
 	void SetActive(bool value);
 	int get_layer() const property;
 	void set_layer(int value) property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	Transform@ get_transform() const property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
@@ -302,6 +305,9 @@ class Transform {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	Vector3 get_position() const property;
 	void set_position(const Vector3&in value) property;
 	Vector3 get_localPosition() const property;
@@ -347,6 +353,9 @@ class CharacterController {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -385,6 +394,9 @@ class BoxCollider {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -413,6 +425,9 @@ class SphereCollider {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -441,6 +456,9 @@ class CapsuleCollider {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -479,6 +497,9 @@ class Collider {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -499,6 +520,9 @@ class Rigidbody {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	float get_mass() const property;
 	void set_mass(float value) property;
 	bool get_useGravity() const property;
@@ -541,6 +565,9 @@ class AudioSource {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	void Play();
 	void Stop();
 	void Pause();
@@ -576,6 +603,9 @@ class MeshRenderer {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -600,6 +630,9 @@ class Renderer {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -624,6 +657,9 @@ class Text {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -655,6 +691,9 @@ class Image {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -682,6 +721,9 @@ class Graphic {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -707,6 +749,9 @@ class Button {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_interactable() const property;
 	void set_interactable(bool value) property;
 	UnityEvent@ get_onClick() const property;
@@ -727,6 +772,9 @@ class Selectable {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_interactable() const property;
 	void set_interactable(bool value) property;
 	bool TryGetComponent(?&out component) const;
@@ -766,6 +814,9 @@ class Behavior {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool get_enabled() const property;
 	void set_enabled(bool value) property;
 	bool get_isActiveAndEnabled() const property;
@@ -812,6 +863,9 @@ class Component {
 	int GetInstanceID() const;
 	GameObject@ get_gameObject() const property;
 	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -989,6 +1043,9 @@ namespace Physics { void set_gravity(const Vector3&in value) property; }
 namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
 namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
 namespace GameObject { GameObject@ Find(const string&in name); }
+namespace GameObject { GameObject@ FindWithTag(const string&in tag); }
+namespace GameObject { GameObject@ FindGameObjectWithTag(const string&in tag); }
+namespace GameObject { GameObject@[]@ FindGameObjectsWithTag(const string&in tag); }
 namespace SceneManager { void LoadScene(const string&in sceneName); }
 namespace SceneManager { void LoadScene(int sceneBuildIndex); }
 namespace SceneManager { Scene GetActiveScene(); }
@@ -1063,6 +1120,15 @@ namespace Screen { void set_fullScreen(bool value) property; }
 namespace Screen { void SetResolution(int width, int height, FullScreenMode mode); }
 namespace Application { void Quit(); }
 namespace Application { bool get_isPlaying() property; }
+namespace Gizmos { Color get_color() property; }
+namespace Gizmos { void set_color(const Color&in value) property; }
+namespace Gizmos { void DrawLine(const Vector3&in from, const Vector3&in to); }
+namespace Gizmos { void DrawRay(const Vector3&in from, const Vector3&in direction); }
+namespace Gizmos { void DrawWireCube(const Vector3&in center, const Vector3&in size); }
+namespace Gizmos { void DrawWireSphere(const Vector3&in center, float radius); }
+namespace Gizmos { void DrawFrustum(const Vector3&in center, float fov, float maxRange, float minRange, float aspect); }
+namespace Gizmos { void DrawIcon(const Vector3&in center, const string&in name, bool allowScaling = true); }
+namespace Gizmos { void DrawIcon(const Vector3&in center, const string&in name, bool allowScaling, const Color&in tint); }
 namespace Vector2 { const Vector2 zero; }
 namespace Vector2 { const Vector2 one; }
 namespace Vector2 { const Vector2 up; }
