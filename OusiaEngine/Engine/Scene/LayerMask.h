@@ -19,6 +19,13 @@ struct LayerMask {
 
 	static void LoadLayerNames();
 
+	// 0~2（Default / Ignore Raycast / UI）は組み込みで、名前を変えられない
+	static bool IsBuiltinLayer(int layer);
+	// 組み込みのレイヤー・ほかのレイヤーと同じ名前なら変えずに false（空にするとレイヤーの名前をなくす）
+	static bool SetLayerName(int layer, std::string_view name);
+	// ProjectSettings/TagManager.json に書く
+	static void SaveLayerNames();
+
 	operator uint32_t() const;
 };
 

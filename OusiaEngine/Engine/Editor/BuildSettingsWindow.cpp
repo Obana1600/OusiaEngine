@@ -1,7 +1,7 @@
 #include "BuildSettingsWindow.h"
 #include "Asset/AssetDatabase.h"
 #include "Diagnostics/Log.h"
-#include "Core/PlayerSettings.h"
+#include "Editor/ProjectSettingsWindow.h"
 #include "Core/StringUtil.h"
 #include "Editor/EditorPayload.h"
 #include "Editor/BuildPipeline.h"
@@ -225,44 +225,8 @@ void ou::BuildSettingsWindow::Save() {
 void ou::BuildSettingsWindow::DrawBuildArea() {
 	ImGui::Separator();
 
-	// Unity の Player Settings の Product Name（書き出す exe の名前・ウィンドウのタイトル）
-	if (productName_.empty()) { productName_ = PlayerSettings::GetProductName(); }
-	EditorGuiLayout::PrefixLabel("Product Name");
-	ImGui::SetNextItemWidth(-FLT_MIN);
-	ImGui::InputText("##ProductName", &productName_);
-	if (ImGui::IsItemDeactivatedAfterEdit() && !productName_.empty()) {
-		PlayerSettings::SetProductName(productName_);
-	}
-
-	// Unity の Resolution and Presentation（書き出した Player の起動のしかた）
-	constexpr FullScreenMode kModes[] = {FullScreenMode::FullScreenWindow, FullScreenMode::MaximizedWindow, FullScreenMode::Windowed};
-	constexpr const char *kModeNames[] = {"Fullscreen Window", "Maximized Window", "Windowed"};
-
-	const auto current = PlayerSettings::GetFullScreenMode();
-	int modeIndex = 0;
-	for (int i = 0; i < 3; i++) {
-		if (kModes[i] == current) { modeIndex = i; }
-	}
-	EditorGuiLayout::PrefixLabel("Fullscreen Mode");
-	ImGui::SetNextItemWidth(-FLT_MIN);
-	if (ImGui::Combo("##FullscreenMode", &modeIndex, kModeNames, 3)) {
-		PlayerSettings::SetFullScreenMode(kModes[modeIndex]);
-	}
-
-	// Windowed で起動するときの大きさ（ほかのモードでもウィンドウに戻したときに使う）
-	// 打っている途中の値を残すため、メンバに持つ（書き換え終わったら保存する）
-	if (screenSize_[0] == 0) {
-		screenSize_[0] = static_cast<int>(PlayerSettings::GetDefaultScreenWidth());
-		screenSize_[1] = static_cast<int>(PlayerSettings::GetDefaultScreenHeight());
-	}
-	EditorGuiLayout::PrefixLabel("Default Screen Size");
-	ImGui::SetNextItemWidth(-FLT_MIN);
-	ImGui::InputInt2("##DefaultScreenSize", screenSize_);
-	if (ImGui::IsItemDeactivatedAfterEdit()) {
-		screenSize_[0] = std::clamp(screenSize_[0], 64, 16384);
-		screenSize_[1] = std::clamp(screenSize_[1], 64, 16384);
-		PlayerSettings::SetDefaultScreenSize(static_cast<uint32_t>(screenSize_[0]), static_cast<uint32_t>(screenSize_[1]));
-	}
+	// Unity と同じく、Player の設定は Project Settings で変える
+	if (ImGui::Button("Player Settings...")) { ProjectSettingsWindow::Open(ProjectSettingsWindow::Section::Player); }
 
 	if (ImGui::Button("Build...", {-FLT_MIN, 0.0f})) {
 		const auto previous = std::filesystem::path(Utf8ToWide(EditorPrefs::GetString(kBuildLocationKey)));

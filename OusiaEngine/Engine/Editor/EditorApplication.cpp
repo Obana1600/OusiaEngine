@@ -1,4 +1,6 @@
 #include "EditorApplication.h"
+#include "Core/TimeManager.h"
+#include "Physics/Physics.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/JsonFile.h"
 #include "Core/Time.h"
@@ -149,6 +151,8 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 
 		sIsPlaying_ = true;
 		Time::ResetForPlayMode();
+		// Project Settings の Time の値から始める
+		TimeManager::Apply();
 		SceneManager::ReplaceActiveScene(snapshot->name, snapshot->path, snapshot->buildIndex, snapshot->json);
 		Log::Info("Play: {}", snapshot->name);
 		return;
@@ -156,6 +160,11 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 
 	if (request == Request::Exit && sIsPlaying_) {
 		sIsPlaying_ = false;
+
+		// Play 中にスクリプトで変えた Time・物理の設定を、Project Settings の値に戻す
+		// （Project Settings のウィンドウで変えたものは、ファイルに書いてあるので残る）
+		TimeManager::Apply();
+		Physics::LoadDynamicsManager();
 
 		auto &snapshot = Snapshot();
 		if (snapshot) {

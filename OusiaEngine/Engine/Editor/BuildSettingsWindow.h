@@ -26,8 +26,6 @@ private: // メンバ変数
 	std::vector<EditorBuildSettingsScene> scenes_;
 	bool isLoaded_ = false;
 	int selected_ = -1;
-	std::string productName_;
-	int screenSize_[2] = {}; // Default Screen Size の打っている途中の値
 
 
 private: // メンバ関数

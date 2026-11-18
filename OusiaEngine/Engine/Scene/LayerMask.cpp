@@ -30,13 +30,6 @@ std::array<std::string, LayerMask::kLayerCount> &LayerNames() {
 	return names;
 }
 
-bool IsBuiltinLayer(int layer) {
-	for (const auto &[builtin, name] : kBuiltinLayers) {
-		if (builtin == layer) { return true; }
-	}
-	return false;
-}
-
 int ParseLayerIndex(std::string_view text) {
 	int layer = -1;
 	const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), layer);
@@ -101,7 +94,7 @@ void ou::LayerMask::LoadLayerNames() {
 				Log::Warning("レイヤーの番号は 0~31 で書いてください: {}: \"{}\"", pathUtf8, key);
 				continue;
 			}
-			if (IsBuiltinLayer(layer)) {
+			if (LayerMask::IsBuiltinLayer(layer)) {
 				Log::Warning("組み込みのレイヤー {} ({}) は変えられません: {}", layer, names[layer], pathUtf8);
 				continue;
 			}
@@ -117,6 +110,43 @@ void ou::LayerMask::LoadLayerNames() {
 	} catch (const Json::exception &e) {
 		Log::Error("TagManager.json の読み込みに失敗しました: {}\n{}", pathUtf8, e.what());
 	}
+}
+
+
+bool ou::LayerMask::IsBuiltinLayer(int layer) {
+	for (const auto &[builtin, name] : kBuiltinLayers) {
+		if (builtin == layer) { return true; }
+	}
+	return false;
+}
+
+
+bool ou::LayerMask::SetLayerName(int layer, std::string_view name) {
+	if (layer < 0 || layer >= kLayerCount || IsBuiltinLayer(layer)) { return false; }
+	if (!name.empty()) {
+		if (const auto other = NameToLayer(name); other >= 0 && other != layer) { return false; }
+	}
+
+	LayerNames()[layer] = name;
+	return true;
+}
+
+
+void ou::LayerMask::SaveLayerNames() {
+	const auto folder = FindProjectSettingsFolder();
+	if (!folder) { return; }
+
+	// 番号の順に書く
+	Json layers = Json::object();
+	const auto &names = LayerNames();
+	for (int layer = 0; layer < kLayerCount; layer++) {
+		if (IsBuiltinLayer(layer) || names[layer].empty()) { continue; }
+		layers[std::to_string(layer)] = names[layer];
+	}
+
+	Json json = Json::object();
+	json["layers"] = std::move(layers);
+	JsonFile::Save(*folder / L"TagManager.json", json);
 }
 
 

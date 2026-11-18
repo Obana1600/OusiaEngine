@@ -3,6 +3,7 @@
 #include "Audio/XAudio2/Audio.h"
 #include "Core/Application.h"
 #include "Core/PlayerSettings.h"
+#include "Core/TimeManager.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
@@ -159,6 +160,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// 物理
 	PhysicsWorld::Initialize();
 	Physics::LoadDynamicsManager();
+
+	// 時間（Project Settings の Time）
+	TimeManager::Load();
 
 	// ウィンドウ
 #ifdef WITH_EDITOR

@@ -22,6 +22,9 @@ using namespace ou;
 
 namespace {
 
+// Unity と同じ既定の重力
+const Vector3 kDefaultGravity = {0.0f, -9.81f, 0.0f};
+
 constexpr std::string_view kDynamicsManagerKeys[] = {
 	"gravity",
 	"queriesHitTriggers",
@@ -201,6 +204,11 @@ bool ou::Physics::GetIgnoreLayerCollision(int layer1, int layer2) {
 
 
 void ou::Physics::LoadDynamicsManager() {
+	// 既定の値に戻す（Play 中にスクリプトで変えたものを戻すため）
+	SetGravity(kDefaultGravity);
+	SetQueriesHitTriggers(true);
+	sIgnoreLayerMasks_ = {};
+
 	const auto folder = FindProjectSettingsFolder();
 	if (!folder) { return; }
 	const auto path = *folder / L"DynamicsManager.json";
@@ -219,6 +227,30 @@ void ou::Physics::LoadDynamicsManager() {
 	LoadGravity(*json, pathUtf8);
 	LoadQueriesHitTriggers(*json, pathUtf8);
 	LoadIgnoreLayerCollisions(*json, pathUtf8);
+}
+
+
+void ou::Physics::SaveDynamicsManager() {
+	const auto folder = FindProjectSettingsFolder();
+	if (!folder) { return; }
+
+	const auto gravity = GetGravity();
+	Json ignored = Json::array();
+	for (int layer1 = 0; layer1 < LayerMask::kLayerCount; layer1++) {
+		const auto name1 = LayerMask::LayerToName(layer1);
+		if (name1.empty()) { continue; }
+		for (int layer2 = layer1; layer2 < LayerMask::kLayerCount; layer2++) {
+			const auto name2 = LayerMask::LayerToName(layer2);
+			if (name2.empty() || !GetIgnoreLayerCollision(layer1, layer2)) { continue; }
+			ignored.push_back(Json::array({name1, name2}));
+		}
+	}
+
+	Json json = Json::object();
+	json["gravity"] = Json::array({gravity.x, gravity.y, gravity.z});
+	json["queriesHitTriggers"] = sQueryHitTriggers_;
+	json["ignoreLayerCollisions"] = std::move(ignored);
+	JsonFile::Save(*folder / L"DynamicsManager.json", json);
 }
 
 

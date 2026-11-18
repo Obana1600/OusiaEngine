@@ -3,6 +3,7 @@
 #include "Editor/BuildSettingsWindow.h"
 #include "Editor/ConsoleWindow.h"
 #include "Editor/PreferencesWindow.h"
+#include "Editor/ProjectSettingsWindow.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/GameObjectCommands.h"
@@ -176,6 +177,7 @@ void DrawMainMenuBar() {
 		if (ImGui::MenuItem("Pause", "Ctrl+Shift+P", EditorApplication::IsPaused())) { TogglePause(); }
 		if (ImGui::MenuItem("Step", "Ctrl+Alt+P", false, EditorApplication::IsPlaying())) { EditorApplication::Step(); }
 		ImGui::Separator();
+		if (ImGui::MenuItem("Project Settings...")) { EditorWindow::GetWindow<ProjectSettingsWindow>(); }
 		if (ImGui::MenuItem("Preferences...")) { EditorWindow::GetWindow<PreferencesWindow>(); }
 		ImGui::EndMenu();
 	}

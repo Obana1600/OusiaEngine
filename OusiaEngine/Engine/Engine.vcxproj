@@ -84,6 +84,8 @@
     <ClInclude Include="Editor\ConsoleWindow.h" />
     <ClInclude Include="Editor\LogEntries.h" />
     <ClInclude Include="Editor\PreferencesWindow.h" />
+    <ClInclude Include="Core\TimeManager.h" />
+    <ClInclude Include="Editor\ProjectSettingsWindow.h" />
     <ClInclude Include="Core\PlayerSettings.h" />
     <ClInclude Include="Core\JsonFile.h" />
     <ClInclude Include="Script\MonoBehavior.h" />
@@ -268,6 +270,8 @@
     <ClCompile Include="Editor\ConsoleWindow.cpp" />
     <ClCompile Include="Editor\LogEntries.cpp" />
     <ClCompile Include="Editor\PreferencesWindow.cpp" />
+    <ClCompile Include="Core\TimeManager.cpp" />
+    <ClCompile Include="Editor\ProjectSettingsWindow.cpp" />
     <ClCompile Include="Core\PlayerSettings.cpp" />
     <ClCompile Include="Core\JsonFile.cpp" />
     <ClCompile Include="Asset\Importer\PrefabImporter.cpp" />
