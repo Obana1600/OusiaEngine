@@ -6,6 +6,7 @@
 #include "Editor/GameObjectCommands.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
+#include "Editor/EditorWindow.h"
 #include "Editor/Undo.h"
 #include "Render/Asset/Model.h"
 #include "Scene/GameObject.h"
@@ -15,11 +16,14 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cfloat>
 #include <cstring>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_stdlib.h>
 
 using namespace ou;
 
@@ -51,6 +55,20 @@ enum class DropPosition {
 	Inside,
 	Below,
 };
+
+GameObject *FindAlive(uint32_t instanceId) {
+	if (instanceId == 0) { return nullptr; }
+	auto *gameObject = dynamic_cast<GameObject *>(Object::FindObjectFromInstanceId(instanceId));
+	return (gameObject && !gameObject->IsDestroyed()) ? gameObject : nullptr;
+}
+
+// ancestor が target の親（親の親…）か
+bool IsAncestorOf(const GameObject *ancestor, const GameObject *target) {
+	for (auto *p = target->GetTransform()->GetParent(); p; p = p->GetParent()) {
+		if (p->GetGameObject() == ancestor) { return true; }
+	}
+	return false;
+}
 
 DropPosition FindDropPosition() {
 	const auto min = ImGui::GetItemRectMin();
@@ -98,15 +116,34 @@ ou::HierarchyWindow::HierarchyWindow() {
 }
 
 
+void ou::HierarchyWindow::RequestRename(GameObject *gameObject) {
+	if (!gameObject || gameObject->IsDestroyed()) { return; }
+	sRenameRequestId_ = gameObject->GetInstanceId();
+	EditorWindow::GetWindow<HierarchyWindow>();
+}
+
+
 void ou::HierarchyWindow::OnGui() {
 	auto *scene = SceneManager::GetActiveScene();
 	if (!scene) { return; }
+
+	if (const auto id = std::exchange(sRenameRequestId_, 0u); id != 0) {
+		if (auto *gameObject = FindAlive(id)) { BeginRename(gameObject); }
+	}
+	// 名前を変えている間に消されたら、やめる
+	if (renamingId_ != 0 && !FindAlive(renamingId_)) { EndRename(false); }
 
 	for (auto *gameObject : scene->GetRootGameObjects()) {
 		DrawGameObject(gameObject);
 	}
 
 	DrawBackground(scene);
+
+	// 選んでいる行を、間を空けてもう一度クリックしたら名前を変える
+	if (const auto id = slowClick_.Update(); id && renamingId_ == 0) {
+		auto *gameObject = FindAlive(*id);
+		if (gameObject && Selection::GetActiveGameObject() == gameObject) { BeginRename(gameObject); }
+	}
 
 	GameObjectCommands::HandleShortcuts();
 }
@@ -119,24 +156,41 @@ void ou::HierarchyWindow::DrawGameObject(GameObject *gameObject) {
 							   ImGuiTreeNodeFlags_OpenOnDoubleClick |
 							   ImGuiTreeNodeFlags_SpanAvailWidth;
 	if (children.empty()) { flags |= ImGuiTreeNodeFlags_Leaf; }
-	if (Selection::GetActiveGameObject() == gameObject) { flags |= ImGuiTreeNodeFlags_Selected; }
+	const auto isSelected = Selection::GetActiveGameObject() == gameObject;
+	if (isSelected) { flags |= ImGuiTreeNodeFlags_Selected; }
+
+	const auto isRenaming = renamingId_ == gameObject->GetInstanceId();
+	// 名前の欄を行の上に重ねる
+	if (isRenaming) { flags |= ImGuiTreeNodeFlags_AllowOverlap; }
+	// 名前を変え始めたら、行が見えるように親を開く
+	if (focusesRename_ && renamingId_ != 0) {
+		if (const auto *target = FindAlive(renamingId_); target && IsAncestorOf(gameObject, target)) {
+			ImGui::SetNextItemOpen(true);
+		}
+	}
 
 	ImGui::PushID(static_cast<int>(gameObject->GetInstanceId()));
 
+	const auto labelX = ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing();
 	const auto isInactive = !gameObject->IsActiveInHierarchy();
 	if (isInactive) { ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)); }
-	const auto isOpen = ImGui::TreeNodeEx("##Node", flags, "%s", gameObject->GetName().c_str());
+	const auto isOpen = ImGui::TreeNodeEx("##Node", flags, "%s", isRenaming ? "" : gameObject->GetName().c_str());
 	if (isInactive) { ImGui::PopStyleColor(); }
 
-	// Unity と同じく、選ぶのはマウスを離したとき（押した瞬間に選ぶと Inspector が切り替わり、参照の欄へ引けない）
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-		isPressedOnArrow_ = ImGui::IsItemToggledOpen();
-	}
-	if (ImGui::IsItemDeactivated() && !isPressedOnArrow_ && !WasMouseDragged()) {
-		Selection::SetActiveGameObject(gameObject);
+	if (isRenaming) {
+		DrawRenameField(gameObject, labelX);
+	} else {
+		// Unity と同じく、選ぶのはマウスを離したとき（押した瞬間に選ぶと Inspector が切り替わり、参照の欄へ引けない）
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+			isPressedOnArrow_ = ImGui::IsItemToggledOpen();
+		}
+		if (ImGui::IsItemDeactivated() && !isPressedOnArrow_ && !WasMouseDragged()) {
+			Selection::SetActiveGameObject(gameObject);
+		}
+		slowClick_.TrackItem(gameObject->GetInstanceId(), isSelected);
 	}
 
-	if (ImGui::BeginDragDropSource()) {
+	if (!isRenaming && ImGui::BeginDragDropSource()) {
 		const auto instanceId = gameObject->GetInstanceId();
 		ImGui::SetDragDropPayload(EditorPayload::kGameObject, &instanceId, sizeof(instanceId));
 		ImGui::TextUnformatted(gameObject->GetName().c_str());
@@ -171,6 +225,55 @@ void ou::HierarchyWindow::DrawContextMenu(GameObject *gameObject) {
 	ImGui::Separator();
 	GameObjectCommands::DrawMenuItems(gameObject);
 	ImGui::EndPopup();
+}
+
+
+void ou::HierarchyWindow::BeginRename(GameObject *gameObject) {
+	renamingId_ = gameObject->GetInstanceId();
+	renamingName_ = gameObject->GetName();
+	focusesRename_ = true;
+	renameInactiveFrames_ = 0;
+	slowClick_.Cancel();
+	Focus();
+}
+
+
+void ou::HierarchyWindow::DrawRenameField(GameObject *gameObject, float labelX) {
+	ImGui::SameLine(labelX);
+	if (std::exchange(focusesRename_, false)) {
+		ImGui::SetKeyboardFocusHere();
+		ImGui::SetScrollHereY();
+	}
+
+	// 行の高さに収める
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {ImGui::GetStyle().FramePadding.x, 0.0f});
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputText("##Rename", &renamingName_, ImGuiInputTextFlags_AutoSelectAll);
+	ImGui::PopStyleVar();
+
+	// Enter かほかをクリックで確定、Esc で取り消し
+	if (ImGui::IsItemDeactivated()) {
+		EndRename(!ImGui::IsKeyPressed(ImGuiKey_Escape));
+		return;
+	}
+
+	// 入力が入らないまま（ウィンドウが隠れていたなど）残らないようにする
+	renameInactiveFrames_ = ImGui::IsItemActive() ? 0 : renameInactiveFrames_ + 1;
+	if (renameInactiveFrames_ > 2) { EndRename(false); }
+	(void)gameObject;
+}
+
+
+void ou::HierarchyWindow::EndRename(bool commits) {
+	auto *gameObject = FindAlive(std::exchange(renamingId_, 0u));
+	focusesRename_ = false;
+	if (!commits || !gameObject) { return; }
+
+	// 空にしたときは、元の名前のまま
+	if (renamingName_.empty() || renamingName_ == gameObject->GetName()) { return; }
+
+	gameObject->SetName(renamingName_);
+	MarkDirty(gameObject->GetScene(), "Rename");
 }
 
 

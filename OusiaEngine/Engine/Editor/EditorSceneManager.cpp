@@ -4,6 +4,7 @@
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorApplication.h"
+#include "Editor/EditorBuildSettings.h"
 #include "Editor/Undo.h"
 #include "Math/Mathf.h"
 #include "Platform/Paths.h"
@@ -15,6 +16,7 @@
 #include "Scene/Transform.h"
 #include "Serialize/SceneSerializer.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -142,6 +144,27 @@ bool ou::EditorSceneManager::MarkSceneDirty(Scene *scene) {
 	scene->isDirty_ = true;
 	Undo::NotifySceneChanged(scene);
 	return true;
+}
+
+
+void ou::EditorSceneManager::NotifyAssetMoved(const std::string &oldPath, const std::string &newPath) {
+	const auto isSameOrInside = [&](const std::string &path) { return path == oldPath || path.starts_with(oldPath + "/"); };
+
+	// 開いているシーン（直さないと、保存したときに古いパスへ書き戻す）
+	if (auto *scene = SceneManager::GetActiveScene(); scene && !scene->path_.empty() && isSameOrInside(scene->path_)) {
+		scene->path_ = newPath + scene->path_.substr(oldPath.size());
+		scene->name_ = MakeSceneName(scene->path_);
+		RememberLastScene(scene->path_);
+	} else if (const auto lastPath = LoadLastScenePath(); !lastPath.empty() && isSameOrInside(lastPath)) {
+		RememberLastScene(newPath + lastPath.substr(oldPath.size()));
+	}
+
+	// Build Settings は GUID から今のパスを引き直して書き直す（シーンを含まないときは何も変わらない）
+	auto scenes = EditorBuildSettings::GetScenes();
+	const auto hasMovedScene = std::any_of(scenes.begin(), scenes.end(), [&](const EditorBuildSettingsScene &scene) {
+		return isSameOrInside(scene.path) || scene.path.starts_with(newPath);
+	});
+	if (hasMovedScene) { EditorBuildSettings::SetScenes(scenes); }
 }
 
 

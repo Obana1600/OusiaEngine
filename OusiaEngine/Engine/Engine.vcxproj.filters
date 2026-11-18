@@ -445,6 +445,9 @@
     <ClInclude Include="Editor\Selection.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\SlowClick.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\GameObjectCommands.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

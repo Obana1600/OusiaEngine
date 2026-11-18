@@ -31,6 +31,9 @@ public: // 静的メンバ関数
 
 	static bool MarkSceneDirty(Scene *scene);
 
+	// AssetDatabase::MoveAsset のあとに呼ぶ。開いているシーン・Build Settings・次に開くシーンのパスを新しくする
+	static void NotifyAssetMoved(const std::string &oldPath, const std::string &newPath);
+
 
 private: // 静的メンバ関数
 

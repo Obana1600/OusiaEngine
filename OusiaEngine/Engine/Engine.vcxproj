@@ -57,6 +57,7 @@
     <ClInclude Include="Editor\EditorApplication.h" />
     <ClInclude Include="Editor\EditorPayload.h" />
     <ClInclude Include="Editor\Selection.h" />
+    <ClInclude Include="Editor\SlowClick.h" />
     <ClInclude Include="Editor\GameObjectCommands.h" />
     <ClInclude Include="Editor\Undo.h" />
     <ClInclude Include="Editor\AssetEditors.h" />

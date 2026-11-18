@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Editor/EditorWindow.h"
+#include "Editor/SlowClick.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -44,6 +45,14 @@ private: // メンバ変数
 	std::string deletingPath_;
 	bool opensDeletePopup_ = false;
 
+	// 名前を変えているもの（空なら変えていない）。拡張子は変えないので、欄には名前だけを出す
+	std::string renamingPath_;
+	std::string renamingName_;
+	std::string renamingExtension_;
+	bool focusesRename_ = false;
+	int renameInactiveFrames_ = 0;
+	SlowClick<std::string> slowClick_;
+
 
 private: // メンバ関数
 
@@ -61,6 +70,15 @@ private: // メンバ関数
 	void DrawCreatePopup();
 	void BeginCreate(CreateKind kind);
 	void OpenAsset(const std::string &assetPath);
+
+	// Unity と同じく、その場で名前の欄にする（ファイルは .meta も一緒に名前を変えるので、参照は切れない）
+	bool CanRename(const std::string &assetPath) const;
+	void BeginRename(const std::string &assetPath);
+	// 行を名前の欄にして描く（行の代わりに呼ぶ）
+	void DrawRenameRow(const std::string &assetPath);
+	// 今の名前で変えられないなら、その理由
+	std::string FindRenameProblem() const;
+	void EndRename(bool commits);
 
 	// Unity と同じく、確かめてから消す（ファイルと .meta を Windows のごみ箱へ移す）
 	void BeginDelete(const std::string &assetPath);

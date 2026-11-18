@@ -1,6 +1,7 @@
 #include "GameObjectCommands.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorSceneManager.h"
+#include "Editor/HierarchyWindow.h"
 #include "Editor/Selection.h"
 #include "Editor/Undo.h"
 #include "Scene/GameObject.h"
@@ -106,6 +107,12 @@ bool ou::GameObjectCommands::CanDelete(const GameObject *gameObject) {
 }
 
 
+bool ou::GameObjectCommands::CanRename(const GameObject *gameObject) {
+	// Inspector の名前の欄と同じく、Play 中も変えられる
+	return gameObject && !gameObject->IsDestroyed();
+}
+
+
 void ou::GameObjectCommands::Copy(GameObject *gameObject) {
 	if (!CanCopy(gameObject)) { return; }
 
@@ -189,6 +196,7 @@ void ou::GameObjectCommands::DrawMenuItems(GameObject *target) {
 	if (ImGui::MenuItem("Paste As Child", "Ctrl+Shift+V", false, CanPasteAsChild(target))) { PasteAsChild(target); }
 	ImGui::Separator();
 	if (ImGui::MenuItem("Duplicate", "Ctrl+D", false, CanDuplicate(target))) { Duplicate(target); }
+	if (ImGui::MenuItem("Rename", "F2", false, CanRename(target))) { HierarchyWindow::RequestRename(target); }
 	if (ImGui::MenuItem("Delete", "Delete", false, CanDelete(target))) { Delete(target); }
 }
 
@@ -204,6 +212,8 @@ void ou::GameObjectCommands::HandleShortcuts() {
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_V) && CanPasteAsChild(selected)) { PasteAsChild(selected); }
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_D) && CanDuplicate(selected)) { Duplicate(selected); }
 	if (ImGui::Shortcut(ImGuiKey_Delete) && CanDelete(selected)) { Delete(selected); }
+	// Scene ビューで押したときも、Hierarchy の行で名前を変える
+	if (ImGui::Shortcut(ImGuiKey_F2) && CanRename(selected)) { HierarchyWindow::RequestRename(selected); }
 }
 
 
