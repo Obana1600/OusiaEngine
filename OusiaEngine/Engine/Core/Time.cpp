@@ -82,6 +82,12 @@ void ou::Time::Advance(float unscaledDeltaTime) {
 }
 
 
+void ou::Time::Freeze() {
+	sUnscaledDeltaTime_ = 0.0f;
+	sDeltaTime_ = 0.0f;
+}
+
+
 bool ou::Time::AdvanceFixedTime() {
 	sIsInFixedTimeStep_ = (sFixedTime_ + sFixedDeltaTime_ <= sTime_);
 	if (sIsInFixedTimeStep_) {

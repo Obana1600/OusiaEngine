@@ -2,6 +2,7 @@
 #include "Asset/AssetDatabase.h"
 #include "Core/JsonFile.h"
 #include "Core/Time.h"
+#include "Audio/XAudio2/Audio.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/LogEntries.h"
@@ -76,6 +77,56 @@ void ou::EditorApplication::EnterPlayMode() {
 
 void ou::EditorApplication::ExitPlayMode() {
 	sRequest_ = Request::Exit;
+}
+
+
+void ou::EditorApplication::SetPaused(bool isPaused) {
+	sIsPaused_ = isPaused;
+	if (!isPaused) { sIsStepRequested_ = false; }
+}
+
+
+bool ou::EditorApplication::IsPaused() {
+	return sIsPaused_;
+}
+
+
+void ou::EditorApplication::Step() {
+	if (!sIsPlaying_) { return; }
+	sIsPaused_ = true;
+	sIsStepRequested_ = true;
+}
+
+
+bool ou::EditorApplication::IsGameFrameSkipped() {
+	return sIsPlaying_ && sSkipsGameFrame_;
+}
+
+
+void ou::EditorApplication::BeginGameFrame(float unscaledDeltaTime) {
+	sIsStepFrame_ = false;
+	sSkipsGameFrame_ = false;
+	if (sIsPlaying_ && sIsPaused_) {
+		sIsStepFrame_ = std::exchange(sIsStepRequested_, false);
+		sSkipsGameFrame_ = !sIsStepFrame_;
+	}
+
+	// 止めている間は時間を進めない。Step は、押すたびに同じだけ進むように fixedDeltaTime だけ進める
+	// （FixedUpdate と物理がちょうど 1 回、Update が 1 回動く）
+	if (sSkipsGameFrame_) {
+		Time::Freeze();
+	} else if (sIsStepFrame_) {
+		Time::Advance(Time::GetFixedDeltaTime());
+	} else {
+		Time::Advance(unscaledDeltaTime);
+	}
+
+	// Unity と同じく、止めている間は音も止める（Play を止めたら戻す）
+	const auto pausesAudio = sIsPlaying_ && sIsPaused_;
+	if (pausesAudio != sIsAudioPaused_) {
+		sIsAudioPaused_ = pausesAudio;
+		Audio::SetEnginePaused(pausesAudio);
+	}
 }
 
 

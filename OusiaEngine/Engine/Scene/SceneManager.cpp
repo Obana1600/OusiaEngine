@@ -182,7 +182,8 @@ void ou::SceneManager::Update() {
 	if (sPendingBuildIndex_ >= 0) {
 		LoadPendingScene();
 	}
-	if (!Application::IsPlaying()) {
+	// Play していないとき・Pause で止めているときは、ゲームを動かさない（Inspector で消したものだけ片付ける）
+	if (!Application::IsPlaying() || Application::IsPaused()) {
 		for (auto *scene : {sDontDestroyOnLoadScene_.get(), sActiveScene_.get()}) {
 			if (scene) { scene->DestroyMarkedObjects(); }
 		}

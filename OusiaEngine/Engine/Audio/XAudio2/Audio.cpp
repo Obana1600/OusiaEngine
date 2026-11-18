@@ -407,6 +407,16 @@ float ou::Audio::GetVolume(const SoundInstance *instance) {
 }
 
 
+void ou::Audio::SetEnginePaused(bool isPaused) {
+	if (!sXAudio) { return; }
+	if (isPaused) {
+		sXAudio->StopEngine();
+	} else if (FAILED(sXAudio->StartEngine())) {
+		Log::Error("音の再開に失敗しました");
+	}
+}
+
+
 void ou::Audio::SetSubmixVolume(SubmixType type, float volume) {
 	if (!sXAudio) { return; }
 	sSubmixVoices[static_cast<size_t>(type)]->SetVolume(volume);

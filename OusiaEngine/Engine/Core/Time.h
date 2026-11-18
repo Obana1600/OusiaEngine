@@ -54,6 +54,9 @@ private: // 静的メンバ関数
 
 	static bool AdvanceFixedTime();
 
+	// エディタの Pause 中。時間は進めず、deltaTime を 0 にする
+	static void Freeze();
+
 	static void ResetForPlayMode();
 };
 

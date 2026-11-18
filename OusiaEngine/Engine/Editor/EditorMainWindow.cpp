@@ -18,7 +18,9 @@
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 
+#include <array>
 #include <filesystem>
+#include <optional>
 #include <functional>
 #include <string>
 #include <utility>
@@ -88,6 +90,10 @@ void RunAfterSaveCheck(std::function<void()> action) {
 	sOpensSaveChangesPopup = true;
 }
 
+void TogglePause() {
+	EditorApplication::SetPaused(!EditorApplication::IsPaused());
+}
+
 void TogglePlayMode() {
 	if (EditorApplication::IsPlaying()) {
 		EditorApplication::ExitPlayMode();
@@ -110,6 +116,8 @@ void HandleShortcuts() {
 	constexpr auto kGlobal = ImGuiInputFlags_RouteGlobal;
 
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_P, kGlobal)) { TogglePlayMode(); }
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_P, kGlobal)) { TogglePause(); }
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_P, kGlobal | ImGuiInputFlags_Repeat)) { EditorApplication::Step(); }
 	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_C, kGlobal)) { EditorWindow::GetWindow<ConsoleWindow>(); }
 
 	if (EditorApplication::IsPlaying()) { return; }
@@ -164,6 +172,10 @@ void DrawMainMenuBar() {
 		ImGui::Separator();
 		GameObjectCommands::DrawMenuItems(Selection::GetActiveGameObject());
 		ImGui::Separator();
+		if (ImGui::MenuItem("Play", "Ctrl+P", EditorApplication::IsPlaying())) { TogglePlayMode(); }
+		if (ImGui::MenuItem("Pause", "Ctrl+Shift+P", EditorApplication::IsPaused())) { TogglePause(); }
+		if (ImGui::MenuItem("Step", "Ctrl+Alt+P", false, EditorApplication::IsPlaying())) { EditorApplication::Step(); }
+		ImGui::Separator();
 		if (ImGui::MenuItem("Preferences...")) { EditorWindow::GetWindow<PreferencesWindow>(); }
 		ImGui::EndMenu();
 	}
@@ -187,6 +199,93 @@ void DrawMainMenuBar() {
 }
 
 
+// ---- ツールバーのアイコンボタン（画像を使わず、図形で描く） ----
+
+constexpr float kIconButtonWidth = 34.0f;
+
+enum class ToolbarIcon {
+	Play,
+	Pause,
+	Step,
+};
+
+// Unity と同じく、押されているボタンは青くする
+const ImVec4 kButtonOnColor{0.23f, 0.47f, 0.85f, 1.0f};
+
+bool IconButton(const char *id, ToolbarIcon icon, bool isOn, bool isEnabled, const char *tooltip) {
+	ImGui::BeginDisabled(!isEnabled);
+	const auto isPressed = ImGui::InvisibleButton(id, {kIconButtonWidth, ImGui::GetFrameHeight()});
+	ImGui::EndDisabled();
+	const auto isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+	const auto isHeld = ImGui::IsItemActive();
+
+	const auto min = ImGui::GetItemRectMin();
+	const auto max = ImGui::GetItemRectMax();
+	auto *drawList = ImGui::GetWindowDrawList();
+
+	auto background = ImGui::GetStyleColorVec4(isHeld ? ImGuiCol_ButtonActive : (isHovered && isEnabled) ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+	if (isOn) { background = isHovered ? ImVec4{kButtonOnColor.x * 1.15f, kButtonOnColor.y * 1.15f, kButtonOnColor.z * 1.1f, 1.0f} : kButtonOnColor; }
+	drawList->AddRectFilled(min, max, ImGui::GetColorU32(background), ImGui::GetStyle().FrameRounding);
+
+	const auto color = ImGui::GetColorU32(isEnabled ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+	const ImVec2 c{(min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f};
+	const auto s = (max.y - min.y) * 0.28f; // 図形の半分の高さ
+
+	switch (icon) {
+		case ToolbarIcon::Play:
+			drawList->AddTriangleFilled({c.x - s * 0.75f, c.y - s}, {c.x - s * 0.75f, c.y + s}, {c.x + s * 0.95f, c.y}, color);
+			break;
+		case ToolbarIcon::Pause:
+			drawList->AddRectFilled({c.x - s * 0.7f, c.y - s}, {c.x - s * 0.22f, c.y + s}, color);
+			drawList->AddRectFilled({c.x + s * 0.22f, c.y - s}, {c.x + s * 0.7f, c.y + s}, color);
+			break;
+		case ToolbarIcon::Step:
+			drawList->AddTriangleFilled({c.x - s * 0.9f, c.y - s}, {c.x - s * 0.9f, c.y + s}, {c.x + s * 0.35f, c.y}, color);
+			drawList->AddRectFilled({c.x + s * 0.45f, c.y - s}, {c.x + s * 0.85f, c.y + s}, color);
+			break;
+	}
+
+	if (isHovered) { ImGui::SetTooltip("%s", tooltip); }
+	return isPressed && isEnabled;
+}
+
+
+// ---- Play 中の色 ----
+
+// Unity の Playmode tint。Play 中はエディタの地の色を青みがかった色に寄せ、ここで変えた値は Stop で消えることに気づけるようにする
+const ImVec4 kPlayModeTint{0.20f, 0.27f, 0.45f, 1.0f};
+constexpr float kPlayModeTintAmount = 0.35f;
+
+// 地の色だけを変える（文字は読みやすさのため変えない）
+constexpr ImGuiCol kTintedColors[] = {
+	ImGuiCol_WindowBg, ImGuiCol_ChildBg, ImGuiCol_PopupBg, ImGuiCol_MenuBarBg,
+	ImGuiCol_TitleBg, ImGuiCol_TitleBgActive, ImGuiCol_TitleBgCollapsed,
+	ImGuiCol_FrameBg, ImGuiCol_FrameBgHovered, ImGuiCol_FrameBgActive,
+	ImGuiCol_Tab, ImGuiCol_TabHovered, ImGuiCol_TabSelected, ImGuiCol_TabDimmed, ImGuiCol_TabDimmedSelected,
+	ImGuiCol_DockingEmptyBg, ImGuiCol_TableHeaderBg, ImGuiCol_ScrollbarBg,
+};
+
+void ApplyPlayModeTint() {
+	static std::optional<std::array<ImVec4, ImGuiCol_COUNT>> baseColors;
+	auto &colors = ImGui::GetStyle().Colors;
+
+	const auto isPlaying = EditorApplication::IsPlaying();
+	if (isPlaying && !baseColors) {
+		baseColors.emplace();
+		std::copy(std::begin(colors), std::end(colors), baseColors->begin());
+		for (const auto index : kTintedColors) {
+			auto &color = colors[index];
+			color.x += (kPlayModeTint.x - color.x) * kPlayModeTintAmount;
+			color.y += (kPlayModeTint.y - color.y) * kPlayModeTintAmount;
+			color.z += (kPlayModeTint.z - color.z) * kPlayModeTintAmount;
+		}
+	} else if (!isPlaying && baseColors) {
+		std::copy(baseColors->begin(), baseColors->end(), std::begin(colors));
+		baseColors.reset();
+	}
+}
+
+
 void DrawToolbar() {
 	auto *viewport = ImGui::GetMainViewport();
 	const auto height = ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y * 2.0f;
@@ -198,11 +297,20 @@ void DrawToolbar() {
 			ImGui::Text("%s%s", scene->GetName().c_str(), scene->IsDirty() ? " *" : "");
 		}
 
-		constexpr float kButtonWidth = 80.0f;
-		ImGui::SameLine((ImGui::GetWindowWidth() - kButtonWidth) * 0.5f);
-		if (ImGui::Button(EditorApplication::IsPlaying() ? "Stop" : "Play", {kButtonWidth, 0.0f})) {
-			TogglePlayMode();
-		}
+		// Unity と同じく、真ん中に Play・Pause・Step を並べる
+		constexpr float kSpacing = 1.0f;
+		const auto totalWidth = kIconButtonWidth * 3.0f + kSpacing * 2.0f;
+		ImGui::SameLine((ImGui::GetWindowWidth() - totalWidth) * 0.5f);
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {kSpacing, ImGui::GetStyle().ItemSpacing.y});
+
+		const auto isPlaying = EditorApplication::IsPlaying();
+		if (IconButton("##Play", ToolbarIcon::Play, isPlaying, true, isPlaying ? "Stop (Ctrl+P)" : "Play (Ctrl+P)")) { TogglePlayMode(); }
+		ImGui::SameLine();
+		if (IconButton("##Pause", ToolbarIcon::Pause, EditorApplication::IsPaused(), true, "Pause (Ctrl+Shift+P)")) { TogglePause(); }
+		ImGui::SameLine();
+		if (IconButton("##Step", ToolbarIcon::Step, false, isPlaying, "Step (Ctrl+Alt+P)")) { EditorApplication::Step(); }
+
+		ImGui::PopStyleVar();
 	}
 	ImGui::End();
 }
@@ -310,6 +418,7 @@ void ou::EditorMainWindow::Draw() {
 		EditorWindow::GetWindow<ConsoleWindow>();
 	}
 
+	ApplyPlayModeTint();
 	HandleShortcuts();
 
 	DrawMainMenuBar();

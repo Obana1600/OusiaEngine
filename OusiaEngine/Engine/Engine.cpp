@@ -310,7 +310,12 @@ void ou::Engine::OpenFirstScene() {
 bool ou::Engine::Update() {
 	const auto now = std::chrono::steady_clock::now();
 	const auto duration = std::chrono::duration<float>(now - lastUpdateTime_).count();
+#ifdef WITH_EDITOR
+	// Pause・Step で、時間の進め方が変わる
+	EditorApplication::BeginGameFrame(duration);
+#else
 	Time::Advance(duration);
+#endif
 	lastUpdateTime_ = now;
 
 	window_->PumpMessages();
