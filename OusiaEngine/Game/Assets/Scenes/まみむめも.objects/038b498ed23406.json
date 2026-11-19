@@ -1,0 +1,38 @@
+{
+	"$id": 997572975145990,
+	"$order": "5000001",
+	"name": "b_RightUpperArm_06",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 3403795046433743,
+			"localPosition": [
+				-18.677914,
+				-4.2973404,
+				6.967575
+			],
+			"localRotation": [
+				0.00046732734,
+				0.00044614848,
+				0.7121793,
+				0.70199734
+			],
+			"localEulerAnglesHint": [
+				2.0649633e-05,
+				0.0012920322,
+				1.585196
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 2789151482582365
+			}
+		}
+	]
+}

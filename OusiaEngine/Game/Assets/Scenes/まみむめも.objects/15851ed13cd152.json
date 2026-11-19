@@ -1,0 +1,102 @@
+{
+	"$id": 6057341916860754,
+	"$order": "5000000",
+	"name": "Text",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "RectTransform",
+			"$id": 1175768140855658,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				-0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 7462775424974341
+			},
+			"anchorMin": [
+				0.0,
+				0.0
+			],
+			"anchorMax": [
+				1.0,
+				1.0
+			],
+			"anchoredPosition": [
+				0.0,
+				0.0
+			],
+			"sizeDelta": [
+				0.0,
+				0.0
+			],
+			"pivot": [
+				0.5,
+				0.5
+			]
+		},
+		{
+			"$type": "Text",
+			"$id": 2712656642197792,
+			"enabled": true,
+			"material": null,
+			"color": [
+				0.2,
+				0.2,
+				0.2,
+				1.0
+			],
+			"raycastTarget": true,
+			"text": "Button",
+			"font": null,
+			"fontSize": 20.0,
+			"alignment": "Center",
+			"wordWrappingEnabled": true,
+			"lineSpacing": 0.0,
+			"characterSpacing": 0.0,
+			"faceDilate": 0.0,
+			"outlineWidth": 0.0,
+			"outlineColor": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"underlayDilate": 0.0,
+			"underlaySoftness": 0.0,
+			"underlayOffset": [
+				0.0,
+				0.0
+			],
+			"underlayColor": [
+				0.0,
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"$type": "CanvasRenderer",
+			"$id": 3538154208707217
+		}
+	]
+}

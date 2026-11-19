@@ -83,7 +83,7 @@ Scene *ou::EditorSceneManager::OpenScene(std::string_view scenePath) {
 	}
 
 	// 開けない・書き方が間違っているときは JsonFile がパス付きでログに出す
-	const auto json = JsonFile::Load(*fullPath);
+	const auto json = SceneSerializer::LoadJson(*fullPath);
 	if (!json) { return nullptr; }
 
 	if (!SceneSerializer::ValidateRoot(*json)) {

@@ -8,7 +8,7 @@
 # 置くもの:
 #   Editor/OusiaEditor.exe, Runtime/（dxcompiler.dll, dxil.dll）, EngineAssets/, Player/Player.exe, version.txt とドキュメント
 #   リポジトリの直下の .gitignore・.gitattributes・README.md は、ないときだけ置く
-#   Assets/・ProjectSettings/ がなければ、空のプロジェクトとして作る
+#   Assets/・ProjectSettings/ がなければ、空のプロジェクトとして作る（空の Assets/ には Scenes/.gitkeep を置く）
 
 param(
 	[Parameter(Mandatory = $true)][string]$TeamRepo,
@@ -87,6 +87,12 @@ foreach ($name in ".gitignore", ".gitattributes", "README.md") {
 # ---- 初めてなら、空のプロジェクトを作る ----
 $assets = Join-Path $TeamRepo "Assets"
 if (-not (Test-Path $assets)) { New-Item -ItemType Directory (Join-Path $assets "Scenes") | Out-Null }
+# git は空のフォルダを記録しないので、ファイルが 1 つもないと Assets/ ごとクローン先に届かない
+if (-not (Get-ChildItem $assets -Recurse -File -Force | Select-Object -First 1)) {
+	$scenes = Join-Path $assets "Scenes"
+	New-Item -ItemType Directory $scenes -Force | Out-Null
+	New-Item -ItemType File (Join-Path $scenes ".gitkeep") | Out-Null
+}
 
 $projectSettings = Join-Path $TeamRepo "ProjectSettings"
 if (-not (Test-Path $projectSettings)) {

@@ -1,0 +1,38 @@
+{
+	"$id": 4030455223538742,
+	"$order": "5000000",
+	"name": "b_LeftFoot02_018",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 6832455971143322,
+			"localPosition": [
+				-15.779939,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				-0.0,
+				-0.5472883,
+				0.83694416
+			],
+			"localEulerAnglesHint": [
+				-0.0,
+				-0.0,
+				-1.1582416
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 7450856610904860
+			}
+		}
+	]
+}

@@ -8,6 +8,7 @@
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 #include "Scene/TagManager.h"
+#include "Serialize/SceneSerializer.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -213,6 +214,7 @@ bool StripEditorOnlyInFolder(const std::filesystem::path &folder) {
 	std::error_code error;
 	size_t removedCount = 0;
 	auto isSucceeded = true;
+	std::vector<std::filesystem::path> objectsFolders;
 	for (std::filesystem::recursive_directory_iterator it(folder, error), end; !error && it != end; it.increment(error)) {
 		if (!it->is_regular_file(error)) { continue; }
 
@@ -220,17 +222,24 @@ bool StripEditorOnlyInFolder(const std::filesystem::path &folder) {
 		const auto isScene = extension == L".scene";
 		if (!isScene && extension != L".prefab") { continue; }
 
-		auto json = JsonFile::Load(it->path());
+		// シーンは GameObject ごとのファイルを 1 つにまとめて書く（Player が読むファイルを減らすため）
+		auto json = isScene ? SceneSerializer::LoadJson(it->path()) : JsonFile::Load(it->path());
 		if (!json || !json->is_object()) { continue; }
 
 		const auto removed = StripEditorOnly(*json, !isScene);
-		if (removed == 0) { continue; }
+		if (removed == 0 && !isScene) { continue; }
 
 		removedCount += removed;
 		if (!JsonFile::Save(it->path(), *json)) {
 			Log::Error("EditorOnly を外したものを書けませんでした: {}", ToUtf8(it->path()));
 			isSucceeded = false;
 		}
+		if (isScene) { objectsFolders.push_back(SceneSerializer::ToObjectsFolder(it->path())); }
+	}
+
+	// 走査の途中で消すと iterator が壊れるので、あとでまとめて消す
+	for (const auto &objectsFolder : objectsFolders) {
+		std::filesystem::remove_all(objectsFolder, error);
 	}
 
 	if (removedCount > 0) { Log::Info("EditorOnly のタグの GameObject を {} 個外しました", removedCount); }

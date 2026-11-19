@@ -1,0 +1,53 @@
+{
+	"$id": 2585038183578065,
+	"$order": "5000000",
+	"name": "球",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 7339859236009249,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 7894621700934177
+			}
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 5000983147029752,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "9fe5c8c9b5b8b22689f688aa7950ded9",
+					"sub": "Material/マテリアル"
+				}
+			],
+			"mesh": {
+				"guid": "9fe5c8c9b5b8b22689f688aa7950ded9",
+				"sub": "Mesh/球"
+			}
+		}
+	]
+}

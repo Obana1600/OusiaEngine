@@ -14,6 +14,7 @@
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Platform/Paths.h"
+#include "Serialize/SceneSerializer.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -196,7 +197,8 @@ void ScanFolder(std::string_view root, const std::filesystem::path &folder, Guid
 		const auto &path = it->path();
 
 		if (it->is_directory(ec)) {
-			if (IsHidden(path)) { it.disable_recursion_pending(); }
+			// シーンの GameObject のファイルは .scene の一部なので、アセットにしない（.meta も付けない）
+			if (IsHidden(path) || SceneSerializer::IsObjectsFolder(path)) { it.disable_recursion_pending(); }
 			continue;
 		}
 		if (!it->is_regular_file(ec) || IsHidden(path)) { continue; }
@@ -552,6 +554,13 @@ std::string ou::AssetDatabase::MoveAsset(std::string_view oldPath, std::string_v
 		if (std::filesystem::exists(fromMeta, error)) {
 			std::filesystem::rename(fromMeta, toMeta, error);
 			if (error) { Log::Error(".meta を動かせませんでした (GUID が変わります): {}.meta", from); }
+		}
+
+		// シーンは GameObject のファイルのフォルダも一緒に（.scene はもう動かしたので、IsObjectsFolder では確かめられない）
+		const auto fromObjects = SceneSerializer::ToObjectsFolder(*fromFull);
+		if (_wcsicmp(fromFull->extension().c_str(), L".scene") == 0 && std::filesystem::is_directory(fromObjects, error)) {
+			std::filesystem::rename(fromObjects, SceneSerializer::ToObjectsFolder(*toFull), error);
+			if (error) { Log::Error("シーンの GameObject のフォルダを動かせませんでした: {}", ToUtf8(fromObjects)); }
 		}
 	}
 

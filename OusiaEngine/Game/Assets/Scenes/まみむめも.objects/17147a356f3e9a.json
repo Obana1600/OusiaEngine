@@ -1,0 +1,38 @@
+{
+	"$id": 6496439579393690,
+	"$order": "5000000",
+	"name": "root",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 4547807912011344,
+			"localPosition": [
+				-0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				-0.0,
+				-0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 7092629009445244
+			}
+		}
+	]
+}

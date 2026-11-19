@@ -2,16 +2,15 @@
 #include "Diagnostics/Log.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorSceneManager.h"
-#include "Editor/Selection.h"
-#include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
-#include "Scene/Transform.h"
 #include "Serialize/SceneSerializer.h"
 
 #include <cstdint>
 #include <deque>
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -25,18 +24,32 @@ namespace {
 
 constexpr const char *kDefaultName = "Change";
 
-// 残しておく操作の数（シーンを丸ごと持つので、多くしすぎない）
+// 残しておく操作の数
 constexpr size_t kMaxSteps = 100;
 
-// ある時点のシーン。id が同じなら同じ中身
-struct State {
-	Json json;
+// GameObject 1 個の、ある時点の中身
+struct GameObjectState {
+	Json json; // ToJson(scene) の gameObjects の要素（Component も入っている）
+	int siblingIndex = 0;
+
+	bool operator==(const GameObjectState &) const = default;
+};
+
+// シーンの、ある時点の中身。キーは GameObject の fileId
+using SceneState = std::unordered_map<uint64_t, GameObjectState>;
+
+struct GameObjectChange {
 	uint64_t id = 0;
+	std::optional<GameObjectState> before; // なければ、その操作で作った
+	std::optional<GameObjectState> after;  // なければ、その操作で消した
 };
 
 struct Step {
 	std::string name;
-	State state; // Undo の履歴なら戻した先、Redo の履歴ならやり直した先
+	std::vector<GameObjectChange> changes;
+	// 操作の前と後の状態の番号（番号が同じなら同じ中身。保存した状態に戻ったかを知るのに使う）
+	uint64_t beforeId = 0;
+	uint64_t afterId = 0;
 };
 
 enum class Request : uint8_t {
@@ -49,10 +62,11 @@ std::deque<Step> sUndoSteps;
 std::vector<Step> sRedoSteps;
 
 // 最後に記録したときのシーン。変わったかは、これと比べる
-State sCurrent;
+SceneState sCurrent;
+uint64_t sCurrentId = 0;
 bool sHasCurrent = false;
 uint64_t sNextId = 1;
-// 保存したときの State の id（戻して保存した状態に戻ったら、* を消す）
+// 保存したときの状態の番号（戻して保存した状態に戻ったら、* を消す）
 uint64_t sSavedId = 0;
 
 // MarkSceneDirty が呼ばれて、まだ記録していない
@@ -61,20 +75,77 @@ std::string sPendingName;
 
 Request sRequest = Request::None;
 
-GameObject *FindGameObjectByFileId(GameObject *gameObject, uint64_t fileId) {
-	if (gameObject->GetFileId() == fileId) { return gameObject; }
-	for (auto *child : gameObject->GetTransform()->GetChildren()) {
-		if (auto *found = FindGameObjectByFileId(child->GetGameObject(), fileId)) { return found; }
-	}
-	return nullptr;
+uint64_t ReadId(const Json &json) {
+	const auto it = json.find("$id");
+	return it != json.end() && it->is_number_unsigned() ? it->get<uint64_t>() : 0;
 }
 
-GameObject *FindGameObjectByFileId(Scene &scene, uint64_t fileId) {
-	if (fileId == 0) { return nullptr; }
-	for (auto *root : scene.GetRootGameObjects()) {
-		if (auto *found = FindGameObjectByFileId(root, fileId)) { return found; }
+uint64_t ReadParentTransformId(const Json &gameObjectJson) {
+	const auto components = gameObjectJson.find("components");
+	if (components == gameObjectJson.end() || !components->is_array() || components->empty()) { return 0; }
+
+	const auto &transform = components->front();
+	const auto parent = transform.find("parent");
+	if (parent == transform.end() || !parent->is_object()) { return 0; }
+	const auto id = parent->find("id");
+	return id != parent->end() && id->is_number_unsigned() ? id->get<uint64_t>() : 0;
+}
+
+SceneState ToSceneState(Scene &scene) {
+	auto json = SceneSerializer::ToJson(scene);
+
+	// gameObjects は兄弟を今の並びで入れているので、親ごとに数えれば兄弟の中での位置になる
+	SceneState state;
+	std::unordered_map<uint64_t, int> childCounts;
+	for (auto &gameObject : json["gameObjects"]) {
+		const auto id = ReadId(gameObject);
+		const auto siblingIndex = childCounts[ReadParentTransformId(gameObject)]++;
+		state.insert_or_assign(id, GameObjectState{std::move(gameObject), siblingIndex});
 	}
-	return nullptr;
+	return state;
+}
+
+std::vector<GameObjectChange> CompareSceneStates(const SceneState &before, const SceneState &after) {
+	std::vector<GameObjectChange> changes;
+	for (const auto &[id, state] : before) {
+		const auto it = after.find(id);
+		if (it == after.end()) {
+			changes.push_back({id, state, std::nullopt});
+		} else if (!(it->second == state)) {
+			changes.push_back({id, state, it->second});
+		}
+	}
+	for (const auto &[id, state] : after) {
+		if (!before.contains(id)) { changes.push_back({id, std::nullopt, state}); }
+	}
+	return changes;
+}
+
+// changes の、isUndo なら前・そうでなければ後の中身にシーンを戻し、sCurrent もそれにそろえる
+void ApplyChanges(Scene &scene, const std::vector<GameObjectChange> &changes, bool isUndo) {
+	std::vector<SceneSerializer::RestoringGameObject> targets;
+	targets.reserve(changes.size());
+	for (const auto &change : changes) {
+		const auto &state = isUndo ? change.before : change.after;
+		targets.push_back({change.id, state ? &state->json : nullptr, state ? state->siblingIndex : 0});
+
+		if (state) {
+			sCurrent.insert_or_assign(change.id, *state);
+		} else {
+			sCurrent.erase(change.id);
+		}
+	}
+	SceneSerializer::RestoreGameObjects(scene, targets);
+
+	// 戻したあとのシーンが記録と違えば、どこかの Component が読み直しに対応できていない
+	auto restored = ToSceneState(scene);
+	if (restored != sCurrent) {
+		for (const auto &change : CompareSceneStates(sCurrent, restored)) {
+			const auto &json = change.after ? change.after->json : change.before->json;
+			Log::Warning("Undo で戻した結果が記録と違います: {}", json.value("name", std::string()));
+		}
+		sCurrent = std::move(restored);
+	}
 }
 
 // ドラッグや文字の入力の途中か（途中なら、終わるまで 1 つの操作にまとめる）
@@ -136,11 +207,13 @@ void ou::Undo::ClearAll() {
 void ou::Undo::ResetHistory(Scene *scene, bool isSaved) {
 	ClearAll();
 	sHasCurrent = false;
+	sCurrent.clear();
 	if (!scene) { return; }
 
-	sCurrent = State{SceneSerializer::ToJson(*scene), sNextId++};
+	sCurrent = ToSceneState(*scene);
+	sCurrentId = sNextId++;
 	sHasCurrent = true;
-	sSavedId = isSaved ? sCurrent.id : 0;
+	sSavedId = isSaved ? sCurrentId : 0;
 }
 
 
@@ -149,8 +222,8 @@ void ou::Undo::RefreshCurrent(Scene *scene) {
 	sPendingName.clear();
 	if (!scene || !sHasCurrent) { return; }
 
-	// 書き出す中身が変わっただけなので id はそのまま（保存した状態かどうかは変えない）
-	sCurrent.json = SceneSerializer::ToJson(*scene);
+	// 書き出す中身が変わっただけなので番号はそのまま（保存した状態かどうかは変えない）
+	sCurrent = ToSceneState(*scene);
 }
 
 
@@ -167,7 +240,7 @@ void ou::Undo::NotifySceneSaved(Scene *scene) {
 
 	// 保存した中身を、記録してある最後の状態にそろえる
 	FlushPendingChange(true);
-	sSavedId = sCurrent.id;
+	sSavedId = sCurrentId;
 }
 
 
@@ -185,17 +258,20 @@ void ou::Undo::FlushPendingChange(bool force) {
 	auto *scene = SceneManager::GetActiveScene();
 	if (!scene || !sHasCurrent || EditorApplication::IsPlaying()) { return; }
 
-	auto json = SceneSerializer::ToJson(*scene);
+	auto state = ToSceneState(*scene);
+	auto changes = CompareSceneStates(sCurrent, state);
 	// 値を動かして元に戻したなど、中身が同じなら残さない
-	if (json == sCurrent.json) { return; }
+	if (changes.empty()) { return; }
 
-	sUndoSteps.push_back(Step{name.empty() ? kDefaultName : std::move(name), std::move(sCurrent)});
+	const auto afterId = sNextId++;
+	sUndoSteps.push_back(Step{name.empty() ? kDefaultName : std::move(name), std::move(changes), sCurrentId, afterId});
 	while (sUndoSteps.size() > kMaxSteps) {
 		sUndoSteps.pop_front();
 	}
 	sRedoSteps.clear();
 
-	sCurrent = State{std::move(json), sNextId++};
+	sCurrent = std::move(state);
+	sCurrentId = afterId;
 }
 
 
@@ -203,48 +279,32 @@ void ou::Undo::ApplyPendingRequest() {
 	const auto request = std::exchange(sRequest, Request::None);
 	if (request == Request::None || EditorApplication::IsPlaying() || !sHasCurrent) { return; }
 
+	auto *scene = SceneManager::GetActiveScene();
+	if (!scene) { return; }
+
 	// 入力の途中で押されたときは、そこまでを 1 つの操作として残してから戻す
 	FlushPendingChange(true);
 
-	if (request == Request::Undo) {
-		if (sUndoSteps.empty()) { return; }
+	const auto isUndo = request == Request::Undo;
+	if (isUndo ? sUndoSteps.empty() : sRedoSteps.empty()) { return; }
 
-		auto step = std::move(sUndoSteps.back());
+	Step step;
+	if (isUndo) {
+		step = std::move(sUndoSteps.back());
 		sUndoSteps.pop_back();
-		sRedoSteps.push_back(Step{step.name, std::move(sCurrent)});
-		sCurrent = std::move(step.state);
-		Restore(sCurrent.json, sCurrent.id != sSavedId);
-		Log::Info("Undo: {}", step.name);
-		return;
+	} else {
+		step = std::move(sRedoSteps.back());
+		sRedoSteps.pop_back();
 	}
 
-	if (sRedoSteps.empty()) { return; }
+	ApplyChanges(*scene, step.changes, isUndo);
+	sCurrentId = isUndo ? step.beforeId : step.afterId;
+	EditorSceneManager::SetDirtyFlag(scene, sCurrentId != sSavedId);
+	Log::Info("{}: {}", isUndo ? "Undo" : "Redo", step.name);
 
-	auto step = std::move(sRedoSteps.back());
-	sRedoSteps.pop_back();
-	sUndoSteps.push_back(Step{step.name, std::move(sCurrent)});
-	sCurrent = std::move(step.state);
-	Restore(sCurrent.json, sCurrent.id != sSavedId);
-	Log::Info("Redo: {}", step.name);
-}
-
-
-void ou::Undo::Restore(const Json &json, bool isDirty) {
-	const auto *scene = SceneManager::GetActiveScene();
-	if (!scene) { return; }
-
-	const auto name = scene->GetName();
-	const auto path = scene->GetPath();
-	const auto buildIndex = scene->GetBuildIndex();
-
-	// 読み直すと別のオブジェクトになるので、選んでいたものは fileId で引き直す
-	const auto *selected = Selection::GetActiveGameObject();
-	const auto selectedFileId = selected ? selected->GetFileId() : 0;
-
-	SceneManager::ReplaceActiveScene(name, path, buildIndex, json);
-
-	auto *restored = SceneManager::GetActiveScene();
-	EditorSceneManager::SetDirtyFlag(restored, isDirty);
-	// アセットを選んでいたときは、そのまま残す
-	if (selected) { Selection::SetActiveGameObject(FindGameObjectByFileId(*restored, selectedFileId)); }
+	if (isUndo) {
+		sRedoSteps.push_back(std::move(step));
+	} else {
+		sUndoSteps.push_back(std::move(step));
+	}
 }

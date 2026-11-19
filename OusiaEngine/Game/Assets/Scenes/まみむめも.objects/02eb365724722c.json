@@ -1,0 +1,38 @@
+{
+	"$id": 821568576188972,
+	"$order": "5000002",
+	"name": "b_LeftUpperArm_09",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 3284561044708077,
+			"localPosition": [
+				-18.677917,
+				-4.297344,
+				-6.967987
+			],
+			"localRotation": [
+				0.00049726194,
+				0.00088219234,
+				0.7120875,
+				0.70209
+			],
+			"localEulerAnglesHint": [
+				-0.000558151,
+				0.0019469465,
+				1.5849346
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 2789151482582365
+			}
+		}
+	]
+}

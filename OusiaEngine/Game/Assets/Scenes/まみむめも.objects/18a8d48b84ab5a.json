@@ -1,0 +1,38 @@
+{
+	"$id": 6941030268316506,
+	"$order": "5000000",
+	"name": "b_Spine02_03",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 2789151482582365,
+			"localPosition": [
+				-21.655754,
+				-0.000118255615,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				-0.0,
+				-0.017411953,
+				0.9998484
+			],
+			"localEulerAnglesHint": [
+				-0.0,
+				-0.0,
+				-0.034825668
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 8371604291460547
+			}
+		}
+	]
+}

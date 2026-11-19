@@ -1,0 +1,38 @@
+{
+	"$id": 8921384893518344,
+	"$order": "5000003",
+	"name": "b_RightLeg01_019",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 610959090965450,
+			"localPosition": [
+				-4.813778,
+				5.154026,
+				6.9675636
+			],
+			"localRotation": [
+				0.0,
+				-0.0,
+				-0.9699586,
+				-0.24327007
+			],
+			"localEulerAnglesHint": [
+				-0.0,
+				0.0,
+				2.650121
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 7891035915823418
+			}
+		}
+	]
+}

@@ -14,6 +14,7 @@
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Serialize/SceneSerializer.h"
 
 #include <algorithm>
 #include <cctype>
@@ -73,7 +74,7 @@ std::string LowerExtension(const std::filesystem::path &path) {
 }
 
 bool IsVisible(const std::filesystem::path &path) {
-	return !ToUtf8(path.filename()).starts_with('.') && LowerExtension(path) != ".meta";
+	return !ToUtf8(path.filename()).starts_with('.') && LowerExtension(path) != ".meta" && !SceneSerializer::IsObjectsFolder(path);
 }
 
 bool IsModelFile(const std::filesystem::path &path) {
@@ -839,6 +840,7 @@ void ou::ProjectWindow::DrawDeletePopup() {
 			auto metaPath = *fullPath;
 			metaPath += L".meta";
 			if (std::filesystem::exists(metaPath, error)) { paths.push_back(metaPath); }
+			if (const auto objects = SceneSerializer::ToObjectsFolder(*fullPath); SceneSerializer::IsObjectsFolder(objects)) { paths.push_back(objects); }
 		}
 
 		if (!paths.empty() && MoveToRecycleBin(paths)) {

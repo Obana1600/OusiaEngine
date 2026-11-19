@@ -1,0 +1,38 @@
+{
+	"$id": 7765455273168677,
+	"$order": "5000000",
+	"name": "b_RightFoot01_021",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 4232782233319663,
+			"localPosition": [
+				-17.94281,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				-0.00015345456,
+				-0.0,
+				-0.45790938,
+				0.88899887
+			],
+			"localEulerAnglesHint": [
+				-0.00027284186,
+				0.00014053658,
+				-0.9512843
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 6246723927312859
+			}
+		}
+	]
+}

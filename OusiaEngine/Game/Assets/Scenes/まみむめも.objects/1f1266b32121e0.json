@@ -1,0 +1,38 @@
+{
+	"$id": 8745956579287520,
+	"$order": "5000000",
+	"name": "b_Tail03_014",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 2268210244975158,
+			"localPosition": [
+				-24.240322,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				-0.0,
+				0.053832747,
+				0.99855
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.10771757
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 4422572642755762
+			}
+		}
+	]
+}

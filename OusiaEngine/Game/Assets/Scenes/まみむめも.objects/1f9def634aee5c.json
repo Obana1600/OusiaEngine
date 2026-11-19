@@ -1,0 +1,38 @@
+{
+	"$id": 8899375766629980,
+	"$order": "5000000",
+	"name": "b_LeftForeArm_010",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 5097091868509540,
+			"localPosition": [
+				-23.045124,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				-0.0,
+				-0.0371259,
+				0.9993106
+			],
+			"localEulerAnglesHint": [
+				-0.0,
+				-0.0,
+				-0.07426887
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 3284561044708077
+			}
+		}
+	]
+}

@@ -1,0 +1,61 @@
+{
+	"$id": 1961694688915603,
+	"$order": "5000005",
+	"name": "Canvas",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "RectTransform",
+			"$id": 7834147423102004,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				-0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null,
+			"anchorMin": [
+				0.5,
+				0.5
+			],
+			"anchorMax": [
+				0.5,
+				0.5
+			],
+			"anchoredPosition": [
+				0.0,
+				0.0
+			],
+			"sizeDelta": [
+				1920.0,
+				991.0
+			],
+			"pivot": [
+				0.5,
+				0.5
+			]
+		},
+		{
+			"$type": "Canvas",
+			"$id": 4865791625118751,
+			"enabled": true
+		}
+	]
+}

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -28,10 +29,18 @@ public: // 静的メンバ関数
 
 	static Json ToJson(Scene &scene);
 	static Json ToJson(GameObject &root, bool keepOutsideReferences);
+	// .scene には version だけを書き、GameObject は 1 個ずつ隣の「<名前>.objects/」に書く（複数人で同じシーンを触っても衝突しないように）
 	static bool Save(Scene &scene, const std::filesystem::path &path);
 
 	static bool FromJson(Scene &scene, const Json &root);
 	static bool Load(Scene &scene, const std::filesystem::path &path);
+
+	// .scene と「<名前>.objects/」を読み、ToJson(scene) と同じ 1 つの json にまとめる
+	// .scene に gameObjects があれば（書き出したもの・分ける前の形）、それをそのまま使う
+	static std::optional<Json> LoadJson(const std::filesystem::path &path);
+
+	static std::filesystem::path ToObjectsFolder(const std::filesystem::path &scenePath);
+	static bool IsObjectsFolder(const std::filesystem::path &folder);
 
 	static bool ValidateRoot(const Json &root);
 
@@ -46,8 +55,20 @@ public: // 静的メンバ関数
 	static GameObject *InstantiateFromJson(const Json &json, Scene &scene, const std::function<void(GameObject &)> &place);
 	static std::vector<GameObject *> CreateGameObjects(Scene &scene, const Json &root, const std::unordered_map<uint64_t, Object *> &outside, bool awake);
 
+	// Undo で戻す。シーンは作り直さず、今ある GameObject・Component に json を読み直させるので、ほかからの参照や選択はそのまま残る
+	// json がないものは消し、シーンにないものは作る。並びは、渡したものの siblingIndex を小さい順に当てる
+	struct RestoringGameObject {
+		uint64_t id = 0;
+		const Json *json = nullptr; // ToJson(scene) の gameObjects の要素
+		int siblingIndex = 0;
+	};
+	static void RestoreGameObjects(Scene &scene, const std::vector<RestoringGameObject> &targets);
+
 
 private: // 静的メンバ関数
+
+	// json の components にそろえる（足したものは値を読まずに作るだけ。消すものは Destroy の印を付けるだけ）
+	static void MatchComponents(GameObject &gameObject, const Json &gameObjectJson, std::unordered_map<uint64_t, Object *> &objectsById);
 
 	static Json WriteGameObjects(const std::vector<GameObject *> &gameObjects, const std::unordered_set<const Object *> &savedObjects);
 };

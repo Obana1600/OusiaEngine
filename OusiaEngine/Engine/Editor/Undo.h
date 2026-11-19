@@ -11,8 +11,10 @@ namespace ou {
 // 前方宣言
 class Scene;
 
-// Unity の Undo。シーンを丸ごと json に書いて残しておき、戻すときはシーンを読み直す
+// Unity の Undo。操作のたびにシーンを json に書いて GameObject ごとに比べ、変わった GameObject の前と後だけを残す
+// 戻すときはシーンを作り直さず、今ある GameObject・Component に読み直させる（ほかからの参照や選択が残るように）
 // シーンを変えたところは EditorSceneManager::MarkSceneDirty を呼ぶので、そこで変わったことを知る
+// Unity のように操作の前に Undo.RecordObject を呼んでもらう形にしないのは、呼び忘れたところで戻せなくなるため
 // ドラッグのあいだは毎フレーム変わるので、マウスを離して入力が終わったときに 1 つの操作としてまとめる
 class Undo final {
 	friend class Engine;
@@ -59,9 +61,6 @@ private: // 静的メンバ関数
 
 	// Engine::Update から、ImGui のフレームの外で呼ぶ
 	static void ApplyPendingRequest();
-
-	// json のシーンに入れ替える。選んでいた GameObject は選び直す
-	static void Restore(const Json &json, bool isDirty);
 };
 
 } // namespace ou

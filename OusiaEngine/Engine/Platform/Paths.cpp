@@ -68,12 +68,17 @@ std::optional<std::filesystem::path> ou::FindAssetsFolder() {
 
 
 std::optional<std::filesystem::path> ou::FindEngineAssetsFolder() {
+	if (auto folder = FindFolder(std::filesystem::path(Utf8ToWide(SOURCE_DIR)) / L"Engine/EngineAssets", L"EngineAssets")) {
+		return folder;
+	}
 #ifdef WITH_EDITOR
+	// 配布したエディタはビルドした PC のソースフォルダがないので、exe の隣を見る。
+	// 先に隣を見ると、手元のビルド出力に残った古い EngineAssets を拾ってしまう
 	if (const auto beside = ExecutableDirectory() / L"EngineAssets"; std::filesystem::is_directory(beside)) {
 		return beside;
 	}
 #endif
-	return FindFolder(std::filesystem::path(Utf8ToWide(SOURCE_DIR)) / L"Engine/EngineAssets", L"EngineAssets");
+	return std::nullopt;
 }
 
 
