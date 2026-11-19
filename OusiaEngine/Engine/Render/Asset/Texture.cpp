@@ -29,3 +29,8 @@ uint32_t ou::Texture::GetDescriptorIndex() const {
 	const auto index = Graphics::GetDevice()->GetDescriptorIndex(&graphicsTexture_, Graphics::ViewType::SRV);
 	return static_cast<uint32_t>(index);
 }
+
+
+bool ou::Texture::IsReadable() const {
+	return !pixels_.empty();
+}

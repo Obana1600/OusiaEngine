@@ -5,8 +5,9 @@
 
 namespace ou {
 
-// キーボードのキー
-enum class KeyCode : uint8_t {
+// キーボードのキーとゲームパッドのボタン（値は Unity の KeyCode と同じ）
+// 255 までは Windows の仮想キーコードで、そのままキーボードの配列の添え字に使う
+enum class KeyCode : uint16_t {
 	None = 0,
 
 	Backspace = 0x08,
@@ -106,6 +107,120 @@ enum class KeyCode : uint8_t {
 	RightControl = 0xA3,
 	LeftAlt = 0xA4,
 	RightAlt = 0xA5,
+
+	// ゲームパッドのボタン。番号は Unity を Windows で Xbox のパッドを使ったときと同じ
+	// 0: A, 1: B, 2: X, 3: Y, 4: LB, 5: RB, 6: Back, 7: Start, 8: 左スティック押し込み, 9: 右スティック押し込み
+	// 10 ~ 19 は Unity にあるので名前だけ用意している（XInput のパッドでは押されない）
+
+	// どのパッドのボタンでもよい
+	JoystickButton0 = 330,
+	JoystickButton1,
+	JoystickButton2,
+	JoystickButton3,
+	JoystickButton4,
+	JoystickButton5,
+	JoystickButton6,
+	JoystickButton7,
+	JoystickButton8,
+	JoystickButton9,
+	JoystickButton10,
+	JoystickButton11,
+	JoystickButton12,
+	JoystickButton13,
+	JoystickButton14,
+	JoystickButton15,
+	JoystickButton16,
+	JoystickButton17,
+	JoystickButton18,
+	JoystickButton19,
+
+	// 1 番目のパッド（Input の player = 0）
+	Joystick1Button0 = 350,
+	Joystick1Button1,
+	Joystick1Button2,
+	Joystick1Button3,
+	Joystick1Button4,
+	Joystick1Button5,
+	Joystick1Button6,
+	Joystick1Button7,
+	Joystick1Button8,
+	Joystick1Button9,
+	Joystick1Button10,
+	Joystick1Button11,
+	Joystick1Button12,
+	Joystick1Button13,
+	Joystick1Button14,
+	Joystick1Button15,
+	Joystick1Button16,
+	Joystick1Button17,
+	Joystick1Button18,
+	Joystick1Button19,
+
+	// 2 番目のパッド（player = 1）
+	Joystick2Button0 = 370,
+	Joystick2Button1,
+	Joystick2Button2,
+	Joystick2Button3,
+	Joystick2Button4,
+	Joystick2Button5,
+	Joystick2Button6,
+	Joystick2Button7,
+	Joystick2Button8,
+	Joystick2Button9,
+	Joystick2Button10,
+	Joystick2Button11,
+	Joystick2Button12,
+	Joystick2Button13,
+	Joystick2Button14,
+	Joystick2Button15,
+	Joystick2Button16,
+	Joystick2Button17,
+	Joystick2Button18,
+	Joystick2Button19,
+
+	// 3 番目のパッド（player = 2）
+	Joystick3Button0 = 390,
+	Joystick3Button1,
+	Joystick3Button2,
+	Joystick3Button3,
+	Joystick3Button4,
+	Joystick3Button5,
+	Joystick3Button6,
+	Joystick3Button7,
+	Joystick3Button8,
+	Joystick3Button9,
+	Joystick3Button10,
+	Joystick3Button11,
+	Joystick3Button12,
+	Joystick3Button13,
+	Joystick3Button14,
+	Joystick3Button15,
+	Joystick3Button16,
+	Joystick3Button17,
+	Joystick3Button18,
+	Joystick3Button19,
+
+	// 4 番目のパッド（player = 3）
+	Joystick4Button0 = 410,
+	Joystick4Button1,
+	Joystick4Button2,
+	Joystick4Button3,
+	Joystick4Button4,
+	Joystick4Button5,
+	Joystick4Button6,
+	Joystick4Button7,
+	Joystick4Button8,
+	Joystick4Button9,
+	Joystick4Button10,
+	Joystick4Button11,
+	Joystick4Button12,
+	Joystick4Button13,
+	Joystick4Button14,
+	Joystick4Button15,
+	Joystick4Button16,
+	Joystick4Button17,
+	Joystick4Button18,
+	Joystick4Button19,
 };
 
 } // namespace ou

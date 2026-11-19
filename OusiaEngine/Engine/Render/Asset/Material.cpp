@@ -2,12 +2,42 @@
 #include "Asset/AssetDatabase.h"
 #include "Diagnostics/Fatal.h"
 #include "Diagnostics/Log.h"
+#include "Math/Mathf.h"
+#include "Serialize/Serializer.h"
 
 #include <cstddef>
 #include <cstring>
+#include <optional>
 #include <utility>
 
 using namespace ou;
+
+
+namespace {
+
+// シェーダの値を上書きするかと、上書きする値の組（{"override": true, "value": "SRC_ALPHA"}）
+template <typename E>
+void OverrideEnum(Serializer &serializer, std::string_view name, std::optional<E> &value, E fallback) {
+	auto isOverridden = value.has_value();
+	auto content = value.value_or(fallback);
+	serializer.Struct(name, [&] {
+		serializer.Field("override", isOverridden);
+		serializer.Enum("value", content);
+	});
+	if (serializer.IsReading()) { value = isOverridden ? std::optional<E>(content) : std::nullopt; }
+}
+
+void OverrideBool(Serializer &serializer, std::string_view name, std::optional<bool> &value, bool fallback) {
+	auto isOverridden = value.has_value();
+	auto content = value.value_or(fallback);
+	serializer.Struct(name, [&] {
+		serializer.Field("override", isOverridden);
+		serializer.Field("value", content);
+	});
+	if (serializer.IsReading()) { value = isOverridden ? std::optional<bool>(content) : std::nullopt; }
+}
+
+} // namespace
 
 
 void ou::Material::StaticInitialize() {
@@ -64,6 +94,58 @@ std::shared_ptr<Material> ou::Material::Create(const Material &source) {
 	material->propertyValues_ = source.propertyValues_;
 
 	return material;
+}
+
+
+void ou::Material::Serialize(Serializer &serializer) {
+	// シェーダを替えたら、プロパティはそのシェーダの初期値に戻す（このあと "properties" があれば読む）
+	auto shader = shader_;
+	serializer.Asset("shader", shader);
+	if (serializer.IsReading() && shader != shader_) { SetShader(std::move(shader)); }
+
+	serializer.Field("renderQueue", renderQueue_);
+	serializer.Asset("mainTexture", mainTexture_);
+	serializer.Field("color", color_);
+	serializer.Field("uvOffset", uvOffset_);
+	serializer.Field("uvScale", uvScale_);
+
+	// 中はラジアン、ファイルとエディタは度
+	auto uvRotationDegrees = uvRotation_ * Mathf::Rad2Deg;
+	serializer.Field("uvRotation", uvRotationDegrees);
+	if (serializer.IsReading()) { uvRotation_ = uvRotationDegrees * Mathf::Deg2Rad; }
+
+	serializer.Enum("lightingMode", lightingMode_);
+
+	serializer.Struct("renderStateOverride", [&] {
+		OverrideEnum(serializer, "srcBlend", renderStateOverride_.srcBlend, Graphics::Blend::ONE);
+		OverrideEnum(serializer, "dstBlend", renderStateOverride_.dstBlend, Graphics::Blend::ZERO);
+		OverrideEnum(serializer, "blendOp", renderStateOverride_.blendOp, Graphics::BlendOp::ADD);
+		OverrideBool(serializer, "zWrite", renderStateOverride_.zWrite, true);
+		OverrideEnum(serializer, "cull", renderStateOverride_.cull, Graphics::CullMode::BACK);
+	});
+
+	if (!shader_ || shader_->GetProperties().empty()) { return; }
+	serializer.Struct("properties", [&] {
+		const auto &properties = shader_->GetProperties();
+		for (size_t i = 0; i < properties.size() && i < propertyValues_.size(); i++) {
+			const auto &property = properties[i];
+			auto &value = propertyValues_[i];
+			switch (property.type) {
+				case Shader::PropertyType::Float:
+					serializer.Field(property.name, value.x);
+					break;
+				case Shader::PropertyType::Vector:
+					serializer.Field(property.name, value);
+					break;
+				case Shader::PropertyType::Color: {
+					auto color = Color(value);
+					serializer.Field(property.name, color);
+					if (serializer.IsReading()) { value = color; }
+					break;
+				}
+			}
+		}
+	});
 }
 
 

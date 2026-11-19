@@ -38,12 +38,18 @@ public: // メンバ関数
 	const std::vector<SubAsset> &GetSubAssets() const;
 	void ClearSubAssets();
 
+#ifdef WITH_EDITOR
+	void SaveAndReimport();
+#endif
+
 
 protected: // メンバ関数
 
 	explicit AssetImporter(std::string assetPath, std::filesystem::path fullPath);
 
 	void AddSubAsset(std::string_view typeName, const std::shared_ptr<Object> &object);
+
+	void ReadImportSettings();
 
 
 private: // メンバ変数

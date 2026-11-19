@@ -35,6 +35,7 @@ public: // メンバ関数
 	void Update() override;
 	void LateUpdate() override;
 	void OnDestroy() override;
+	void OnApplicationQuit() override;
 
 	void OnEnable() override;
 	void OnDisable() override;
@@ -64,6 +65,7 @@ private: // インナークラス
 		asIScriptFunction *update = nullptr;
 		asIScriptFunction *lateUpdate = nullptr;
 		asIScriptFunction *onDestroy = nullptr;
+		asIScriptFunction *onApplicationQuit = nullptr;
 		asIScriptFunction *onEnable = nullptr;
 		asIScriptFunction *onDisable = nullptr;
 		asIScriptFunction *onValidate = nullptr;

@@ -15,6 +15,7 @@
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
 #include "Render/Asset/Material.h"
+#include "Render/Asset/Texture.h"
 #include "Render/MeshRenderer.h"
 #include "Render/Renderer.h"
 #include "Scene/Behavior.h"
@@ -370,7 +371,7 @@ void SerializeHandle(Serializer &serializer, std::string_view name, ObjectHandle
 	handle = MakeHandle(object);
 }
 
-// アセットの型（Material・AudioClip）の持ち手は、Serializer::Asset に渡す（guid で保存され、Inspector では Project から落とせる・ピッカーで選べる）
+// アセットの型（Material・AudioClip・Texture2D）の持ち手は、Serializer::Asset に渡す（guid で保存され、Inspector では Project から落とせる・ピッカーで選べる）
 // 持ち手がアセットの shared_ptr を持っているので、それをそのまま渡す。実行中に作ったもの（renderer.material の複製など）はアセットではないので保存しない
 template <typename T>
 void SerializeAssetHandle(Serializer &serializer, std::string_view name, ObjectHandle *&handle) {
@@ -404,7 +405,7 @@ NativeType MakeNativeType(const char *name, const char *parent, bool canAdd = fa
 	}
 	if constexpr (std::is_base_of_v<Component, T> || std::is_same_v<T, GameObject>) {
 		type.serialize = &SerializeHandle<T>;
-	} else if constexpr (std::is_same_v<T, Material> || std::is_same_v<T, AudioClip>) {
+	} else if constexpr (std::is_same_v<T, Material> || std::is_same_v<T, AudioClip> || std::is_same_v<T, Texture>) {
 		type.serialize = &SerializeAssetHandle<T>;
 	}
 	return type;
@@ -506,6 +507,7 @@ std::vector<NativeType> &ou::ScriptBindingsInternal::NativeTypes() {
 		MakeNativeType<Component>("Component", "Object"),
 		MakeNativeType<Material>("Material", "Object"),
 		MakeNativeType<AudioClip>("AudioClip", "Object"),
+		MakeNativeType<Texture>("Texture2D", "Object"), // C++ の Texture は今 2D しかないので、Unity の名前で出す
 		MakeNativeType<Object>("Object", nullptr),
 	};
 	return types;

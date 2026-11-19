@@ -5,6 +5,7 @@
 #include "Math/Color.h"
 #include "Math/Vector2.h"
 #include "Render/Asset/Material.h"
+#include "Render/Asset/Texture.h"
 #include "Render/Renderer.h"
 #include "Script/ScriptBindingsInternal.h"
 #include "Script/ScriptEngine.h"
@@ -84,6 +85,24 @@ int GetClipFrequency(ObjectHandle *self) {
 int GetClipChannels(ObjectHandle *self) {
 	auto *clip = Resolve<AudioClip>(self);
 	return clip ? static_cast<int>(clip->GetChannels()) : 0;
+}
+
+
+// ---- Texture2D ----
+
+int GetTextureWidth(ObjectHandle *self) {
+	auto *texture = Resolve<Texture>(self);
+	return texture ? static_cast<int>(texture->GetWidth()) : 0;
+}
+
+int GetTextureHeight(ObjectHandle *self) {
+	auto *texture = Resolve<Texture>(self);
+	return texture ? static_cast<int>(texture->GetHeight()) : 0;
+}
+
+bool IsTextureReadable(ObjectHandle *self) {
+	auto *texture = Resolve<Texture>(self);
+	return texture && texture->IsReadable();
 }
 
 
@@ -267,6 +286,17 @@ void ou::ScriptBindings::RegisterComponentMembers(asIScriptEngine *engine) {
 		a.Method("float get_length() const property", asFUNCTION(GetClipLength));
 		a.Method("int get_frequency() const property", asFUNCTION(GetClipFrequency));
 		a.Method("int get_channels() const property", asFUNCTION(GetClipChannels));
+	}
+
+	// ---- Texture2D ----
+	{
+		const TypeRegistrar t{engine, "Texture2D"};
+		t.Method("string get_name() const property", asFUNCTION(GetAssetName));
+		t.Method("void set_name(const string &in value) property", asFUNCTION(SetAssetName));
+		t.Method("int GetInstanceID() const", asFUNCTION(GetAssetInstanceID));
+		t.Method("int get_width() const property", asFUNCTION(GetTextureWidth));
+		t.Method("int get_height() const property", asFUNCTION(GetTextureHeight));
+		t.Method("bool get_isReadable() const property", asFUNCTION(IsTextureReadable));
 	}
 
 	// ---- AudioSource ----

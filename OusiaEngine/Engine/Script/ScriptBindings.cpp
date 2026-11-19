@@ -2,6 +2,7 @@
 #include "Core/Application.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
+#include "Input/Cursor.h"
 #include "Input/Input.h"
 #include "Input/KeyCode.h"
 #include "Math/Mathf.h"
@@ -9,6 +10,7 @@
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Platform/Screen.h"
+#include "Render/Asset/Texture.h"
 #include "Render/Gizmos.h"
 #include "Script/ScriptBindingsInternal.h"
 
@@ -21,12 +23,12 @@
 #include <magic_enum/magic_enum.hpp>
 
 
-// KeyCode は 0xA5 まであり、magic_enum が既定で見る範囲（127 まで）を超えるので広げる
+// KeyCode は Joystick4Button19（429）まであり、magic_enum が既定で見る範囲（127 まで）を超えるので広げる
 // KeyCode を magic_enum に渡すのはこの .cpp だけ
 template <>
 struct magic_enum::customize::enum_range<ou::KeyCode> {
 	static constexpr int min = 0;
-	static constexpr int max = 255;
+	static constexpr int max = 511;
 };
 
 
@@ -109,6 +111,22 @@ void SetResolution(int width, int height, int mode) {
 	Screen::SetResolution(static_cast<uint32_t>(width), static_cast<uint32_t>(height), static_cast<FullScreenMode>(mode));
 }
 
+// ---- Cursor ----
+int GetCursorLockState() { return static_cast<int>(Cursor::GetLockState()); }
+void SetCursorLockState(int mode) {
+	if (magic_enum::enum_contains<CursorLockMode>(mode)) { Cursor::SetLockState(static_cast<CursorLockMode>(mode)); }
+}
+// texture が null なら矢印に戻す（Unity と同じ）。破棄したものを渡したら、Resolve が MissingReferenceException にする
+void SetCursorTexture(ScriptBindingsInternal::ObjectHandle *texture, const Vector2 &hotspot, int mode) {
+	const Texture *resolved = nullptr;
+	if (texture) {
+		resolved = ScriptBindingsInternal::Resolve<Texture>(texture);
+		if (!resolved) { return; }
+	}
+	const auto cursorMode = magic_enum::enum_contains<CursorMode>(mode) ? static_cast<CursorMode>(mode) : CursorMode::Auto;
+	Cursor::SetCursor(resolved, hotspot, cursorMode);
+}
+
 // ---- Time ----
 
 int GetFrameCount() {
@@ -140,6 +158,13 @@ float KeyAxis(KeyCode positive, KeyCode alternatePositive, KeyCode negative, Key
 	return value;
 }
 
+float GamepadButtonAxis(GamepadButton positive, GamepadButton negative) {
+	auto value = 0.0f;
+	if (Input::GetGamepadButton(positive)) { value += 1.0f; }
+	if (Input::GetGamepadButton(negative)) { value -= 1.0f; }
+	return value;
+}
+
 // Unity の Input Manager の既定の軸を決め打ちにする
 // なめらかにする処理はないので、GetAxis と GetAxisRaw は同じ値を返す
 float GetAxis(const std::string &axisName) {
@@ -156,7 +181,16 @@ float GetAxis(const std::string &axisName) {
 	if (axisName == "Mouse Y") { return -Input::GetMouseDelta().y * 0.1f; }
 	if (axisName == "Mouse ScrollWheel") { return Input::GetMouseScrollDelta().y * 0.1f; }
 
-	ThrowException(std::format("ArgumentException: Input Axis {} is not setup. (使える軸: Horizontal, Vertical, Mouse X, Mouse Y, Mouse ScrollWheel)", axisName));
+	// Unity の既定の Input Manager にはないパッドの軸。Unity ではユーザーが 4th axis などで作るものを、名前を決めて用意しておく
+	// Y は Vertical と同じく上が +
+	if (axisName == "Right Stick X") { return Input::GetGamepadRightStick().x; }
+	if (axisName == "Right Stick Y") { return Input::GetGamepadRightStick().y; }
+	if (axisName == "Left Trigger") { return Input::GetGamepadLeftTrigger(); }
+	if (axisName == "Right Trigger") { return Input::GetGamepadRightTrigger(); }
+	if (axisName == "Dpad X") { return GamepadButtonAxis(GamepadButton::DpadRight, GamepadButton::DpadLeft); }
+	if (axisName == "Dpad Y") { return GamepadButtonAxis(GamepadButton::DpadUp, GamepadButton::DpadDown); }
+
+	ThrowException(std::format("ArgumentException: Input Axis {} is not setup. (使える軸: Horizontal, Vertical, Mouse X, Mouse Y, Mouse ScrollWheel, Right Stick X, Right Stick Y, Left Trigger, Right Trigger, Dpad X, Dpad Y)", axisName));
 	return 0.0f;
 }
 
@@ -195,6 +229,7 @@ void ou::ScriptBindings::Register(asIScriptEngine *engine) {
 	RegisterTime(engine);
 	RegisterInput(engine);
 	RegisterScreen(engine);
+	RegisterCursor(engine);
 	RegisterApplication(engine);
 	RegisterGizmos(engine);
 }
@@ -323,6 +358,35 @@ void ou::ScriptBindings::RegisterScreen(asIScriptEngine *engine) {
 	global("bool get_fullScreen() property", asFUNCTION(Screen::IsFullScreen));
 	global("void set_fullScreen(bool value) property", asFUNCTION(Screen::SetFullScreen));
 	global("void SetResolution(int width, int height, FullScreenMode mode)", asFUNCTION(SetResolution));
+
+	engine->SetDefaultNamespace("");
+}
+
+
+void ou::ScriptBindings::RegisterCursor(asIScriptEngine *engine) {
+	// CursorLockMode::Locked のように書く
+	Check(engine->RegisterEnum("CursorLockMode"), "CursorLockMode");
+	for (const auto mode : magic_enum::enum_values<CursorLockMode>()) {
+		const std::string name(magic_enum::enum_name(mode));
+		Check(engine->RegisterEnumValue("CursorLockMode", name.c_str(), static_cast<int>(mode)), name);
+	}
+	Check(engine->RegisterEnum("CursorMode"), "CursorMode");
+	for (const auto mode : magic_enum::enum_values<CursorMode>()) {
+		const std::string name(magic_enum::enum_name(mode));
+		Check(engine->RegisterEnumValue("CursorMode", name.c_str(), static_cast<int>(mode)), name);
+	}
+
+	// Unity と同じくプロパティにする（Cursor::visible・Cursor::lockState）
+	engine->SetDefaultNamespace("Cursor");
+
+	const auto global = [&](const char *declaration, const asSFuncPtr &function) {
+		Check(engine->RegisterGlobalFunction(declaration, function, asCALL_CDECL), declaration);
+	};
+	global("bool get_visible() property", asFUNCTION(Cursor::IsVisible));
+	global("void set_visible(bool value) property", asFUNCTION(Cursor::SetVisible));
+	global("CursorLockMode get_lockState() property", asFUNCTION(GetCursorLockState));
+	global("void set_lockState(CursorLockMode value) property", asFUNCTION(SetCursorLockState));
+	global("void SetCursor(Texture2D@+ texture, const Vector2 &in hotspot, CursorMode cursorMode)", asFUNCTION(SetCursorTexture));
 
 	engine->SetDefaultNamespace("");
 }

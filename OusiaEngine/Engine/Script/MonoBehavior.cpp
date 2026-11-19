@@ -19,8 +19,8 @@ using namespace ou;
 namespace {
 
 // エンジンが呼ぶメッセージは、Inspector の一覧に出さない（C# では private にするのが普通なので、Unity の一覧にも出ない）
-constexpr std::array<std::string_view, 17> kMessageNames = {
-	"Awake", "Start", "FixedUpdate", "Update", "LateUpdate", "OnDestroy", "OnEnable", "OnDisable", "OnValidate",
+constexpr std::array<std::string_view, 18> kMessageNames = {
+	"Awake", "Start", "FixedUpdate", "Update", "LateUpdate", "OnDestroy", "OnApplicationQuit", "OnEnable", "OnDisable", "OnValidate",
 	"OnDrawGizmos", "OnDrawGizmosSelected",
 	"OnCollisionEnter", "OnCollisionStay", "OnCollisionExit", "OnTriggerEnter", "OnTriggerStay", "OnTriggerExit"};
 
@@ -94,6 +94,11 @@ void ou::MonoBehavior::LateUpdate() {
 
 void ou::MonoBehavior::OnDestroy() {
 	CallMessage(methods_.onDestroy);
+}
+
+
+void ou::MonoBehavior::OnApplicationQuit() {
+	CallMessage(methods_.onApplicationQuit);
 }
 
 
@@ -207,6 +212,7 @@ void ou::MonoBehavior::CreateInstance() {
 	methods_.update = type->GetMethodByDecl("void Update()");
 	methods_.lateUpdate = type->GetMethodByDecl("void LateUpdate()");
 	methods_.onDestroy = type->GetMethodByDecl("void OnDestroy()");
+	methods_.onApplicationQuit = type->GetMethodByDecl("void OnApplicationQuit()");
 	methods_.onEnable = type->GetMethodByDecl("void OnEnable()");
 	methods_.onDisable = type->GetMethodByDecl("void OnDisable()");
 	methods_.onValidate = type->GetMethodByDecl("void OnValidate()");

@@ -43,6 +43,8 @@
     <ClInclude Include="Animation\Core\Easing.h" />
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
+    <ClInclude Include="Asset\Importer\TextureImporter.h" />
+    <ClInclude Include="Input\Cursor.h" />
     <ClInclude Include="Editor\CustomEditor.h" />
     <ClInclude Include="Editor\EngineEditors.h" />
     <ClInclude Include="Editor\GuiContent.h" />
@@ -221,7 +223,6 @@
     <ClInclude Include="Graphics\ShaderCompiler.h" />
     <ClInclude Include="Asset\AssetImporter.h" />
     <ClInclude Include="Asset\Importer\ShaderModuleImporter.h" />
-    <ClInclude Include="Asset\Importer\TextureImporter.h" />
     <ClInclude Include="Render\Asset\Texture.h" />
     <ClInclude Include="UI\Asset\Sprite.h" />
     <ClInclude Include="Input\Windows\XInput.h" />
@@ -234,6 +235,7 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="Input\Cursor.cpp" />
     <ClCompile Include="Editor\CustomEditor.cpp" />
     <ClCompile Include="Editor\EngineEditors.cpp" />
     <ClCompile Include="Editor\Editor.cpp" />

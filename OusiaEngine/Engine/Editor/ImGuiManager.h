@@ -28,6 +28,9 @@ private: // メンバ変数
 	Window *window_ = nullptr;
 	Window::MessageHandlerId messageHandlerId_ = 0;
 
+	// io.IniFilename はポインタしか持たないので、文字列はここで持ち続ける
+	std::string iniPath_;
+
 	// TODO: フォントを自由に変更できるようにしたい
 	const std::string kUseJpFontName = "NotoSansJP-Bold.ttf";
 	const float kFontSize = 18.0f;

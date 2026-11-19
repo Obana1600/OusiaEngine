@@ -25,6 +25,9 @@ public: // メンバ関数
 	virtual void LateUpdate() {};
 	virtual void OnDestroy() {};
 
+	// Unity の OnApplicationQuit。ゲームを閉じるとき（エディタでは Play を止めるとき）に、OnDisable・OnDestroy より先に呼ぶ
+	virtual void OnApplicationQuit() {};
+
 	virtual void OnTriggerEnter(Collider *) {};
 	virtual void OnTriggerStay(Collider *) {};
 	virtual void OnTriggerExit(Collider *) {};

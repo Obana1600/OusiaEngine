@@ -1,97 +1,15 @@
 #include "MaterialImporter.h"
 #include "Core/JsonFile.h"
-#include "Asset/AssetDatabase.h"
-#include "Asset/Format/AssetJson.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
-#include "Math/Color.h"
-#include "Math/Mathf.h"
-#include "Math/Vector2.h"
 #include "Render/Asset/Material.h"
-#include "Render/Asset/Shader.h"
-#include "Render/Asset/Texture.h"
+#include "Serialize/JsonReader.h"
 
-#include <format>
-#include <string>
-#include <string_view>
+#include <cstdint>
+#include <unordered_map>
 #include <utility>
 
 using namespace ou;
-
-
-namespace {
-
-constexpr std::string_view kMaterialKeys[] = {
-	"shader",
-	"renderQueue",
-	"color",
-	"mainTexture",
-	"uvOffset",
-	"uvScale",
-	"uvRotation",
-	"lightingMode",
-	"srcBlend",
-	"dstBlend",
-	"blendOp",
-	"zWrite",
-	"cull",
-};
-
-template <typename T>
-std::shared_ptr<T> LoadReferencedAsset(const Json &json, const char *key) {
-	const auto assetPath = json.at(key).get<std::string>();
-	auto asset = AssetDatabase::LoadAssetAtPath<T>(assetPath);
-	if (!asset) {
-		throw JsonFile::FormatError(std::format("\"{}\" のアセットを読めませんでした: {}", key, assetPath));
-	}
-	return asset;
-}
-
-// [x, y]
-Vector2 ToVector2(const Json &value, const char *key) {
-	if (!value.is_array() || value.size() != 2) {
-		throw JsonFile::FormatError(std::format("\"{}\" は [x, y] で書いてください", key));
-	}
-	return {value[0].get<float>(), value[1].get<float>()};
-}
-
-// [r, g, b] or [r, g, b, a]
-Color ToColor(const Json &value, const char *key) {
-	if (!value.is_array() || (value.size() != 3 && value.size() != 4)) {
-		throw JsonFile::FormatError(std::format("\"{}\" は [r, g, b] もしくは [r, g, b, a] と書いてください", key));
-	}
-	const auto a = (value.size() == 4) ? value[3].get<float>() : 1.0f;
-	return {value[0].get<float>(), value[1].get<float>(), value[2].get<float>(), a};
-}
-
-Material::LightingMode ToLightingMode(const std::string &name) {
-	if (name == "None") { return Material::LightingMode::None; }
-	if (name == "Lambert") { return Material::LightingMode::Lambert; }
-	if (name == "HalfLambert") { return Material::LightingMode::HalfLambert; }
-	throw JsonFile::FormatError(std::format("\"lightingMode\" に \"{}\" は使えません (使えるもの: None, Lambert, HalfLambert)", name));
-}
-
-Shader::RenderStateOverride ParseRenderStateOverride(const Json &json) {
-	Shader::RenderStateOverride override{};
-	if (const auto it = json.find("srcBlend"); it != json.end()) {
-		override.srcBlend = AssetJson::ToBlend(it->get<std::string>(), "srcBlend");
-	}
-	if (const auto it = json.find("dstBlend"); it != json.end()) {
-		override.dstBlend = AssetJson::ToBlend(it->get<std::string>(), "dstBlend");
-	}
-	if (const auto it = json.find("blendOp"); it != json.end()) {
-		override.blendOp = AssetJson::ToBlendOp(it->get<std::string>(), "blendOp");
-	}
-	if (const auto it = json.find("zWrite"); it != json.end()) {
-		override.zWrite = it->get<bool>();
-	}
-	if (const auto it = json.find("cull"); it != json.end()) {
-		override.cull = AssetJson::ToCullMode(it->get<std::string>(), "cull");
-	}
-	return override;
-}
-
-} // namespace
 
 
 
@@ -105,51 +23,19 @@ std::shared_ptr<Object> ou::MaterialImporter::Import() {
 
 
 std::shared_ptr<Material> ou::MaterialImporter::ImportMaterial() {
-	const auto &path = GetFullPath();
-	const auto pathUtf8 = ToUtf8(path);
-
-	const auto json = JsonFile::Load(path);
+	const auto json = JsonFile::Load(GetFullPath());
 	if (!json) { return nullptr; }
-
-	try {
-		JsonFile::WarnUnknownKeys(*json, kMaterialKeys, pathUtf8);
-
-		// シェーダ
-		std::shared_ptr<Shader> shader;
-		if (json->contains("shader")) {
-			shader = LoadReferencedAsset<Shader>(*json, "shader");
-		}
-		auto material = Material::Create(std::move(shader));
-		material->SetName(GetName());
-
-		// プロパティ
-		if (const auto it = json->find("renderQueue"); it != json->end()) {
-			material->SetRenderQueue(AssetJson::ToRenderQueue(*it, "renderQueue"));
-		}
-		if (const auto it = json->find("color"); it != json->end()) {
-			material->SetColor(ToColor(*it, "color"));
-		}
-		if (json->contains("mainTexture")) {
-			material->SetMainTexture(LoadReferencedAsset<Texture>(*json, "mainTexture"));
-		}
-		if (const auto it = json->find("uvOffset"); it != json->end()) {
-			material->SetUvOffset(ToVector2(*it, "uvOffset"));
-		}
-		if (const auto it = json->find("uvScale"); it != json->end()) {
-			material->SetUvScale(ToVector2(*it, "uvScale"));
-		}
-		if (const auto it = json->find("uvRotation"); it != json->end()) {
-			material->SetUvRotation(it->get<float>() * Mathf::Deg2Rad);
-		}
-		if (const auto it = json->find("lightingMode"); it != json->end()) {
-			material->SetLightingMode(ToLightingMode(it->get<std::string>()));
-		}
-
-		material->SetRenderStateOverride(ParseRenderStateOverride(*json));
-		return material;
-
-	} catch (const std::exception &e) {
-		Log::Error("マテリアルの設定が間違っています: {}\n{}", pathUtf8, e.what());
+	if (!json->is_object()) {
+		Log::Error("マテリアルは {{...}} で書いてください: {}", ToUtf8(GetFullPath()));
 		return nullptr;
 	}
+
+	// 中身は Material::Serialize と同じ形（エディタの保存も同じ形で書く）。書いていないものは Material::Create の値のまま
+	auto material = Material::Create();
+	const std::unordered_map<uint64_t, Object *> noSceneObjects;
+	JsonReader reader(*json, noSceneObjects);
+	material->Serialize(reader);
+
+	material->SetName(GetName());
+	return material;
 }

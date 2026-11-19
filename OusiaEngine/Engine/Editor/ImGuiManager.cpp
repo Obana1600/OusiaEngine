@@ -60,6 +60,11 @@ ou::ImGuiManager::ImGuiManager(Window *window)
 	// ドッキングの有効化 / 日本語フォントの追加
 	auto &io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	// レイアウトは PC ごとの設定なので、カレントディレクトリではなく UserSettings に置く（Unity の UserSettings/Layouts と同じ）
+	if (const auto userSettings = FindUserSettingsFolder()) {
+		iniPath_ = ToUtf8(*userSettings / "imgui.ini");
+		io.IniFilename = iniPath_.c_str();
+	}
 	if (const auto engineAssets = FindEngineAssetsFolder()) {
 		const auto fontPath = ToUtf8(*engineAssets / "Font" / kUseJpFontName);
 		io.Fonts->AddFontFromFileTTF(fontPath.c_str(), kFontSize);

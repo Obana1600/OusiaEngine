@@ -105,6 +105,11 @@ private: // 静的メンバ関数
 	static Scene *GetDontDestroyOnLoadScene();
 	static void MoveHierarchy(GameObject *gameObject, Scene *scene);
 
+	// ゲームを閉じるとき（エディタでは Play を止めるとき）に、動いている GameObject の OnApplicationQuit を呼ぶ
+	static void NotifyApplicationQuit();
+	// DontDestroyOnLoad のシーンも含めて、すべての GameObject を破棄する（OnDisable・OnDestroy を呼ぶ）
+	static void UnloadAllScenes();
+
 	static void ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const Json &json);
 	static int32_t FindBuildIndexByPath(std::string_view path);
 };

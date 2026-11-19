@@ -1,8 +1,15 @@
 #include "AssetEditors.h"
+#include "Asset/AssetDatabase.h"
+#include "Asset/Importer/TextureImporter.h"
 #include "Audio/AudioClip.h"
 #include "Core/EnumFlags.h"
+#include "Diagnostics/Log.h"
 #include "Editor/EditorFunc.h"
 #include "Editor/EditorGuiLayout.h"
+#include "Editor/EditorGuiUtility.h"
+#include "Editor/ExternalScriptEditor.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
 
 #include <algorithm>
@@ -12,6 +19,7 @@
 #include <string_view>
 
 #include <imgui/imgui.h>
+#include <magic_enum/magic_enum.hpp>
 
 using namespace ou;
 
@@ -114,6 +122,73 @@ const char *ChannelName(uint32_t channels) {
 	}
 }
 
+
+// ---- Serialize を持つアセット ----
+
+// path の欄を描く。ラベルは日本語、ツールチップはファイルに書く名前
+void Field(SerializedObject &so, std::string_view path, std::string_view label, std::string_view tooltip = {}) {
+	auto property = so.FindProperty(path);
+	if (!property) { return; }
+
+	const auto hint = tooltip.empty() ? property->GetName() : std::format("{}（{}）", property->GetName(), tooltip);
+	EditorGuiLayout::PropertyField(*property, EditorGuiUtility::TrTextContent(label, hint), true);
+}
+
+// シェーダの値を上書きする欄。チェックを入れたときだけ値の欄を出す
+void OverrideField(SerializedObject &so, std::string_view name, std::string_view label) {
+	const auto path = "renderStateOverride/" + std::string(name);
+	const auto isOverridden = so.FindProperty(path + "/override");
+	if (!isOverridden) { return; }
+
+	Field(so, path + "/override", label, "チェックを入れると、シェーダの値の代わりに使う");
+	if (!isOverridden->GetBoolValue()) { return; }
+
+	ImGui::Indent();
+	Field(so, path + "/value", "値");
+	ImGui::Unindent();
+}
+
+// enum の名前（名前のない値なら ?）
+template <typename E>
+std::string_view EnumText(E value) {
+	const auto name = magic_enum::enum_name(value);
+	return name.empty() ? std::string_view("?") : name;
+}
+
+std::string RenderQueueText(int renderQueue) {
+	switch (renderQueue) {
+	case Shader::RenderQueue::BackGround: return "Background (1000)";
+	case Shader::RenderQueue::Geometry: return "Geometry (2000)";
+	case Shader::RenderQueue::AlphaTest: return "AlphaTest (2450)";
+	case Shader::RenderQueue::Transparent: return "Transparent (3000)";
+	case Shader::RenderQueue::Overlay: return "Overlay (4000)";
+	default: return std::to_string(renderQueue);
+	}
+}
+
+const char *PropertyTypeText(Shader::PropertyType type) {
+	switch (type) {
+	case Shader::PropertyType::Color: return "Color";
+	case Shader::PropertyType::Vector: return "Vector";
+	case Shader::PropertyType::Float: return "Float";
+	}
+	return "";
+}
+
+
+#ifdef WITH_EDITOR
+// Assets の中の画像ファイルそのもののインポーター（モデルの中のテクスチャや EngineAssets のものは書き換えない）
+TextureImporter *FindEditableTextureImporter(const Texture &texture) {
+	const auto reference = AssetDatabase::FindAssetReference(&texture);
+	if (!reference || !reference->subAsset.empty()) { return nullptr; }
+
+	const auto assetPath = AssetDatabase::GuidToAssetPath(reference->guid);
+	if (!assetPath.starts_with("Assets/")) { return nullptr; }
+
+	return dynamic_cast<TextureImporter *>(AssetDatabase::GetImporterAtPath(assetPath));
+}
+#endif
+
 } // namespace
 
 
@@ -124,12 +199,30 @@ void ou::TextureEditor::OnInspectorGui() {
 	const auto *texture = dynamic_cast<Texture *>(GetTarget());
 	if (!texture) { return; }
 
-	// TODO: インポートの設定（TextureImporter）を編集できるようにする
+	// インポートの設定（.meta に書き、変えたらすぐインポートし直す。SaveAndReimport はエディタだけ）
+#ifdef WITH_EDITOR
+	if (auto *importer = FindEditableTextureImporter(*texture)) {
+		static const GuiContent kTypes[] = {
+			{"Default", "3D モデルや UI に使う絵"},
+			{"Cursor", "Cursor::SetCursor に渡す。ミップを作らず、CPU 側にも画素を残す"},
+		};
+		const auto current = static_cast<int>(importer->GetTextureType());
+		const auto selected = EditorGuiLayout::Popup(GuiContent("種類", "Unity の Texture Type"), current, kTypes);
+		if (selected != current) {
+			importer->SetTextureType(static_cast<TextureImporterType>(selected));
+			importer->SaveAndReimport();
+			// target は古いオブジェクトになったので、ここで終える（次のフレームで Inspector が作り直す）
+			return;
+		}
+	}
+#endif
+
 	const auto &desc = texture->GetGraphicsTexture().GetDesc();
 	InfoField("大きさ", std::format("{} x {}", desc.width, desc.height));
 	InfoField("形式", GetFormatInfo(desc.format).name);
 	InfoField("ミップマップ", std::to_string(desc.mipLevels));
 	InfoField("メモリ", FormatBytes(CalcTextureBytes(desc)));
+	InfoField("CPU 側の画素", texture->IsReadable() ? "あり" : "なし");
 }
 
 
@@ -290,4 +383,179 @@ void ou::AudioClipEditor::Stop() {
 
 bool ou::AudioClipEditor::IsPlaying() const {
 	return Audio::IsPlaying(&instance_);
+}
+
+
+
+// ---- SerializedAssetEditor ----
+
+ou::SerializedAssetEditor::~SerializedAssetEditor() {
+	// ドラッグ中に別のものを選んだときも、変えた値は残す
+	if (hasUnsavedChanges_) { Save(); }
+}
+
+
+void ou::SerializedAssetEditor::OnEnable() {
+	const auto reference = AssetDatabase::FindAssetReference(GetTarget());
+	if (!reference || !reference->subAsset.empty()) { return; }
+
+	const auto assetPath = AssetDatabase::GuidToAssetPath(reference->guid);
+	if (assetPath.starts_with("Assets/")) { assetPath_ = assetPath; }
+}
+
+
+bool ou::SerializedAssetEditor::IsEditable() const {
+	return !assetPath_.empty();
+}
+
+
+void ou::SerializedAssetEditor::DrawReadOnlyNote() const {
+	if (IsEditable()) { return; }
+	ImGui::TextDisabled("エンジンのものやモデルの中のものは、ここでは書き換えられません");
+	ImGui::Separator();
+}
+
+
+void ou::SerializedAssetEditor::SaveWhenIdle(bool isModified) {
+	hasUnsavedChanges_ = hasUnsavedChanges_ || isModified;
+	if (hasUnsavedChanges_ && !ImGui::IsAnyItemActive()) { Save(); }
+}
+
+
+void ou::SerializedAssetEditor::Save() {
+	hasUnsavedChanges_ = false;
+	if (!IsEditable() || !GetTarget()) { return; }
+
+	AssetDatabase::CreateAsset(*GetTarget(), assetPath_);
+}
+
+
+
+// ---- PhysicsMaterialEditor ----
+
+void ou::PhysicsMaterialEditor::OnInspectorGui() {
+	auto &so = *GetSerializedObject();
+	so.Update();
+	DrawReadOnlyNote();
+
+	ImGui::BeginDisabled(!IsEditable());
+	Field(so, "dynamicFriction", "動摩擦", "動いているときの摩擦。0 以上");
+	Field(so, "staticFriction", "静止摩擦", "止まっているときの摩擦。0 以上");
+	Field(so, "bounciness", "反発", "0 で跳ねない、1 で同じ速さで跳ね返る");
+	Field(so, "frictionCombine", "摩擦の合成", "ぶつかった 2 つの摩擦をどうまとめるか");
+	Field(so, "bounceCombine", "反発の合成", "ぶつかった 2 つの反発をどうまとめるか");
+	ImGui::EndDisabled();
+
+	SaveWhenIdle(so.ApplyModifiedProperties());
+}
+
+
+
+// ---- MaterialEditor ----
+
+void ou::MaterialEditor::OnInspectorGui() {
+	auto &so = *GetSerializedObject();
+	so.Update();
+	DrawReadOnlyNote();
+
+	ImGui::BeginDisabled(!IsEditable());
+	Field(so, "shader", "シェーダ", "替えると、プロパティはそのシェーダの初期値に戻る");
+	Field(so, "renderQueue", "描画順", "-1 ならシェーダの値を使う");
+	if (const auto *material = dynamic_cast<Material *>(GetTarget()); material && material->GetShader()) {
+		ImGui::TextDisabled("今の描画順: %s", RenderQueueText(material->GetRenderQueue()).c_str());
+	}
+
+	ImGui::SeparatorText("見た目");
+	Field(so, "mainTexture", "テクスチャ", "None なら白");
+	Field(so, "color", "色");
+	Field(so, "lightingMode", "ライティング");
+
+	ImGui::SeparatorText("UV");
+	Field(so, "uvOffset", "ずらす");
+	Field(so, "uvScale", "拡大");
+	Field(so, "uvRotation", "回転", "度");
+
+	ImGui::SeparatorText("描画の設定（シェーダの値を上書き）");
+	OverrideField(so, "srcBlend", "描く色に掛けるもの");
+	OverrideField(so, "dstBlend", "今の色に掛けるもの");
+	OverrideField(so, "blendOp", "混ぜ方");
+	OverrideField(so, "zWrite", "深度を書く");
+	OverrideField(so, "cull", "裏面を消す");
+
+	// シェーダの "properties" に書いたもの
+	if (const auto properties = so.FindProperty("properties"); properties && properties->HasVisibleChildren()) {
+		ImGui::SeparatorText("シェーダのプロパティ");
+		auto child = *properties;
+		const auto depth = properties->GetDepth();
+		for (auto enterChildren = true; child.NextVisible(enterChildren) && child.GetDepth() > depth; enterChildren = false) {
+			EditorGuiLayout::PropertyField(child, true);
+		}
+	}
+	ImGui::EndDisabled();
+
+	SaveWhenIdle(so.ApplyModifiedProperties());
+}
+
+
+
+// ---- ShaderEditor ----
+
+void ou::ShaderEditor::OnInspectorGui() {
+	const auto *shader = dynamic_cast<Shader *>(GetTarget());
+	if (!shader) { return; }
+
+	// Unity と同じく、ここでは編集しない。HLSL やパスの設定はファイルを書き換える
+	if (const auto reference = AssetDatabase::FindAssetReference(shader)) {
+		const auto assetPath = AssetDatabase::GuidToAssetPath(reference->guid);
+		if (ImGui::Button("開く")) {
+			if (const auto fullPath = AssetDatabase::AssetPathToFullPath(assetPath)) { ExternalScriptEditor::OpenFile(*fullPath); }
+		}
+		ImGui::SameLine();
+		ImGui::TextDisabled("書き換えたら、エディタを開き直すと読み直します");
+	}
+
+	InfoField("描画順", RenderQueueText(shader->GetRenderQueue()));
+	InfoField("パスの数", std::to_string(shader->GetPassCount()));
+
+	const auto &passes = shader->GetPasses();
+	for (size_t i = 0; i < passes.size(); i++) {
+		const auto &pass = passes[i];
+		const auto title = std::format("Pass {}: {}##Pass{}", i, pass.name.empty() ? "(名前なし)" : pass.name, i);
+		if (!ImGui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) { continue; }
+
+		ImGui::Indent();
+		std::string stages;
+		const auto addStage = [&](const Graphics::Shader &stage, std::string_view name) {
+			if (!stage.IsValid()) { return; }
+			if (!stages.empty()) { stages += ", "; }
+			stages += name;
+		};
+		addStage(pass.vertexShader, "Vertex");
+		addStage(pass.hullShader, "Hull");
+		addStage(pass.domainShader, "Domain");
+		addStage(pass.geometryShader, "Geometry");
+		addStage(pass.pixelShader, "Pixel");
+		InfoField("ステージ", stages);
+
+		const auto &blend = pass.blend.renderTarget[0];
+		InfoField("ブレンド", blend.blendEnable
+								 ? std::format("{} {} {}", EnumText(blend.srcBlend), EnumText(blend.blendOp), EnumText(blend.destBlend))
+								 : std::string("Off"));
+		InfoField("深度を書く", pass.depthStencil.depthWriteMask == Graphics::DepthWriteMask::ALL ? "On" : "Off");
+		InfoField("深度の比べ方", EnumText(pass.depthStencil.comparisonFunc));
+		InfoField("裏面を消す", EnumText(pass.rasterizer.cullMode));
+		ImGui::Unindent();
+	}
+
+	const auto &properties = shader->GetProperties();
+	if (properties.empty()) { return; }
+
+	ImGui::SeparatorText("プロパティ");
+	for (const auto &property : properties) {
+		const auto &value = property.defaultValue;
+		const auto defaultText = property.type == Shader::PropertyType::Float
+									 ? std::format("{:g}", value.x)
+									 : std::format("({:g}, {:g}, {:g}, {:g})", value.x, value.y, value.z, value.w);
+		InfoField(property.name, std::format("{}  初期値 {}", PropertyTypeText(property.type), defaultText));
+	}
 }

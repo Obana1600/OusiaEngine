@@ -352,7 +352,32 @@ void ou::SceneManager::MoveHierarchy(GameObject *gameObject, Scene *scene) {
 }
 
 
-void ou::SceneManager::ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const Json &json) {
+void ou::SceneManager::NotifyApplicationQuit() {
+	// スクリプトが OnApplicationQuit で GameObject を足したり消したりしても大丈夫なように、先に集めてから呼ぶ
+	std::vector<GameObject *> gameObjects;
+	const auto collect = [&](auto &self, GameObject *gameObject) -> void {
+		if (gameObject->IsDestroyed() || !gameObject->IsActiveInHierarchy()) { return; }
+		gameObjects.push_back(gameObject);
+		for (auto *child : gameObject->GetTransform()->GetChildren()) {
+			self(self, child->GetGameObject());
+		}
+	};
+	for (auto *scene : {sDontDestroyOnLoadScene_.get(), sActiveScene_.get()}) {
+		if (!scene) { continue; }
+		for (auto *root : scene->GetRootGameObjects()) {
+			collect(collect, root);
+		}
+	}
+
+	for (auto *gameObject : gameObjects) {
+		for (auto *component : gameObject->GetComponents<Component>()) {
+			if (!component->IsDestroyed()) { component->OnApplicationQuit(); }
+		}
+	}
+}
+
+
+void ou::SceneManager::UnloadAllScenes() {
 	sPendingBuildIndex_ = -1;
 
 	if (sDontDestroyOnLoadScene_) {
@@ -363,6 +388,11 @@ void ou::SceneManager::ReplaceActiveScene(std::string_view name, std::string_vie
 		oldScene->DestroyAllGameObjects();
 		sceneUnloaded_.Invoke(oldScene.get());
 	}
+}
+
+
+void ou::SceneManager::ReplaceActiveScene(std::string_view name, std::string_view path, int32_t buildIndex, const Json &json) {
+	UnloadAllScenes();
 
 	sActiveScene_ = std::make_unique<Scene>(name, buildIndex);
 	sActiveScene_->path_ = path;

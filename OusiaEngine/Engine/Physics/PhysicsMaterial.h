@@ -22,6 +22,9 @@ public: // 静的メンバ関数
 
 public: // メンバ関数
 
+	// .physicsmaterial の中身（読み込みとエディタの保存で同じ形）
+	void Serialize(Serializer &serializer) override;
+
 	void SetDynamicFriction(float dynamicFriction);
 	float GetDynamicFriction() const;
 

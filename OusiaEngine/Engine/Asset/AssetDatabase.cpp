@@ -14,6 +14,7 @@
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Platform/Paths.h"
+#include "Serialize/JsonWriter.h"
 #include "Serialize/SceneSerializer.h"
 
 #include <algorithm>
@@ -24,6 +25,7 @@
 #include <string>
 #include <system_error>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -389,6 +391,33 @@ void ou::AssetDatabase::ImportAsset(std::string_view assetPath) {
 	auto asset = ImportEntry(key, *entry);
 	if (!asset) { return; }
 	entry->asset = std::move(asset);
+}
+
+
+bool ou::AssetDatabase::CreateAsset(Object &asset, std::string_view assetPath) {
+	const auto key = NormalizeAssetPath(assetPath);
+	const auto fullPath = key.starts_with("Assets/") ? ToFullPath(key) : std::nullopt;
+	if (!fullPath) {
+		Log::Error("アセットを作れるのは Assets の中だけです: {}", key);
+		return false;
+	}
+
+	// ほかのアセットは GUID で指すので、シーンのオブジェクトの表はいらない
+	auto json = Json::object();
+	const std::unordered_set<const Object *> noSceneObjects;
+	JsonWriter writer(json, noSceneObjects);
+	asset.Serialize(writer);
+
+	std::error_code error;
+	const auto isNew = !std::filesystem::exists(*fullPath, error);
+	if (!JsonFile::Save(*fullPath, json)) {
+		Log::Error("アセットの書き込みに失敗しました: {}", key);
+		return false;
+	}
+
+	// 新しいファイルなら .meta を作る
+	if (isNew) { Refresh(); }
+	return true;
 }
 
 

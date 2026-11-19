@@ -1,7 +1,24 @@
 #include "PhysicsMaterial.h"
 #include "Math/Mathf.h"
+#include "Serialize/Serializer.h"
 
 using namespace ou;
+
+
+void ou::PhysicsMaterial::Serialize(Serializer &serializer) {
+	serializer.Field("dynamicFriction", dynamicFriction_);
+	serializer.Field("staticFriction", staticFriction_);
+	serializer.Field("bounciness", bounciness_);
+	serializer.Enum("frictionCombine", frictionCombine_);
+	serializer.Enum("bounceCombine", bounceCombine_);
+
+	// 読んだ値はセッターを通らないので、ここで範囲に収める
+	if (serializer.IsReading()) {
+		SetDynamicFriction(dynamicFriction_);
+		SetStaticFriction(staticFriction_);
+		SetBounciness(bounciness_);
+	}
+}
 
 
 std::shared_ptr<PhysicsMaterial> ou::PhysicsMaterial::Create(const PhysicsMaterial &source) {

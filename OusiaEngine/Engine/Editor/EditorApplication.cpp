@@ -1,15 +1,16 @@
 #include "EditorApplication.h"
-#include "Core/TimeManager.h"
-#include "Physics/Physics.h"
 #include "Asset/AssetDatabase.h"
+#include "Audio/XAudio2/Audio.h"
 #include "Core/JsonFile.h"
 #include "Core/Time.h"
-#include "Audio/XAudio2/Audio.h"
+#include "Core/TimeManager.h"
 #include "Diagnostics/Log.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/LogEntries.h"
 #include "Editor/Selection.h"
 #include "Editor/Undo.h"
+#include "Input/Cursor.h"
+#include "Physics/Physics.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
@@ -159,12 +160,16 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 	}
 
 	if (request == Request::Exit && sIsPlaying_) {
+		// Unity と同じく、OnApplicationQuit → OnDisable → OnDestroy の順に呼び、そのあいだは isPlaying を true のままにする
+		SceneManager::NotifyApplicationQuit();
+		SceneManager::UnloadAllScenes();
 		sIsPlaying_ = false;
 
 		// Play 中にスクリプトで変えた Time・物理の設定を、Project Settings の値に戻す
 		// （Project Settings のウィンドウで変えたものは、ファイルに書いてあるので残る）
 		TimeManager::Apply();
 		Physics::LoadDynamicsManager();
+		Cursor::ResetForPlayMode();
 
 		auto &snapshot = Snapshot();
 		if (snapshot) {

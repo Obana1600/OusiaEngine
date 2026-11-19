@@ -3,6 +3,8 @@
 #include "Input/Windows/XInput.h"
 #include "Platform/Window.h"
 
+#include <algorithm>
+#include <array>
 #include <optional>
 
 using namespace ou;
@@ -50,24 +52,75 @@ bool HasButton(const XInput::GamepadState &pad, GamepadButton button) {
 	return (pad.buttons & static_cast<uint16_t>(button)) != 0;
 }
 
+
+using GamepadStates = std::array<XInput::GamepadState, XInput::kMaxGamepadCount>;
+
+constexpr int kJoystickButtonCount = 20; // Unity の KeyCode にあるパッド 1 個ぶんのボタンの数
+
+bool IsKeyboardKey(KeyCode key) {
+	return static_cast<size_t>(key) < std::tuple_size_v<decltype(RawInput::KeyboardState::keys)>;
+}
+
+// Unity を Windows で Xbox のパッドを使ったときのボタンの番号に合わせる
+std::optional<GamepadButton> FindGamepadButton(int joystickButton) {
+	constexpr std::array kButtons = {
+		GamepadButton::South,
+		GamepadButton::East,
+		GamepadButton::West,
+		GamepadButton::North,
+		GamepadButton::LeftShoulder,
+		GamepadButton::RightShoulder,
+		GamepadButton::Select,
+		GamepadButton::Start,
+		GamepadButton::LeftStick,
+		GamepadButton::RightStick,
+	};
+	if (joystickButton < 0 || joystickButton >= static_cast<int>(kButtons.size())) { return std::nullopt; }
+	return kButtons[joystickButton];
+}
+
+// JoystickButtonN はどのパッドでもよく、JoystickMButtonN は M 番目のパッドだけを見る
+bool IsJoystickButtonPressed(const GamepadStates &pads, KeyCode key) {
+	const auto offset = static_cast<int>(key) - static_cast<int>(KeyCode::JoystickButton0);
+	if (offset < 0) { return false; }
+
+	const auto button = FindGamepadButton(offset % kJoystickButtonCount);
+	if (!button) { return false; }
+
+	const auto joystick = offset / kJoystickButtonCount; // 0 はどのパッドでもよい
+	if (joystick == 0) {
+		return std::ranges::any_of(pads, [&](const auto &pad) { return HasButton(pad, *button); });
+	}
+	const auto player = joystick - 1;
+	if (player >= static_cast<int>(pads.size())) { return false; }
+	return HasButton(pads[player], *button);
+}
+
 } // namespace
 
 
 
 bool ou::Input::GetKey(KeyCode key) {
-	return sKeyboard.keys[static_cast<size_t>(key)];
+	if (IsKeyboardKey(key)) { return sKeyboard.keys[static_cast<size_t>(key)]; }
+	return IsJoystickButtonPressed(sGamepads, key);
 }
 
 
 bool ou::Input::GetKeyDown(KeyCode key) {
-	const auto index = static_cast<size_t>(key);
-	return sKeyboard.keys[index] && !sPrevKeyboard.keys[index];
+	if (IsKeyboardKey(key)) {
+		const auto index = static_cast<size_t>(key);
+		return sKeyboard.keys[index] && !sPrevKeyboard.keys[index];
+	}
+	return IsJoystickButtonPressed(sGamepads, key) && !IsJoystickButtonPressed(sPrevGamepads, key);
 }
 
 
 bool ou::Input::GetKeyUp(KeyCode key) {
-	const auto index = static_cast<size_t>(key);
-	return !sKeyboard.keys[index] && sPrevKeyboard.keys[index];
+	if (IsKeyboardKey(key)) {
+		const auto index = static_cast<size_t>(key);
+		return !sKeyboard.keys[index] && sPrevKeyboard.keys[index];
+	}
+	return !IsJoystickButtonPressed(sGamepads, key) && IsJoystickButtonPressed(sPrevGamepads, key);
 }
 
 

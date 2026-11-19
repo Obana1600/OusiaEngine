@@ -3,11 +3,14 @@
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Render/Asset/Texture.h"
+#include "Serialize/Serializer.h"
 
-#include <DirectXTex/DirectXTex.h>
+#include <cstring>
 #include <optional>
 #include <utility>
 #include <vector>
+
+#include <DirectXTex/DirectXTex.h>
 
 using namespace ou;
 
@@ -77,7 +80,14 @@ std::shared_ptr<Object> ou::TextureImporter::Import() {
 
 
 std::shared_ptr<Texture> ou::TextureImporter::ImportTexture() {
-	const auto image = LoadScratchImage(GetFullPath(), srgb_, mipmapEnabled_);
+	textureType_ = TextureImporterType::Default;
+	srgb_ = true;
+	mipmapEnabled_ = true;
+
+	ReadImportSettings();
+
+	const auto isCursor = (textureType_ == TextureImporterType::Cursor);
+	const auto image = LoadScratchImage(GetFullPath(), srgb_, mipmapEnabled_ && !isCursor);
 	if (!image) { return nullptr; }
 
 	const auto &meta = image->GetMetadata();
@@ -112,7 +122,34 @@ std::shared_ptr<Texture> ou::TextureImporter::ImportTexture() {
 	// アセット層のテクスチャの作成
 	auto texture = std::make_shared<Texture>(std::move(graphicsTexture));
 	texture->SetName(GetName());
+
+	if (isCursor) {
+		const auto &top = *image->GetImage(0, 0, 0);
+		const auto rowBytes = top.width * 4;
+		texture->pixels_.resize(rowBytes * top.height);
+		for (size_t y = 0; y < top.height; y++) {
+			std::memcpy(texture->pixels_.data() + y * rowBytes, top.pixels + y * top.rowPitch, rowBytes);
+		}
+	}
+
 	return texture;
+}
+
+
+void ou::TextureImporter::Serialize(Serializer &serializer) {
+	serializer.Enum("textureType", textureType_);
+	serializer.Field("sRGBTexture", srgb_);
+	serializer.Field("mipmapEnabled", mipmapEnabled_);
+}
+
+
+void ou::TextureImporter::SetTextureType(TextureImporterType textureType) {
+	textureType_ = textureType;
+}
+
+
+TextureImporterType ou::TextureImporter::GetTextureType() const {
+	return textureType_;
 }
 
 

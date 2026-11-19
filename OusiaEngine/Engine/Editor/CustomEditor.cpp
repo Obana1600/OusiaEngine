@@ -13,8 +13,11 @@
 #include "Physics/BoxCollider.h"
 #include "Physics/CapsuleCollider.h"
 #include "Physics/CharacterController.h"
+#include "Physics/PhysicsMaterial.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
 #include "Render/Camera.h"
 #include "Render/Light.h"
@@ -71,6 +74,9 @@ void ou::CustomEditor::RegisterEngineEditors() {
 	// アセット（AssetEditors.h）
 	Register<TextureEditor, Texture>();
 	Register<AudioClipEditor, AudioClip>();
+	Register<MaterialEditor, Material>();
+	Register<ShaderEditor, Shader>();
+	Register<PhysicsMaterialEditor, PhysicsMaterial>();
 }
 
 

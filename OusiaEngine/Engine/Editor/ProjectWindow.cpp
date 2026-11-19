@@ -10,7 +10,10 @@
 #include "Editor/ExternalScriptEditor.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
+#include "Physics/PhysicsMaterial.h"
 #include "Platform/Paths.h"
+#include "Render/Asset/Material.h"
+#include "Render/Asset/Shader.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
@@ -23,6 +26,8 @@
 #include <cstring>
 #include <format>
 #include <fstream>
+#include <functional>
+#include <memory>
 #include <optional>
 #include <string_view>
 #include <system_error>
@@ -192,9 +197,12 @@ std::string MakeScriptTemplate(std::string_view className) {
 constexpr const char *kDefaultMaterialShader = "EngineAssets/Shader/Standard.shader";
 
 // Create で書くファイル（Folder 以外）
+// makeAsset があれば、作ったオブジェクトを AssetDatabase::CreateAsset で書く（読み込みと同じ形になる）。なければ content をそのまま書く
+// makeAsset は「作成」を押したときだけ呼ぶ（名前を打っている間は毎フレーム作らない）
 struct NewFile {
 	std::string fileName;
 	std::string content;
+	std::function<std::shared_ptr<Object>()> makeAsset;
 };
 
 // Unity の Unlit Shader と同じく、テクスチャ × 色だけの .shader と、その VS / PS
@@ -250,26 +258,14 @@ std::vector<NewFile> MakeShaderFiles(const std::string &name) {
 }
 
 std::vector<NewFile> MakeMaterialFiles(const std::string &name, const std::string &shaderPath) {
-	auto material = std::format(
-		"{{\r\n"
-		"\t\"shader\": \"{}\",\r\n"
-		"\t\"color\": [1, 1, 1, 1]\r\n"
-		"}}\r\n",
-		shaderPath);
-	return {{name + ".mat", std::move(material)}};
+	return {{name + ".mat", {}, [shaderPath] {
+				 return std::static_pointer_cast<Object>(Material::Create(AssetDatabase::LoadAssetAtPath<Shader>(shaderPath)));
+			 }}};
 }
 
-// 値は PhysicsMaterial の初期値と同じ（Unity の Physic Material の初期値）
+// 値は PhysicsMaterial の初期値（Unity の Physic Material の初期値と同じ）
 std::vector<NewFile> MakePhysicsMaterialFiles(const std::string &name) {
-	std::string material =
-		"{\r\n"
-		"\t\"dynamicFriction\": 0.6,\r\n"
-		"\t\"staticFriction\": 0.6,\r\n"
-		"\t\"bounciness\": 0,\r\n"
-		"\t\"frictionCombine\": \"Average\",\r\n"
-		"\t\"bounceCombine\": \"Average\"\r\n"
-		"}\r\n";
-	return {{name + ".physicsmaterial", std::move(material)}};
+	return {{name + ".physicsmaterial", {}, [] { return std::static_pointer_cast<Object>(std::make_shared<PhysicsMaterial>()); }}};
 }
 
 // エクスプローラーで、そのファイルを選んだ状態で開く
@@ -644,6 +640,9 @@ void ou::ProjectWindow::DrawCreatePopup() {
 			const auto fullPath = *folder / Utf8ToWide(file.fileName);
 			if (isFolder) {
 				isCreated = std::filesystem::create_directory(fullPath, error);
+			} else if (file.makeAsset) {
+				const auto asset = file.makeAsset();
+				isCreated = asset && AssetDatabase::CreateAsset(*asset, creatingFolder_ + "/" + file.fileName);
 			} else {
 				std::ofstream stream(fullPath, std::ios::binary);
 				stream << file.content;

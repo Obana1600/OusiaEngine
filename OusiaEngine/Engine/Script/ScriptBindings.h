@@ -40,6 +40,7 @@ private: // 静的メンバ関数
 	static void RegisterTime(asIScriptEngine *engine);
 	static void RegisterInput(asIScriptEngine *engine);
 	static void RegisterScreen(asIScriptEngine *engine);
+	static void RegisterCursor(asIScriptEngine *engine);
 	static void RegisterApplication(asIScriptEngine *engine);
 	static void RegisterGizmos(asIScriptEngine *engine);
 

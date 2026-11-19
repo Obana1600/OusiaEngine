@@ -3,11 +3,11 @@
 #include "Audio/XAudio2/Audio.h"
 #include "Core/Application.h"
 #include "Core/PlayerSettings.h"
-#include "Core/TimeManager.h"
-#include "Scene/TagManager.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
+#include "Core/TimeManager.h"
 #include "Diagnostics/Fatal.h"
+#include "Input/Cursor.h"
 #include "Input/Input.h"
 #include "Particle/ParticleSystemRenderer.h"
 #include "Physics/Box3D/PhysicsWorld.h"
@@ -18,6 +18,7 @@
 #include "Render/LineRenderer.h"
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
+#include "Scene/TagManager.h"
 #include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
@@ -28,10 +29,10 @@
 #include "Editor/EditorPrefs.h"
 #include "Editor/EditorSceneManager.h"
 #include "Editor/EditorWindow.h"
-#include "Editor/LogEntries.h"
-#include "Editor/ParticleEffectPreview.h"
 #include "Editor/GameView.h"
 #include "Editor/GizmoRenderer.h"
+#include "Editor/LogEntries.h"
+#include "Editor/ParticleEffectPreview.h"
 #include "Editor/SceneView.h"
 #include "Editor/Undo.h"
 #endif
@@ -170,11 +171,10 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 #ifdef WITH_EDITOR
 	window_ = Window::Create(MakeEditorWindowDesc(productName, desc.width, desc.height));
 #else
-	window_ = Window::Create({
-		.title = productName,
-		.width = PlayerSettings::GetDefaultScreenWidth(),
-		.height = PlayerSettings::GetDefaultScreenHeight(),
-		.fullScreenMode = PlayerSettings::GetFullScreenMode()});
+	window_ = Window::Create({.title = productName,
+							  .width = PlayerSettings::GetDefaultScreenWidth(),
+							  .height = PlayerSettings::GetDefaultScreenHeight(),
+							  .fullScreenMode = PlayerSettings::GetFullScreenMode()});
 	window_->AddMessageHandler(ToggleFullScreenOnAltEnter);
 #endif
 	Screen::sWindow_ = window_.get();
@@ -233,6 +233,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	if (!Input::Initialize(window_.get())) {
 		Log::Error("入力の初期化に失敗しました");
 	}
+	Cursor::Initialize(window_.get());
 
 	// 固定 FPS
 	reference_ = std::chrono::steady_clock::now();
@@ -266,6 +267,8 @@ void ou::Engine::Finalize() {
 
 	Audio::Finalize();
 
+	// 入力
+	Cursor::Finalize();
 	Input::Finalize();
 
 	timeEndPeriod(1);
@@ -297,6 +300,9 @@ void ou::Engine::Run() {
 		SceneManager::Update();
 		Render();
 	}
+
+	// OnDisable・OnDestroy は、このあと Finalize でシーンを消すときに呼ぶ
+	SceneManager::NotifyApplicationQuit();
 }
 
 
@@ -337,6 +343,9 @@ bool ou::Engine::Update() {
 	Input::SetGameView(gameView ? gameView->GetImageOrigin() : Vector2::Zero,
 					   gameView && gameView->HasFocus(),
 					   gameView && gameView->IsImageHovered());
+	Cursor::SetGameView(gameView ? gameView->GetImageOrigin() : Vector2::Zero,
+						gameView && gameView->HasFocus(),
+						gameView && gameView->IsImageHovered());
 #endif
 	Input::Update();
 #ifdef WITH_EDITOR
@@ -348,10 +357,11 @@ bool ou::Engine::Update() {
 #ifdef WITH_EDITOR
 	LogEntries::Update();
 	EditorMainWindow::Draw();
-	ParticleEffectPreview::Update(); // Play していないときに、選んでいるパーティクルを Scene ビューで動かす
+	ParticleEffectPreview::Update();
 #endif
+	Cursor::Update();
 #ifdef WITH_EDITOR
-	return EditorMainWindow::IsQuitApproved() || Application::IsQuitRequested();
+	return EditorMainWindow::IsQuitApproved();
 #else
 	return window_->IsCloseRequested() || Application::IsQuitRequested();
 #endif

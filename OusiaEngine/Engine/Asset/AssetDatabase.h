@@ -72,6 +72,11 @@ std::shared_ptr<Object> LoadAsset(const Guid &guid, std::string_view subAsset = 
 // アセットを探し、フィルターに当てはまる GUID の配列を返す
 std::vector<Guid> FindAssets(std::string_view filter);
 
+// Unity の AssetDatabase.CreateAsset。asset の Serialize の中身を、assetPath に json で書く（Assets の中だけ）
+// あれば上書きする。.meta はそのまま残るので GUID は変わらず、エディタで変えた値の保存にも使う
+// 書いたファイルからは読み直さない（読み込み済みのアセットを持っている欄は、そのまま同じオブジェクトを指す）
+bool CreateAsset(Object &asset, std::string_view assetPath);
+
 // Unity の AssetDatabase.MoveAsset。ファイルかフォルダを動かす（名前を変える）。Assets の中だけ
 // ファイルは .meta も一緒に動かすので GUID は変わらず、シーンやプレハブからの参照は切れない
 // 読み込み済みのアセットは、新しいパスのものとして持ち続ける（メインのアセットの名前は新しいファイル名にする）

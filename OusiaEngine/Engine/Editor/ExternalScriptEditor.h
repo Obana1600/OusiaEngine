@@ -14,6 +14,7 @@ class ExternalScriptEditor final {
 	friend class ConsoleWindow;
 	friend class ProjectWindow;
 	friend class PreferencesWindow;
+	friend class ShaderEditor;
 
 public: // 静的メンバ関数
 

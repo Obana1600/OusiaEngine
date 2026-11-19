@@ -221,7 +221,8 @@ class JumpOnSpace : MonoBehavior {
 | `Update()` | `void Update() { transform.Rotate(0.0f, 45.0f * Time::deltaTime, 0.0f); }` | 各フレーム。入力や毎フレームの動作を処理する。 |
 | `LateUpdate()` | `void LateUpdate() { transform.LookAt(target.position); }` | 全体の `Update()` の後。例では有効な `Transform@ target` の移動後の位置を見る。 |
 | `OnDisable()` | `void OnDisable() { Debug::Log("disabled"); }` | 無効になったとき。登録したリスナーの解除などに使う。 |
-| `OnDestroy()` | `void OnDestroy() { Debug::Log("destroyed"); }` | 初期化済みのスクリプトが破棄されるとき。 |
+| `OnApplicationQuit()` | `void OnApplicationQuit() { isQuitting = true; }` | ゲームを閉じるとき（エディターでは Play を止めるとき）。`OnDisable()`・`OnDestroy()` より先に呼ばれる。例の `isQuitting` は `bool` フィールドで、`OnDestroy()` で終了中かどうかを見分けるのに使う。 |
+| `OnDestroy()` | `void OnDestroy() { Debug::Log("destroyed"); }` | 初期化済みのスクリプトが破棄されるとき。Play を止めたときやゲームを閉じたときも呼ばれ、そのあいだ `Application::isPlaying` は `true` のまま。 |
 | `OnCollisionEnter(Collision collision)` | `void OnCollisionEnter(Collision c) { Debug::Log(c.gameObject.name); }` | 物理接触が始まったとき。相手や接触の情報を受け取る。 |
 | `OnCollisionStay(Collision collision)` | `void OnCollisionStay(Collision c) { touching = true; }` | 物理接触が続いているとき。例の `touching` は `bool` フィールド。 |
 | `OnCollisionExit(Collision collision)` | `void OnCollisionExit(Collision c) { Debug::Log("contact ended"); }` | 物理接触が終わったとき。 |

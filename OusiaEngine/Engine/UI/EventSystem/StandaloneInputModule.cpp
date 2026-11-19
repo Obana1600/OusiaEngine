@@ -15,7 +15,7 @@ using namespace ou;
 template <>
 struct magic_enum::customize::enum_range<ou::KeyCode> {
 	static constexpr int min = 0;
-	static constexpr int max = 255;
+	static constexpr int max = 511;
 };
 
 

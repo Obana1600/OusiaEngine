@@ -17,7 +17,7 @@ public: // 静的メンバ関数
 
 	Input() = delete;
 
-	// ----- キーボード -----
+	// ----- キーボード（KeyCode::JoystickButton0 などのパッドのボタンも取れる） -----
 
 	static bool GetKey(KeyCode key);
 	static bool GetKeyDown(KeyCode key);

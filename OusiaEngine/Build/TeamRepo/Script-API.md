@@ -10,10 +10,11 @@ OusiaEditor が AngelScript に公開する API を、型と名前空間ごと�
 
 - **オブジェクトとシーン** — [Object](#object)、[GameObject](#gameobject)、[Component](#component)、[Behavior](#behavior)、[Transform](#transform)、[Scene](#scene)、[SceneManager](#scenemanager)
 - **物理** — [Physics](#physics)、[Collider](#collider)、[BoxCollider](#boxcollider)、[SphereCollider](#spherecollider)、[CapsuleCollider](#capsulecollider)、[Rigidbody](#rigidbody)、[CharacterController](#charactercontroller)、[Collision](#collision)、[ContactPoint](#contactpoint)、[RaycastHit](#raycasthit)
-- **描画・音声・UI** — [Renderer](#renderer)、[MeshRenderer](#meshrenderer)、[Material](#material)、[AudioSource](#audiosource)、[AudioClip](#audioclip)、[Graphic](#graphic)、[Text](#text)、[Image](#image)、[Selectable](#selectable)、[Button](#button)、[UnityEvent](#unityevent)
-- **入力・時間・画面・診断** — [Input](#input)、[Time](#time)、[Screen](#screen)、[Application](#application)、[Debug](#debug)、[Gizmos](#gizmos)
+- **描画・音声・UI** — [Renderer](#renderer)、[MeshRenderer](#meshrenderer)、[Material](#material)、[AudioSource](#audiosource)、[AudioClip](#audioclip)、[Texture2D](#texture2d)、[Graphic](#graphic)、[Text](#text)、[Image](#image)、[Selectable](#selectable)、[Button](#button)、[UnityEvent](#unityevent)
+- **入力・時間・画面・診断** — [Input](#input)、[Time](#time)、[Screen](#screen)、[Cursor](#cursor)、[Application](#application)、[Debug](#debug)、[Gizmos](#gizmos)
 - **値型・文字列・配列** — [Vector2](#vector2)、[Vector3](#vector3)、[Quaternion](#quaternion)、[Color](#color)、[Mathf](#mathf)、[Random](#random)、[string](#string)、[array](#array)、[グローバル関数と関数型](#グローバル関数と関数型)
-- **列挙型** — [Space](#space)、[ForceMode](#forcemode)、[CollisionFlags](#collisionflags)、[FullScreenMode](#fullscreenmode)、[KeyCode](#keycode)
+- **列挙型** — [Space](#space)、[ForceMode](#forcemode)、[CollisionFlags](#collisionflags)、[FullScreenMode](#fullscreenmode)、[CursorLockMode](#cursorlockmode)、[CursorMode](#cursormode)、[KeyCode](#keycode)
+- **自分のクラス** — [スクリプトでプロパティを定義する](#スクリプトでプロパティを定義する)
 
 ## オブジェクトとシーン
 
@@ -572,6 +573,26 @@ Project から参照する音声データ。
 | --- | --- | --- |
 | `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = clip; const AudioClip@ original = clip; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
 
+### Texture2D
+
+Project から参照する画像（.png / .jpg）。スクリプトの欄に `Texture2D@` を書くと、Inspector で画像を入れられる。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `int width（読み取り）` | `int w = texture.width;` | 画像の幅をピクセルで返す。 |
+| `int height（読み取り）` | `int h = texture.height;` | 画像の高さをピクセルで返す。 |
+| `bool isReadable（読み取り）` | `bool readable = texture.isReadable;` | CPU 側に画素があるか。画像の Inspector で種類を Cursor にしたものだけ true。 |
+
+**ハンドルの型変換**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = texture;` | 代入で Object として参照する。const の参照も代入できる。 |
+
 ### Graphic
 
 UI の描画とポインター判定に関わる共通コンポーネント。
@@ -707,7 +728,7 @@ Inspector とスクリプトから関数を登録できるイベント。例の 
 | `bool GetMouseButtonUp(int button)` | `bool released = Input::GetMouseButtonUp(0);` | 指定マウスボタンを離したフレームのみ true。 |
 | `Vector3 mousePosition（読み取り）` | `Vector3 cursor = Input::mousePosition;` | 画面内のカーソル位置。左上が原点で Y は下向きに増える。 |
 | `Vector2 mouseScrollDelta（読み取り）` | `Vector2 scroll = Input::mouseScrollDelta;` | そのフレームのマウスホイール移動。上下方向は y を読む。 |
-| `float GetAxis(const string&in axisName)` | `float x = Input::GetAxis("Horizontal");` | 名前で入力軸を読む。Horizontal は A/D、左右キー、左スティック X。Vertical は W/S、上下キー、左スティック Y。ほかに Mouse X、Mouse Y、Mouse ScrollWheel がある。 |
+| `float GetAxis(const string&in axisName)` | `float x = Input::GetAxis("Horizontal");` | 名前で入力軸を読む。Horizontal は A/D、左右キー、左スティック X。Vertical は W/S、上下キー、左スティック Y。ほかに Mouse X、Mouse Y、Mouse ScrollWheel がある。パッドは Right Stick X / Right Stick Y（右スティック、上が +）、Left Trigger / Right Trigger（0〜1）、Dpad X / Dpad Y（十字キー、-1・0・1）。パッドの軸は 1 番目のパッドを読む。 |
 | `float GetAxisRaw(const string&in axisName)` | `float y = Input::GetAxisRaw("Vertical");` | 名前で入力軸を読む。この版では GetAxis と同じ値を返す。 |
 
 ### Time
@@ -735,13 +756,23 @@ Inspector とスクリプトから関数を登録できるイベント。例の 
 | `bool fullScreen（読み書き）` | `Screen::fullScreen = true; bool full = Screen::fullScreen;` | フルスクリーンかどうかを読み書きする。方式を指定するときは fullScreenMode を使う。 |
 | `void SetResolution(int width, int height, FullScreenMode mode)` | `Screen::SetResolution(1280, 720, FullScreenMode::Windowed);` | 幅、高さと表示方式を指定する。書き出したゲームで外側のウィンドウを確認できる。 |
 
+### Cursor
+
+マウスカーソルの表示・画像と、ゲーム画面への固定を扱う。エディタでは Game ビューにフォーカスがあるときだけ効き、Esc で固定と非表示が一時的に解除され（画像はそのまま）、Game ビューをクリックすると戻る。Play を止めると visible は true、lockState は None、画像は矢印に戻る。シーンを切り替えても戻らないので、シーンごとに必要な状態を Start で設定する。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `bool visible（読み書き）` | `Cursor::visible = false; bool shown = Cursor::visible;` | ゲーム画面の上でカーソルを表示するかを読み書きする。 |
+| `CursorLockMode lockState（読み書き）` | `Cursor::lockState = CursorLockMode::Locked; CursorLockMode mode = Cursor::lockState;` | カーソルの固定方法を読み書きする。Locked のときは visible に関係なく隠れる。 |
+| `void SetCursor(Texture2D@ texture, const Vector2 &in hotspot, CursorMode cursorMode)` | `Cursor::SetCursor(cursorTexture, Vector2(0, 0), CursorMode::Auto);` | カーソルを画像にする。hotspot は画像の左上からのピクセルで、クリックの位置になる。texture に null を渡すと矢印に戻る。画像は Inspector で種類を Cursor にしておく（違うとエラーが出て変わらない）。32x32 ほどの大きさを勧める。 |
+
 ### Application
 
 再生状態の確認やアプリケーションの終了に使う。
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `void Quit()` | `Application::Quit();` | 書き出したゲームの終了を要求する。エディターで実行した場合はエディターの終了を要求する。 |
+| `void Quit()` | `Application::Quit();` | 書き出したゲームの終了を要求する。エディターでは何も起きない（Unity と同じ）。 |
 | `bool isPlaying（読み取り）` | `bool playing = Application::isPlaying;` | ゲームが再生中かを読む。エディターの編集モードと Play を区別できる。 |
 
 ### Debug
@@ -1160,6 +1191,25 @@ Screen で設定するウィンドウ表示方式。
 | `FullScreenMode::MaximizedWindow = 2` | `Screen::fullScreenMode = FullScreenMode::MaximizedWindow;` | 最大化ウィンドウを指定する。 |
 | `FullScreenMode::Windowed = 3` | `Screen::fullScreenMode = FullScreenMode::Windowed;` | 通常のウィンドウ表示を指定する。 |
 
+### CursorLockMode
+
+Cursor::lockState に設定するカーソルの固定方法。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `CursorLockMode::None = 0` | `Cursor::lockState = CursorLockMode::None;` | 固定しない。 |
+| `CursorLockMode::Locked = 1` | `Cursor::lockState = CursorLockMode::Locked;` | ゲーム画面の中心に固定して隠す。移動量は `Input::GetAxis("Mouse X")` などで読む。 |
+| `CursorLockMode::Confined = 2` | `Cursor::lockState = CursorLockMode::Confined;` | ゲーム画面の外に出ないようにする。 |
+
+### CursorMode
+
+Cursor::SetCursor に渡すカーソルの出し方。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `CursorMode::Auto = 0` | `Cursor::SetCursor(cursorTexture, Vector2(0, 0), CursorMode::Auto);` | OS のカーソルとして出す。 |
+| `CursorMode::ForceSoftware = 1` | `Cursor::SetCursor(cursorTexture, Vector2(0, 0), CursorMode::ForceSoftware);` | 今は Auto と同じ動きになる。 |
+
 ### KeyCode
 
 Input に渡すキー識別子。各行の例では押した瞬間を確認する。
@@ -1257,3 +1307,38 @@ Input に渡すキー識別子。各行の例では押した瞬間を確認す�
 | `KeyCode::RightControl = 163` | `bool pressed = Input::GetKeyDown(KeyCode::RightControl);` | 右 Ctrl キー。 |
 | `KeyCode::LeftAlt = 164` | `bool pressed = Input::GetKeyDown(KeyCode::LeftAlt);` | 左 Alt キー。 |
 | `KeyCode::RightAlt = 165` | `bool pressed = Input::GetKeyDown(KeyCode::RightAlt);` | 右 Alt キー。 |
+| `KeyCode::JoystickButton0 = 330` | `bool pressed = Input::GetKeyDown(KeyCode::JoystickButton0);` | どのパッドでもよい A ボタン。番号は Unity（Windows・Xbox のパッド）と同じで、1 = B、2 = X、3 = Y、4 = LB、5 = RB、6 = Back、7 = Start、8 = 左スティック押し込み、9 = 右スティック押し込み。`JoystickButton19 = 349` まであるが、10〜19 は押されない。 |
+| `KeyCode::Joystick1Button0 = 350` | `bool pressed = Input::GetKeyDown(KeyCode::Joystick1Button0);` | 1 番目のパッドの A ボタン。ボタンの番号は JoystickButton と同じ。2〜4 番目のパッドは `Joystick2Button0 = 370`、`Joystick3Button0 = 390`、`Joystick4Button0 = 410` から 20 個ずつ。 |
+
+## スクリプトでプロパティを定義する
+
+`t.position` のように読み書きできるプロパティは、自分のクラスにも C# と同じ形で作れます。`get` と `set` のブロックを書くと、値を読むときに `get`、代入するときに `set` が呼ばれます。`set` の中では、代入された値を `value` で受け取ります。
+
+```angelscript
+class Player : MonoBehavior
+{
+    private int m_hp = 100;
+
+    int hp
+    {
+        get const { return m_hp; }
+        set { m_hp = Mathf::Clamp(value, 0, 100); }
+    }
+}
+```
+
+```angelscript
+player.hp = 50;       // set が呼ばれる
+int now = player.hp;  // get が呼ばれる
+player.hp -= 10;      // get で読んでから set で書き戻す
+```
+
+- `get` だけを書くと読み取り専用、`set` だけを書くと書き込み専用になります。
+- `get` には `const` を付けます。付けないと、`const` の参照からは読めません。
+- C# の `int hp { get; set; }` のような自動実装プロパティはありません。値は上の `m_hp` のように private のメンバーへ自分で持たせます。
+- 同じプロパティは、`get_` と `set_` で始まるメソッドに `property` を付けて 2 つに分けても書けます。`property` を付けないと、ただのメソッドとして扱われ、`player.hp` の形では呼べません。
+
+```angelscript
+int get_hp() const property { return m_hp; }
+void set_hp(int value) property { m_hp = Mathf::Clamp(value, 0, 100); }
+```

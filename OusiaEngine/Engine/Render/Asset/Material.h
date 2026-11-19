@@ -49,6 +49,9 @@ public: // 静的メンバ関数
 
 public: // メンバ関数
 
+	// .mat の中身（読み込みとエディタの保存で同じ形）。シェーダのプロパティは "properties" の下にプロパティの名前で並べる
+	void Serialize(Serializer &serializer) override;
+
 	PerMaterial MakePerMaterial() const;
 
 	void SetShader(std::shared_ptr<Shader> shader);

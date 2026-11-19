@@ -31,7 +31,11 @@ bool ou::Application::IsPaused() {
 
 
 void ou::Application::Quit() {
+#ifdef WITH_EDITOR
+	// Unity と同じく、エディタでは何もしない（エディタを閉じるのは EditorMainWindow::RequestQuit）
+#else
 	sIsQuitRequested = true;
+#endif
 }
 
 
