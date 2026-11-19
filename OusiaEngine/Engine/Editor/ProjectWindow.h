@@ -17,6 +17,9 @@ private: // インナークラス
 	enum class CreateKind : uint8_t {
 		Folder,
 		Script,
+		Shader,
+		Material,
+		PhysicsMaterial,
 	};
 
 
@@ -39,6 +42,7 @@ private: // メンバ変数
 	CreateKind creatingKind_ = CreateKind::Script;
 	std::string creatingFolder_;
 	std::string creatingName_;
+	std::string creatingShader_; // Material で使うシェーダのアセットのパス
 	bool opensCreatePopup_ = false;
 
 	// Delete の確認のポップアップ

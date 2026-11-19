@@ -189,6 +189,89 @@ std::string MakeScriptTemplate(std::string_view className) {
 		className);
 }
 
+constexpr const char *kDefaultMaterialShader = "EngineAssets/Shader/Standard.shader";
+
+// Create で書くファイル（Folder 以外）
+struct NewFile {
+	std::string fileName;
+	std::string content;
+};
+
+// Unity の Unlit Shader と同じく、テクスチャ × 色だけの .shader と、その VS / PS
+std::vector<NewFile> MakeShaderFiles(const std::string &name) {
+	auto shader = std::format(
+		"{{\r\n"
+		"\t\"queue\": \"Geometry\",\r\n"
+		"\t\"passes\": [\r\n"
+		"\t\t{{\r\n"
+		"\t\t\t\"name\": \"Forward\",\r\n"
+		"\t\t\t\"vertex\": \"{0}.VS.hlsl\",\r\n"
+		"\t\t\t\"pixel\": \"{0}.PS.hlsl\",\r\n"
+		"\t\t\t\"zWrite\": true,\r\n"
+		"\t\t\t\"zTest\": \"Less\",\r\n"
+		"\t\t\t\"cull\": \"Back\"\r\n"
+		"\t\t}}\r\n"
+		"\t]\r\n"
+		"}}\r\n",
+		name);
+
+	// Standard.hlsli は EngineAssets/Shader にあり、インクルードのフォルダに入っている
+	std::string vertex =
+		"#include \"Standard.hlsli\"\r\n"
+		"\r\n"
+		"VSOutput main(VSInput input)\r\n"
+		"{\r\n"
+		"    const float4 worldPosition = mul(float4(input.position, 1.0f), gWorld);\r\n"
+		"\r\n"
+		"    VSOutput output;\r\n"
+		"    output.position = mul(worldPosition, gViewProjection);\r\n"
+		"    output.worldPosition = worldPosition.xyz;\r\n"
+		"    output.worldNormal = normalize(mul(input.normal, (float3x3) gWorldInverseTranspose));\r\n"
+		"    output.texcoord = mul(float4(input.texcoord, 0.0f, 1.0f), gUvTransform).xy;\r\n"
+		"    return output;\r\n"
+		"}\r\n";
+
+	std::string pixel =
+		"#include \"Standard.hlsli\"\r\n"
+		"\r\n"
+		"SamplerState gLinearWrap : register(s0);\r\n"
+		"\r\n"
+		"float4 main(VSOutput input) : SV_TARGET\r\n"
+		"{\r\n"
+		"    Texture2D<float4> texture = ResourceDescriptorHeap[gTextureIndex];\r\n"
+		"    return gColor * texture.Sample(gLinearWrap, input.texcoord);\r\n"
+		"}\r\n";
+
+	return {
+		{name + ".shader", std::move(shader)},
+		{name + ".VS.hlsl", std::move(vertex)},
+		{name + ".PS.hlsl", std::move(pixel)},
+	};
+}
+
+std::vector<NewFile> MakeMaterialFiles(const std::string &name, const std::string &shaderPath) {
+	auto material = std::format(
+		"{{\r\n"
+		"\t\"shader\": \"{}\",\r\n"
+		"\t\"color\": [1, 1, 1, 1]\r\n"
+		"}}\r\n",
+		shaderPath);
+	return {{name + ".mat", std::move(material)}};
+}
+
+// 値は PhysicsMaterial の初期値と同じ（Unity の Physic Material の初期値）
+std::vector<NewFile> MakePhysicsMaterialFiles(const std::string &name) {
+	std::string material =
+		"{\r\n"
+		"\t\"dynamicFriction\": 0.6,\r\n"
+		"\t\"staticFriction\": 0.6,\r\n"
+		"\t\"bounciness\": 0,\r\n"
+		"\t\"frictionCombine\": \"Average\",\r\n"
+		"\t\"bounceCombine\": \"Average\"\r\n"
+		"}\r\n";
+	return {{name + ".physicsmaterial", std::move(material)}};
+}
+
 // エクスプローラーで、そのファイルを選んだ状態で開く
 void ShowInExplorer(const std::filesystem::path &path) {
 	const auto parameters = std::format(L"/select,\"{}\"", path.wstring());
@@ -464,6 +547,11 @@ void ou::ProjectWindow::DrawCreateMenu() {
 	if (ImGui::MenuItem("Folder")) { BeginCreate(CreateKind::Folder); }
 	ImGui::Separator();
 	if (ImGui::MenuItem("MonoBehavior Script")) { BeginCreate(CreateKind::Script); }
+	ImGui::Separator();
+	if (ImGui::MenuItem("Material")) { BeginCreate(CreateKind::Material); }
+	if (ImGui::MenuItem("Unlit Shader")) { BeginCreate(CreateKind::Shader); }
+	ImGui::Separator();
+	if (ImGui::MenuItem("Physics Material")) { BeginCreate(CreateKind::PhysicsMaterial); }
 	ImGui::EndMenu();
 }
 
@@ -472,7 +560,17 @@ void ou::ProjectWindow::BeginCreate(CreateKind kind) {
 	// EngineAssets はエンジンのものなので、作るのは Assets の中だけ
 	creatingFolder_ = selectedFolder_.starts_with("Assets") ? selectedFolder_ : "Assets";
 	creatingKind_ = kind;
-	creatingName_ = kind == CreateKind::Folder ? "New Folder" : "NewBehavior";
+	switch (kind) {
+	case CreateKind::Folder: creatingName_ = "New Folder"; break;
+	case CreateKind::Script: creatingName_ = "NewBehavior"; break;
+	case CreateKind::Shader: creatingName_ = "NewUnlitShader"; break;
+	case CreateKind::Material: creatingName_ = "New Material"; break;
+	case CreateKind::PhysicsMaterial: creatingName_ = "New Physics Material"; break;
+	}
+
+	// Unity と同じく、シェーダを選んでいたらそのシェーダのマテリアルにする
+	const auto &selected = Selection::GetActiveAssetPath();
+	creatingShader_ = LowerExtension(std::filesystem::path(Utf8ToWide(selected))) == ".shader" ? selected : kDefaultMaterialShader;
 	opensCreatePopup_ = true;
 }
 
@@ -483,8 +581,24 @@ void ou::ProjectWindow::DrawCreatePopup() {
 	}
 	if (!ImGui::BeginPopupModal(kCreatePopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) { return; }
 
+	const auto isFolder = creatingKind_ == CreateKind::Folder;
 	const auto isScript = creatingKind_ == CreateKind::Script;
-	ImGui::Text("%s に%s", creatingFolder_.c_str(), isScript ? "スクリプトを作ります（ファイル名がクラス名になります）" : "フォルダを作ります");
+	const char *kindName = "";
+	switch (creatingKind_) {
+	case CreateKind::Folder: kindName = "フォルダ"; break;
+	case CreateKind::Script: kindName = "スクリプト"; break;
+	case CreateKind::Shader: kindName = "シェーダ"; break;
+	case CreateKind::Material: kindName = "マテリアル"; break;
+	case CreateKind::PhysicsMaterial: kindName = "物理マテリアル"; break;
+	}
+	ImGui::Text("%s に%sを作ります", creatingFolder_.c_str(), kindName);
+	if (isScript) {
+		ImGui::TextDisabled("ファイル名がクラス名になります");
+	} else if (creatingKind_ == CreateKind::Shader) {
+		ImGui::TextDisabled(".shader と、その .VS.hlsl / .PS.hlsl を作ります");
+	} else if (creatingKind_ == CreateKind::Material) {
+		ImGui::TextDisabled("シェーダ: %s", creatingShader_.c_str());
+	}
 
 	if (ImGui::IsWindowAppearing()) {
 		ImGui::SetKeyboardFocusHere();
@@ -492,17 +606,28 @@ void ou::ProjectWindow::DrawCreatePopup() {
 	ImGui::SetNextItemWidth(360.0f);
 	const auto isEntered = ImGui::InputText("##Name", &creatingName_, ImGuiInputTextFlags_EnterReturnsTrue);
 
-	const auto folder = ToFullPath(creatingFolder_);
-	const auto fileName = isScript ? creatingName_ + ".as" : creatingName_;
-	const auto fullPath = folder ? *folder / Utf8ToWide(fileName) : std::filesystem::path();
+	// 作るファイル（Folder はフォルダ 1 つ）
+	std::vector<NewFile> files;
+	switch (creatingKind_) {
+	case CreateKind::Folder: files = {{creatingName_, {}}}; break;
+	case CreateKind::Script: files = {{creatingName_ + ".as", MakeScriptTemplate(creatingName_)}}; break;
+	case CreateKind::Shader: files = MakeShaderFiles(creatingName_); break;
+	case CreateKind::Material: files = MakeMaterialFiles(creatingName_, creatingShader_); break;
+	case CreateKind::PhysicsMaterial: files = MakePhysicsMaterialFiles(creatingName_); break;
+	}
 
+	const auto folder = ToFullPath(creatingFolder_);
 	std::error_code error;
+	const auto isTaken = !folder || std::any_of(files.begin(), files.end(), [&](const NewFile &file) {
+		return std::filesystem::exists(*folder / Utf8ToWide(file.fileName), error);
+	});
+
 	std::string problem;
 	if (isScript && !IsValidClassName(creatingName_)) {
 		problem = "英字か _ で始め、英数字と _ だけにしてください（クラス名になります）";
 	} else if (!isScript && !IsValidFolderName(creatingName_)) {
-		problem = "フォルダ名に使えない文字があります";
-	} else if (!folder || std::filesystem::exists(fullPath, error)) {
+		problem = "名前に使えない文字があります";
+	} else if (isTaken) {
 		problem = "同じ名前のものがもうあります";
 	}
 	if (!problem.empty()) {
@@ -514,22 +639,29 @@ void ou::ProjectWindow::DrawCreatePopup() {
 	ImGui::EndDisabled();
 
 	if ((isCreateClicked || isEntered) && problem.empty()) {
-		auto isCreated = false;
-		if (isScript) {
-			std::ofstream file(fullPath, std::ios::binary);
-			file << MakeScriptTemplate(creatingName_);
-			isCreated = static_cast<bool>(file);
-		} else {
-			isCreated = std::filesystem::create_directory(fullPath, error);
+		auto isCreated = true;
+		for (const auto &file : files) {
+			const auto fullPath = *folder / Utf8ToWide(file.fileName);
+			if (isFolder) {
+				isCreated = std::filesystem::create_directory(fullPath, error);
+			} else {
+				std::ofstream stream(fullPath, std::ios::binary);
+				stream << file.content;
+				isCreated = static_cast<bool>(stream);
+			}
+			if (!isCreated) {
+				Log::Error("作れませんでした: {}", ToUtf8(fullPath));
+				break;
+			}
 		}
 
+		// 途中で失敗しても、書けたファイルには .meta を付ける
+		// スクリプトのコンパイルは、書き換えを見ているエディタが 1 秒以内にする
+		AssetDatabase::Refresh();
 		if (isCreated) {
-			// .meta を作る。スクリプトのコンパイルは、書き換えを見ているエディタが 1 秒以内にする
-			AssetDatabase::Refresh();
-			Selection::SetActiveAsset(creatingFolder_ + "/" + fileName);
-			Log::Info("{}を作りました: {}/{}", isScript ? "スクリプト" : "フォルダ", creatingFolder_, fileName);
-		} else {
-			Log::Error("作れませんでした: {}", ToUtf8(fullPath));
+			const auto assetPath = creatingFolder_ + "/" + files.front().fileName;
+			Selection::SetActiveAsset(assetPath);
+			Log::Info("{}を作りました: {}", kindName, assetPath);
 		}
 		ImGui::CloseCurrentPopup();
 	}

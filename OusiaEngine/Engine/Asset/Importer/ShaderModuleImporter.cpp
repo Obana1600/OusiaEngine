@@ -3,6 +3,7 @@
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ShaderCompiler.h"
+#include "Platform/Paths.h"
 #include "Render/Asset/ShaderModule.h"
 
 #include <string_view>
@@ -81,6 +82,10 @@ std::shared_ptr<ShaderModule> ou::ShaderModuleImporter::ImportShaderModule() {
 	input.minShaderModel = minShaderModel_;
 	input.shaderPath = path;
 	input.defines = defines_;
+	// Assets の HLSL からも Standard.hlsli などを #include できるように
+	if (const auto engineAssets = FindEngineAssetsFolder()) {
+		input.includeDirectories.push_back(ToUtf8(*engineAssets / L"Shader"));
+	}
 
 	// シェーダのコンパイル
 	const auto output = ShaderCompiler::Compile(input);
