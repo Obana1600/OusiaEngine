@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Math/Color.h"
+#include "Math/Vector2.h"
 #include "PostProcess/VolumeParameterBase.h"
 
 #include <type_traits>
@@ -35,7 +36,23 @@ protected: // メンバ変数
 
 using BoolParameter = VolumeParameter<bool>;
 using FloatParameter = VolumeParameter<float>;
+using Vector2Parameter = VolumeParameter<Vector2>;
 using ColorParameter = VolumeParameter<Color>;
+
+
+class MinFloatParameter final: public VolumeParameter<float> {
+public: // メンバ関数
+
+	MinFloatParameter(float value, float min, bool overrideState = false);
+
+	void SetValue(float value) override;
+
+	float GetMin() const;
+
+private: // メンバ変数
+
+	float min_;
+};
 
 
 class ClampedFloatParameter final: public VolumeParameter<float> {
@@ -98,7 +115,9 @@ template <typename T>
 inline void VolumeParameter<T>::Interp(const VolumeParameterBase &target, float t) {
 	const auto &to = static_cast<const VolumeParameter<T> &>(target).value_;
 
-		if constexpr (std::is_same_v<T, float>) {
+	if constexpr (std::is_same_v<T, float>) {
+		SetValue(value_ + (to - value_) * t);
+	} else if constexpr (std::is_same_v<T, Vector2>) {
 		SetValue(value_ + (to - value_) * t);
 	} else if constexpr (std::is_same_v<T, Color>) {
 		SetValue(Color::LerpUnclamped(value_, to, t));

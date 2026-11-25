@@ -2,6 +2,7 @@
 
 #include "Graphics/GraphicsTypes.h"
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -10,6 +11,12 @@
 namespace ou {
 
 class SceneRenderTarget final {
+public: // 静的メンバ変数
+
+	// Bloom の縮小の段の数の上限
+	static constexpr uint32_t kMaxBloomMipCount = 6;
+
+
 public: // メンバ関数
 
 	explicit SceneRenderTarget(std::string_view name);
@@ -24,9 +31,15 @@ public: // メンバ関数
 
 	const Graphics::Texture &GetSceneColor() const;
 	const Graphics::Texture &GetColor() const;
+	const Graphics::Texture &GetSceneColorCopy() const;
+	const Graphics::Texture &GetColorCopy() const;
 	uint32_t GetWidth() const;
 	uint32_t GetHeight() const;
 	bool IsCreated() const;
+
+	uint32_t GetBloomMipCount() const;
+	const Graphics::Texture &GetBloomMipDown(uint32_t index) const;
+	const Graphics::Texture &GetBloomMipUp(uint32_t index) const;
 
 
 private: // メンバ変数
@@ -34,9 +47,15 @@ private: // メンバ変数
 	std::string name_;
 	Graphics::Texture sceneColor_; // HDR
 	Graphics::Texture color_;	   // LDR
+	Graphics::Texture sceneColorCopy_;
+	Graphics::Texture colorCopy_;
 	Graphics::Texture depth_;
 	uint32_t width_ = 0;
 	uint32_t height_ = 0;
+
+	uint32_t bloomMipCount_ = 0;
+	std::array<Graphics::Texture, kMaxBloomMipCount> bloomMipDown_;
+	std::array<Graphics::Texture, kMaxBloomMipCount> bloomMipUp_;
 
 
 private: // メンバ関数

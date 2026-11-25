@@ -196,9 +196,6 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// 時間（Project Settings の Time）
 	TimeManager::Load();
 
-	// ポストプロセスの順番
-	GraphicsSettings::Load();
-
 	// ウィンドウ
 #ifdef WITH_EDITOR
 	window_ = Window::Create(MakeEditorWindowDesc(productName, desc.width, desc.height));
@@ -261,6 +258,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 #endif
 
 	PostProcessPass::StaticInitialize();
+
+	// ポストプロセス
+	GraphicsSettings::Load();
 
 	// 入力
 	if (!Input::Initialize(window_.get())) {
@@ -458,7 +458,7 @@ void ou::Engine::RenderGame(const SceneRenderTarget &target, Graphics::CommandLi
 	const auto *camera = SceneManager::GetMainCamera();
 	const VolumeStack *stack = nullptr;
 	if (camera && camera->GetRenderPostProcessing()) {
-		VolumeManager::Update(camera->GetVolumeLayerMask());
+		VolumeManager::Update(camera->GetTransform()->GetWorldPosition(), camera->GetVolumeLayerMask());
 		stack = &VolumeManager::GetStack();
 	}
 	PostProcessPass::Render(target, stack, cmd);
@@ -478,7 +478,7 @@ void ou::Engine::RenderSceneView(const SceneView &sceneView, Graphics::CommandLi
 	device_->RenderPassEnd(cmd);
 
 	const auto *mainCamera = SceneManager::GetMainCamera();
-	VolumeManager::Update(mainCamera ? mainCamera->GetVolumeLayerMask() : LayerMask{~0u});
+	VolumeManager::Update(camera.worldPosition, mainCamera ? mainCamera->GetVolumeLayerMask() : LayerMask{~0u});
 	PostProcessPass::Render(target, &VolumeManager::GetStack(), cmd);
 
 	target.BeginOverlayPassWithDepth(cmd);

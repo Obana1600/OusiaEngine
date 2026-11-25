@@ -61,9 +61,10 @@ Graphics::Shader ImportStage(
 
 	// シェーダーアセットを作る
 	const auto fileName = it->get<std::string>();
-	const auto module = AssetDatabase::LoadAssetAtPath<ShaderModule>(importer.ResolveAssetPath(fileName));
+	const auto isAssetPath = fileName.starts_with("EngineAssets/") || fileName.starts_with("Assets/");
+	const auto module = AssetDatabase::LoadAssetAtPath<ShaderModule>(isAssetPath ? fileName : importer.ResolveAssetPath(fileName));
 	if (!module) {
-		throw JsonFile::FormatError(std::format("\"{}\" の HLSL をコンパイルできませんでした: {}", key, fileName));
+		throw JsonFile::FormatError(std::format("\"{}\" の HLSL のコンパイルに失敗しました: {}", key, fileName));
 	}
 
 	// キーと同じステージか調べる

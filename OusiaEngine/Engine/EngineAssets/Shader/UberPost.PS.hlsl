@@ -1,16 +1,43 @@
 #include "Blit.hlsli"
 
+struct BloomConstants
+{
+    float3 tint;
+    uint textureIndex;
+    uint enabled;
+    uint3 padding;
+};
+
+struct ColorAdjustmentsConstants
+{
+    float postExposure;
+    float contrast;
+    float hueShift;
+    float saturation;
+    float3 colorFilter;
+    uint enabled;
+};
+
+struct VignetteConstants
+{
+    float3 color;
+    float intensity;
+    float2 center;
+    float smoothness;
+    float roundness;
+};
+
 cbuffer UberPostConstants : register(b0)
 {
     uint gSourceIndex;
     uint gTonemappingMode; // 0: None, 1: Neutral, 2: ACES
-    uint gColorAdjustments; // 0 ならかけない
-    float gPostExposure;
-    float3 gColorFilter;
-    float gContrast;
-    float gHueShift;
-    float gSaturation;
+    uint2 gPadding;
+    BloomConstants gBloom;
+    ColorAdjustmentsConstants gColorAdjustments;
+    VignetteConstants gVignette;
 }
+
+SamplerState gLinearClamp : register(s1);
 
 
 // ---- 色の変換 ----
@@ -58,26 +85,37 @@ float Luminance(float3 color)
 }
 
 
+// ---- Vignette ----
+
+float3 ApplyVignette(float3 color, float2 uv)
+{
+    float2 dist = abs(uv - gVignette.center) * gVignette.intensity;
+    dist.x *= gVignette.roundness;
+    float factor = pow(saturate(1.0 - dot(dist, dist)), gVignette.smoothness);
+    return color * lerp(gVignette.color, 1.0, factor);
+}
+
+
 // ---- ColorAdjustments ----
 
 float3 ApplyColorAdjustments(float3 color)
 {
-    color *= gPostExposure;
+    color *= gColorAdjustments.postExposure;
 
     float3 colorLog = LinearToLogC(color);
-    colorLog = (colorLog - kLogCMidGray) * gContrast + kLogCMidGray;
+    colorLog = (colorLog - kLogCMidGray) * gColorAdjustments.contrast + kLogCMidGray;
     color = LogCToLinear(colorLog);
 
-    color *= gColorFilter;
+    color *= gColorAdjustments.colorFilter;
     
     color = max(0.0, color);
 
     float3 hsv = RgbToHsv(color);
-    hsv.x = frac(hsv.x + gHueShift);
+    hsv.x = frac(hsv.x + gColorAdjustments.hueShift);
     color = HsvToRgb(hsv);
 
     float luma = Luminance(color);
-    color = luma + gSaturation * (color - luma);
+    color = luma + gColorAdjustments.saturation * (color - luma);
     return color;
 }
 
@@ -136,16 +174,32 @@ float3 AcesTonemap(float3 color)
 }
 
 
+
 float4 main(VSOutput input) : SV_TARGET
 {
     Texture2D<float4> source = ResourceDescriptorHeap[gSourceIndex];
     float3 color = source.Load(int3(input.position.xy, 0)).rgb;
+    
+    // ブルーム
+    if (gBloom.enabled != 0)
+    {
+        Texture2D<float4> bloom = ResourceDescriptorHeap[gBloom.textureIndex];
+        color += bloom.SampleLevel(gLinearClamp, input.texcoord, 0).rgb * gBloom.tint;
+    }
+    
+    // ビネット
+    if (gVignette.intensity > 0.0)
+    {
+        color = ApplyVignette(color, float2(input.texcoord.x, 1.0 - input.texcoord.y));
+    }
 
-    if (gColorAdjustments != 0)
+    // 色調補正
+    if (gColorAdjustments.enabled != 0)
     {
         color = ApplyColorAdjustments(color);
     }
 
+    // トーンマップ
     if (gTonemappingMode == 1)
     {
         color = NeutralTonemap(color);

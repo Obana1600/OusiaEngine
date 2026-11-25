@@ -44,6 +44,8 @@
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
+    <ClInclude Include="PostProcess\FullScreenPassRendererFeature.h" />
+    <ClInclude Include="PostProcess\Builtin\Bloom.h" />
     <ClInclude Include="Render\GraphicsSettings.h" />
     <ClInclude Include="PostProcess\Builtin\ColorAdjustments.h" />
     <ClInclude Include="Input\Cursor.h" />
@@ -240,6 +242,7 @@
     <ClInclude Include="PostProcess\VolumeManager.h" />
     <ClInclude Include="PostProcess\VolumeStack.h" />
     <ClInclude Include="PostProcess\Volume.h" />
+    <ClInclude Include="PostProcess\Builtin\Vignette.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation\Core\AnimationPlayhead.cpp" />
@@ -247,6 +250,8 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="PostProcess\FullScreenPassRendererFeature.cpp" />
+    <ClCompile Include="PostProcess\Builtin\Bloom.cpp" />
     <ClCompile Include="Render\GraphicsSettings.cpp" />
     <ClCompile Include="PostProcess\Builtin\ColorAdjustments.cpp" />
     <ClCompile Include="Input\Cursor.cpp" />
@@ -431,12 +436,15 @@
     <ClCompile Include="PostProcess\VolumeManager.cpp" />
     <ClCompile Include="PostProcess\VolumeStack.cpp" />
     <ClCompile Include="PostProcess\Volume.cpp" />
+    <ClCompile Include="PostProcess\Builtin\Vignette.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli" />
     <None Include="EngineAssets\Shader\Blit.PS.hlsl" />
     <None Include="EngineAssets\Shader\Blit.VS.hlsl" />
+    <None Include="EngineAssets\Shader\Bloom.hlsli" />
     <None Include="EngineAssets\Shader\Error.shader" />
+    <None Include="EngineAssets\Shader\FullScreen.hlsli" />
     <None Include="EngineAssets\Shader\Line.hlsli" />
     <None Include="EngineAssets\Shader\Line.shader" />
     <None Include="EngineAssets\Shader\Gizmo.hlsli" />
@@ -580,6 +588,44 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\UberPost.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\BloomBlurH.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\BloomBlurV.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\BloomPrefilter.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\BloomUpsample.PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>

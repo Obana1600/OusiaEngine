@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Core/Object.h"
+#include "PostProcess/FullScreenPassRendererFeature.h"
 
 #include <memory>
+#include <vector>
 
 
 namespace ou {
@@ -14,6 +16,7 @@ class GraphicsSettings final: public Object {
 	friend class Engine;
 	friend class VolumeManager;
 	friend class ProjectSettingsWindow;
+	friend class PostProcessPass;
 
 public: // メンバ関数
 
@@ -23,6 +26,7 @@ public: // メンバ関数
 private: // メンバ変数
 
 	std::shared_ptr<VolumeProfile> defaultVolumeProfile_;
+	std::vector<FullScreenPassRendererFeature> rendererFeatures_;
 
 
 private: // 静的メンバ関数

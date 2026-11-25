@@ -13,18 +13,18 @@
 			"active": true,
 			"postExposure": {
 				"overrideState": true,
-				"value": 1.35
+				"value": -4.3
 			},
 			"contrast": {
 				"overrideState": true,
-				"value": 100.0
+				"value": 62.26
 			},
 			"colorFilter": {
 				"overrideState": true,
 				"value": [
 					1.0,
 					1.0,
-					0.0,
+					1.0,
 					1.0
 				]
 			},
@@ -35,6 +35,67 @@
 			"saturation": {
 				"overrideState": true,
 				"value": 100.0
+			}
+		},
+		{
+			"$type": "Vignette",
+			"active": true,
+			"color": {
+				"overrideState": true,
+				"value": [
+					0.0,
+					0.0,
+					0.0,
+					1.0
+				]
+			},
+			"center": {
+				"overrideState": true,
+				"value": [
+					0.5,
+					0.5
+				]
+			},
+			"intensity": {
+				"overrideState": true,
+				"value": 0.0
+			},
+			"smoothness": {
+				"overrideState": true,
+				"value": 0.01
+			},
+			"rounded": {
+				"overrideState": true,
+				"value": true
+			}
+		},
+		{
+			"$type": "Bloom",
+			"active": true,
+			"threshold": {
+				"overrideState": true,
+				"value": 0.7
+			},
+			"intensity": {
+				"overrideState": true,
+				"value": 42.82
+			},
+			"scatter": {
+				"overrideState": true,
+				"value": 0.75
+			},
+			"clamp": {
+				"overrideState": true,
+				"value": 65472.0
+			},
+			"tint": {
+				"overrideState": true,
+				"value": [
+					1.0,
+					1.0,
+					1.0,
+					1.0
+				]
 			}
 		}
 	]

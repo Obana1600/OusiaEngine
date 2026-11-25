@@ -4,6 +4,7 @@
 #include "PostProcess/VolumeProfile.h"
 #include "Serialize/Serializer.h"
 
+#include <algorithm>
 #include <utility>
 
 using namespace ou;
@@ -25,9 +26,13 @@ void ou::Volume::Serialize(Serializer &serializer) {
 	serializer.Field("isGlobal", isGlobal_);
 	serializer.Field("priority", priority_);
 	serializer.Field("weight", weight_);
+	serializer.Field("blendDistance", blendDistance_);
 	serializer.Asset("sharedProfile", sharedProfile_);
 
-	if (serializer.IsReading()) { SetWeight(weight_); }
+	if (serializer.IsReading()) {
+		SetBlendDistance(blendDistance_);
+		SetWeight(weight_);
+	}
 }
 
 
@@ -58,6 +63,16 @@ void ou::Volume::SetWeight(float weight) {
 
 float ou::Volume::GetWeight() const {
 	return weight_;
+}
+
+
+void ou::Volume::SetBlendDistance(float blendDistance) {
+	blendDistance_ = std::max(blendDistance, 0.0f);
+}
+
+
+float ou::Volume::GetBlendDistance() const {
+	return blendDistance_;
 }
 
 

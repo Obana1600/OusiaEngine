@@ -1,13 +1,36 @@
 #include "VolumeManager.h"
 #include "Math/Mathf.h"
+#include "Physics/Collider.h"
 #include "PostProcess/Volume.h"
 #include "PostProcess/VolumeProfile.h"
-#include "Scene/GameObject.h"
 #include "Render/GraphicsSettings.h"
+#include "Scene/GameObject.h"
 
 #include <algorithm>
+#include <limits>
 
 using namespace ou;
+
+
+namespace {
+
+float CalculateLocalFactor(const Volume &volume, const Vector3 &triggerPosition) {
+	auto closestDistanceSqr = std::numeric_limits<float>::infinity();
+	for (const auto *collider : volume.GetGameObject()->GetComponents<Collider>()) {
+		if (!collider->IsEnabled()) { continue; }
+
+		const auto closestPoint = collider->ClosestPoint(triggerPosition);
+		closestDistanceSqr = std::min(closestDistanceSqr, (closestPoint - triggerPosition).LengthSquared());
+	}
+
+	const auto blendDistanceSqr = volume.GetBlendDistance() * volume.GetBlendDistance();
+	if (closestDistanceSqr > blendDistanceSqr) { return 0.0f; }
+
+	return blendDistanceSqr > 0.0f ? 1.0f - closestDistanceSqr / blendDistanceSqr : 1.0f;
+}
+
+} // namespace
+
 
 
 VolumeStack &ou::VolumeManager::GetStack() {
@@ -26,7 +49,7 @@ void ou::VolumeManager::Unregister(Volume *volume) {
 }
 
 
-void ou::VolumeManager::Update(LayerMask layerMask) {
+void ou::VolumeManager::Update(const Vector3 &triggerPosition, LayerMask layerMask) {
 	auto &stack = GetStack();
 	stack.Reset();
 
@@ -45,10 +68,14 @@ void ou::VolumeManager::Update(LayerMask layerMask) {
 		const auto &profile = volume->GetSharedProfile();
 		if (!profile) { continue; }
 
-		if (!volume->GetIsGlobal()) { continue; }
-
-		const auto weight = Mathf::Clamp01(volume->GetWeight());
+		auto weight = Mathf::Clamp01(volume->GetWeight());
 		if (weight <= 0.0f) { continue; }
+
+		if (!volume->GetIsGlobal()) {
+			const auto factor = CalculateLocalFactor(*volume, triggerPosition);
+			if (factor <= 0.0f) { continue; }
+			weight *= factor;
+		}
 
 		OverrideData(stack, *profile, weight);
 	}

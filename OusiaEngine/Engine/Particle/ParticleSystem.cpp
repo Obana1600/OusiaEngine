@@ -150,13 +150,16 @@ ParticleSystem::MainModule &ou::ParticleSystem::GetMain() {
 	return main_;
 }
 
+
 const ParticleSystem::MainModule &ou::ParticleSystem::GetMain() const {
 	return main_;
 }
 
+
 ParticleSystem::EmissionModule &ou::ParticleSystem::GetEmission() {
 	return emission_;
 }
+
 
 ParticleSystem::ShapeModule &ou::ParticleSystem::GetShape() {
 	return shape_;

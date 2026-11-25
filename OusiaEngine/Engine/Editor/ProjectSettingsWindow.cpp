@@ -121,6 +121,9 @@ void ou::ProjectSettingsWindow::DrawGraphics() {
 	if (auto property = so.FindProperty("defaultVolumeProfile")) {
 		EditorGuiLayout::PropertyField(*property, GuiContent("Default Volume Profile", "どの Volume よりも下に敷く Volume Profile。チェックの入った値が、全部のカメラの初期値になる"));
 	}
+	if (auto property = so.FindProperty("rendererFeatures")) {
+		EditorGuiLayout::PropertyField(*property, GuiContent("Renderer Features", "全部のカメラにかける Full Screen Pass Renderer Feature。上から順に描く"), true);
+	}
 	if (so.ApplyModifiedProperties()) { GraphicsSettings::Save(); }
 }
 

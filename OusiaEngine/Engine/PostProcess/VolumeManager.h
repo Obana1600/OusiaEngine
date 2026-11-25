@@ -2,6 +2,7 @@
 
 #include "PostProcess/VolumeStack.h"
 #include "Scene/LayerMask.h"
+#include "Math/Vector3.h"
 
 #include <vector>
 
@@ -33,7 +34,7 @@ private: // 静的メンバ関数
 	static void Register(Volume *volume);
 	static void Unregister(Volume *volume);
 
-	static void Update(LayerMask layerMask);
+	static void Update(const Vector3 &triggerPosition, LayerMask layerMask);
 
 	static void OverrideData(VolumeStack &stack, const VolumeProfile &profile, float weight);
 };

@@ -24,6 +24,7 @@ constexpr const wchar_t *kFileName = L"GraphicsSettings.json";
 
 constexpr std::string_view kKeys[] = {
 	"defaultVolumeProfile",
+	"rendererFeatures",
 };
 
 std::optional<std::filesystem::path> FindPath() {
@@ -38,6 +39,9 @@ std::optional<std::filesystem::path> FindPath() {
 
 void ou::GraphicsSettings::Serialize(Serializer &serializer) {
 	serializer.Asset("defaultVolumeProfile", defaultVolumeProfile_);
+	serializer.Array("rendererFeatures", rendererFeatures_, [&](FullScreenPassRendererFeature &feature) {
+		serializer.Struct("", [&] { feature.Serialize(serializer); });
+	});
 }
 
 
@@ -82,4 +86,5 @@ void ou::GraphicsSettings::Save() {
 
 void ou::GraphicsSettings::Unload() {
 	GetInstance().defaultVolumeProfile_.reset();
+	GetInstance().rendererFeatures_.clear();
 }
