@@ -55,6 +55,41 @@ namespace Madan {
 		return (c - (a + ab * t)).magnitude;
 	}
 
+	// マウスカーソルの下にある、高さ planeY の水平面上の点を求める
+	// エンジンの Input::mousePosition は左上が原点・下向きが +Y（Unity とは上下が逆）なので、それに合わせている
+	bool TryGetCursorPoint(float planeY, Vector3&out point) {
+		point = Vector3::zero;
+		Camera@ camera = Camera::main;
+		if (camera is null || Screen::width <= 0 || Screen::height <= 0) { return false; }
+
+		const Vector3 mouse = Input::mousePosition;
+		const float ndcX = mouse.x / float(Screen::width) * 2.0f - 1.0f;
+		const float ndcY = 1.0f - mouse.y / float(Screen::height) * 2.0f;
+		const float tanHalf = Mathf::Tan(camera.fieldOfView * 0.5f * Mathf::Deg2Rad);
+
+		const Vector3 local(ndcX * tanHalf * camera.aspect, ndcY * tanHalf, 1.0f);
+		const Vector3 origin = camera.transform.position;
+		const Vector3 dir = camera.transform.rotation * local;
+		if (dir.y > -0.0001f) { return false; } // 水平線より上を指している
+
+		const float t = (planeY - origin.y) / dir.y;
+		point = origin + dir * t;
+		return true;
+	}
+
+	// カメラから見た「前」と「右」（XZ 平面）。WASD をカメラの向きに合わせるのに使う
+	void GetCameraAxes(Vector3&out forward, Vector3&out right) {
+		forward = Vector3::forward;
+		right = Vector3::right;
+		Camera@ camera = Camera::main;
+		if (camera is null) { return; }
+		Vector3 f = Flat(camera.transform.forward);
+		if (f.sqrMagnitude < 0.0001f) { f = Flat(camera.transform.up); }
+		if (f.sqrMagnitude < 0.0001f) { return; }
+		forward = f.normalized;
+		right = Vector3(forward.z, 0.0f, -forward.x);
+	}
+
 	string Trim(const string&in text) {
 		const int first = text.findFirstNotOf(" \t\r\n");
 		if (first < 0) { return ""; }

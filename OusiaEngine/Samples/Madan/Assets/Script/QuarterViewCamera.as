@@ -6,7 +6,7 @@ class QuarterViewCamera : MonoBehavior {
 
 	// 見下ろす角度（度）。90 で真上から、45 前後で斜め見下ろし
 	[SerializeField] private float pitch = 55.0f;
-	// 水平方向の向き（度）。変えたら MadanPlayer.inputYaw も同じ値にする
+	// 水平方向の向き（度）。WASD の向きはカメラに合わせて自動で変わる
 	[SerializeField] private float yaw = 0.0f;
 	[SerializeField] private float distance = 18.0f;
 	// 0 でプレイヤーだけを見る、0.5 でプレイヤーとボスのちょうど中間を見る

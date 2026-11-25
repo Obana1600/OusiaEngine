@@ -1,18 +1,15 @@
 // 魔弾（仮）: プレイヤー
-// 移動・回避・構え（照準）・被弾を受け持つ。弾の管理は同じ GameObject の MagicGun が行う
+// 移動・回避・照準・被弾を受け持つ。弾の管理は同じ GameObject の MagicGun が行う
 //
 // 操作
-//   移動         : WASD / 矢印キー / 左スティック
-//   構える・撃つ : Space / J / 左クリック を押している間に構え、離すと撃つ
-//   回避         : 左 Shift / K（構え中に押すと構えを解除）
-//   弾を選ぶ     : Q / E（MagicGun.allowSelect が true のときだけ）
+//   移動     : WASD（カメラの向きが基準）
+//   狙う     : マウスカーソル（常にカーソルの方を向く）
+//   撃つ     : 左クリック
+//   回避     : Space / 左 Shift
+//   弾を選ぶ : Q / E（MagicGun.allowSelect が true のときだけ）
 class MadanPlayer : MonoBehavior {
 	// ---- 移動 ----
 	[SerializeField] private float moveSpeed = 6.0f;
-	// 構えている間の移動速度の倍率。0 で足を止める（Titan Souls 寄り）、1 で通常と同じ
-	[SerializeField] private float aimingMoveRate = 0.0f;
-	// 入力の向きを回す角度。QuarterViewCamera の yaw と合わせる
-	[SerializeField] private float inputYaw = 0.0f;
 
 	// ---- 回避 ----
 	[SerializeField] private float dodgeSpeed = 16.0f;
@@ -30,13 +27,13 @@ class MadanPlayer : MonoBehavior {
 	float hitRadius = 0.35f;
 
 	// ---- 照準 ----
-	// 構えている間だけ表示する照準（任意）。子の GameObject などを割り当てる
+	// カーソルの位置に置く照準（任意）。床に置く輪っかなどを割り当てる
 	Transform@ aimMarker;
-	[SerializeField] private float aimMarkerDistance = 2.5f;
+	// 照準を床から浮かせる高さ
+	[SerializeField] private float aimMarkerHeight = 0.05f;
 
 	int hp = 1;
 	private Vector3 facing = Vector3::forward;
-	private bool aiming = false;
 	private float dodgeTimer = 0.0f;
 	private float dodgeCooldownTimer = 0.0f;
 	private float invincibleTimer = 0.0f;
@@ -45,7 +42,6 @@ class MadanPlayer : MonoBehavior {
 	private MeshRenderer@ bodyRenderer;
 
 	bool get_isDead() const property { return hp <= 0; }
-	bool get_isAiming() const property { return aiming; }
 	bool get_isDodging() const property { return dodgeTimer > 0.0f; }
 	Vector3 get_aimDirection() const property { return facing; }
 
@@ -72,12 +68,12 @@ class MadanPlayer : MonoBehavior {
 		UpdateBlink();
 
 		if (isDead || !Madan::IsFighting()) {
-			aiming = false;
 			SetMarkerVisible(false);
 			return;
 		}
 
-		const Vector3 input = ReadMoveInput();
+		// 照準は回避中も動かす
+		UpdateAim();
 
 		// 回避中は入力を受け付けずに流れる
 		if (dodgeTimer > 0.0f) {
@@ -86,9 +82,9 @@ class MadanPlayer : MonoBehavior {
 			return;
 		}
 
+		const Vector3 input = ReadMoveInput();
+
 		if (DodgePressed() && dodgeCooldownTimer <= 0.0f) {
-			aiming = false; // 構えはキャンセル
-			SetMarkerVisible(false);
 			dodgeDirection = input.sqrMagnitude > 0.01f ? input.normalized : facing;
 			dodgeTimer = dodgeTime;
 			dodgeCooldownTimer = dodgeTime + dodgeCooldown;
@@ -98,21 +94,10 @@ class MadanPlayer : MonoBehavior {
 		if (gun !is null) {
 			if (Input::GetKeyDown(KeyCode::Q)) { gun.SelectPrevious(); }
 			if (Input::GetKeyDown(KeyCode::E)) { gun.SelectNext(); }
+			if (Input::GetMouseButtonDown(0)) { gun.Fire(facing); }
 		}
 
-		if (FirePressed() && gun !is null && gun.CanFire()) { aiming = true; }
-
-		if (input.sqrMagnitude > 0.01f) { facing = input.normalized; }
-		const float speed = aiming ? moveSpeed * aimingMoveRate : moveSpeed;
-		Move(input * speed * dt);
-		transform.rotation = Quaternion::LookRotation(facing);
-
-		if (aiming && !FireHeld()) {
-			aiming = false;
-			if (gun !is null) { gun.Fire(facing); }
-		}
-
-		UpdateMarker();
+		Move(input * moveSpeed * dt);
 	}
 
 	// 攻撃を受けたときに呼ぶ。ダメージになったら true
@@ -128,29 +113,47 @@ class MadanPlayer : MonoBehavior {
 		invincibleTimer = invincibleTimeAfterHit;
 		Debug::Log("[魔弾] プレイヤー被弾 残り体力 " + hp);
 		if (isDead) {
-			aiming = false;
 			SetMarkerVisible(false);
 			if (bodyRenderer !is null) { bodyRenderer.enabled = true; }
 		}
 		return true;
 	}
 
+	// カーソルの方を向き、照準をカーソルの位置に置く
+	private void UpdateAim() {
+		Vector3 cursor;
+		if (!Madan::TryGetCursorPoint(transform.position.y, cursor)) {
+			SetMarkerVisible(false);
+			return;
+		}
+
+		const Vector3 toCursor = Madan::Flat(cursor - transform.position);
+		if (toCursor.sqrMagnitude > 0.0001f) { facing = toCursor.normalized; }
+		transform.rotation = Quaternion::LookRotation(facing);
+
+		SetMarkerVisible(true);
+		if (aimMarker !is null) { aimMarker.position = cursor + Vector3::up * aimMarkerHeight; }
+	}
+
+	// WASD をカメラの向きに合わせた XZ 平面の向きにする
 	private Vector3 ReadMoveInput() const {
-		Vector3 input(Input::GetAxis("Horizontal"), 0.0f, Input::GetAxis("Vertical"));
+		float x = 0.0f;
+		float z = 0.0f;
+		if (Input::GetKey(KeyCode::D)) { x += 1.0f; }
+		if (Input::GetKey(KeyCode::A)) { x -= 1.0f; }
+		if (Input::GetKey(KeyCode::W)) { z += 1.0f; }
+		if (Input::GetKey(KeyCode::S)) { z -= 1.0f; }
+
+		Vector3 forward;
+		Vector3 right;
+		Madan::GetCameraAxes(forward, right);
+		Vector3 input = right * x + forward * z;
 		if (input.sqrMagnitude > 1.0f) { input = input.normalized; }
-		return Madan::RotateY(input, inputYaw);
-	}
-
-	private bool FirePressed() const {
-		return Input::GetKeyDown(KeyCode::Space) || Input::GetKeyDown(KeyCode::J) || Input::GetMouseButtonDown(0);
-	}
-
-	private bool FireHeld() const {
-		return Input::GetKey(KeyCode::Space) || Input::GetKey(KeyCode::J) || Input::GetMouseButton(0);
+		return input;
 	}
 
 	private bool DodgePressed() const {
-		return Input::GetKeyDown(KeyCode::LeftShift) || Input::GetKeyDown(KeyCode::K);
+		return Input::GetKeyDown(KeyCode::Space) || Input::GetKeyDown(KeyCode::LeftShift);
 	}
 
 	// アリーナの外とボスの体の中には入れない
@@ -171,13 +174,6 @@ class MadanPlayer : MonoBehavior {
 
 		if (Madan::battle !is null) { position = Madan::battle.ClampToArena(position, hitRadius); }
 		transform.position = position;
-	}
-
-	private void UpdateMarker() {
-		SetMarkerVisible(aiming);
-		if (!aiming || aimMarker is null) { return; }
-		aimMarker.position = transform.position + facing * aimMarkerDistance;
-		aimMarker.rotation = Quaternion::LookRotation(facing);
 	}
 
 	private void SetMarkerVisible(bool visible) {
