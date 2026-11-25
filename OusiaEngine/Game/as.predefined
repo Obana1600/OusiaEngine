@@ -15,6 +15,77 @@ enum CollisionFlags {
 	Above = 2,
 	Below = 4
 }
+enum QueryTriggerInteraction {
+	UseGlobal = 0,
+	Ignore = 1,
+	Collide = 2
+}
+enum RigidbodyInterpolation {
+	None = 0,
+	Interpolate = 1,
+	Extrapolate = 2
+}
+enum CollisionDetectionMode {
+	Discrete = 0,
+	Continuous = 1,
+	ContinuousDynamic = 2,
+	ContinuousSpeculative = 3
+}
+enum PhysicsMaterialCombine {
+	Average = 0,
+	Minimum = 1,
+	Multiply = 2,
+	Maximum = 3
+}
+enum RigidbodyConstraints {
+	None = 0,
+	FreezePositionX = 2,
+	FreezePositionY = 4,
+	FreezePositionZ = 8,
+	FreezeRotationX = 16,
+	FreezeRotationY = 32,
+	FreezeRotationZ = 64,
+	FreezePosition = 14,
+	FreezeRotation = 112,
+	FreezeAll = 126
+}
+enum TextAlignmentOptions {
+	TopLeft = 0,
+	Top = 1,
+	TopRight = 2,
+	Left = 3,
+	Center = 4,
+	Right = 5,
+	BottomLeft = 6,
+	Bottom = 7,
+	BottomRight = 8
+}
+enum LightType {
+	Spot = 0,
+	Directional = 1,
+	Point = 2
+}
+enum WrapMode {
+	Default = 0,
+	Once = 1,
+	Loop = 2,
+	PingPong = 3,
+	ClampForever = 4
+}
+enum ParticleSystemSimulationSpace {
+	Local = 0,
+	World = 1
+}
+enum ParticleSystemShapeType {
+	Sphere = 0,
+	Cone = 1
+}
+enum ParticleSystemSortMode {
+	None = 0,
+	Distance = 1,
+	OldestInFront = 2,
+	YoungestInFront = 3
+}
 enum KeyCode {
 	None = 0,
 	Backspace = 8,
@@ -344,6 +415,7 @@ class Vector3 {
 	float get_magnitude() const property;
 	float get_sqrMagnitude() const property;
 	Vector3 get_normalized() const property;
+	Vector4 opImplConv() const;
 	float x;
 	float y;
 	float z;
@@ -358,6 +430,8 @@ class Quaternion {
 	Vector3 get_eulerAngles() const property;
 	void set_eulerAngles(const Vector3&in value) property;
 	Quaternion get_normalized() const property;
+	void SetFromToRotation(const Vector3&in fromDirection, const Vector3&in toDirection);
+	void ToAngleAxis(float&out angle, Vector3&out axis) const;
 	float x;
 	float y;
 	float z;
@@ -379,10 +453,132 @@ class Color {
 	Color& opDivAssign(float);
 	string ToString() const;
 	Color opMul(const Color&in) const;
+	Color get_gamma() const property;
+	Color get_linear() const property;
+	float get_grayscale() const property;
+	float get_maxColorComponent() const property;
 	float r;
 	float g;
 	float b;
 	float a;
+}
+class Vector4 {
+	Vector4();
+	Vector4(float x, float y, float z, float w);
+	Vector4(float x, float y, float z);
+	Vector4(float x, float y);
+	Vector4 opAdd(const Vector4&in) const;
+	Vector4 opSub(const Vector4&in) const;
+	Vector4 opMul(float) const;
+	Vector4 opMul_r(float) const;
+	Vector4 opDiv(float) const;
+	bool opEquals(const Vector4&in) const;
+	Vector4& opAddAssign(const Vector4&in);
+	Vector4& opSubAssign(const Vector4&in);
+	Vector4& opMulAssign(float);
+	Vector4& opDivAssign(float);
+	string ToString() const;
+	Vector4 opNeg() const;
+	float get_magnitude() const property;
+	float get_sqrMagnitude() const property;
+	Vector4 get_normalized() const property;
+	Vector3 opImplConv() const;
+	Vector2 opImplConv() const;
+	float x;
+	float y;
+	float z;
+	float w;
+}
+class Matrix4x4 {
+	Matrix4x4();
+	Matrix4x4(const Vector4&in column0, const Vector4&in column1, const Vector4&in column2, const Vector4&in column3);
+	Vector4 GetColumn(int index) const;
+	Vector4 GetRow(int index) const;
+	void SetColumn(int index, const Vector4&in column);
+	void SetRow(int index, const Vector4&in row);
+	Matrix4x4 opMul(const Matrix4x4&in) const;
+	Vector4 opMul(const Vector4&in) const;
+	bool opEquals(const Matrix4x4&in) const;
+	string ToString() const;
+	Vector3 GetPosition() const;
+	Quaternion get_rotation() const property;
+	Vector3 get_lossyScale() const property;
+	float get_determinant() const property;
+	Matrix4x4 get_inverse() const property;
+	Matrix4x4 get_transpose() const property;
+	bool get_isIdentity() const property;
+	Vector3 MultiplyPoint(const Vector3&in point) const;
+	Vector3 MultiplyPoint3x4(const Vector3&in point) const;
+	Vector3 MultiplyVector(const Vector3&in vector) const;
+	float m00;
+	float m01;
+	float m02;
+	float m03;
+	float m10;
+	float m11;
+	float m12;
+	float m13;
+	float m20;
+	float m21;
+	float m22;
+	float m23;
+	float m30;
+	float m31;
+	float m32;
+	float m33;
+}
+class Rect {
+	Rect();
+	Rect(float x, float y, float width, float height);
+	Rect(const Vector2&in position, const Vector2&in size);
+	Vector2 get_position() const property;
+	void set_position(const Vector2&in value) property;
+	Vector2 get_size() const property;
+	void set_size(const Vector2&in value) property;
+	Vector2 get_center() const property;
+	void set_center(const Vector2&in value) property;
+	Vector2 get_min() const property;
+	void set_min(const Vector2&in value) property;
+	Vector2 get_max() const property;
+	void set_max(const Vector2&in value) property;
+	float get_xMin() const property;
+	void set_xMin(float value) property;
+	float get_yMin() const property;
+	void set_yMin(float value) property;
+	float get_xMax() const property;
+	void set_xMax(float value) property;
+	float get_yMax() const property;
+	void set_yMax(float value) property;
+	bool Contains(const Vector2&in point) const;
+	bool Contains(const Vector3&in point) const;
+	bool Overlaps(const Rect&in other) const;
+	bool opEquals(const Rect&in) const;
+	string ToString() const;
+	float x;
+	float y;
+	float width;
+	float height;
+}
+class Bounds {
+	Bounds();
+	Bounds(const Vector3&in center, const Vector3&in size);
+	Vector3 get_size() const property;
+	void set_size(const Vector3&in value) property;
+	Vector3 get_min() const property;
+	void set_min(const Vector3&in value) property;
+	Vector3 get_max() const property;
+	void set_max(const Vector3&in value) property;
+	void SetMinMax(const Vector3&in min, const Vector3&in max);
+	bool Contains(const Vector3&in point) const;
+	bool Intersects(const Bounds&in bounds) const;
+	Vector3 ClosestPoint(const Vector3&in point) const;
+	float SqrDistance(const Vector3&in point) const;
+	void Encapsulate(const Vector3&in point);
+	void Encapsulate(const Bounds&in bounds);
+	void Expand(float amount);
+	string ToString() const;
+	Vector3 center;
+	Vector3 extents;
 }
 class GameObject {
 	GameObject(const string&in name = "GameObject");
@@ -403,8 +599,11 @@ class GameObject {
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 	T@ AddComponent<T>();
+	Scene get_scene() const property;
 }
-class Transform {
+class RectTransform {
+	Transform@ opImplCast();
+	const Transform@ opImplCast() const;
 	Component@ opImplCast();
 	const Component@ opImplCast() const;
 	Object@ opImplCast();
@@ -445,6 +644,77 @@ class Transform {
 	void Rotate(const Vector3&in eulers, Space relativeTo = Space::Self);
 	void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space::Self);
 	void LookAt(const Vector3&in worldPosition, const Vector3&in worldUp = Vector3::up);
+	void SetParent(Transform@ parent, bool worldPositionStays = true);
+	int GetSiblingIndex() const;
+	void SetSiblingIndex(int index);
+	void SetAsFirstSibling();
+	void SetAsLastSibling();
+	Matrix4x4 get_localToWorldMatrix() const property;
+	Matrix4x4 get_worldToLocalMatrix() const property;
+	Vector2 get_anchorMin() const property;
+	void set_anchorMin(const Vector2&in value) property;
+	Vector2 get_anchorMax() const property;
+	void set_anchorMax(const Vector2&in value) property;
+	Vector2 get_anchoredPosition() const property;
+	void set_anchoredPosition(const Vector2&in value) property;
+	Vector2 get_sizeDelta() const property;
+	void set_sizeDelta(const Vector2&in value) property;
+	Vector2 get_pivot() const property;
+	void set_pivot(const Vector2&in value) property;
+	Rect get_rect() const property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Transform {
+	RectTransform@ opCast();
+	const RectTransform@ opCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	Vector3 get_position() const property;
+	void set_position(const Vector3&in value) property;
+	Vector3 get_localPosition() const property;
+	void set_localPosition(const Vector3&in value) property;
+	Quaternion get_rotation() const property;
+	void set_rotation(const Quaternion&in value) property;
+	Quaternion get_localRotation() const property;
+	void set_localRotation(const Quaternion&in value) property;
+	Vector3 get_eulerAngles() const property;
+	void set_eulerAngles(const Vector3&in value) property;
+	Vector3 get_localEulerAngles() const property;
+	void set_localEulerAngles(const Vector3&in value) property;
+	Vector3 get_localScale() const property;
+	void set_localScale(const Vector3&in value) property;
+	Vector3 get_lossyScale() const property;
+	Vector3 get_forward() const property;
+	Vector3 get_right() const property;
+	Vector3 get_up() const property;
+	Transform@ get_parent() const property;
+	void set_parent(Transform@ value) property;
+	int get_childCount() const property;
+	Transform@ GetChild(int index) const;
+	Transform@ Find(const string&in name) const;
+	void Translate(const Vector3&in translation, Space relativeTo = Space::Self);
+	void Translate(float x, float y, float z, Space relativeTo = Space::Self);
+	void Rotate(const Vector3&in eulers, Space relativeTo = Space::Self);
+	void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space::Self);
+	void LookAt(const Vector3&in worldPosition, const Vector3&in worldUp = Vector3::up);
+	void SetParent(Transform@ parent, bool worldPositionStays = true);
+	int GetSiblingIndex() const;
+	void SetSiblingIndex(int index);
+	void SetAsFirstSibling();
+	void SetAsLastSibling();
+	Matrix4x4 get_localToWorldMatrix() const property;
+	Matrix4x4 get_worldToLocalMatrix() const property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -472,6 +742,12 @@ class CharacterController {
 	void set_isTrigger(bool value) property;
 	Rigidbody@ get_attachedRigidbody() const property;
 	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 ClosestPointOnBounds(const Vector3&in position) const;
+	Bounds get_bounds() const property;
+	PhysicsMaterial@ get_sharedMaterial() const property;
+	void set_sharedMaterial(PhysicsMaterial@ value) property;
+	PhysicsMaterial@ get_material() property;
+	void set_material(PhysicsMaterial@ value) property;
 	CollisionFlags Move(const Vector3&in motion);
 	bool SimpleMove(const Vector3&in speed);
 	bool get_isGrounded() const property;
@@ -486,6 +762,11 @@ class CharacterController {
 	void set_slopeLimit(float value) property;
 	float get_stepOffset() const property;
 	void set_stepOffset(float value) property;
+	float get_skinWidth() const property;
+	void set_skinWidth(float value) property;
+	float get_minMoveDistance() const property;
+	void set_minMoveDistance(float value) property;
+	CollisionFlags get_collisionFlags() const property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -513,6 +794,12 @@ class BoxCollider {
 	void set_isTrigger(bool value) property;
 	Rigidbody@ get_attachedRigidbody() const property;
 	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 ClosestPointOnBounds(const Vector3&in position) const;
+	Bounds get_bounds() const property;
+	PhysicsMaterial@ get_sharedMaterial() const property;
+	void set_sharedMaterial(PhysicsMaterial@ value) property;
+	PhysicsMaterial@ get_material() property;
+	void set_material(PhysicsMaterial@ value) property;
 	Vector3 get_center() const property;
 	void set_center(const Vector3&in value) property;
 	Vector3 get_size() const property;
@@ -544,6 +831,12 @@ class SphereCollider {
 	void set_isTrigger(bool value) property;
 	Rigidbody@ get_attachedRigidbody() const property;
 	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 ClosestPointOnBounds(const Vector3&in position) const;
+	Bounds get_bounds() const property;
+	PhysicsMaterial@ get_sharedMaterial() const property;
+	void set_sharedMaterial(PhysicsMaterial@ value) property;
+	PhysicsMaterial@ get_material() property;
+	void set_material(PhysicsMaterial@ value) property;
 	Vector3 get_center() const property;
 	void set_center(const Vector3&in value) property;
 	float get_radius() const property;
@@ -575,6 +868,12 @@ class CapsuleCollider {
 	void set_isTrigger(bool value) property;
 	Rigidbody@ get_attachedRigidbody() const property;
 	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 ClosestPointOnBounds(const Vector3&in position) const;
+	Bounds get_bounds() const property;
+	PhysicsMaterial@ get_sharedMaterial() const property;
+	void set_sharedMaterial(PhysicsMaterial@ value) property;
+	PhysicsMaterial@ get_material() property;
+	void set_material(PhysicsMaterial@ value) property;
 	Vector3 get_center() const property;
 	void set_center(const Vector3&in value) property;
 	float get_radius() const property;
@@ -616,6 +915,12 @@ class Collider {
 	void set_isTrigger(bool value) property;
 	Rigidbody@ get_attachedRigidbody() const property;
 	Vector3 ClosestPoint(const Vector3&in position) const;
+	Vector3 ClosestPointOnBounds(const Vector3&in position) const;
+	Bounds get_bounds() const property;
+	PhysicsMaterial@ get_sharedMaterial() const property;
+	void set_sharedMaterial(PhysicsMaterial@ value) property;
+	PhysicsMaterial@ get_material() property;
+	void set_material(PhysicsMaterial@ value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -661,6 +966,23 @@ class Rigidbody {
 	void Sleep();
 	void WakeUp();
 	bool IsSleeping() const;
+	void AddExplosionForce(float explosionForce, const Vector3&in explosionPosition, float explosionRadius, float upwardsModifier = 0.0f, ForceMode mode = ForceMode::Force);
+	Vector3 GetPointVelocity(const Vector3&in worldPoint) const;
+	RigidbodyConstraints get_constraints() const property;
+	void set_constraints(RigidbodyConstraints value) property;
+	RigidbodyInterpolation get_interpolation() const property;
+	void set_interpolation(RigidbodyInterpolation value) property;
+	CollisionDetectionMode get_collisionDetectionMode() const property;
+	void set_collisionDetectionMode(CollisionDetectionMode value) property;
+	float get_maxLinearVelocity() const property;
+	void set_maxLinearVelocity(float value) property;
+	float get_maxAngularVelocity() const property;
+	void set_maxAngularVelocity(float value) property;
+	float get_sleepThreshold() const property;
+	void set_sleepThreshold(float value) property;
+	Vector3 get_centerOfMass() const property;
+	void set_centerOfMass(const Vector3&in value) property;
+	void ResetCenterOfMass();
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -698,6 +1020,148 @@ class AudioSource {
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
+class AudioListener {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Camera {
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	float get_fieldOfView() const property;
+	void set_fieldOfView(float value) property;
+	float get_aspect() const property;
+	void set_aspect(float value) property;
+	void ResetAspect();
+	float get_nearClipPlane() const property;
+	void set_nearClipPlane(float value) property;
+	float get_farClipPlane() const property;
+	void set_farClipPlane(float value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Light {
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	LightType get_type() const property;
+	void set_type(LightType value) property;
+	Color get_color() const property;
+	void set_color(const Color&in value) property;
+	float get_intensity() const property;
+	void set_intensity(float value) property;
+	float get_range() const property;
+	void set_range(float value) property;
+	float get_spotAngle() const property;
+	void set_spotAngle(float value) property;
+	float get_innerSpotAngle() const property;
+	void set_innerSpotAngle(float value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class SkeletalAnimator {
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	void Play(SkeletalAnimationClip@ clip);
+	void CrossFade(SkeletalAnimationClip@ clip, float fadeLength = 0.3f);
+	void Stop();
+	bool get_isPlaying() const property;
+	SkeletalAnimationClip@ get_clip() const property;
+	void set_clip(SkeletalAnimationClip@ value) property;
+	float get_time() const property;
+	void set_time(float value) property;
+	float get_speed() const property;
+	void set_speed(float value) property;
+	WrapMode get_wrapMode() const property;
+	void set_wrapMode(WrapMode value) property;
+	bool get_playAutomatically() const property;
+	void set_playAutomatically(bool value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class ParticleSystem {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	void Play();
+	void Stop();
+	void Clear();
+	void Emit(int count);
+	void Simulate(float t);
+	bool get_isPlaying() const property;
+	float get_time() const property;
+	ParticleSystem::MainModule get_main() const property;
+	ParticleSystem::EmissionModule get_emission() const property;
+	ParticleSystem::ShapeModule get_shape() const property;
+	ParticleSystem::ColorOverLifetimeModule get_colorOverLifetime() const property;
+	ParticleSystem::SizeOverLifetimeModule get_sizeOverLifetime() const property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
 class MeshRenderer {
 	Renderer@ opImplCast();
 	const Renderer@ opImplCast() const;
@@ -722,12 +1186,16 @@ class MeshRenderer {
 	void set_material(Material@ value) property;
 	Material@ get_sharedMaterial() const property;
 	void set_sharedMaterial(Material@ value) property;
+	Material@[]@ get_materials() property;
+	void set_materials(Material@[]@ value) property;
+	Material@[]@ get_sharedMaterials() const property;
+	void set_sharedMaterials(Material@[]@ value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
-class Renderer {
-	MeshRenderer@ opCast();
-	const MeshRenderer@ opCast() const;
+class SkinnedMeshRenderer {
+	Renderer@ opImplCast();
+	const Renderer@ opImplCast() const;
 	Behavior@ opImplCast();
 	const Behavior@ opImplCast() const;
 	Component@ opImplCast();
@@ -749,6 +1217,133 @@ class Renderer {
 	void set_material(Material@ value) property;
 	Material@ get_sharedMaterial() const property;
 	void set_sharedMaterial(Material@ value) property;
+	Material@[]@ get_materials() property;
+	void set_materials(Material@[]@ value) property;
+	Material@[]@ get_sharedMaterials() const property;
+	void set_sharedMaterials(Material@[]@ value) property;
+	Mesh@ get_sharedMesh() const property;
+	void set_sharedMesh(Mesh@ value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class LineRenderer {
+	Renderer@ opImplCast();
+	const Renderer@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Material@ get_material() property;
+	void set_material(Material@ value) property;
+	Material@ get_sharedMaterial() const property;
+	void set_sharedMaterial(Material@ value) property;
+	Material@[]@ get_materials() property;
+	void set_materials(Material@[]@ value) property;
+	Material@[]@ get_sharedMaterials() const property;
+	void set_sharedMaterials(Material@[]@ value) property;
+	int get_positionCount() const property;
+	void set_positionCount(int value) property;
+	Vector3 GetPosition(int index) const;
+	void SetPosition(int index, const Vector3&in position);
+	void SetPositions(Vector3[]@ positions);
+	int GetPositions(Vector3[]@ positions) const;
+	float get_startWidth() const property;
+	void set_startWidth(float value) property;
+	float get_endWidth() const property;
+	void set_endWidth(float value) property;
+	float get_widthMultiplier() const property;
+	void set_widthMultiplier(float value) property;
+	Color get_startColor() const property;
+	void set_startColor(const Color&in value) property;
+	Color get_endColor() const property;
+	void set_endColor(const Color&in value) property;
+	bool get_useWorldSpace() const property;
+	void set_useWorldSpace(bool value) property;
+	bool get_loop() const property;
+	void set_loop(bool value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class ParticleSystemRenderer {
+	Renderer@ opImplCast();
+	const Renderer@ opImplCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Material@ get_material() property;
+	void set_material(Material@ value) property;
+	Material@ get_sharedMaterial() const property;
+	void set_sharedMaterial(Material@ value) property;
+	Material@[]@ get_materials() property;
+	void set_materials(Material@[]@ value) property;
+	Material@[]@ get_sharedMaterials() const property;
+	void set_sharedMaterials(Material@[]@ value) property;
+	ParticleSystemSortMode get_sortMode() const property;
+	void set_sortMode(ParticleSystemSortMode value) property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Renderer {
+	MeshRenderer@ opCast();
+	const MeshRenderer@ opCast() const;
+	SkinnedMeshRenderer@ opCast();
+	const SkinnedMeshRenderer@ opCast() const;
+	LineRenderer@ opCast();
+	const LineRenderer@ opCast() const;
+	ParticleSystemRenderer@ opCast();
+	const ParticleSystemRenderer@ opCast() const;
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	Material@ get_material() property;
+	void set_material(Material@ value) property;
+	Material@ get_sharedMaterial() const property;
+	void set_sharedMaterial(Material@ value) property;
+	Material@[]@ get_materials() property;
+	void set_materials(Material@[]@ value) property;
+	Material@[]@ get_sharedMaterials() const property;
+	void set_sharedMaterials(Material@[]@ value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -777,12 +1372,30 @@ class Text {
 	bool get_raycastTarget() const property;
 	void set_raycastTarget(bool value) property;
 	void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+	Material@ get_material() const property;
+	void set_material(Material@ value) property;
+	CanvasRenderer@ get_canvasRenderer() const property;
+	void SetAllDirty();
+	void SetVerticesDirty();
+	void SetMaterialDirty();
 	string get_text() const property;
 	void set_text(const string&in value) property;
+	FontAsset@ get_font() const property;
+	void set_font(FontAsset@ value) property;
 	float get_fontSize() const property;
 	void set_fontSize(float value) property;
+	TextAlignmentOptions get_alignment() const property;
+	void set_alignment(TextAlignmentOptions value) property;
+	bool get_enableWordWrapping() const property;
+	void set_enableWordWrapping(bool value) property;
 	float get_lineSpacing() const property;
 	void set_lineSpacing(float value) property;
+	float get_characterSpacing() const property;
+	void set_characterSpacing(float value) property;
+	Color get_outlineColor() const property;
+	void set_outlineColor(const Color&in value) property;
+	float get_outlineWidth() const property;
+	void set_outlineWidth(float value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -811,6 +1424,15 @@ class Image {
 	bool get_raycastTarget() const property;
 	void set_raycastTarget(bool value) property;
 	void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+	Material@ get_material() const property;
+	void set_material(Material@ value) property;
+	CanvasRenderer@ get_canvasRenderer() const property;
+	void SetAllDirty();
+	void SetVerticesDirty();
+	void SetMaterialDirty();
+	Sprite@ get_sprite() const property;
+	void set_sprite(Sprite@ value) property;
+	void SetNativeSize();
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -841,6 +1463,12 @@ class Graphic {
 	bool get_raycastTarget() const property;
 	void set_raycastTarget(bool value) property;
 	void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha);
+	Material@ get_material() const property;
+	void set_material(Material@ value) property;
+	CanvasRenderer@ get_canvasRenderer() const property;
+	void SetAllDirty();
+	void SetVerticesDirty();
+	void SetMaterialDirty();
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -861,8 +1489,21 @@ class Button {
 	string get_tag() const property;
 	void set_tag(const string&in value) property;
 	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
 	bool get_interactable() const property;
 	void set_interactable(bool value) property;
+	Graphic@ get_targetGraphic() const property;
+	void set_targetGraphic(Graphic@ value) property;
+	ColorBlock get_colors() const property;
+	void set_colors(const ColorBlock&in value) property;
+	Selectable@ FindSelectable(const Vector3&in dir) const;
+	Selectable@ FindSelectableOnLeft() const;
+	Selectable@ FindSelectableOnRight() const;
+	Selectable@ FindSelectableOnUp() const;
+	Selectable@ FindSelectableOnDown() const;
+	void Select();
 	UnityEvent@ get_onClick() const property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
@@ -884,8 +1525,68 @@ class Selectable {
 	string get_tag() const property;
 	void set_tag(const string&in value) property;
 	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
 	bool get_interactable() const property;
 	void set_interactable(bool value) property;
+	Graphic@ get_targetGraphic() const property;
+	void set_targetGraphic(Graphic@ value) property;
+	ColorBlock get_colors() const property;
+	void set_colors(const ColorBlock&in value) property;
+	Selectable@ FindSelectable(const Vector3&in dir) const;
+	Selectable@ FindSelectableOnLeft() const;
+	Selectable@ FindSelectableOnRight() const;
+	Selectable@ FindSelectableOnUp() const;
+	Selectable@ FindSelectableOnDown() const;
+	void Select();
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class Canvas {
+	Behavior@ opImplCast();
+	const Behavior@ opImplCast() const;
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	bool get_enabled() const property;
+	void set_enabled(bool value) property;
+	bool get_isActiveAndEnabled() const property;
+	bool TryGetComponent(?&out component) const;
+	T@ GetComponent<T>() const;
+}
+class CanvasRenderer {
+	Component@ opImplCast();
+	const Component@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	string get_tag() const property;
+	void set_tag(const string&in value) property;
+	bool CompareTag(const string&in tag) const;
+	Color GetColor() const;
+	void SetColor(const Color&in color);
+	float GetAlpha() const;
+	void SetAlpha(float alpha);
+	void Clear();
+	int get_materialCount() const property;
+	void set_materialCount(int value) property;
+	void SetMaterial(Material@ material, int index);
+	Material@ GetMaterial(int index = 0) const;
+	void SetTexture(Texture2D@ texture);
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -900,8 +1601,20 @@ class Behavior {
 	const CapsuleCollider@ opCast() const;
 	Collider@ opCast();
 	const Collider@ opCast() const;
+	Camera@ opCast();
+	const Camera@ opCast() const;
+	Light@ opCast();
+	const Light@ opCast() const;
+	SkeletalAnimator@ opCast();
+	const SkeletalAnimator@ opCast() const;
 	MeshRenderer@ opCast();
 	const MeshRenderer@ opCast() const;
+	SkinnedMeshRenderer@ opCast();
+	const SkinnedMeshRenderer@ opCast() const;
+	LineRenderer@ opCast();
+	const LineRenderer@ opCast() const;
+	ParticleSystemRenderer@ opCast();
+	const ParticleSystemRenderer@ opCast() const;
 	Renderer@ opCast();
 	const Renderer@ opCast() const;
 	Text@ opCast();
@@ -914,6 +1627,8 @@ class Behavior {
 	const Button@ opCast() const;
 	Selectable@ opCast();
 	const Selectable@ opCast() const;
+	Canvas@ opCast();
+	const Canvas@ opCast() const;
 	Component@ opImplCast();
 	const Component@ opImplCast() const;
 	Object@ opImplCast();
@@ -933,6 +1648,8 @@ class Behavior {
 	T@ GetComponent<T>() const;
 }
 class Component {
+	RectTransform@ opCast();
+	const RectTransform@ opCast() const;
 	Transform@ opCast();
 	const Transform@ opCast() const;
 	CharacterController@ opCast();
@@ -949,8 +1666,24 @@ class Component {
 	const Rigidbody@ opCast() const;
 	AudioSource@ opCast();
 	const AudioSource@ opCast() const;
+	AudioListener@ opCast();
+	const AudioListener@ opCast() const;
+	Camera@ opCast();
+	const Camera@ opCast() const;
+	Light@ opCast();
+	const Light@ opCast() const;
+	SkeletalAnimator@ opCast();
+	const SkeletalAnimator@ opCast() const;
+	ParticleSystem@ opCast();
+	const ParticleSystem@ opCast() const;
 	MeshRenderer@ opCast();
 	const MeshRenderer@ opCast() const;
+	SkinnedMeshRenderer@ opCast();
+	const SkinnedMeshRenderer@ opCast() const;
+	LineRenderer@ opCast();
+	const LineRenderer@ opCast() const;
+	ParticleSystemRenderer@ opCast();
+	const ParticleSystemRenderer@ opCast() const;
 	Renderer@ opCast();
 	const Renderer@ opCast() const;
 	Text@ opCast();
@@ -963,6 +1696,10 @@ class Component {
 	const Button@ opCast() const;
 	Selectable@ opCast();
 	const Selectable@ opCast() const;
+	Canvas@ opCast();
+	const Canvas@ opCast() const;
+	CanvasRenderer@ opCast();
+	const CanvasRenderer@ opCast() const;
 	Behavior@ opCast();
 	const Behavior@ opCast() const;
 	Object@ opImplCast();
@@ -979,11 +1716,21 @@ class Component {
 	T@ GetComponent<T>() const;
 }
 class Material {
+	Material(Shader@ shader);
+	Material(Material@ source);
 	Object@ opImplCast();
 	const Object@ opImplCast() const;
 	string get_name() const property;
 	void set_name(const string&in value) property;
 	int GetInstanceID() const;
+	Shader@ get_shader() const property;
+	void set_shader(Shader@ value) property;
+	int get_renderQueue() const property;
+	void set_renderQueue(int value) property;
+	Texture2D@ get_mainTexture() const property;
+	void set_mainTexture(Texture2D@ value) property;
+	Vector4 GetVector(const string&in name) const;
+	void SetVector(const string&in name, const Vector4&in value);
 	Color get_color() const property;
 	void set_color(const Color&in value) property;
 	Vector2 get_mainTextureOffset() const property;
@@ -1016,9 +1763,82 @@ class Texture2D {
 	int get_height() const property;
 	bool get_isReadable() const property;
 }
+class Sprite {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	Texture2D@ get_texture() const property;
+	Rect get_rect() const property;
+	Vector2 get_pivot() const property;
+}
+class FontAsset {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+}
+class Mesh {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	Bounds get_bounds() const property;
+	int get_vertexCount() const property;
+	int get_subMeshCount() const property;
+}
+class Shader {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	int get_renderQueue() const property;
+	int get_passCount() const property;
+	int FindPropertyIndex(const string&in propertyName) const;
+}
+class PhysicsMaterial {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	float get_dynamicFriction() const property;
+	void set_dynamicFriction(float value) property;
+	float get_staticFriction() const property;
+	void set_staticFriction(float value) property;
+	float get_bounciness() const property;
+	void set_bounciness(float value) property;
+	PhysicsMaterialCombine get_frictionCombine() const property;
+	void set_frictionCombine(PhysicsMaterialCombine value) property;
+	PhysicsMaterialCombine get_bounceCombine() const property;
+	void set_bounceCombine(PhysicsMaterialCombine value) property;
+}
+class SkeletalAnimationClip {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	float get_length() const property;
+	WrapMode get_wrapMode() const property;
+	void set_wrapMode(WrapMode value) property;
+}
+class VolumeProfile {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+}
 class Object {
 	GameObject@ opCast();
 	const GameObject@ opCast() const;
+	RectTransform@ opCast();
+	const RectTransform@ opCast() const;
 	Transform@ opCast();
 	const Transform@ opCast() const;
 	CharacterController@ opCast();
@@ -1035,8 +1855,24 @@ class Object {
 	const Rigidbody@ opCast() const;
 	AudioSource@ opCast();
 	const AudioSource@ opCast() const;
+	AudioListener@ opCast();
+	const AudioListener@ opCast() const;
+	Camera@ opCast();
+	const Camera@ opCast() const;
+	Light@ opCast();
+	const Light@ opCast() const;
+	SkeletalAnimator@ opCast();
+	const SkeletalAnimator@ opCast() const;
+	ParticleSystem@ opCast();
+	const ParticleSystem@ opCast() const;
 	MeshRenderer@ opCast();
 	const MeshRenderer@ opCast() const;
+	SkinnedMeshRenderer@ opCast();
+	const SkinnedMeshRenderer@ opCast() const;
+	LineRenderer@ opCast();
+	const LineRenderer@ opCast() const;
+	ParticleSystemRenderer@ opCast();
+	const ParticleSystemRenderer@ opCast() const;
 	Renderer@ opCast();
 	const Renderer@ opCast() const;
 	Text@ opCast();
@@ -1049,6 +1885,10 @@ class Object {
 	const Button@ opCast() const;
 	Selectable@ opCast();
 	const Selectable@ opCast() const;
+	Canvas@ opCast();
+	const Canvas@ opCast() const;
+	CanvasRenderer@ opCast();
+	const CanvasRenderer@ opCast() const;
 	Behavior@ opCast();
 	const Behavior@ opCast() const;
 	Component@ opCast();
@@ -1059,6 +1899,20 @@ class Object {
 	const AudioClip@ opCast() const;
 	Texture2D@ opCast();
 	const Texture2D@ opCast() const;
+	Sprite@ opCast();
+	const Sprite@ opCast() const;
+	FontAsset@ opCast();
+	const FontAsset@ opCast() const;
+	Mesh@ opCast();
+	const Mesh@ opCast() const;
+	Shader@ opCast();
+	const Shader@ opCast() const;
+	PhysicsMaterial@ opCast();
+	const PhysicsMaterial@ opCast() const;
+	SkeletalAnimationClip@ opCast();
+	const SkeletalAnimationClip@ opCast() const;
+	VolumeProfile@ opCast();
+	const VolumeProfile@ opCast() const;
 	string get_name() const property;
 	void set_name(const string&in value) property;
 	int GetInstanceID() const;
@@ -1094,6 +1948,18 @@ class Collision {
 	int get_contactCount() const property;
 	ContactPoint GetContact(int index) const;
 }
+class ControllerColliderHit {
+	ControllerColliderHit();
+	CharacterController@ get_controller() const property;
+	Collider@ get_collider() const property;
+	Rigidbody@ get_rigidbody() const property;
+	GameObject@ get_gameObject() const property;
+	Transform@ get_transform() const property;
+	Vector3 point;
+	Vector3 normal;
+	Vector3 moveDirection;
+	float moveLength;
+}
 class Scene {
 	~Scene();
 	Scene();
@@ -1104,6 +1970,19 @@ class Scene {
 	string get_path() const property;
 	int get_buildIndex() const property;
 	bool IsValid() const;
+	bool get_isLoaded() const property;
+	int get_rootCount() const property;
+	GameObject@[]@ GetRootGameObjects() const;
+}
+class ColorBlock {
+	ColorBlock();
+	Color normalColor;
+	Color highlightedColor;
+	Color pressedColor;
+	Color selectedColor;
+	Color disabledColor;
+	float colorMultiplier;
+	float fadeDuration;
 }
 class UnityEvent {
 	void AddListener(UnityAction@ call);
@@ -1112,6 +1991,91 @@ class UnityEvent {
 	void Invoke();
 	int GetPersistentEventCount() const;
 	string GetPersistentMethodName(int index) const;
+}
+namespace ParticleSystem {
+class MainModule {
+	MainModule();
+	float get_duration() const property;
+	void set_duration(const float&in value) const property;
+	bool get_loop() const property;
+	void set_loop(const bool&in value) const property;
+	bool get_playOnAwake() const property;
+	void set_playOnAwake(const bool&in value) const property;
+	ParticleSystem::MinMaxCurve get_startLifetime() const property;
+	void set_startLifetime(const ParticleSystem::MinMaxCurve&in value) const property;
+	ParticleSystem::MinMaxCurve get_startSpeed() const property;
+	void set_startSpeed(const ParticleSystem::MinMaxCurve&in value) const property;
+	ParticleSystem::MinMaxCurve get_startSize() const property;
+	void set_startSize(const ParticleSystem::MinMaxCurve&in value) const property;
+	ParticleSystem::MinMaxGradient get_startColor() const property;
+	void set_startColor(const ParticleSystem::MinMaxGradient&in value) const property;
+	float get_gravityModifier() const property;
+	void set_gravityModifier(const float&in value) const property;
+	int get_maxParticles() const property;
+	void set_maxParticles(int value) const property;
+	ParticleSystemSimulationSpace get_simulationSpace() const property;
+	void set_simulationSpace(ParticleSystemSimulationSpace value) const property;
+}
+}
+namespace ParticleSystem {
+class EmissionModule {
+	EmissionModule();
+	bool get_enabled() const property;
+	void set_enabled(const bool&in value) const property;
+	float get_rateOverTime() const property;
+	void set_rateOverTime(const float&in value) const property;
+}
+}
+namespace ParticleSystem {
+class ShapeModule {
+	ShapeModule();
+	bool get_enabled() const property;
+	void set_enabled(const bool&in value) const property;
+	ParticleSystemShapeType get_shapeType() const property;
+	void set_shapeType(ParticleSystemShapeType value) const property;
+	float get_angle() const property;
+	void set_angle(const float&in value) const property;
+	float get_radius() const property;
+	void set_radius(const float&in value) const property;
+	float get_radiusThickness() const property;
+	void set_radiusThickness(const float&in value) const property;
+}
+}
+namespace ParticleSystem {
+class ColorOverLifetimeModule {
+	ColorOverLifetimeModule();
+	bool get_enabled() const property;
+	void set_enabled(const bool&in value) const property;
+}
+}
+namespace ParticleSystem {
+class SizeOverLifetimeModule {
+	SizeOverLifetimeModule();
+	bool get_enabled() const property;
+	void set_enabled(const bool&in value) const property;
+}
+}
+namespace ParticleSystem {
+class MinMaxCurve {
+	MinMaxCurve();
+	MinMaxCurve(float constant);
+	MinMaxCurve(float min, float max);
+	float get_constant() const property;
+	void set_constant(float value) property;
+	float constantMin;
+	float constantMax;
+}
+}
+namespace ParticleSystem {
+class MinMaxGradient {
+	MinMaxGradient();
+	MinMaxGradient(const Color&in color);
+	MinMaxGradient(const Color&in min, const Color&in max);
+	Color get_color() const property;
+	void set_color(const Color&in value) property;
+	Color colorMin;
+	Color colorMax;
+}
 }
 uint scan(const string&in str, ?&out...);
 string format(const string&in fmt, const ?&in...);
@@ -1151,9 +2115,31 @@ namespace Quaternion { Quaternion Lerp(const Quaternion&in a, const Quaternion&i
 namespace Quaternion { Quaternion Slerp(const Quaternion&in a, const Quaternion&in b, float t); }
 namespace Quaternion { Quaternion FromToRotation(const Vector3&in fromDirection, const Vector3&in toDirection); }
 namespace Quaternion { Quaternion LookRotation(const Vector3&in forward, const Vector3&in upwards = Vector3::up); }
+namespace Quaternion { Quaternion LerpUnclamped(const Quaternion&in a, const Quaternion&in b, float t); }
+namespace Quaternion { Quaternion SlerpUnclamped(const Quaternion&in a, const Quaternion&in b, float t); }
+namespace Quaternion { Quaternion Normalize(const Quaternion&in q); }
 namespace Color { Color Lerp(const Color&in a, const Color&in b, float t); }
 namespace Color { Color LerpUnclamped(const Color&in a, const Color&in b, float t); }
 namespace Color { Color HSVToRGB(float h, float s, float v); }
+namespace Color { void RGBToHSV(const Color&in rgbColor, float&out H, float&out S, float&out V); }
+namespace Vector4 { float Dot(const Vector4&in a, const Vector4&in b); }
+namespace Vector4 { float Distance(const Vector4&in a, const Vector4&in b); }
+namespace Vector4 { Vector4 Lerp(const Vector4&in a, const Vector4&in b, float t); }
+namespace Vector4 { Vector4 LerpUnclamped(const Vector4&in a, const Vector4&in b, float t); }
+namespace Vector4 { Vector4 MoveTowards(const Vector4&in current, const Vector4&in target, float maxDistanceDelta); }
+namespace Vector4 { Vector4 Normalize(const Vector4&in a); }
+namespace Vector4 { Vector4 Scale(const Vector4&in a, const Vector4&in b); }
+namespace Vector4 { Vector4 Min(const Vector4&in lhs, const Vector4&in rhs); }
+namespace Vector4 { Vector4 Max(const Vector4&in lhs, const Vector4&in rhs); }
+namespace Matrix4x4 { Matrix4x4 TRS(const Vector3&in pos, const Quaternion&in q, const Vector3&in s); }
+namespace Matrix4x4 { Matrix4x4 Translate(const Vector3&in vector); }
+namespace Matrix4x4 { Matrix4x4 Scale(const Vector3&in vector); }
+namespace Matrix4x4 { Matrix4x4 Rotate(const Quaternion&in q); }
+namespace Matrix4x4 { Matrix4x4 Inverse(const Matrix4x4&in m); }
+namespace Matrix4x4 { Matrix4x4 Transpose(const Matrix4x4&in m); }
+namespace Rect { Rect MinMaxRect(float xmin, float ymin, float xmax, float ymax); }
+namespace Rect { Vector2 NormalizedToPoint(const Rect&in rectangle, const Vector2&in normalizedRectCoordinates); }
+namespace Rect { Vector2 PointToNormalized(const Rect&in rectangle, const Vector2&in point); }
 namespace Object { void Destroy(Object@ obj); }
 namespace Object { void DontDestroyOnLoad(Object@ target); }
 namespace Object { GameObject@ Instantiate(GameObject@ original); }
@@ -1161,8 +2147,32 @@ namespace Object { GameObject@ Instantiate(GameObject@ original, Transform@ pare
 namespace Object { GameObject@ Instantiate(GameObject@ original, const Vector3&in position, const Quaternion&in rotation, Transform@ parent = null); }
 namespace Physics { Vector3 get_gravity() property; }
 namespace Physics { void set_gravity(const Vector3&in value) property; }
-namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
-namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers); }
+namespace Physics { bool get_queriesHitTriggers() property; }
+namespace Physics { void set_queriesHitTriggers(bool value) property; }
+namespace Physics { void IgnoreLayerCollision(int layer1, int layer2, bool ignore = true); }
+namespace Physics { bool GetIgnoreLayerCollision(int layer1, int layer2); }
+namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool Raycast(const Vector3&in origin, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { RaycastHit[]@ RaycastAll(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { Collider@[]@ OverlapBox(const Vector3&in center, const Vector3&in halfExtents, const Quaternion&in orientation = Quaternion::identity, int layerMask = Physics::AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { Collider@[]@ OverlapSphere(const Vector3&in position, float radius, int layerMask = Physics::AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { Collider@[]@ OverlapCapsule(const Vector3&in point0, const Vector3&in point1, float radius, int layerMask = Physics::AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool BoxCast(const Vector3&in center, const Vector3&in halfExtents, const Vector3&in direction, const Quaternion&in orientation = Quaternion::identity, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool BoxCast(const Vector3&in center, const Vector3&in halfExtents, const Vector3&in direction, RaycastHit&out hitInfo, const Quaternion&in orientation = Quaternion::identity, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { RaycastHit[]@ BoxCastAll(const Vector3&in center, const Vector3&in halfExtents, const Vector3&in direction, const Quaternion&in orientation = Quaternion::identity, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool SphereCast(const Vector3&in origin, float radius, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { RaycastHit[]@ SphereCastAll(const Vector3&in origin, float radius, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool CapsuleCast(const Vector3&in point1, const Vector3&in point2, float radius, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool CapsuleCast(const Vector3&in point1, const Vector3&in point2, float radius, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { RaycastHit[]@ CapsuleCastAll(const Vector3&in point1, const Vector3&in point2, float radius, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool CheckBox(const Vector3&in center, const Vector3&in halfExtents, const Quaternion&in orientation = Quaternion::identity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool CheckSphere(const Vector3&in position, float radius, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace Physics { bool CheckCapsule(const Vector3&in start, const Vector3&in end, float radius, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal); }
+namespace AudioListener { float get_volume() property; }
+namespace AudioListener { void set_volume(float value) property; }
+namespace Sprite { Sprite@ Create(Texture2D@ texture, const Rect&in rect, const Vector2&in pivot = Vector2(0.5f, 0.5f)); }
+namespace Selectable { Selectable@[]@ get_allSelectablesArray() property; }
+namespace Camera { Camera@ get_main() property; }
 namespace GameObject { GameObject@ Find(const string&in name); }
 namespace GameObject { GameObject@ FindWithTag(const string&in tag); }
 namespace GameObject { GameObject@ FindGameObjectWithTag(const string&in tag); }
@@ -1171,6 +2181,7 @@ namespace SceneManager { void LoadScene(const string&in sceneName); }
 namespace SceneManager { void LoadScene(int sceneBuildIndex); }
 namespace SceneManager { Scene GetActiveScene(); }
 namespace SceneManager { int get_sceneCountInBuildSettings() property; }
+namespace SceneManager { void MoveGameObjectToScene(GameObject@ go, const Scene&in scene); }
 namespace Debug { void Log(const string&in message); }
 namespace Debug { void LogWarning(const string&in message); }
 namespace Debug { void LogError(const string&in message); }
@@ -1222,6 +2233,12 @@ namespace Time { float get_timeScale() property; }
 namespace Time { void set_timeScale(float value) property; }
 namespace Time { float get_fixedDeltaTime() property; }
 namespace Time { void set_fixedDeltaTime(float value) property; }
+namespace Time { float get_maximumDeltaTime() property; }
+namespace Time { void set_maximumDeltaTime(float value) property; }
+namespace Time { float get_fixedTime() property; }
+namespace Time { double get_timeAsDouble() property; }
+namespace Time { double get_fixedTimeAsDouble() property; }
+namespace Time { bool get_inFixedTimeStep() property; }
 namespace Input { bool GetKey(KeyCode key); }
 namespace Input { bool GetKeyDown(KeyCode key); }
 namespace Input { bool GetKeyUp(KeyCode key); }
@@ -1255,6 +2272,13 @@ namespace Gizmos { void DrawWireSphere(const Vector3&in center, float radius); }
 namespace Gizmos { void DrawFrustum(const Vector3&in center, float fov, float maxRange, float minRange, float aspect); }
 namespace Gizmos { void DrawIcon(const Vector3&in center, const string&in name, bool allowScaling = true); }
 namespace Gizmos { void DrawIcon(const Vector3&in center, const string&in name, bool allowScaling, const Color&in tint); }
+namespace LayerMask { int NameToLayer(const string&in layerName); }
+namespace LayerMask { string LayerToName(int layer); }
+namespace LayerMask { int GetMask(const string[]&in layerNames); }
+namespace LayerMask { int GetMask(const string&in layerName); }
+namespace LayerMask { int GetMask(const string&in layerName1, const string&in layerName2); }
+namespace LayerMask { int GetMask(const string&in layerName1, const string&in layerName2, const string&in layerName3); }
+namespace LayerMask { int GetMask(const string&in layerName1, const string&in layerName2, const string&in layerName3, const string&in layerName4); }
 namespace Vector2 { const Vector2 zero; }
 namespace Vector2 { const Vector2 one; }
 namespace Vector2 { const Vector2 up; }
@@ -1280,6 +2304,13 @@ namespace Color { const Color yellow; }
 namespace Color { const Color cyan; }
 namespace Color { const Color magenta; }
 namespace Color { const Color gray; }
+namespace Vector4 { const Vector4 zero; }
+namespace Vector4 { const Vector4 one; }
+namespace Vector4 { const Vector4 positiveInfinity; }
+namespace Vector4 { const Vector4 negativeInfinity; }
+namespace Matrix4x4 { const Matrix4x4 identity; }
+namespace Matrix4x4 { const Matrix4x4 zero; }
+namespace Rect { const Rect zero; }
 namespace Physics { const int DefaultRaycastLayers; }
 namespace Physics { const int AllLayers; }
 namespace Mathf { const float PI; }

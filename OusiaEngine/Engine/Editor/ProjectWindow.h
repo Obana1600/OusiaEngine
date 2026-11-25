@@ -20,6 +20,7 @@ private: // インナークラス
 		Shader,
 		Material,
 		PhysicsMaterial,
+		VolumeProfile,
 	};
 
 

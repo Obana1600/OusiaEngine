@@ -14,6 +14,7 @@
 #include "Physics/Physics.h"
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
+#include "PostProcess/PostProcessPass.h"
 #include "Render/Asset/Material.h"
 #include "Render/LineRenderer.h"
 #include "Scene/LayerMask.h"
@@ -41,8 +42,14 @@
 
 #include <magic_enum/magic_enum.hpp>
 #include <thread>
+#ifdef WITH_EDITOR
+#include <shellapi.h>
+#endif
 
 #pragma comment(lib, "winmm.lib")
+#ifdef WITH_EDITOR
+#pragma comment(lib, "Shell32.lib")
+#endif
 
 
 using namespace ou;
@@ -63,6 +70,24 @@ struct BlitConstants {
 };
 
 #ifdef WITH_EDITOR
+// 起動引数の -projectPath <フォルダ>（Unity と同じ）。ビルド時の PROJECT_DIR 以外のプロジェクト（Samples/ など）を開く。
+// WinMain の lpCmdLine は ANSI なので、日本語のパスでも壊れない GetCommandLineW から読む
+std::optional<std::filesystem::path> FindProjectPathArgument() {
+	int argc = 0;
+	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	if (!argv) { return std::nullopt; }
+
+	std::optional<std::filesystem::path> path;
+	for (int i = 1; i + 1 < argc; i++) {
+		if (_wcsicmp(argv[i], L"-projectPath") == 0) {
+			path = std::filesystem::absolute(argv[i + 1]);
+			break;
+		}
+	}
+	LocalFree(argv);
+	return path;
+}
+
 // エディタのウィンドウの状態を覚える EditorPrefs のキー（PC ごと。Unity も閉じたときの状態に戻す）
 constexpr const char *kEditorWindowModeKey = "EditorWindow.Mode";
 constexpr const char *kEditorWindowRectKeys[] = {"EditorWindow.Left", "EditorWindow.Top", "EditorWindow.Right", "EditorWindow.Bottom"};
@@ -117,7 +142,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// プロジェクトのフォルダ
 #ifdef WITH_EDITOR
 	const auto distributedProject = ExecutableDirectory().parent_path();
-	if (std::filesystem::is_directory(distributedProject / L"Assets")) {
+	if (const auto projectPath = FindProjectPathArgument()) {
+		SetProjectDirectory(*projectPath);
+	} else if (std::filesystem::is_directory(distributedProject / L"Assets")) {
 		SetProjectDirectory(distributedProject);
 	} else {
 		SetProjectDirectory(std::filesystem::path(Utf8ToWide(desc.projectDir)));
@@ -204,7 +231,6 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	if (!blitVs_ || !blitPs_) {
 		FatalError("Blit のシェーダの作成に失敗しました");
 	}
-
 	Graphics::PipelineStateDesc blitPsoDesc{};
 	blitPsoDesc.vs = &blitVs_->GetGraphicsShader();
 	blitPsoDesc.ps = &blitPs_->GetGraphicsShader();
@@ -228,6 +254,8 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 #ifdef WITH_EDITOR
 	GizmoRenderer::StaticInitialize();
 #endif
+
+	PostProcessPass::StaticInitialize();
 
 	// 入力
 	if (!Input::Initialize(window_.get())) {
@@ -264,6 +292,8 @@ void ou::Engine::Finalize() {
 	Text::StaticFinalize();
 	ParticleSystemRenderer::StaticFinalize();
 	LineRenderer::StaticFinalize();
+
+	PostProcessPass::StaticFinalize();
 
 	Audio::Finalize();
 
@@ -314,7 +344,11 @@ void ou::Engine::OpenFirstScene() {
 		Log::Error("Build Settings にシーンがありません (ProjectSettings/EditorBuildSettings.json)");
 		return;
 	}
+	ScriptEngine::InvokeBeforeSceneLoadMethods();
 	SceneManager::LoadScene(0);
+	// AfterSceneLoad は最初のシーンの Awake のあとに呼ぶので、次のフレームを待たずにここで読み込む
+	SceneManager::LoadPendingScene();
+	ScriptEngine::InvokeAfterSceneLoadMethods();
 #endif
 }
 
@@ -415,6 +449,8 @@ void ou::Engine::RenderGame(const SceneRenderTarget &target, Graphics::CommandLi
 	SceneManager::Render(cmd);
 	device_->RenderPassEnd(cmd);
 
+	PostProcessPass::Render(target, cmd);
+
 	target.BeginOverlayPass(cmd);
 	SceneManager::RenderOverlay(cmd);
 	device_->RenderPassEnd(cmd);
@@ -427,7 +463,11 @@ void ou::Engine::RenderSceneView(const SceneView &sceneView, Graphics::CommandLi
 	target.BeginScenePass(cmd);
 	const auto camera = sceneView.MakePerCamera();
 	SceneManager::RenderWithCamera(camera, cmd);
-	// 深度が残っているうちに、Gizmo の線を描く（物の裏は薄くなる）
+	device_->RenderPassEnd(cmd);
+
+	PostProcessPass::Render(target, cmd);
+
+	target.BeginOverlayPassWithDepth(cmd);
 	GizmoRenderer::Render(camera, cmd);
 	device_->RenderPassEnd(cmd);
 #else

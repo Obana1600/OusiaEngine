@@ -9,6 +9,7 @@
 #include "Script/ScriptBindings.h"
 #include "Serialize/Serializer.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -38,6 +39,14 @@ std::optional<std::string> ReadText(const std::filesystem::path &path) {
 
 	if (text.starts_with("\xEF\xBB\xBF")) { text.erase(0, 3); }
 	return text;
+}
+
+std::string RemoveSpaces(std::string_view text) {
+	std::string result;
+	for (const auto c : text) {
+		if (c != ' ' && c != '\t' && c != '\r' && c != '\n') { result += c; }
+	}
+	return result;
 }
 
 } // namespace
@@ -79,6 +88,7 @@ bool ou::ScriptEngine::Compile() {
 	if (!sEngine_) { return false; }
 
 	sModule_ = nullptr;
+	sRuntimeInitializeMethods_.clear();
 	sScriptTimes_ = FindScriptFiles();
 
 	CScriptBuilder builder;
@@ -116,8 +126,91 @@ bool ou::ScriptEngine::Compile() {
 		}
 	}
 
+	CollectRuntimeInitializeMethods(builder);
+
 	Log::Info("スクリプトをコンパイルしました ({} ファイル)", guids.size());
 	return true;
+}
+
+
+void ou::ScriptEngine::ResetGlobalVars() {
+	if (!sModule_) { return; }
+
+	if (sModule_->ResetGlobalVars() < 0) {
+		Log::Error("スクリプトのグローバル変数を初期値に戻せませんでした");
+	}
+}
+
+
+void ou::ScriptEngine::InvokeBeforeSceneLoadMethods() {
+	for (const auto loadType : {RuntimeInitializeLoadType::SubsystemRegistration,
+								RuntimeInitializeLoadType::AfterAssembliesLoaded,
+								RuntimeInitializeLoadType::BeforeSplashScreen,
+								RuntimeInitializeLoadType::BeforeSceneLoad}) {
+		InvokeRuntimeInitializeMethods(loadType);
+	}
+}
+
+
+void ou::ScriptEngine::InvokeAfterSceneLoadMethods() {
+	InvokeRuntimeInitializeMethods(RuntimeInitializeLoadType::AfterSceneLoad);
+}
+
+
+void ou::ScriptEngine::InvokeRuntimeInitializeMethods(RuntimeInitializeLoadType loadType) {
+	for (const auto &method : sRuntimeInitializeMethods_) {
+		if (method.loadType != loadType) { continue; }
+		CallMethodWith(nullptr, method.function, [](asIScriptContext *) {});
+	}
+}
+
+
+void ou::ScriptEngine::CollectRuntimeInitializeMethods(CScriptBuilder &builder) {
+	constexpr std::string_view kAttribute = "RuntimeInitializeOnLoadMethod";
+	constexpr std::string_view kEnumPrefix = "RuntimeInitializeLoadType.";
+	constexpr std::pair<std::string_view, RuntimeInitializeLoadType> kLoadTypes[] = {
+		{"SubsystemRegistration", RuntimeInitializeLoadType::SubsystemRegistration},
+		{"AfterAssembliesLoaded", RuntimeInitializeLoadType::AfterAssembliesLoaded},
+		{"BeforeSplashScreen", RuntimeInitializeLoadType::BeforeSplashScreen},
+		{"BeforeSceneLoad", RuntimeInitializeLoadType::BeforeSceneLoad},
+		{"AfterSceneLoad", RuntimeInitializeLoadType::AfterSceneLoad},
+	};
+
+	for (asUINT i = 0; i < sModule_->GetFunctionCount(); i++) {
+		auto *function = sModule_->GetFunctionByIndex(i);
+
+		for (const auto &metadata : builder.GetMetadataForFunc(function)) {
+			const auto text = RemoveSpaces(metadata);
+			if (!text.starts_with(kAttribute)) { continue; }
+
+			// 引数がなければ、Unity と同じく AfterSceneLoad
+			std::string_view argument = std::string_view(text).substr(kAttribute.size());
+			if (argument.empty() || argument == "()") {
+				argument = "AfterSceneLoad";
+			} else if (argument.starts_with('(') && argument.ends_with(')')) {
+				argument = argument.substr(1, argument.size() - 2);
+				if (argument.starts_with(kEnumPrefix)) { argument.remove_prefix(kEnumPrefix.size()); }
+			} else {
+				continue; // RuntimeInitializeOnLoadMethodXxx のような別の名前
+			}
+
+			const char *section = nullptr;
+			int row = 0;
+			function->GetDeclaredAt(&section, &row, nullptr);
+			const auto *found = std::find_if(std::begin(kLoadTypes), std::end(kLoadTypes), [&](const auto &pair) { return pair.first == argument; });
+			if (found == std::end(kLoadTypes)) {
+				Log::Warning("{}({}): RuntimeInitializeLoadType に {} はありません", section ? section : "", row, argument);
+				continue;
+			}
+			if (function->GetParamCount() != 0 || function->GetReturnTypeId() != asTYPEID_VOID) {
+				Log::Warning("{}({}): [RuntimeInitializeOnLoadMethod] は引数のない void の関数に付けてください: {}",
+							 section ? section : "", row, function->GetDeclaration(true, true));
+				continue;
+			}
+
+			sRuntimeInitializeMethods_.push_back({found->second, function});
+		}
+	}
 }
 
 
@@ -211,6 +304,13 @@ void ou::ScriptEngine::CallCollisionMethod(asIScriptObject *object, asIScriptFun
 	auto *argument = ScriptBindings::CreateCollision(collision);
 	CallMethod(object, method, argument);
 	ScriptBindings::DestroyCollision(argument);
+}
+
+
+void ou::ScriptEngine::CallControllerColliderHitMethod(asIScriptObject *object, asIScriptFunction *method, const ControllerColliderHit &hit) {
+	auto *argument = ScriptBindings::CreateControllerColliderHit(hit);
+	CallMethod(object, method, argument);
+	ScriptBindings::DestroyControllerColliderHit(argument);
 }
 
 

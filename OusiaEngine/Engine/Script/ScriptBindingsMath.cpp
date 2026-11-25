@@ -1,11 +1,17 @@
 #include "ScriptBindings.h"
+#include "Math/Bounds.h"
 #include "Math/Color.h"
 #include "Math/Mathf.h"
+#include "Math/Matrix4x4.h"
 #include "Math/Quaternion.h"
+#include "Math/Rect.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include "Script/ScriptBindingsInternal.h"
 
+#include <cstring>
+#include <format>
 #include <new>
 #include <string>
 
@@ -13,6 +19,7 @@
 
 using namespace ou;
 using ScriptBindingsInternal::Check;
+using ScriptBindingsInternal::ThrowException;
 
 
 namespace {
@@ -141,6 +148,121 @@ Quaternion LookRotation(const Vector3 &forward, const Vector3 &upwards) {
 void ConstructColor3(float r, float g, float b, void *memory) { new (memory) Color(r, g, b, 1.0f); }
 void ConstructColor4(float r, float g, float b, float a, void *memory) { new (memory) Color(r, g, b, a); }
 Color ColorMul(const Color &self, const Color &other) { return self * other; }
+Color ColorGamma(const Color &self) { return self.Gamma(); }
+Color ColorLinear(const Color &self) { return self.Linear(); }
+float ColorGrayscale(const Color &self) { return self.GrayScale().r; }
+float ColorMaxComponent(const Color &self) { return self.MaxColorComponent(); }
+void RGBToHSV(const Color &rgb, float &h, float &s, float &v) { Color::RGBToHSV(rgb, h, s, v); }
+
+
+// ---- Quaternion の残り ----
+
+Quaternion QuaternionNormalizeStatic(const Quaternion &q) { return q.Normalized(); }
+
+void SetFromToRotation(const Vector3 &fromDirection, const Vector3 &toDirection, Quaternion &self) {
+	self.SetFromToRotation(fromDirection, toDirection);
+}
+
+// Unity と同じく度で返す
+void ToAngleAxis(float &angle, Vector3 &axis, const Quaternion &self) {
+	float radians = 0.0f;
+	self.ToAngleAxis(&axis, &radians);
+	angle = radians * Mathf::Rad2Deg;
+}
+
+
+// ---- Vector4 ----
+
+void ConstructVector4(float x, float y, float z, float w, void *memory) { new (memory) Vector4(x, y, z, w); }
+void ConstructVector4XYZ(float x, float y, float z, void *memory) { new (memory) Vector4(x, y, z, 0.0f); }
+void ConstructVector4XY(float x, float y, void *memory) { new (memory) Vector4(x, y, 0.0f, 0.0f); }
+Vector3 Vector4ToVector3(const Vector4 &self) { return self.XYZ(); }
+Vector2 Vector4ToVector2(const Vector4 &self) { return self.XY(); }
+Vector4 Vector3ToVector4(const Vector3 &self) { return {self, 0.0f}; }
+Vector4 ScaleVector4(const Vector4 &a, const Vector4 &b) { return {a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w}; }
+
+
+// ---- Matrix4x4 ----
+// エンジンは行ベクトル（平行移動が 4 行目）、Unity は列ベクトル（平行移動が 4 列目）なので、スクリプトから見ると転置になる
+// 中身はエンジンの並びのまま持ち、Unity の mRC はエンジンの m[C][R] に読み替える。掛け算の順も逆にする
+
+void ConstructMatrix4x4Columns(const Vector4 &column0, const Vector4 &column1, const Vector4 &column2, const Vector4 &column3, void *memory) {
+	// Unity の列はエンジンの行
+	new (memory) Matrix4x4(column0, column1, column2, column3);
+}
+
+bool CheckMatrixIndex(int index) {
+	if (0 <= index && index < 4) { return true; }
+	ThrowException(std::format("IndexOutOfRangeException: Invalid matrix index! ({})", index));
+	return false;
+}
+
+Vector4 GetMatrixColumn(int index, const Matrix4x4 &self) { return CheckMatrixIndex(index) ? self.GetRow(index) : Vector4::Zero; }
+Vector4 GetMatrixRow(int index, const Matrix4x4 &self) { return CheckMatrixIndex(index) ? self.GetColumn(index) : Vector4::Zero; }
+void SetMatrixColumn(int index, const Vector4 &column, Matrix4x4 &self) { if (CheckMatrixIndex(index)) { self.SetRow(index, column); } }
+void SetMatrixRow(int index, const Vector4 &row, Matrix4x4 &self) { if (CheckMatrixIndex(index)) { self.SetColumn(index, row); } }
+
+Matrix4x4 MatrixMul(const Matrix4x4 &self, const Matrix4x4 &other) { return other * self; }
+
+// Unity の M * v（列ベクトル）は、エンジンの並びでは v（行ベクトル）* M
+Vector4 MatrixMulVector4(const Matrix4x4 &self, const Vector4 &v) {
+	Vector4 result;
+	for (int column = 0; column < 4; column++) {
+		result[column] = v.x * self.m[0][column] + v.y * self.m[1][column] + v.z * self.m[2][column] + v.w * self.m[3][column];
+	}
+	return result;
+}
+
+bool MatrixEquals(const Matrix4x4 &self, const Matrix4x4 &other) { return std::memcmp(self.m, other.m, sizeof(self.m)) == 0; }
+std::string MatrixToString(const Matrix4x4 &self) { return self.Transpose().ToString(); } // Unity の並びで出す
+Vector3 MatrixGetPosition(const Matrix4x4 &self) { return self.GetPosition(); }
+Quaternion MatrixRotation(const Matrix4x4 &self) { return self.GetRotation(); }
+Vector3 MatrixLossyScale(const Matrix4x4 &self) { return self.GetLossyScale(); }
+float MatrixDeterminant(const Matrix4x4 &self) { return self.Determinant(); }
+Matrix4x4 MatrixInverse(const Matrix4x4 &self) { return self.Inverse(); }
+Matrix4x4 MatrixTranspose(const Matrix4x4 &self) { return self.Transpose(); }
+bool MatrixIsIdentity(const Matrix4x4 &self) { return self.IsIdentity(); }
+Vector3 MatrixMultiplyPoint(const Matrix4x4 &self, const Vector3 &point) { return self.MultiplyPoint(point); }
+Vector3 MatrixMultiplyPoint3x4(const Matrix4x4 &self, const Vector3 &point) { return self.MultiplyPoint3x4(point); }
+Vector3 MatrixMultiplyVector(const Matrix4x4 &self, const Vector3 &vector) { return self.MultiplyVector(vector); }
+
+Matrix4x4 MatrixTRS(const Vector3 &position, const Quaternion &rotation, const Vector3 &scale) { return Matrix4x4::SRT(scale, rotation, position); }
+Matrix4x4 MatrixTranslate(const Vector3 &vector) { return Matrix4x4::Translate(vector); }
+Matrix4x4 MatrixScale(const Vector3 &vector) { return Matrix4x4::Scale(vector); }
+Matrix4x4 MatrixRotate(const Quaternion &rotation) { return Matrix4x4::Rotate(rotation); }
+Matrix4x4 MatrixInverseStatic(const Matrix4x4 &matrix) { return matrix.Inverse(); }
+Matrix4x4 MatrixTransposeStatic(const Matrix4x4 &matrix) { return matrix.Transpose(); }
+
+
+// ---- Rect ----
+
+void ConstructRect(float x, float y, float width, float height, void *memory) { new (memory) Rect(x, y, width, height); }
+void ConstructRectVectors(const Vector2 &position, const Vector2 &size, void *memory) { new (memory) Rect(position, size); }
+bool RectContains2(const Vector2 &point, const Rect &self) { return self.Contains(point); }
+bool RectContains3(const Vector3 &point, const Rect &self) { return self.Contains({point.x, point.y}); }
+bool RectOverlaps(const Rect &other, const Rect &self) { return self.Overlaps(other); }
+bool RectEquals(const Rect &self, const Rect &other) { return self == other; }
+
+
+// ---- Bounds ----
+
+void ConstructBounds(const Vector3 &center, const Vector3 &size, void *memory) { new (memory) Bounds(center, size); }
+void BoundsSetMinMax(const Vector3 &min, const Vector3 &max, Bounds &self) { self.SetMinMax(min, max); }
+bool BoundsContains(const Vector3 &point, const Bounds &self) { return self.Contains(point); }
+bool BoundsIntersects(const Bounds &bounds, const Bounds &self) { return self.Intersects(bounds); }
+Vector3 BoundsClosestPoint(const Vector3 &point, const Bounds &self) { return self.ClosestPoint(point); }
+float BoundsSqrDistance(const Vector3 &point, const Bounds &self) { return self.SqrDistance(point); }
+void EncapsulatePoint(const Vector3 &point, Bounds &self) { self.Encapsulate(point); }
+void EncapsulateBounds(const Bounds &bounds, Bounds &self) { self.Encapsulate(bounds); }
+
+
+// ---- C++ のメンバ関数をそのまま呼ぶ手伝い（自分が最後の引数。asCALL_CDECL_OBJLAST） ----
+
+template <typename T, typename R, R (T::*Getter)() const>
+std::decay_t<R> ValueGet(const T &self) { return (self.*Getter)(); }
+
+template <typename T, typename V, void (T::*Setter)(V)>
+void ValueSet(V value, T &self) { (self.*Setter)(value); }
 
 
 // ---- 登録の手伝い ----
@@ -224,6 +346,10 @@ void ou::ScriptBindings::RegisterValueTypes(asIScriptEngine *engine) {
 	RegisterValueType<Vector3>(engine, "Vector3");
 	RegisterValueType<Quaternion>(engine, "Quaternion");
 	RegisterValueType<Color>(engine, "Color");
+	RegisterValueType<Vector4>(engine, "Vector4");
+	RegisterValueType<Matrix4x4>(engine, "Matrix4x4");
+	RegisterValueType<Rect>(engine, "Rect");
+	RegisterValueType<Bounds>(engine, "Bounds");
 
 	// ---- Vector2 ----
 	{
@@ -321,6 +447,11 @@ void ou::ScriptBindings::RegisterValueTypes(asIScriptEngine *engine) {
 		q.Static("Quaternion Slerp(const Quaternion &in a, const Quaternion &in b, float t)", asFUNCTION(Quaternion::Slerp));
 		q.Static("Quaternion FromToRotation(const Vector3 &in fromDirection, const Vector3 &in toDirection)", asFUNCTION(Quaternion::FromToRotation));
 		q.Static("Quaternion LookRotation(const Vector3 &in forward, const Vector3 &in upwards = Vector3::up)", asFUNCTION(LookRotation));
+		q.Static("Quaternion LerpUnclamped(const Quaternion &in a, const Quaternion &in b, float t)", asFUNCTION(Quaternion::LerpUnclamped));
+		q.Static("Quaternion SlerpUnclamped(const Quaternion &in a, const Quaternion &in b, float t)", asFUNCTION(Quaternion::SlerpUnclamped));
+		q.Static("Quaternion Normalize(const Quaternion &in q)", asFUNCTION(QuaternionNormalizeStatic));
+		q.MethodObjLast("void SetFromToRotation(const Vector3 &in fromDirection, const Vector3 &in toDirection)", asFUNCTION(SetFromToRotation));
+		q.MethodObjLast("void ToAngleAxis(float &out angle, Vector3 &out axis) const", asFUNCTION(ToAngleAxis));
 	}
 
 	// ---- Color ----
@@ -349,5 +480,154 @@ void ou::ScriptBindings::RegisterValueTypes(asIScriptEngine *engine) {
 		c.Static("Color Lerp(const Color &in a, const Color &in b, float t)", asFUNCTION(Color::Lerp));
 		c.Static("Color LerpUnclamped(const Color &in a, const Color &in b, float t)", asFUNCTION(Color::LerpUnclamped));
 		c.Static("Color HSVToRGB(float h, float s, float v)", asFUNCTION(Color::HSVToRGB));
+		c.Static("void RGBToHSV(const Color &in rgbColor, float &out H, float &out S, float &out V)", asFUNCTION(RGBToHSV));
+		c.Method("Color get_gamma() const property", asFUNCTION(ColorGamma));
+		c.Method("Color get_linear() const property", asFUNCTION(ColorLinear));
+		c.Method("float get_grayscale() const property", asFUNCTION(ColorGrayscale));
+		c.Method("float get_maxColorComponent() const property", asFUNCTION(ColorMaxComponent));
+	}
+
+	// ---- Vector4 ----
+	{
+		const TypeRegistrar v{engine, "Vector4"};
+		v.Constructor("void f()", asFUNCTION(ConstructDefault<Vector4>));
+		v.Constructor("void f(float x, float y, float z, float w)", asFUNCTION(ConstructVector4));
+		v.Constructor("void f(float x, float y, float z)", asFUNCTION(ConstructVector4XYZ));
+		v.Constructor("void f(float x, float y)", asFUNCTION(ConstructVector4XY));
+		v.Property("float x", asOFFSET(Vector4, x));
+		v.Property("float y", asOFFSET(Vector4, y));
+		v.Property("float z", asOFFSET(Vector4, z));
+		v.Property("float w", asOFFSET(Vector4, w));
+		v.Arithmetic<Vector4>();
+		v.Method("Vector4 opNeg() const", asFUNCTION(OpNeg<Vector4>));
+		v.Method("float get_magnitude() const property", asFUNCTION(Magnitude<Vector4>));
+		v.Method("float get_sqrMagnitude() const property", asFUNCTION(SqrMagnitude<Vector4>));
+		v.Method("Vector4 get_normalized() const property", asFUNCTION(Normalized<Vector4>));
+		// Unity と同じく Vector3・Vector2 と暗黙に変えられる
+		v.Method("Vector3 opImplConv() const", asFUNCTION(Vector4ToVector3));
+		v.Method("Vector2 opImplConv() const", asFUNCTION(Vector4ToVector2));
+		{
+			const TypeRegistrar v3{engine, "Vector3"};
+			v3.Method("Vector4 opImplConv() const", asFUNCTION(Vector3ToVector4));
+		}
+
+		v.Constant("const Vector4 zero", &Vector4::Zero);
+		v.Constant("const Vector4 one", &Vector4::One);
+		v.Constant("const Vector4 positiveInfinity", &Vector4::PositiveInifinity);
+		v.Constant("const Vector4 negativeInfinity", &Vector4::NegativeInifinity);
+		v.Static("float Dot(const Vector4 &in a, const Vector4 &in b)", asFUNCTION(Vector4::Dot));
+		v.Static("float Distance(const Vector4 &in a, const Vector4 &in b)", asFUNCTION(Vector4::Distance));
+		v.Static("Vector4 Lerp(const Vector4 &in a, const Vector4 &in b, float t)", asFUNCTION(Vector4::Lerp));
+		v.Static("Vector4 LerpUnclamped(const Vector4 &in a, const Vector4 &in b, float t)", asFUNCTION(Vector4::LerpUnclamped));
+		v.Static("Vector4 MoveTowards(const Vector4 &in current, const Vector4 &in target, float maxDistanceDelta)", asFUNCTION(MoveTowards<Vector4>));
+		v.Static("Vector4 Normalize(const Vector4 &in a)", asFUNCTION(NormalizeStatic<Vector4>));
+		v.Static("Vector4 Scale(const Vector4 &in a, const Vector4 &in b)", asFUNCTION(ScaleVector4));
+		v.Static("Vector4 Min(const Vector4 &in lhs, const Vector4 &in rhs)", asFUNCTION(Vector4::Min));
+		v.Static("Vector4 Max(const Vector4 &in lhs, const Vector4 &in rhs)", asFUNCTION(Vector4::Max));
+	}
+
+	// ---- Matrix4x4 ----
+	{
+		const TypeRegistrar m{engine, "Matrix4x4"};
+		m.Constructor("void f()", asFUNCTION(ConstructDefault<Matrix4x4>));
+		m.Constructor("void f(const Vector4 &in column0, const Vector4 &in column1, const Vector4 &in column2, const Vector4 &in column3)", asFUNCTION(ConstructMatrix4x4Columns));
+		// Unity の mRC（R 行 C 列）は、エンジンの m[C][R]
+		for (int row = 0; row < 4; row++) {
+			for (int column = 0; column < 4; column++) {
+				const auto declaration = std::format("float m{}{}", row, column);
+				m.Property(declaration.c_str(), static_cast<int>(asOFFSET(Matrix4x4, m) + (column * 4 + row) * sizeof(float)));
+			}
+		}
+		m.MethodObjLast("Vector4 GetColumn(int index) const", asFUNCTION(GetMatrixColumn));
+		m.MethodObjLast("Vector4 GetRow(int index) const", asFUNCTION(GetMatrixRow));
+		m.MethodObjLast("void SetColumn(int index, const Vector4 &in column)", asFUNCTION(SetMatrixColumn));
+		m.MethodObjLast("void SetRow(int index, const Vector4 &in row)", asFUNCTION(SetMatrixRow));
+		m.Method("Matrix4x4 opMul(const Matrix4x4 &in) const", asFUNCTION(MatrixMul));
+		m.Method("Vector4 opMul(const Vector4 &in) const", asFUNCTION(MatrixMulVector4));
+		m.Method("bool opEquals(const Matrix4x4 &in) const", asFUNCTION(MatrixEquals));
+		m.Method("string ToString() const", asFUNCTION(MatrixToString));
+		m.Method("Vector3 GetPosition() const", asFUNCTION(MatrixGetPosition));
+		m.Method("Quaternion get_rotation() const property", asFUNCTION(MatrixRotation));
+		m.Method("Vector3 get_lossyScale() const property", asFUNCTION(MatrixLossyScale));
+		m.Method("float get_determinant() const property", asFUNCTION(MatrixDeterminant));
+		m.Method("Matrix4x4 get_inverse() const property", asFUNCTION(MatrixInverse));
+		m.Method("Matrix4x4 get_transpose() const property", asFUNCTION(MatrixTranspose));
+		m.Method("bool get_isIdentity() const property", asFUNCTION(MatrixIsIdentity));
+		m.Method("Vector3 MultiplyPoint(const Vector3 &in point) const", asFUNCTION(MatrixMultiplyPoint));
+		m.Method("Vector3 MultiplyPoint3x4(const Vector3 &in point) const", asFUNCTION(MatrixMultiplyPoint3x4));
+		m.Method("Vector3 MultiplyVector(const Vector3 &in vector) const", asFUNCTION(MatrixMultiplyVector));
+
+		m.Constant("const Matrix4x4 identity", &Matrix4x4::Identity);
+		m.Constant("const Matrix4x4 zero", &Matrix4x4::Zero);
+		m.Static("Matrix4x4 TRS(const Vector3 &in pos, const Quaternion &in q, const Vector3 &in s)", asFUNCTION(MatrixTRS));
+		m.Static("Matrix4x4 Translate(const Vector3 &in vector)", asFUNCTION(MatrixTranslate));
+		m.Static("Matrix4x4 Scale(const Vector3 &in vector)", asFUNCTION(MatrixScale));
+		m.Static("Matrix4x4 Rotate(const Quaternion &in q)", asFUNCTION(MatrixRotate));
+		m.Static("Matrix4x4 Inverse(const Matrix4x4 &in m)", asFUNCTION(MatrixInverseStatic));
+		m.Static("Matrix4x4 Transpose(const Matrix4x4 &in m)", asFUNCTION(MatrixTransposeStatic));
+	}
+
+	// ---- Rect ----
+	{
+		const TypeRegistrar r{engine, "Rect"};
+		r.Constructor("void f()", asFUNCTION(ConstructDefault<Rect>));
+		r.Constructor("void f(float x, float y, float width, float height)", asFUNCTION(ConstructRect));
+		r.Constructor("void f(const Vector2 &in position, const Vector2 &in size)", asFUNCTION(ConstructRectVectors));
+		r.Property("float x", asOFFSET(Rect, x));
+		r.Property("float y", asOFFSET(Rect, y));
+		r.Property("float width", asOFFSET(Rect, width));
+		r.Property("float height", asOFFSET(Rect, height));
+		r.Method("Vector2 get_position() const property", asFUNCTION((ValueGet<Rect, Vector2, &Rect::GetPosition>)));
+		r.MethodObjLast("void set_position(const Vector2 &in value) property", asFUNCTION((ValueSet<Rect, const Vector2 &, &Rect::SetPosition>)));
+		r.Method("Vector2 get_size() const property", asFUNCTION((ValueGet<Rect, Vector2, &Rect::GetSize>)));
+		r.MethodObjLast("void set_size(const Vector2 &in value) property", asFUNCTION((ValueSet<Rect, const Vector2 &, &Rect::SetSize>)));
+		r.Method("Vector2 get_center() const property", asFUNCTION((ValueGet<Rect, Vector2, &Rect::GetCenter>)));
+		r.MethodObjLast("void set_center(const Vector2 &in value) property", asFUNCTION((ValueSet<Rect, const Vector2 &, &Rect::SetCenter>)));
+		r.Method("Vector2 get_min() const property", asFUNCTION((ValueGet<Rect, Vector2, &Rect::GetMin>)));
+		r.MethodObjLast("void set_min(const Vector2 &in value) property", asFUNCTION((ValueSet<Rect, const Vector2 &, &Rect::SetMin>)));
+		r.Method("Vector2 get_max() const property", asFUNCTION((ValueGet<Rect, Vector2, &Rect::GetMax>)));
+		r.MethodObjLast("void set_max(const Vector2 &in value) property", asFUNCTION((ValueSet<Rect, const Vector2 &, &Rect::SetMax>)));
+		r.Method("float get_xMin() const property", asFUNCTION((ValueGet<Rect, float, &Rect::GetXMin>)));
+		r.MethodObjLast("void set_xMin(float value) property", asFUNCTION((ValueSet<Rect, float, &Rect::SetXMin>)));
+		r.Method("float get_yMin() const property", asFUNCTION((ValueGet<Rect, float, &Rect::GetYMin>)));
+		r.MethodObjLast("void set_yMin(float value) property", asFUNCTION((ValueSet<Rect, float, &Rect::SetYMin>)));
+		r.Method("float get_xMax() const property", asFUNCTION((ValueGet<Rect, float, &Rect::GetXMax>)));
+		r.MethodObjLast("void set_xMax(float value) property", asFUNCTION((ValueSet<Rect, float, &Rect::SetXMax>)));
+		r.Method("float get_yMax() const property", asFUNCTION((ValueGet<Rect, float, &Rect::GetYMax>)));
+		r.MethodObjLast("void set_yMax(float value) property", asFUNCTION((ValueSet<Rect, float, &Rect::SetYMax>)));
+		r.MethodObjLast("bool Contains(const Vector2 &in point) const", asFUNCTION(RectContains2));
+		r.MethodObjLast("bool Contains(const Vector3 &in point) const", asFUNCTION(RectContains3));
+		r.MethodObjLast("bool Overlaps(const Rect &in other) const", asFUNCTION(RectOverlaps));
+		r.Method("bool opEquals(const Rect &in) const", asFUNCTION(RectEquals));
+		r.Method("string ToString() const", asFUNCTION(ToString<Rect>));
+
+		r.Constant("const Rect zero", &Rect::Zero);
+		r.Static("Rect MinMaxRect(float xmin, float ymin, float xmax, float ymax)", asFUNCTION(Rect::MinMaxRect));
+		r.Static("Vector2 NormalizedToPoint(const Rect &in rectangle, const Vector2 &in normalizedRectCoordinates)", asFUNCTION(Rect::NormalizedToPoint));
+		r.Static("Vector2 PointToNormalized(const Rect &in rectangle, const Vector2 &in point)", asFUNCTION(Rect::PointToNormalized));
+	}
+
+	// ---- Bounds ----
+	{
+		const TypeRegistrar b{engine, "Bounds"};
+		b.Constructor("void f()", asFUNCTION(ConstructDefault<Bounds>));
+		b.Constructor("void f(const Vector3 &in center, const Vector3 &in size)", asFUNCTION(ConstructBounds));
+		b.Property("Vector3 center", asOFFSET(Bounds, center));
+		b.Property("Vector3 extents", asOFFSET(Bounds, extents));
+		b.Method("Vector3 get_size() const property", asFUNCTION((ValueGet<Bounds, Vector3, &Bounds::GetSize>)));
+		b.MethodObjLast("void set_size(const Vector3 &in value) property", asFUNCTION((ValueSet<Bounds, const Vector3 &, &Bounds::SetSize>)));
+		b.Method("Vector3 get_min() const property", asFUNCTION((ValueGet<Bounds, Vector3, &Bounds::GetMin>)));
+		b.MethodObjLast("void set_min(const Vector3 &in value) property", asFUNCTION((ValueSet<Bounds, const Vector3 &, &Bounds::SetMin>)));
+		b.Method("Vector3 get_max() const property", asFUNCTION((ValueGet<Bounds, Vector3, &Bounds::GetMax>)));
+		b.MethodObjLast("void set_max(const Vector3 &in value) property", asFUNCTION((ValueSet<Bounds, const Vector3 &, &Bounds::SetMax>)));
+		b.MethodObjLast("void SetMinMax(const Vector3 &in min, const Vector3 &in max)", asFUNCTION(BoundsSetMinMax));
+		b.MethodObjLast("bool Contains(const Vector3 &in point) const", asFUNCTION(BoundsContains));
+		b.MethodObjLast("bool Intersects(const Bounds &in bounds) const", asFUNCTION(BoundsIntersects));
+		b.MethodObjLast("Vector3 ClosestPoint(const Vector3 &in point) const", asFUNCTION(BoundsClosestPoint));
+		b.MethodObjLast("float SqrDistance(const Vector3 &in point) const", asFUNCTION(BoundsSqrDistance));
+		b.MethodObjLast("void Encapsulate(const Vector3 &in point)", asFUNCTION(EncapsulatePoint));
+		b.MethodObjLast("void Encapsulate(const Bounds &in bounds)", asFUNCTION(EncapsulateBounds));
+		b.MethodObjLast("void Expand(float amount)", asFUNCTION((ValueSet<Bounds, float, &Bounds::Expand>)));
+		b.Method("string ToString() const", asFUNCTION(ToString<Bounds>));
 	}
 }

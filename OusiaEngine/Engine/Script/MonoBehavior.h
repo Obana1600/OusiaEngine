@@ -48,6 +48,8 @@ public: // メンバ関数
 	void OnTriggerStay(Collider *other) override;
 	void OnTriggerExit(Collider *other) override;
 
+	void OnControllerColliderHit(const ControllerColliderHit &hit) override;
+
 	void OnValidate() override;
 	void OnDrawGizmos() override;
 	void OnDrawGizmosSelected() override;
@@ -78,6 +80,7 @@ private: // インナークラス
 		asIScriptFunction *onTriggerEnter = nullptr;
 		asIScriptFunction *onTriggerStay = nullptr;
 		asIScriptFunction *onTriggerExit = nullptr;
+		asIScriptFunction *onControllerColliderHit = nullptr;
 	};
 
 

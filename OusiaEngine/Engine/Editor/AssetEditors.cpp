@@ -8,6 +8,7 @@
 #include "Editor/EditorGuiLayout.h"
 #include "Editor/EditorGuiUtility.h"
 #include "Editor/ExternalScriptEditor.h"
+#include "PostProcess/VolumeProfile.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
@@ -15,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -44,20 +46,44 @@ struct FormatInfo {
 FormatInfo GetFormatInfo(Graphics::Format format) {
 	using enum Graphics::Format;
 	switch (format) {
-	case R32G32B32A32_FLOAT: return {"RGBA Float", 16};
-	case R32G32B32_FLOAT: return {"RGB Float", 12};
-	case R32G32_FLOAT: return {"RG Float", 8};
-	case R32_FLOAT: return {"R Float", 4};
-	case R32_UINT: return {"R32 UInt", 4};
-	case R16_UINT: return {"R16 UInt", 2};
-	case R8_UNORM: return {"R8", 1};
-	case R8G8B8A8_UNORM: return {"RGBA8 UNorm", 4};
-	case R8G8B8A8_UNORM_SRGB: return {"RGBA8 sRGB", 4};
-	case B8G8R8A8_UNORM: return {"BGRA8 UNorm", 4};
-	case B8G8R8A8_UNORM_SRGB: return {"BGRA8 sRGB", 4};
-	case D32_FLOAT: return {"Depth 32", 4};
-	case D24_UNORM_S8_UINT: return {"Depth 24 Stencil 8", 4};
-	default: return {"Unknown", 0};
+		default:
+		case UNKNOWN:
+			return {"Unknown", 0};
+
+		case R32G32B32A32_FLOAT:
+			return {"RGBA Float", 16};
+		case R32G32B32_FLOAT:
+			return {"RGB Float", 12};
+		case R32G32_FLOAT:
+			return {"RG Float", 8};
+		case R32_FLOAT:
+			return {"R Float", 4};
+		case R16G16B16A16_FLOAT:
+			return {"RGBA16 Float", 8};
+		case R11G11B10_FLOAT:
+			return {"RG11B10 Float", 4};
+
+		case R32_UINT:
+			return {"R32 UInt", 4};
+		case R16_UINT:
+			return {"R16 UInt", 2};
+
+		case R8_UNORM:
+			return {"R8", 1};
+
+		case R8G8B8A8_UNORM:
+			return {"RGBA8 UNorm", 4};
+		case R8G8B8A8_UNORM_SRGB:
+			return {"RGBA8 sRGB", 4};
+		case B8G8R8A8_UNORM:
+			return {"BGRA8 UNorm", 4};
+		case B8G8R8A8_UNORM_SRGB:
+			return {"BGRA8 sRGB", 4};
+
+		case D32_FLOAT:
+			return {"Depth 32", 4};
+		case D24_UNORM_S8_UINT:
+			return {"Depth 24 Stencil 8", 4};
 	}
 }
 
@@ -116,9 +142,12 @@ std::string FormatTime(double seconds) {
 
 const char *ChannelName(uint32_t channels) {
 	switch (channels) {
-	case 1: return "モノラル";
-	case 2: return "ステレオ";
-	default: return "マルチチャンネル";
+		case 1:
+			return "モノラル";
+		case 2:
+			return "ステレオ";
+		default:
+			return "マルチチャンネル";
 	}
 }
 
@@ -157,20 +186,29 @@ std::string_view EnumText(E value) {
 
 std::string RenderQueueText(int renderQueue) {
 	switch (renderQueue) {
-	case Shader::RenderQueue::BackGround: return "Background (1000)";
-	case Shader::RenderQueue::Geometry: return "Geometry (2000)";
-	case Shader::RenderQueue::AlphaTest: return "AlphaTest (2450)";
-	case Shader::RenderQueue::Transparent: return "Transparent (3000)";
-	case Shader::RenderQueue::Overlay: return "Overlay (4000)";
-	default: return std::to_string(renderQueue);
+		case Shader::RenderQueue::BackGround:
+			return "Background (1000)";
+		case Shader::RenderQueue::Geometry:
+			return "Geometry (2000)";
+		case Shader::RenderQueue::AlphaTest:
+			return "AlphaTest (2450)";
+		case Shader::RenderQueue::Transparent:
+			return "Transparent (3000)";
+		case Shader::RenderQueue::Overlay:
+			return "Overlay (4000)";
+		default:
+			return std::to_string(renderQueue);
 	}
 }
 
 const char *PropertyTypeText(Shader::PropertyType type) {
 	switch (type) {
-	case Shader::PropertyType::Color: return "Color";
-	case Shader::PropertyType::Vector: return "Vector";
-	case Shader::PropertyType::Float: return "Float";
+		case Shader::PropertyType::Color:
+			return "Color";
+		case Shader::PropertyType::Vector:
+			return "Vector";
+		case Shader::PropertyType::Float:
+			return "Float";
 	}
 	return "";
 }
@@ -539,8 +577,8 @@ void ou::ShaderEditor::OnInspectorGui() {
 
 		const auto &blend = pass.blend.renderTarget[0];
 		InfoField("ブレンド", blend.blendEnable
-								 ? std::format("{} {} {}", EnumText(blend.srcBlend), EnumText(blend.blendOp), EnumText(blend.destBlend))
-								 : std::string("Off"));
+								  ? std::format("{} {} {}", EnumText(blend.srcBlend), EnumText(blend.blendOp), EnumText(blend.destBlend))
+								  : std::string("Off"));
 		InfoField("深度を書く", pass.depthStencil.depthWriteMask == Graphics::DepthWriteMask::ALL ? "On" : "Off");
 		InfoField("深度の比べ方", EnumText(pass.depthStencil.comparisonFunc));
 		InfoField("裏面を消す", EnumText(pass.rasterizer.cullMode));
@@ -558,4 +596,111 @@ void ou::ShaderEditor::OnInspectorGui() {
 									 : std::format("({:g}, {:g}, {:g}, {:g})", value.x, value.y, value.z, value.w);
 		InfoField(property.name, std::format("{}  初期値 {}", PropertyTypeText(property.type), defaultText));
 	}
+}
+
+
+
+// ---- VolumeProfileEditor ----
+
+void ou::VolumeProfileEditor::OnInspectorGui() {
+	auto *profile = dynamic_cast<VolumeProfile *>(GetTarget());
+	if (!profile) { return; }
+
+	auto &so = *GetSerializedObject();
+	so.Update();
+	DrawReadOnlyNote();
+
+	// 足す・消すと components の並びが変わるので、欄を全部描いて ApplyModifiedProperties してから行う
+	std::string removing;
+	std::string adding;
+
+	ImGui::BeginDisabled(!IsEditable());
+	const auto &components = profile->GetComponents();
+	for (size_t i = 0; i < components.size(); i++) {
+		if (!DrawComponent(so, *components[i], i)) { removing = VolumeComponent::FindTypeName(*components[i]); }
+	}
+	if (components.empty()) {
+		ImGui::TextDisabled("効果がありません。Add Override で足してください");
+	}
+
+	ImGui::Spacing();
+	if (ImGui::Button("Add Override", {-FLT_MIN, 0.0f})) { ImGui::OpenPopup("AddOverride"); }
+	if (ImGui::BeginPopup("AddOverride")) {
+		auto hasChoice = false;
+		for (const auto typeName : VolumeComponent::GetTypeNames()) {
+			if (profile->Has(typeName)) { continue; } // 型ごとに 1 つまで
+			hasChoice = true;
+			if (ImGui::MenuItem(std::string(typeName).c_str())) { adding = typeName; }
+		}
+		if (!hasChoice) { ImGui::TextDisabled("全部の効果を足してあります"); }
+		ImGui::EndPopup();
+	}
+	ImGui::EndDisabled();
+
+	auto isModified = so.ApplyModifiedProperties();
+	if (!removing.empty()) {
+		profile->Remove(removing);
+		isModified = true;
+	}
+	if (!adding.empty()) {
+		// Unity と同じく、足したばかりの効果はどのチェックも外れている（何も上書きしない）
+		profile->Add(adding);
+		isModified = true;
+	}
+	SaveWhenIdle(isModified);
+}
+
+
+bool ou::VolumeProfileEditor::DrawComponent(SerializedObject &so, const VolumeComponent &component, size_t index) {
+	const auto path = std::format("components/{}", index);
+	const auto typeName = std::string(VolumeComponent::FindTypeName(component));
+	ImGui::PushID(typeName.c_str());
+
+	// 見出しの × で消す（Unity は見出しの ⋮ の Remove）
+	auto isKept = true;
+	if (ImGui::CollapsingHeader(typeName.c_str(), &isKept, ImGuiTreeNodeFlags_DefaultOpen)) {
+		Field(so, path + "/active", "有効", "外すと、この効果は働かない");
+
+		// 全部のチェックを入れる・外す（Unity の All / None）
+		std::optional<bool> overridesTo;
+		if (ImGui::SmallButton("All")) { overridesTo = true; }
+		ImGui::SameLine();
+		if (ImGui::SmallButton("None")) { overridesTo = false; }
+
+		for (size_t i = 0; i < component.parameters_.size(); i++) {
+			const auto parameterPath = path + "/" + std::string(component.parameterNames_[i]);
+			const auto parameter = so.FindProperty(parameterPath);
+			auto overrideState = so.FindProperty(parameterPath + "/overrideState");
+			auto value = so.FindProperty(parameterPath + "/value");
+			if (!parameter || !overrideState || !value) { continue; }
+			ImGui::PushID(static_cast<int>(i));
+
+			if (overridesTo) { overrideState->SetBoolValue(*overridesTo); }
+
+			// チェックを入れたものだけが、Volume のブレンドで値を上書きする。外したものは値の欄を灰色にする
+			auto isOverridden = overrideState->GetBoolValue();
+			if (ImGui::Checkbox("##Override", &isOverridden)) { overrideState->SetBoolValue(isOverridden); }
+			ImGui::SetItemTooltip("チェックを入れると、この値を使う（外すと、既定の値か優先度の低い Volume の値のまま）");
+			ImGui::SameLine();
+
+			ImGui::BeginDisabled(!isOverridden);
+			const auto label = parameter->GetDisplayName();
+			if (const auto *clamped = dynamic_cast<const ClampedFloatParameter *>(component.parameters_[i])) {
+				// 範囲のある値はスライダーにする（Unity と同じ）
+				EditorGuiLayout::PrefixLabel(label);
+				auto current = value->GetFloatValue();
+				if (ImGui::SliderFloat("##Value", &current, clamped->GetMin(), clamped->GetMax(), "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+					value->SetFloatValue(current);
+				}
+			} else {
+				EditorGuiLayout::PropertyField(*value, label);
+			}
+			ImGui::EndDisabled();
+
+			ImGui::PopID();
+		}
+	}
+
+	ImGui::PopID();
+	return isKept;
 }

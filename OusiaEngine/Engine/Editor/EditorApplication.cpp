@@ -154,7 +154,11 @@ void ou::EditorApplication::ApplyPendingPlayModeChange() {
 		Time::ResetForPlayMode();
 		// Project Settings の Time の値から始める
 		TimeManager::Apply();
+		// Unity の Domain Reload と同じく、前の Play や編集中に変わったグローバル変数を初期値に戻してから始める
+		ScriptEngine::ResetGlobalVars();
+		ScriptEngine::InvokeBeforeSceneLoadMethods();
 		SceneManager::ReplaceActiveScene(snapshot->name, snapshot->path, snapshot->buildIndex, snapshot->json);
+		ScriptEngine::InvokeAfterSceneLoadMethods();
 		Log::Info("Play: {}", snapshot->name);
 		return;
 	}

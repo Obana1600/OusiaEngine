@@ -1,23 +1,39 @@
 #include "ScriptBindings.h"
+#include "Animation/Skeletal/SkeletalAnimationClip.h"
+#include "Animation/Skeletal/SkeletalAnimator.h"
 #include "Asset/AssetDatabase.h"
 #include "Audio/AudioClip.h"
+#include "Audio/AudioListener.h"
 #include "Audio/AudioSource.h"
 #include "Core/Object.h"
 #include "Math/Color.h"
 #include "Math/Mathf.h"
+#include "Math/Matrix4x4.h"
 #include "Math/Quaternion.h"
+#include "Math/Rect.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
+#include "Math/Vector4.h"
+#include "Particle/ParticleSystem.h"
+#include "Particle/ParticleSystemRenderer.h"
 #include "Physics/BoxCollider.h"
 #include "Physics/CapsuleCollider.h"
 #include "Physics/CharacterController.h"
 #include "Physics/Collider.h"
+#include "Physics/PhysicsMaterial.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
+#include "PostProcess/VolumeProfile.h"
 #include "Render/Asset/Material.h"
+#include "Render/Asset/Mesh.h"
+#include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
+#include "Render/Camera.h"
+#include "Render/Light.h"
+#include "Render/LineRenderer.h"
 #include "Render/MeshRenderer.h"
 #include "Render/Renderer.h"
+#include "Render/SkinnedMeshRenderer.h"
 #include "Scene/Behavior.h"
 #include "Scene/Component.h"
 #include "Scene/GameObject.h"
@@ -30,9 +46,14 @@
 #include "Script/ScriptBindingsInternal.h"
 #include "Serialize/Serializer.h"
 #include "Serialize/TypeRegistry.h"
+#include "UI/Asset/FontAsset.h"
+#include "UI/Asset/Sprite.h"
 #include "UI/Button.h"
+#include "UI/Canvas.h"
+#include "UI/CanvasRenderer.h"
 #include "UI/Graphic.h"
 #include "UI/Image.h"
+#include "UI/RectTransform.h"
 #include "UI/Text.h"
 
 #include <cstdint>
@@ -338,6 +359,26 @@ void LookAt(const Vector3 &worldPosition, const Vector3 &worldUp, ObjectHandle *
 	transform->SetWorldRotation(LookRotation(direction, worldUp));
 }
 
+void SetParentWithStays(ObjectHandle *parent, bool worldPositionStays, ObjectHandle *self) {
+	auto *transform = Resolve<Transform>(self);
+	if (!transform) { return; }
+
+	Transform *parentTransform = nullptr;
+	if (parent) {
+		parentTransform = Resolve<Transform>(parent);
+		if (!parentTransform) { return; }
+	}
+	transform->SetParent(parentTransform, worldPositionStays);
+}
+
+// スクリプトの Matrix4x4 はエンジンの並びのまま持つので、エンジンの行列をそのまま返す（ScriptBindingsMath.cpp）
+Matrix4x4 GetWorldToLocalMatrix(ObjectHandle *self) {
+	auto *transform = Resolve<Transform>(self);
+	return transform ? transform->GetLocalToWorldMatrix().Inverse() : Matrix4x4::Identity;
+}
+
+void RegisterTransformMembers(const TypeRegistrar &t);
+
 
 // ---- 値の型の id（変数の保存で型を見分けるのに使う。登録したあとに引いて覚えておく） ----
 
@@ -347,6 +388,8 @@ struct ValueTypeIds {
 	int vector3 = 0;
 	int quaternion = 0;
 	int color = 0;
+	int vector4 = 0;
+	int rect = 0;
 };
 
 ValueTypeIds &TypeIds() {
@@ -403,9 +446,10 @@ NativeType MakeNativeType(const char *name, const char *parent, bool canAdd = fa
 	if constexpr (std::is_base_of_v<Component, T>) {
 		type.find = &FindComponent<T>;
 	}
+	// Component と GameObject はシーンの中の参照、それ以外の Object の派生はアセット
 	if constexpr (std::is_base_of_v<Component, T> || std::is_same_v<T, GameObject>) {
 		type.serialize = &SerializeHandle<T>;
-	} else if constexpr (std::is_same_v<T, Material> || std::is_same_v<T, AudioClip> || std::is_same_v<T, Texture>) {
+	} else if constexpr (!std::is_same_v<T, Object>) {
 		type.serialize = &SerializeAssetHandle<T>;
 	}
 	return type;
@@ -488,6 +532,7 @@ std::vector<NativeType> &ou::ScriptBindingsInternal::NativeTypes() {
 	// 子の型を親より先に並べる
 	static std::vector<NativeType> types = {
 		MakeNativeType<GameObject>("GameObject", "Object"),
+		MakeNativeType<RectTransform>("RectTransform", "Transform"),
 		MakeNativeType<Transform>("Transform", "Component"),
 		MakeNativeType<CharacterController>("CharacterController", "Collider", true),
 		MakeNativeType<BoxCollider>("BoxCollider", "Collider", true),
@@ -496,18 +541,35 @@ std::vector<NativeType> &ou::ScriptBindingsInternal::NativeTypes() {
 		MakeNativeType<Collider>("Collider", "Behavior"),
 		MakeNativeType<Rigidbody>("Rigidbody", "Component", true),
 		MakeNativeType<AudioSource>("AudioSource", "Component", true),
+		MakeNativeType<AudioListener>("AudioListener", "Component", true),
+		MakeNativeType<Camera>("Camera", "Behavior", true),
+		MakeNativeType<Light>("Light", "Behavior", true),
+		MakeNativeType<SkeletalAnimator>("SkeletalAnimator", "Behavior", true),
+		MakeNativeType<ParticleSystem>("ParticleSystem", "Component", true),
 		MakeNativeType<MeshRenderer>("MeshRenderer", "Renderer", true),
+		MakeNativeType<SkinnedMeshRenderer>("SkinnedMeshRenderer", "Renderer", true),
+		MakeNativeType<LineRenderer>("LineRenderer", "Renderer", true),
+		MakeNativeType<ParticleSystemRenderer>("ParticleSystemRenderer", "Renderer", true),
 		MakeNativeType<Renderer>("Renderer", "Behavior"),
 		MakeNativeType<Text>("Text", "Graphic", true),
 		MakeNativeType<Image>("Image", "Graphic", true),
 		MakeNativeType<Graphic>("Graphic", "Behavior"),
 		MakeNativeType<Button>("Button", "Selectable", true),
 		MakeNativeType<Selectable>("Selectable", "Behavior"),
+		MakeNativeType<Canvas>("Canvas", "Behavior", true),
+		MakeNativeType<CanvasRenderer>("CanvasRenderer", "Component", true),
 		MakeNativeType<Behavior>("Behavior", "Component"),
 		MakeNativeType<Component>("Component", "Object"),
 		MakeNativeType<Material>("Material", "Object"),
 		MakeNativeType<AudioClip>("AudioClip", "Object"),
 		MakeNativeType<Texture>("Texture2D", "Object"), // C++ の Texture は今 2D しかないので、Unity の名前で出す
+		MakeNativeType<Sprite>("Sprite", "Object"),
+		MakeNativeType<FontAsset>("FontAsset", "Object"),
+		MakeNativeType<Mesh>("Mesh", "Object"),
+		MakeNativeType<Shader>("Shader", "Object"),
+		MakeNativeType<PhysicsMaterial>("PhysicsMaterial", "Object"),
+		MakeNativeType<SkeletalAnimationClip>("SkeletalAnimationClip", "Object"),
+		MakeNativeType<VolumeProfile>("VolumeProfile", "Object"),
 		MakeNativeType<Object>("Object", nullptr),
 	};
 	return types;
@@ -571,6 +633,8 @@ bool ou::ScriptBindings::SerializeProperty(Serializer &serializer, std::string_v
 	if (typeId == ids.vector3) { serializer.Field(name, *static_cast<Vector3 *>(address)); return true; }
 	if (typeId == ids.quaternion) { serializer.Field(name, *static_cast<Quaternion *>(address)); return true; }
 	if (typeId == ids.color) { serializer.Field(name, *static_cast<Color *>(address)); return true; }
+	if (typeId == ids.vector4) { serializer.Field(name, *static_cast<Vector4 *>(address)); return true; }
+	if (typeId == ids.rect) { serializer.Field(name, *static_cast<Rect *>(address)); return true; }
 
 	// ハンドルの変数のアドレスは、持ち手のポインタの置き場所
 	if (typeId & asTYPEID_OBJHANDLE) {
@@ -757,9 +821,31 @@ void ou::ScriptBindings::RegisterObjectMembers(asIScriptEngine *engine) {
 	// ---- Behavior ----
 	RegisterBehaviorMembers(RegisterComponentType(engine, "Behavior"));
 
-	// ---- Transform ----
+	// ---- Transform・RectTransform ----
+	RegisterTransformMembers(RegisterComponentType(engine, "Transform"));
 	{
-		const auto t = RegisterComponentType(engine, "Transform");
+		const auto r = RegisterComponentType(engine, "RectTransform");
+		RegisterTransformMembers(r);
+		r.Method("Vector2 get_anchorMin() const property", asFUNCTION((Get<RectTransform, const Vector2 &, &RectTransform::GetAnchorMin>)));
+		r.Method("void set_anchorMin(const Vector2 &in value) property", asFUNCTION((Set<RectTransform, const Vector2 &, &RectTransform::SetAnchorMin>)));
+		r.Method("Vector2 get_anchorMax() const property", asFUNCTION((Get<RectTransform, const Vector2 &, &RectTransform::GetAnchorMax>)));
+		r.Method("void set_anchorMax(const Vector2 &in value) property", asFUNCTION((Set<RectTransform, const Vector2 &, &RectTransform::SetAnchorMax>)));
+		r.Method("Vector2 get_anchoredPosition() const property", asFUNCTION((Get<RectTransform, const Vector2 &, &RectTransform::GetAnchoredPosition>)));
+		r.Method("void set_anchoredPosition(const Vector2 &in value) property", asFUNCTION((Set<RectTransform, const Vector2 &, &RectTransform::SetAnchoredPosition>)));
+		r.Method("Vector2 get_sizeDelta() const property", asFUNCTION((Get<RectTransform, const Vector2 &, &RectTransform::GetSizeDelta>)));
+		r.Method("void set_sizeDelta(const Vector2 &in value) property", asFUNCTION((Set<RectTransform, const Vector2 &, &RectTransform::SetSizeDelta>)));
+		r.Method("Vector2 get_pivot() const property", asFUNCTION((Get<RectTransform, const Vector2 &, &RectTransform::GetPivot>)));
+		r.Method("void set_pivot(const Vector2 &in value) property", asFUNCTION((Set<RectTransform, const Vector2 &, &RectTransform::SetPivot>)));
+		r.Method("Rect get_rect() const property", asFUNCTION((Get<RectTransform, const Rect &, &RectTransform::GetRect>)));
+	}
+}
+
+
+namespace {
+
+// Transform の派生（RectTransform）にも同じものを付ける（AngelScript は登録した型のメソッドを子の型に引き継がない）
+void RegisterTransformMembers(const TypeRegistrar &t) {
+	{
 		t.Method("Vector3 get_position() const property", asFUNCTION((Get<Transform, Vector3, &Transform::GetWorldPosition>)));
 		t.Method("void set_position(const Vector3 &in value) property", asFUNCTION((Set<Transform, const Vector3 &, &Transform::SetWorldPosition>)));
 		t.Method("Vector3 get_localPosition() const property", asFUNCTION((Get<Transform, const Vector3 &, &Transform::GetLocalPosition>)));
@@ -788,8 +874,17 @@ void ou::ScriptBindings::RegisterObjectMembers(asIScriptEngine *engine) {
 		t.Method("void Rotate(const Vector3 &in eulers, Space relativeTo = Space::Self)", asFUNCTION(Rotate));
 		t.Method("void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space::Self)", asFUNCTION(RotateXYZ));
 		t.Method("void LookAt(const Vector3 &in worldPosition, const Vector3 &in worldUp = Vector3::up)", asFUNCTION(LookAt));
+		t.Method("void SetParent(Transform@+ parent, bool worldPositionStays = true)", asFUNCTION(SetParentWithStays));
+		t.Method("int GetSiblingIndex() const", asFUNCTION((Get<Transform, int, &Transform::GetSiblingIndex>)));
+		t.Method("void SetSiblingIndex(int index)", asFUNCTION((Set<Transform, int, &Transform::SetSiblingIndex>)));
+		t.Method("void SetAsFirstSibling()", asFUNCTION((Call<Transform, &Transform::SetAsFirstSibling>)));
+		t.Method("void SetAsLastSibling()", asFUNCTION((Call<Transform, &Transform::SetAsLastSibling>)));
+		t.Method("Matrix4x4 get_localToWorldMatrix() const property", asFUNCTION((Get<Transform, const Matrix4x4 &, &Transform::GetLocalToWorldMatrix>)));
+		t.Method("Matrix4x4 get_worldToLocalMatrix() const property", asFUNCTION(GetWorldToLocalMatrix));
 	}
 }
+
+} // namespace
 
 
 // Unity の GameObject.Find(name)。今のシーンと DontDestroyOnLoad のシーンから、動いている GameObject を名前で探す
@@ -839,4 +934,6 @@ void ou::ScriptBindings::RegisterGetComponent(asIScriptEngine *engine) {
 	ids.vector3 = engine->GetTypeIdByDecl("Vector3");
 	ids.quaternion = engine->GetTypeIdByDecl("Quaternion");
 	ids.color = engine->GetTypeIdByDecl("Color");
+	ids.vector4 = engine->GetTypeIdByDecl("Vector4");
+	ids.rect = engine->GetTypeIdByDecl("Rect");
 }

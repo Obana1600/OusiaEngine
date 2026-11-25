@@ -27,6 +27,7 @@ enum QueueType {
 };
 
 
+// シェーダステージ
 enum class ShaderStage : uint8_t {
 	MS,	 // メッシュシェーダ
 	AS,	 // アンプリフィケーションシェーダ
@@ -43,6 +44,7 @@ enum class ShaderStage : uint8_t {
 
 
 // シェーダーモデル: 最小値は 6.6
+// TODO: デバイスの性能に合わせて、低いモデルに切り替えるようにしたい
 enum class ShaderModel : uint8_t {
 	SM_6_6,
 	SM_6_7,
@@ -80,7 +82,7 @@ enum class DepthWriteMask : uint8_t {
 };
 
 
-// TODO: 追加できるらしい
+// TODO: もっと追加できるらしい
 enum class Blend : uint8_t {
 	ZERO,			  // 0 を掛ける
 	ONE,			  // 1 を掛ける
@@ -170,15 +172,20 @@ enum class ViewType : uint8_t {
 
 // TODO: ポストプロセスに必要なフォーマットあり
 enum class Format : uint8_t {
-	UNKNOWN, //
+	UNKNOWN, // 無効なフォーマット
 
-	R32G32B32A32_FLOAT, // float4
-	R32G32B32_FLOAT,	// float3
-	R32G32_FLOAT,		// float2
-	R32_FLOAT,			// float
-	R32_UINT,			//
-	R16_UINT,			//
-	R8_UNORM,			//
+	R32G32B32A32_FLOAT, // float32[4]
+	R32G32B32_FLOAT,	// float32[3]
+	R32G32_FLOAT,		// float32[2]
+	R32_FLOAT,			// float32
+
+	R16G16B16A16_FLOAT, // float16[4]
+	R11G11B10_FLOAT,	// float[3] (11/11/10)
+
+	R32_UINT, // uint32
+	R16_UINT, // uint16
+
+	R8_UNORM, // uint8 / 255
 
 	R8G8B8A8_UNORM,		 // 8 ビットカラー
 	R8G8B8A8_UNORM_SRGB, // 8 ビットカラー + ガンマ補正
@@ -188,6 +195,7 @@ enum class Format : uint8_t {
 	D32_FLOAT,		   // 32 ビット深度バッファ
 	D24_UNORM_S8_UINT, // 24 ビット深度バッファ + 8 ビットステンシル
 };
+
 
 enum class ColorWrite : uint8_t {
 	DISABLE = 0,

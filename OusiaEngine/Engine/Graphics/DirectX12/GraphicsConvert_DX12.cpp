@@ -14,10 +14,16 @@ DXGI_FORMAT ou::Graphics::ConvertFormat(Format format) {
 			return DXGI_FORMAT_R32G32_FLOAT;
 		case Format::R32_FLOAT:
 			return DXGI_FORMAT_R32_FLOAT;
+		case Format::R16G16B16A16_FLOAT:
+			return DXGI_FORMAT_R16G16B16A16_FLOAT;
+		case Format::R11G11B10_FLOAT:
+			return DXGI_FORMAT_R11G11B10_FLOAT;
+
 		case Format::R32_UINT:
 			return DXGI_FORMAT_R32_UINT;
 		case Format::R16_UINT:
 			return DXGI_FORMAT_R16_UINT;
+
 		case Format::R8_UNORM:
 			return DXGI_FORMAT_R8_UNORM;
 

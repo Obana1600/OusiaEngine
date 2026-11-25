@@ -16,6 +16,7 @@
 #include "Physics/PhysicsMaterial.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
+#include "PostProcess/VolumeProfile.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
@@ -77,6 +78,7 @@ void ou::CustomEditor::RegisterEngineEditors() {
 	Register<MaterialEditor, Material>();
 	Register<ShaderEditor, Shader>();
 	Register<PhysicsMaterialEditor, PhysicsMaterial>();
+	Register<VolumeProfileEditor, VolumeProfile>();
 }
 
 

@@ -10,6 +10,7 @@
 #include "Asset/Importer/ShaderImporter.h"
 #include "Asset/Importer/ShaderModuleImporter.h"
 #include "Asset/Importer/TextureImporter.h"
+#include "Asset/Importer/VolumeProfileImporter.h"
 #include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
@@ -100,6 +101,7 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, cons
 		{L".physicsmaterial", &MakeImporter<PhysicsMaterialImporter>},
 		{L".as", &MakeImporter<MonoScriptImporter>},
 		{L".prefab", &MakeImporter<PrefabImporter>},
+		{L".volumeprofile", &MakeImporter<VolumeProfileImporter>},
 	};
 
 	// 拡張子を小文字のワイド文字にそろえる

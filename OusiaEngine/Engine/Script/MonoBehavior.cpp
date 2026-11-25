@@ -19,10 +19,10 @@ using namespace ou;
 namespace {
 
 // エンジンが呼ぶメッセージは、Inspector の一覧に出さない（C# では private にするのが普通なので、Unity の一覧にも出ない）
-constexpr std::array<std::string_view, 18> kMessageNames = {
+constexpr std::array<std::string_view, 19> kMessageNames = {
 	"Awake", "Start", "FixedUpdate", "Update", "LateUpdate", "OnDestroy", "OnApplicationQuit", "OnEnable", "OnDisable", "OnValidate",
 	"OnDrawGizmos", "OnDrawGizmosSelected",
-	"OnCollisionEnter", "OnCollisionStay", "OnCollisionExit", "OnTriggerEnter", "OnTriggerStay", "OnTriggerExit"};
+	"OnCollisionEnter", "OnCollisionStay", "OnCollisionExit", "OnTriggerEnter", "OnTriggerStay", "OnTriggerExit", "OnControllerColliderHit"};
 
 // 引数の型から、渡す値の型を決める（使えない型なら false）
 bool ToListenerMode(asIScriptEngine *engine, int typeId, PersistentListenerMode &mode) {
@@ -142,6 +142,12 @@ void ou::MonoBehavior::OnTriggerExit(Collider *other) {
 }
 
 
+void ou::MonoBehavior::OnControllerColliderHit(const ControllerColliderHit &hit) {
+	if (!methods_.onControllerColliderHit || !isAwakeCalled_) { return; }
+	ScriptEngine::CallControllerColliderHitMethod(instance_, methods_.onControllerColliderHit, hit);
+}
+
+
 void ou::MonoBehavior::OnValidate() {
 	// Unity と同じく、編集中（Awake 前）でも呼ぶので CallMessage は使わない
 	if (!instance_ || !methods_.onValidate) { return; }
@@ -224,6 +230,7 @@ void ou::MonoBehavior::CreateInstance() {
 	methods_.onTriggerEnter = type->GetMethodByDecl("void OnTriggerEnter(Collider@)");
 	methods_.onTriggerStay = type->GetMethodByDecl("void OnTriggerStay(Collider@)");
 	methods_.onTriggerExit = type->GetMethodByDecl("void OnTriggerExit(Collider@)");
+	methods_.onControllerColliderHit = type->GetMethodByDecl("void OnControllerColliderHit(ControllerColliderHit)");
 }
 
 
