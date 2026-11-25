@@ -380,6 +380,7 @@ Generated/
 !README.md
 *.md
 !/OusiaEngine/Samples/README.md
+!/OusiaEngine/Samples/*/README.md
 !/OusiaEngine/Build/TeamRepo/Editor-README.md
 !/OusiaEngine/Build/TeamRepo/README.md
 !/OusiaEngine/Build/TeamRepo/Scripting.md

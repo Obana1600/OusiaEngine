@@ -1,0 +1,8 @@
+{
+	"layers": {
+		"3": "Ground",
+		"8": "Player",
+		"9": "Enemy",
+		"10": "Ghost"
+	}
+}
