@@ -1,0 +1,56 @@
+{
+	"$id": 4620933062555808,
+	"$order": "5000000",
+	"name": "Battle",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 8866801759303631,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "MonoBehavior",
+			"$id": 8621505959953238,
+			"enabled": true,
+			"script": {
+				"guid": "4583870eb7cd6c45fbc17188af3f7cbd"
+			},
+			"playerObject": null,
+			"bossObject": null,
+			"hudText": {
+				"id": 8096037567111002
+			},
+			"messageText": {
+				"id": 1871798033654119
+			},
+			"loseWhenUnwinnable": false,
+			"arenaRadius": 12.0,
+			"readyTime": 1.0,
+			"restartDelay": 1.0
+		}
+	]
+}

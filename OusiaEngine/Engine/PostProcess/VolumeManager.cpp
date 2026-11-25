@@ -3,6 +3,7 @@
 #include "PostProcess/Volume.h"
 #include "PostProcess/VolumeProfile.h"
 #include "Scene/GameObject.h"
+#include "Render/GraphicsSettings.h"
 
 #include <algorithm>
 
@@ -29,6 +30,10 @@ void ou::VolumeManager::Update(LayerMask layerMask) {
 	auto &stack = GetStack();
 	stack.Reset();
 
+	if (const auto &defaultProfile = GraphicsSettings::GetInstance().defaultVolumeProfile_) {
+		OverrideData(stack, *defaultProfile, 1.0f);
+	}
+
 	auto volumes = sVolumes_;
 	std::stable_sort(volumes.begin(), volumes.end(), [](const Volume *a, const Volume *b) {
 		return a->GetPriority() < b->GetPriority();
@@ -45,9 +50,14 @@ void ou::VolumeManager::Update(LayerMask layerMask) {
 		const auto weight = Mathf::Clamp01(volume->GetWeight());
 		if (weight <= 0.0f) { continue; }
 
-		for (const auto &component : profile->GetComponents()) {
-			if (!component->GetActive()) { continue; }
-			if (auto *state = stack.Find(*component)) { component->Override(*state, weight); }
-		}
+		OverrideData(stack, *profile, weight);
+	}
+}
+
+
+void ou::VolumeManager::OverrideData(VolumeStack &stack, const VolumeProfile &profile, float weight) {
+	for (const auto &component : profile.GetComponents()) {
+		if (!component->GetActive()) { continue; }
+		if (auto *state = stack.Find(*component)) { component->Override(*state, weight); }
 	}
 }

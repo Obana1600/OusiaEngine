@@ -1,0 +1,41 @@
+{
+	"components": [
+		{
+			"$type": "Tonemapping",
+			"active": true,
+			"mode": {
+				"overrideState": true,
+				"value": "Neutral"
+			}
+		},
+		{
+			"$type": "ColorAdjustments",
+			"active": true,
+			"postExposure": {
+				"overrideState": true,
+				"value": 1.35
+			},
+			"contrast": {
+				"overrideState": true,
+				"value": 100.0
+			},
+			"colorFilter": {
+				"overrideState": true,
+				"value": [
+					1.0,
+					1.0,
+					0.0,
+					1.0
+				]
+			},
+			"hueShift": {
+				"overrideState": true,
+				"value": 180.0
+			},
+			"saturation": {
+				"overrideState": true,
+				"value": 100.0
+			}
+		}
+	]
+}

@@ -1,0 +1,54 @@
+{
+	"version": 1,
+	"gameObjects": [
+		{
+			"$id": 504386447342066,
+			"name": "MagicBullet",
+			"active": true,
+			"layer": 0,
+			"tag": "Untagged",
+			"components": [
+				{
+					"$type": "Transform",
+					"$id": 6008756651911928,
+					"localPosition": [
+						0,
+						0,
+						0
+					],
+					"localRotation": [
+						0,
+						0,
+						0,
+						1
+					],
+					"localEulerAnglesHint": [
+						0,
+						0,
+						0
+					],
+					"localScale": [
+						0.4,
+						0.4,
+						0.4
+					],
+					"parent": null
+				},
+				{
+					"$type": "MeshRenderer",
+					"$id": 1422128648676523,
+					"enabled": true,
+					"materials": [
+						{
+							"guid": "0821a31fa4046c62f757129b8c0a5d64"
+						}
+					],
+					"mesh": {
+						"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+						"sub": "Mesh/Sphere"
+					}
+				}
+			]
+		}
+	]
+}

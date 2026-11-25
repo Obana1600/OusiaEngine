@@ -1,0 +1,46 @@
+{
+	"$id": 4989991519318451,
+	"$order": "5000000",
+	"name": "Main Camera",
+	"active": true,
+	"layer": 0,
+	"tag": "MainCamera",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 3154538027497229,
+			"localPosition": [
+				0.0,
+				1.0,
+				-10.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "Camera",
+			"$id": 5814794162624564,
+			"enabled": true,
+			"fieldOfView": 60.0,
+			"aspect": 0.0,
+			"nearClipPlane": 0.3,
+			"farClipPlane": 1000.0,
+			"renderPostProcessing": true
+		}
+	]
+}

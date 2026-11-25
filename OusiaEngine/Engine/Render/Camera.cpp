@@ -26,6 +26,8 @@ void ou::Camera::Serialize(Serializer &serializer) {
 	serializer.Field("aspect", aspect_);
 	serializer.Field("nearClipPlane", nearClipPlane_);
 	serializer.Field("farClipPlane", farClipPlane_);
+	serializer.Field("renderPostProcessing", renderPostProcessing_);
+	serializer.Field("volumeLayerMask", volumeLayerMask_.value);
 }
 
 
@@ -97,6 +99,26 @@ void ou::Camera::SetFarClipPlane(float farClipPlane) {
 
 float ou::Camera::GetFarClipPlane() const {
 	return farClipPlane_;
+}
+
+
+void ou::Camera::SetRenderPostProcessing(bool renderPostProcessing) {
+	renderPostProcessing_ = renderPostProcessing;
+}
+
+
+bool ou::Camera::GetRenderPostProcessing() const {
+	return renderPostProcessing_;
+}
+
+
+void ou::Camera::SetVolumeLayerMask(LayerMask volumeLayerMask) {
+	volumeLayerMask_ = volumeLayerMask;
+}
+
+
+LayerMask ou::Camera::GetVolumeLayerMask() const {
+	return volumeLayerMask_;
 }
 
 

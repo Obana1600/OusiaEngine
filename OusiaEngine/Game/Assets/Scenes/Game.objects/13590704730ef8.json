@@ -1,0 +1,102 @@
+{
+	"$id": 5445911231794936,
+	"$order": "5000001",
+	"name": "MessageText",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "RectTransform",
+			"$id": 5344503921439947,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 1734672309493412
+			},
+			"anchorMin": [
+				0.5,
+				0.5
+			],
+			"anchorMax": [
+				0.5,
+				0.5
+			],
+			"anchoredPosition": [
+				0.0,
+				0.0
+			],
+			"sizeDelta": [
+				1000.0,
+				200.0
+			],
+			"pivot": [
+				0.5,
+				0.5
+			]
+		},
+		{
+			"$type": "Text",
+			"$id": 1871798033654119,
+			"enabled": true,
+			"material": null,
+			"color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"raycastTarget": false,
+			"text": "MESSAGE",
+			"font": null,
+			"fontSize": 48.0,
+			"alignment": "Center",
+			"wordWrappingEnabled": true,
+			"lineSpacing": 0.0,
+			"characterSpacing": 0.0,
+			"faceDilate": 0.0,
+			"outlineWidth": 0.0,
+			"outlineColor": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"underlayDilate": 0.0,
+			"underlaySoftness": 0.0,
+			"underlayOffset": [
+				0.0,
+				0.0
+			],
+			"underlayColor": [
+				0.0,
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"$type": "CanvasRenderer",
+			"$id": 6549465867547467
+		}
+	]
+}

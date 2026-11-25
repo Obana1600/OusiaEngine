@@ -1,0 +1,73 @@
+{
+	"$id": 3592921184128707,
+	"$order": "5000002",
+	"name": "Sphere",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 5501123290014341,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 2820467192873517,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+					"sub": "Material/Default"
+				}
+			],
+			"mesh": {
+				"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+				"sub": "Mesh/Sphere"
+			}
+		},
+		{
+			"$type": "SphereCollider",
+			"$id": 196947479509611,
+			"enabled": true,
+			"isTrigger": false,
+			"material": null,
+			"center": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"radius": 0.5
+		},
+		{
+			"$type": "Volume",
+			"$id": 6571642751497061,
+			"enabled": true,
+			"isGlobal": true,
+			"priority": -2.91,
+			"weight": 1.0,
+			"sharedProfile": null
+		}
+	]
+}

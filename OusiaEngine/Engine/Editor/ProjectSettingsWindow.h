@@ -16,6 +16,7 @@ class ProjectSettingsWindow final: public EditorWindow {
 public: // インナークラス
 
 	enum class Section : uint8_t {
+		Graphics,
 		Physics,
 		Player,
 		TagsAndLayers,
@@ -56,6 +57,7 @@ private: // メンバ関数
 
 	void DrawSectionList();
 
+	void DrawGraphics();
 	void DrawPhysics();
 	// Unity の Layer Collision Matrix（名前のあるレイヤーどうしが当たるか）
 	void DrawLayerCollisionMatrix();

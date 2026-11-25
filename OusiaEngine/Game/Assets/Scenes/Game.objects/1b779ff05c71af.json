@@ -1,0 +1,60 @@
+{
+	"$id": 7731353187283375,
+	"$order": "5000001",
+	"name": "Main Camera",
+	"active": true,
+	"layer": 0,
+	"tag": "MainCamera",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 3596981014950241,
+			"localPosition": [
+				0.0,
+				15.7,
+				-18.3
+			],
+			"localRotation": [
+				0.4617486,
+				0.0,
+				0.0,
+				0.8870108
+			],
+			"localEulerAnglesHint": [
+				0.9599311,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "Camera",
+			"$id": 4635375759798882,
+			"enabled": true,
+			"fieldOfView": 60.0,
+			"aspect": 0.0,
+			"nearClipPlane": 0.3,
+			"farClipPlane": 1000.0
+		},
+		{
+			"$type": "MonoBehavior",
+			"$id": 5577865009949673,
+			"enabled": true,
+			"script": {
+				"guid": "acc1d23e967af01888ea883847f11b6d"
+			},
+			"target": null,
+			"subTarget": null,
+			"pitch": 55.0,
+			"yaw": 0.0,
+			"distance": 18.0,
+			"subTargetWeight": 0.3,
+			"followSharpness": 6.0
+		}
+	]
+}

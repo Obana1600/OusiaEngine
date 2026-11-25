@@ -1,0 +1,67 @@
+{
+	"$id": 7630740427231896,
+	"$order": "5000003",
+	"name": "Floor",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 958497175133925,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				2.6,
+				1.0,
+				2.6
+			],
+			"parent": null
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 6824477608841338,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "a613bec17cccd6ffb2453cc5d23a6112"
+				}
+			],
+			"mesh": {
+				"guid": "b03441b5e7af55c1b87b155c3691763e",
+				"sub": "Mesh/Plane"
+			}
+		},
+		{
+			"$type": "BoxCollider",
+			"$id": 1680130199958011,
+			"enabled": true,
+			"isTrigger": false,
+			"material": null,
+			"center": [
+				0.0,
+				-0.01,
+				0.0
+			],
+			"size": [
+				10.0,
+				0.02,
+				10.0
+			]
+		}
+	]
+}

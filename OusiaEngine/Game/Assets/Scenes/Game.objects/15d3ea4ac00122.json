@@ -1,0 +1,102 @@
+{
+	"$id": 6143977740828962,
+	"$order": "5000000",
+	"name": "HudText",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "RectTransform",
+			"$id": 612407200411481,
+			"localPosition": [
+				-557.0,
+				303.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": {
+				"id": 1734672309493412
+			},
+			"anchorMin": [
+				0.0,
+				1.0
+			],
+			"anchorMax": [
+				0.0,
+				1.0
+			],
+			"anchoredPosition": [
+				24.0,
+				-24.0
+			],
+			"sizeDelta": [
+				640.0,
+				160.0
+			],
+			"pivot": [
+				0.0,
+				1.0
+			]
+		},
+		{
+			"$type": "Text",
+			"$id": 8096037567111002,
+			"enabled": true,
+			"material": null,
+			"color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"raycastTarget": false,
+			"text": "HUD",
+			"font": null,
+			"fontSize": 24.0,
+			"alignment": "TopLeft",
+			"wordWrappingEnabled": true,
+			"lineSpacing": 0.0,
+			"characterSpacing": 0.0,
+			"faceDilate": 0.0,
+			"outlineWidth": 0.0,
+			"outlineColor": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"underlayDilate": 0.0,
+			"underlaySoftness": 0.0,
+			"underlayOffset": [
+				0.0,
+				0.0
+			],
+			"underlayColor": [
+				0.0,
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"$type": "CanvasRenderer",
+			"$id": 6196550464766315
+		}
+	]
+}

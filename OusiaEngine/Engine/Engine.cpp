@@ -15,6 +15,7 @@
 #include "Platform/Paths.h"
 #include "Platform/Screen.h"
 #include "PostProcess/PostProcessPass.h"
+#include "PostProcess/VolumeManager.h"
 #include "Render/Asset/Material.h"
 #include "Render/LineRenderer.h"
 #include "Scene/LayerMask.h"
@@ -23,6 +24,7 @@
 #include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
+#include "Render/GraphicsSettings.h"
 #include "UI/Text.h"
 #ifdef WITH_EDITOR
 #include "Editor/EditorApplication.h"
@@ -194,6 +196,9 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// 時間（Project Settings の Time）
 	TimeManager::Load();
 
+	// ポストプロセスの順番
+	GraphicsSettings::Load();
+
 	// ウィンドウ
 #ifdef WITH_EDITOR
 	window_ = Window::Create(MakeEditorWindowDesc(productName, desc.width, desc.height));
@@ -282,6 +287,7 @@ void ou::Engine::Finalize() {
 
 	imGuiManager_.reset();
 	SceneManager::Finalize();
+	GraphicsSettings::Unload();
 	AssetDatabase::UnloadAllAssets();
 	ScriptEngine::Finalize();
 
@@ -449,7 +455,13 @@ void ou::Engine::RenderGame(const SceneRenderTarget &target, Graphics::CommandLi
 	SceneManager::Render(cmd);
 	device_->RenderPassEnd(cmd);
 
-	PostProcessPass::Render(target, cmd);
+	const auto *camera = SceneManager::GetMainCamera();
+	const VolumeStack *stack = nullptr;
+	if (camera && camera->GetRenderPostProcessing()) {
+		VolumeManager::Update(camera->GetVolumeLayerMask());
+		stack = &VolumeManager::GetStack();
+	}
+	PostProcessPass::Render(target, stack, cmd);
 
 	target.BeginOverlayPass(cmd);
 	SceneManager::RenderOverlay(cmd);
@@ -465,7 +477,9 @@ void ou::Engine::RenderSceneView(const SceneView &sceneView, Graphics::CommandLi
 	SceneManager::RenderWithCamera(camera, cmd);
 	device_->RenderPassEnd(cmd);
 
-	PostProcessPass::Render(target, cmd);
+	const auto *mainCamera = SceneManager::GetMainCamera();
+	VolumeManager::Update(mainCamera ? mainCamera->GetVolumeLayerMask() : LayerMask{~0u});
+	PostProcessPass::Render(target, &VolumeManager::GetStack(), cmd);
 
 	target.BeginOverlayPassWithDepth(cmd);
 	GizmoRenderer::Render(camera, cmd);

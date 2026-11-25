@@ -3,6 +3,7 @@
 #include "Editor/EditorGuiUtility.h"
 #include "Editor/ParticleEffectPreview.h"
 #include "Editor/UnityEventDrawer.h"
+#include "Scene/LayerMask.h"
 
 #include <algorithm>
 #include <format>
@@ -23,6 +24,52 @@ void Field(SerializedObject &so, std::string_view path, std::string_view label) 
 	if (auto property = so.FindProperty(path)) {
 		EditorGuiLayout::PropertyField(*property, EditorGuiUtility::TrTextContent(label, property->GetName()), true);
 	}
+}
+
+// LayerMask の欄（Unity と同じく、名前のある Layer をチェックで選ぶ。Nothing / Everything も選べる）
+// ファイルにはビットを数で書くので、欄だけ Layer の名前で見せる
+void LayerMaskField(SerializedObject &so, std::string_view path, std::string_view label) {
+	auto property = so.FindProperty(path);
+	if (!property) { return; }
+
+	auto mask = property->GetUintValue();
+	std::vector<int> namedLayers;
+	for (int layer = 0; layer < LayerMask::kLayerCount; layer++) {
+		if (!LayerMask::LayerToName(layer).empty()) { namedLayers.push_back(layer); }
+	}
+
+	// 閉じた欄の文字（Unity と同じ）
+	std::string preview;
+	const auto checkedCount = std::count_if(namedLayers.begin(), namedLayers.end(), [&](int layer) { return (mask & (1u << layer)) != 0; });
+	if (mask == 0) {
+		preview = "Nothing";
+	} else if (checkedCount == static_cast<std::ptrdiff_t>(namedLayers.size())) {
+		preview = "Everything";
+	} else if (checkedCount == 1) {
+		const auto it = std::find_if(namedLayers.begin(), namedLayers.end(), [&](int layer) { return (mask & (1u << layer)) != 0; });
+		preview = LayerMask::LayerToName(*it);
+	} else {
+		preview = "Mixed...";
+	}
+
+	ImGui::PushID(property->GetPropertyPath().c_str());
+	EditorGuiLayout::PrefixLabel(EditorGuiUtility::TrTextContent(label, property->GetName()));
+	if (ImGui::BeginCombo("##Mask", preview.c_str())) {
+		auto next = mask;
+		if (ImGui::Selectable("Nothing", mask == 0)) { next = 0; }
+		if (ImGui::Selectable("Everything", mask == ~0u)) { next = ~0u; }
+		ImGui::Separator();
+
+		// チェックしても一覧を閉じない（続けて選べる）
+		for (const auto layer : namedLayers) {
+			auto isChecked = (mask & (1u << layer)) != 0;
+			if (ImGui::Checkbox(LayerMask::LayerToName(layer).c_str(), &isChecked)) { next = mask ^ (1u << layer); }
+		}
+		ImGui::EndCombo();
+
+		if (next != mask) { property->SetUintValue(next); }
+	}
+	ImGui::PopID();
 }
 
 // Enum の選択肢の説明
@@ -165,6 +212,8 @@ void ou::CameraEditor::OnInspectorGui() {
 	Field(so, "aspect", "アスペクト比（0 で自動）");
 	Field(so, "nearClipPlane", "描く近さの限界");
 	Field(so, "farClipPlane", "描く遠さの限界");
+	Field(so, "renderPostProcessing", "ポストプロセス");
+	LayerMaskField(so, "volumeLayerMask", "Volume の Layer");
 	so.ApplyModifiedProperties();
 }
 
@@ -174,10 +223,10 @@ void ou::LightEditor::OnInspectorGui() {
 	so.Update();
 	BehaviorFields(so);
 	EnumField(so, "type", "種類", {
-		{"Spot", "スポットライト。向いている方向の円錐の中を照らす"},
-		{"Directional", "太陽のような平行な光。位置は関係なく、向きだけで照らす"},
-		{"Point", "電球のように、位置から全方向を照らす"},
-	});
+									  {"Spot", "スポットライト。向いている方向の円錐の中を照らす"},
+									  {"Directional", "太陽のような平行な光。位置は関係なく、向きだけで照らす"},
+									  {"Point", "電球のように、位置から全方向を照らす"},
+								  });
 	Field(so, "color", "色");
 	Field(so, "intensity", "強さ");
 
@@ -235,12 +284,12 @@ void ou::SkeletalAnimatorEditor::OnInspectorGui() {
 	Field(so, "clip", "クリップ");
 	Field(so, "playAutomatically", "自動で再生");
 	EnumField(so, "wrapMode", "終わったとき", {
-		{"Default", "クリップの設定に従う"},
-		{"Once", "1 回再生して止まり、最初のポーズに戻る"},
-		{"Loop", "最初から繰り返す"},
-		{"PingPong", "最後まで行ったら逆に再生し、往復を繰り返す"},
-		{"ClampForever", "1 回再生して、最後のポーズのまま止まる"},
-	});
+												  {"Default", "クリップの設定に従う"},
+												  {"Once", "1 回再生して止まり、最初のポーズに戻る"},
+												  {"Loop", "最初から繰り返す"},
+												  {"PingPong", "最後まで行ったら逆に再生し、往復を繰り返す"},
+												  {"ClampForever", "1 回再生して、最後のポーズのまま止まる"},
+											  });
 	Field(so, "speed", "速さ");
 	so.ApplyModifiedProperties();
 }
@@ -308,16 +357,16 @@ void ou::RigidbodyEditor::OnInspectorGui() {
 	Field(so, "maxAngularVelocity", "最大の回転の速さ");
 	Field(so, "sleepThreshold", "止まったとみなす速さ");
 	EnumField(so, "collisionDetectionMode", "衝突の判定", {
-		{"Discrete", "1 ステップごとの位置だけで判定する。いちばん軽いが、速い物体は薄い壁をすり抜けることがある"},
-		{"Continuous", "動かない物体に対して、すり抜けを防ぐ"},
-		{"ContinuousDynamic", "動く物体どうしでも、すり抜けを防ぐ。いちばん重い"},
-		{"ContinuousSpeculative", "先を読んで、すり抜けを防ぐ。回転にも効くが、当たる前に止まって見えることがある"},
-	});
+															  {"Discrete", "1 ステップごとの位置だけで判定する。いちばん軽いが、速い物体は薄い壁をすり抜けることがある"},
+															  {"Continuous", "動かない物体に対して、すり抜けを防ぐ"},
+															  {"ContinuousDynamic", "動く物体どうしでも、すり抜けを防ぐ。いちばん重い"},
+															  {"ContinuousSpeculative", "先を読んで、すり抜けを防ぐ。回転にも効くが、当たる前に止まって見えることがある"},
+														  });
 	EnumField(so, "interpolation", "補間", {
-		{"None", "補間しない。物理の更新が描画より少ないと、カクついて見えることがある"},
-		{"Interpolate", "前の物理の更新との間をなめらかにつなぐ。少し遅れて見える"},
-		{"Extrapolate", "速度から先を予測してなめらかにする。ぶつかったときに行き過ぎて見えることがある"},
-	});
+											   {"None", "補間しない。物理の更新が描画より少ないと、カクついて見えることがある"},
+											   {"Interpolate", "前の物理の更新との間をなめらかにつなぐ。少し遅れて見える"},
+											   {"Extrapolate", "速度から先を予測してなめらかにする。ぶつかったときに行き過ぎて見えることがある"},
+										   });
 	Field(so, "constraints", "固定する軸");
 	so.ApplyModifiedProperties();
 }
@@ -330,9 +379,9 @@ void ou::AudioSourceEditor::OnInspectorGui() {
 	so.Update();
 	Field(so, "clip", "音");
 	EnumField(so, "submixType", "音量の分類", {
-		{"SoundEffect", "効果音。効果音の音量の設定が効く"},
-		{"Music", "BGM。BGM の音量の設定が効く"},
-	});
+												  {"SoundEffect", "効果音。効果音の音量の設定が効く"},
+												  {"Music", "BGM。BGM の音量の設定が効く"},
+											  });
 	Field(so, "mute", "ミュート");
 	Field(so, "playOnAwake", "始まったら再生");
 	Field(so, "loop", "繰り返す");
@@ -398,16 +447,16 @@ void ou::TextEditor::OnInspectorGui() {
 	Field(so, "font", "フォント");
 	Field(so, "fontSize", "文字の大きさ");
 	EnumField(so, "alignment", "揃え", {
-		{"TopLeft", "左上"},
-		{"Top", "上・左右の中央"},
-		{"TopRight", "右上"},
-		{"Left", "左・上下の中央"},
-		{"Center", "真ん中"},
-		{"Right", "右・上下の中央"},
-		{"BottomLeft", "左下"},
-		{"Bottom", "下・左右の中央"},
-		{"BottomRight", "右下"},
-	});
+										   {"TopLeft", "左上"},
+										   {"Top", "上・左右の中央"},
+										   {"TopRight", "右上"},
+										   {"Left", "左・上下の中央"},
+										   {"Center", "真ん中"},
+										   {"Right", "右・上下の中央"},
+										   {"BottomLeft", "左下"},
+										   {"Bottom", "下・左右の中央"},
+										   {"BottomRight", "右下"},
+									   });
 	Field(so, "wordWrappingEnabled", "折り返す");
 	Field(so, "lineSpacing", "行の間隔");
 	Field(so, "characterSpacing", "文字の間隔");
@@ -487,9 +536,9 @@ void ou::ParticleSystemEditor::OnInspectorGui() {
 		Field(so, "main/gravityModifier", "重力の倍率");
 		Field(so, "main/maxParticles", "最大の数");
 		EnumField(so, "main/simulationSpace", "動かす座標", {
-			{"Local", "出たあとも Transform に付いて動く"},
-			{"World", "出たあとは、Transform が動いてもその場に残る"},
-		});
+																{"Local", "出たあとも Transform に付いて動く"},
+																{"World", "出たあとは、Transform が動いてもその場に残る"},
+															});
 		EndFoldout();
 	}
 
@@ -516,9 +565,9 @@ void ou::ParticleSystemEditor::OnInspectorGui() {
 	if (BeginFoldout(so, "shape", "形")) {
 		Field(so, "shape/enabled", "有効");
 		EnumField(so, "shape/shapeType", "形", {
-			{"Sphere", "球の中から、全方向へ出す"},
-			{"Cone", "円錐の向きへ出す"},
-		});
+												   {"Sphere", "球の中から、全方向へ出す"},
+												   {"Cone", "円錐の向きへ出す"},
+											   });
 		if (EnumName(so, "shape/shapeType") == "Cone") { Field(so, "shape/angle", "広がる角度（度）"); }
 		Field(so, "shape/radius", "半径");
 		Field(so, "shape/radiusThickness", "出す厚さ（0 で表面だけ、1 で中まで）");
@@ -548,16 +597,16 @@ void ou::ParticleSystemRendererEditor::OnInspectorGui() {
 	so.Update();
 	RendererFields(so);
 	EnumField(so, "blendMode", "重ね方", {
-		{"Additive", "色を足して明るくする。光や炎に向く"},
-		{"Subtract", "色を引いて暗くする"},
-		{"Multiply", "色を掛ける。煙や影に向く"},
-		{"Alpha", "透明度で重ねる。ふつうの半透明"},
-	});
+											 {"Additive", "色を足して明るくする。光や炎に向く"},
+											 {"Subtract", "色を引いて暗くする"},
+											 {"Multiply", "色を掛ける。煙や影に向く"},
+											 {"Alpha", "透明度で重ねる。ふつうの半透明"},
+										 });
 	EnumField(so, "sortMode", "描く順番", {
-		{"None", "並べ替えない。いちばん軽い"},
-		{"Distance", "カメラから遠いものから描く"},
-		{"OldestInFront", "古いものを手前に描く"},
-		{"YoungestInFront", "新しいものを手前に描く"},
-	});
+											  {"None", "並べ替えない。いちばん軽い"},
+											  {"Distance", "カメラから遠いものから描く"},
+											  {"OldestInFront", "古いものを手前に描く"},
+											  {"YoungestInFront", "新しいものを手前に描く"},
+										  });
 	so.ApplyModifiedProperties();
 }

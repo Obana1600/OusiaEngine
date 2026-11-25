@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Editor/EditorWindow.h"
-#include "Editor/SlowClick.h"
+#include "Editor/ItemClick.h"
 
 #include <cstdint>
 #include <string>
@@ -45,8 +45,7 @@ protected: // メンバ関数
 
 private: // メンバ変数
 
-	// 行の矢印を押したか（矢印で開いたときは選ばない）
-	bool isPressedOnArrow_ = false;
+	SelectOnRelease selectOnRelease_;
 
 	// 名前を変えている GameObject（0 なら変えていない）
 	uint32_t renamingId_ = 0;

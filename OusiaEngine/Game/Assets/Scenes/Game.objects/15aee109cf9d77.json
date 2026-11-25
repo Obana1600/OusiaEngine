@@ -1,0 +1,52 @@
+{
+	"$id": 6103256066399607,
+	"$order": "5000002",
+	"name": "Directional Light",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 2288205478620114,
+			"localPosition": [
+				0.0,
+				3.0,
+				0.0
+			],
+			"localRotation": [
+				0.4082179,
+				-0.23456971,
+				0.10938165,
+				0.8754261
+			],
+			"localEulerAnglesHint": [
+				0.87266463,
+				-0.5235988,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "Light",
+			"$id": 8573641894182005,
+			"enabled": true,
+			"type": "Directional",
+			"color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"intensity": 1.0,
+			"range": 10.0,
+			"spotAngle": 30.0,
+			"innerSpotAngle": 21.80208
+		}
+	]
+}

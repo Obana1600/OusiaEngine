@@ -4,7 +4,9 @@
 #include "Diagnostics/Log.h"
 #include "Editor/EditorGuiLayout.h"
 #include "Editor/GuiContent.h"
+#include "Editor/SerializedObject.h"
 #include "Physics/Physics.h"
+#include "Render/GraphicsSettings.h"
 #include "Scene/TagManager.h"
 
 #include <algorithm>
@@ -29,6 +31,7 @@ struct SectionInfo {
 
 // Unity と同じく、名前の順に並べる
 constexpr SectionInfo kSections[] = {
+	{ProjectSettingsWindow::Section::Graphics, "Graphics"},
 	{ProjectSettingsWindow::Section::Physics, "Physics"},
 	{ProjectSettingsWindow::Section::Player, "Player"},
 	{ProjectSettingsWindow::Section::TagsAndLayers, "Tags and Layers"},
@@ -80,6 +83,9 @@ void ou::ProjectSettingsWindow::OnGui() {
 
 	ImGui::BeginChild("##Content", {0.0f, 0.0f}, ImGuiChildFlags_None);
 	switch (section_) {
+		case Section::Graphics:
+			DrawGraphics();
+			break;
 		case Section::Physics:
 			DrawPhysics();
 			break;
@@ -103,6 +109,19 @@ void ou::ProjectSettingsWindow::DrawSectionList() {
 		if (ImGui::Selectable(info.name, section_ == info.section)) { section_ = info.section; }
 	}
 	ImGui::EndChild();
+}
+
+
+void ou::ProjectSettingsWindow::DrawGraphics() {
+	ImGui::SeparatorText("Graphics");
+
+	// GraphicsSettings は Object なので、アセットの欄（選ぶ・ドラッグで入れる）は Inspector と同じものを使う
+	SerializedObject so(&GraphicsSettings::GetInstance());
+	so.Update();
+	if (auto property = so.FindProperty("defaultVolumeProfile")) {
+		EditorGuiLayout::PropertyField(*property, GuiContent("Default Volume Profile", "どの Volume よりも下に敷く Volume Profile。チェックの入った値が、全部のカメラの初期値になる"));
+	}
+	if (so.ApplyModifiedProperties()) { GraphicsSettings::Save(); }
 }
 
 
@@ -199,14 +218,18 @@ void ou::ProjectSettingsWindow::DrawLayerCollisionMatrix() {
 	ImGui::Spacing();
 	if (ImGui::Button("Disable All")) {
 		for (auto layer1 : layers) {
-			for (auto layer2 : layers) { Physics::IgnoreLayerCollision(layer1, layer2, true); }
+			for (auto layer2 : layers) {
+				Physics::IgnoreLayerCollision(layer1, layer2, true);
+			}
 		}
 		Physics::SaveDynamicsManager();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Enable All")) {
 		for (auto layer1 : layers) {
-			for (auto layer2 : layers) { Physics::IgnoreLayerCollision(layer1, layer2, false); }
+			for (auto layer2 : layers) {
+				Physics::IgnoreLayerCollision(layer1, layer2, false);
+			}
 		}
 		Physics::SaveDynamicsManager();
 	}

@@ -3,6 +3,7 @@
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
 #include "Scene/Behavior.h"
+#include "Scene/LayerMask.h"
 
 // TODO: API 名を Unity にそろえる
 
@@ -47,6 +48,12 @@ public: // メンバ関数
 	void SetFarClipPlane(float farClipPlane);
 	float GetFarClipPlane() const;
 
+	void SetRenderPostProcessing(bool renderPostProcessing);
+	bool GetRenderPostProcessing() const;
+
+	void SetVolumeLayerMask(LayerMask volumeLayerMask);
+	LayerMask GetVolumeLayerMask() const;
+
 
 private: // メンバ変数
 
@@ -54,6 +61,9 @@ private: // メンバ変数
 	float aspect_ = 0.0f;
 	float nearClipPlane_ = 0.3f;
 	float farClipPlane_ = 1000.0f;
+
+	bool renderPostProcessing_ = true;
+	LayerMask volumeLayerMask_{1u};
 };
 
 } // namespace ou

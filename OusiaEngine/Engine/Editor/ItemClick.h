@@ -7,6 +7,32 @@
 
 namespace ou {
 
+// 押してから離すまでに、ImGui がドラッグとみなす距離を超えて動かしたか
+inline bool WasMouseDragged() {
+	const auto &io = ImGui::GetIO();
+	return io.MouseDragMaxDistanceSqr[ImGuiMouseButton_Left] >= io.MouseDragThreshold * io.MouseDragThreshold;
+}
+
+// Unity と同じく、項目を選ぶのはマウスを離したとき
+// 押した瞬間に選ぶと Inspector が切り替わり、ドラッグで参照の欄へ引けない
+class SelectOnRelease final {
+public: // メンバ関数
+
+	// 項目を描いた直後に呼ぶ。この項目を選ぶときに true を返す
+	// 矢印で開いたときと、ドラッグしたときは選ばない
+	bool TrackItem() {
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+			isPressedOnArrow_ = ImGui::IsItemToggledOpen();
+		}
+		return ImGui::IsItemDeactivated() && !isPressedOnArrow_ && !WasMouseDragged();
+	}
+
+
+private: // メンバ変数
+
+	bool isPressedOnArrow_ = false;
+};
+
 // Unity・エクスプローラーの「選んでいる項目を、間を空けてもう一度クリックすると名前の変更」（スロークリック）
 // ダブルクリックと区別するため、離してからダブルクリックの間隔（io.MouseDoubleClickTime）だけ待ち、
 // その間にもう一度押されなければ、名前の変更を始める
@@ -28,9 +54,7 @@ public: // メンバ関数
 			isArmed_ = false;
 
 			// 押してから動かしていたら（ドラッグ）、名前の変更にしない
-			const auto &io = ImGui::GetIO();
-			const auto isDragged = io.MouseDragMaxDistanceSqr[ImGuiMouseButton_Left] >= io.MouseDragThreshold * io.MouseDragThreshold;
-			if (!isDragged && ImGui::IsItemHovered()) {
+			if (!WasMouseDragged() && ImGui::IsItemHovered()) {
 				pendingKey_ = key;
 				pendingTime_ = ImGui::GetTime();
 			}

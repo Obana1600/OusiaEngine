@@ -338,6 +338,7 @@ bool MatchesAssetType(const std::filesystem::path &path, std::string_view typeNa
 		{".as", "script"},
 		{".prefab", "prefab"},
 		{".prefab", "gameobject"},
+		{".volumeprofile", "volumeprofile"},
 	};
 
 	const auto extension = ToLowerAscii(ToUtf8(path.extension()));

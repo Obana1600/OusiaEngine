@@ -1,0 +1,101 @@
+{
+	"$id": 2011893995623902,
+	"$order": "5000002",
+	"name": "WeakPoint_1",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 5162510173291384,
+			"localPosition": [
+				1.8,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				0.6,
+				0.6,
+				0.6
+			],
+			"parent": {
+				"id": 1838921334566901
+			}
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 8826782394127646,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+					"sub": "Material/Default"
+				}
+			],
+			"mesh": {
+				"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+				"sub": "Mesh/Sphere"
+			}
+		},
+		{
+			"$type": "SphereCollider",
+			"$id": 1755056426650417,
+			"enabled": true,
+			"isTrigger": false,
+			"material": null,
+			"center": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"radius": 0.5
+		},
+		{
+			"$type": "MonoBehavior",
+			"$id": 6600716652072264,
+			"enabled": true,
+			"script": {
+				"guid": "6bbf56c3e0370be215cef147e9e1173b"
+			},
+			"stages": "1",
+			"radius": 0.5,
+			"closedColor": [
+				0.35,
+				0.35,
+				0.4,
+				1.0
+			],
+			"warningColor": [
+				1.0,
+				0.75,
+				0.2,
+				1.0
+			],
+			"openColor": [
+				1.0,
+				0.15,
+				0.15,
+				1.0
+			],
+			"brokenColor": [
+				0.08,
+				0.08,
+				0.08,
+				1.0
+			],
+			"openScale": 1.35
+		}
+	]
+}

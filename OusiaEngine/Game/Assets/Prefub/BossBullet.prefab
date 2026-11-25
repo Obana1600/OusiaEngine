@@ -1,0 +1,54 @@
+{
+	"version": 1,
+	"gameObjects": [
+		{
+			"$id": 8508429677205677,
+			"name": "BossBullet",
+			"active": true,
+			"layer": 0,
+			"tag": "Untagged",
+			"components": [
+				{
+					"$type": "Transform",
+					"$id": 4173154823791667,
+					"localPosition": [
+						0,
+						0,
+						0
+					],
+					"localRotation": [
+						0,
+						0,
+						0,
+						1
+					],
+					"localEulerAnglesHint": [
+						0,
+						0,
+						0
+					],
+					"localScale": [
+						0.6,
+						0.6,
+						0.6
+					],
+					"parent": null
+				},
+				{
+					"$type": "MeshRenderer",
+					"$id": 6294999139438935,
+					"enabled": true,
+					"materials": [
+						{
+							"guid": "f0944707817ed74a1b0ee42222296b8e"
+						}
+					],
+					"mesh": {
+						"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+						"sub": "Mesh/Sphere"
+					}
+				}
+			]
+		}
+	]
+}

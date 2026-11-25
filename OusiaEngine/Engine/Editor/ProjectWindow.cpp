@@ -365,7 +365,7 @@ void ou::ProjectWindow::DrawFolderTree(const std::string &assetPath, const std::
 		DrawRenameField(assetPath, labelX);
 	} else {
 		treeSlowClick_.TrackItem(assetPath, isSelected);
-		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+		if (treeSelectOnRelease_.TrackItem()) {
 			selectedFolder_ = assetPath;
 		}
 
@@ -441,7 +441,7 @@ void ou::ProjectWindow::DrawFolderItem(const std::string &assetPath, const std::
 	ImGui::TreeNodeEx(assetPath.c_str(), kFlags | (isSelected ? ImGuiTreeNodeFlags_Selected : 0), "%s/", name.c_str());
 
 	slowClick_.TrackItem(assetPath, isSelected);
-	if (ImGui::IsItemClicked()) {
+	if (selectOnRelease_.TrackItem()) {
 		Selection::SetActiveAsset(assetPath);
 	}
 	if (IsDeletable(assetPath) && ImGui::BeginDragDropSource()) {
@@ -507,7 +507,7 @@ void ou::ProjectWindow::DrawSubAssets(const std::string &assetPath) {
 void ou::ProjectWindow::HandleItem(const std::string &assetPath, const std::string &subAsset) {
 	const auto payload = EditorPayload::EncodeAsset(assetPath, subAsset);
 
-	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+	if (selectOnRelease_.TrackItem()) {
 		Selection::SetActiveAsset(assetPath, subAsset);
 	}
 

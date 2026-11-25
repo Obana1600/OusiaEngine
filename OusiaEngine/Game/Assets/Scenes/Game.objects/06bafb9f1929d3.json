@@ -1,0 +1,65 @@
+{
+	"$id": 1894439729048019,
+	"$order": "5000000",
+	"name": "Body",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 6218967196585759,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				3.2,
+				3.2,
+				3.2
+			],
+			"parent": {
+				"id": 1838921334566901
+			}
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 5401436738952672,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "59ad7052a77be4e7b5bdcec987fa462e"
+				}
+			],
+			"mesh": {
+				"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
+				"sub": "Mesh/Sphere"
+			}
+		},
+		{
+			"$type": "SphereCollider",
+			"$id": 4644107283277911,
+			"enabled": true,
+			"isTrigger": false,
+			"material": null,
+			"center": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"radius": 0.5
+		}
+	]
+}

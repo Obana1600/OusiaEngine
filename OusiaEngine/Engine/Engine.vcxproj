@@ -44,6 +44,7 @@
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
+    <ClInclude Include="Render\GraphicsSettings.h" />
     <ClInclude Include="PostProcess\Builtin\ColorAdjustments.h" />
     <ClInclude Include="Input\Cursor.h" />
     <ClInclude Include="Editor\CustomEditor.h" />
@@ -60,7 +61,7 @@
     <ClInclude Include="Editor\EditorApplication.h" />
     <ClInclude Include="Editor\EditorPayload.h" />
     <ClInclude Include="Editor\Selection.h" />
-    <ClInclude Include="Editor\SlowClick.h" />
+    <ClInclude Include="Editor\ItemClick.h" />
     <ClInclude Include="Editor\GameObjectCommands.h" />
     <ClInclude Include="Editor\Undo.h" />
     <ClInclude Include="Editor\AssetEditors.h" />
@@ -246,6 +247,7 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="Render\GraphicsSettings.cpp" />
     <ClCompile Include="PostProcess\Builtin\ColorAdjustments.cpp" />
     <ClCompile Include="Input\Cursor.cpp" />
     <ClCompile Include="Editor\CustomEditor.cpp" />

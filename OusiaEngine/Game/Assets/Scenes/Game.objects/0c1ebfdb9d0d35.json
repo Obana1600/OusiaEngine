@@ -1,0 +1,59 @@
+{
+	"$id": 3411509092617525,
+	"$order": "5000008",
+	"name": "EventSystem",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 6897863505999968,
+			"localPosition": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "EventSystem",
+			"$id": 3790475906017439,
+			"enabled": true,
+			"firstSelected": null
+		},
+		{
+			"$type": "StandaloneInputModule",
+			"$id": 2721465426874594,
+			"enabled": true,
+			"upKeys": [
+				"W",
+				"UpArrow"
+			],
+			"downKeys": [
+				"S",
+				"DownArrow"
+			],
+			"submitKeys": [
+				"Space",
+				"Return"
+			]
+		}
+	]
+}

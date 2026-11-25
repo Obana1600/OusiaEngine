@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Editor/EditorWindow.h"
-#include "Editor/SlowClick.h"
+#include "Editor/ItemClick.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -60,6 +60,8 @@ private: // メンバ変数
 	bool isRenamingInTree_ = false;
 	SlowClick<std::string> slowClick_;
 	SlowClick<std::string> treeSlowClick_;
+	SelectOnRelease selectOnRelease_;
+	SelectOnRelease treeSelectOnRelease_;
 
 
 private: // メンバ関数

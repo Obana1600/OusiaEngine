@@ -36,12 +36,6 @@ using namespace ou;
 
 namespace {
 
-// 押してから離すまでに、ImGui がドラッグとみなす距離を超えて動かしたか
-bool WasMouseDragged() {
-	const auto &io = ImGui::GetIO();
-	return io.MouseDragMaxDistanceSqr[ImGuiMouseButton_Left] >= io.MouseDragThreshold * io.MouseDragThreshold;
-}
-
 // target が moving 自身か、その子孫か
 bool IsSelfOrDescendant(const Transform *target, const Transform *moving) {
 	for (auto *p = target; p; p = p->GetParent()) {
@@ -348,11 +342,7 @@ void ou::HierarchyWindow::DrawGameObject(GameObject *gameObject) {
 	if (isRenaming) {
 		DrawRenameField(gameObject, labelX);
 	} else {
-		// Unity と同じく、選ぶのはマウスを離したとき（押した瞬間に選ぶと Inspector が切り替わり、参照の欄へ引けない）
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-			isPressedOnArrow_ = ImGui::IsItemToggledOpen();
-		}
-		if (ImGui::IsItemDeactivated() && !isPressedOnArrow_ && !WasMouseDragged()) {
+		if (selectOnRelease_.TrackItem()) {
 			Selection::SetActiveGameObject(gameObject);
 		}
 		slowClick_.TrackItem(gameObject->GetInstanceId(), isSelected);

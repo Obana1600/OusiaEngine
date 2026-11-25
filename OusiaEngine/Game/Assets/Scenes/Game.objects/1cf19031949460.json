@@ -1,0 +1,51 @@
+{
+	"$id": 8146900957303904,
+	"$order": "5000005",
+	"name": "AimMarker",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 2918344076506021,
+			"localPosition": [
+				0.0,
+				0.05,
+				-6.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				0.6,
+				0.02,
+				0.6
+			],
+			"parent": null
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 8279060652933004,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "a911f1e376e4444db998df7550f8ff74",
+					"sub": "Material/Default"
+				}
+			],
+			"mesh": {
+				"guid": "a911f1e376e4444db998df7550f8ff74",
+				"sub": "Mesh/Cylinder"
+			}
+		}
+	]
+}

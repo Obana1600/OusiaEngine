@@ -10,6 +10,7 @@ namespace ou {
 
 // 前方宣言
 class Volume;
+class VolumeProfile;
 
 class VolumeManager {
 	friend class Volume;
@@ -33,6 +34,8 @@ private: // 静的メンバ関数
 	static void Unregister(Volume *volume);
 
 	static void Update(LayerMask layerMask);
+
+	static void OverrideData(VolumeStack &stack, const VolumeProfile &profile, float weight);
 };
 
 } // namespace ou

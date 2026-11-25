@@ -1,0 +1,76 @@
+{
+	"$id": 3917525856863895,
+	"$order": "5000006",
+	"name": "Boss",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 1838921334566901,
+			"localPosition": [
+				0.0,
+				1.5,
+				0.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "MonoBehavior",
+			"$id": 7240663552924367,
+			"enabled": true,
+			"script": {
+				"guid": "4e9c5d3c859d5b4e7815755860554993"
+			},
+			"maxHp": 7,
+			"bodyRadius": 1.6,
+			"turnSpeed": 90.0,
+			"turnWhileExposed": false,
+			"contactDamageOnlyWhileCharging": true,
+			"attackTime": 4.0,
+			"warningTime": 0.6,
+			"exposeTime": 1.6,
+			"stunTime": 1.2,
+			"attackWhileExposed": false,
+			"speedUpPerHit": 0.08,
+			"attackPlan": "Radial / Aimed / Radial+Aimed / Spiral / Charge+Radial / Spiral+Aimed / Charge+Spiral+Aimed",
+			"projectilePrefab": {
+				"guid": "92f86afb9452a8d4b948098f1e70f107"
+			},
+			"projectileSpeed": 7.0,
+			"projectileRadius": 0.3,
+			"projectileLifeTime": 6.0,
+			"projectileHeight": 0.8,
+			"radialCount": 14,
+			"radialInterval": 1.3,
+			"aimedCount": 3,
+			"aimedSpread": 14.0,
+			"aimedInterval": 0.9,
+			"spiralArms": 2,
+			"spiralInterval": 0.1,
+			"spiralTurnSpeed": 140.0,
+			"chargeWindupTime": 0.7,
+			"chargeSpeed": 15.0,
+			"chargeTime": 0.6,
+			"returnSpeed": 6.0,
+			"hp": 7
+		}
+	]
+}

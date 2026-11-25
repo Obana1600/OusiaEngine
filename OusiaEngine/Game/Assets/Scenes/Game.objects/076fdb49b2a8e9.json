@@ -1,0 +1,113 @@
+{
+	"$id": 2093312461940969,
+	"$order": "5000004",
+	"name": "Player",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{
+			"$type": "Transform",
+			"$id": 2953811275822780,
+			"localPosition": [
+				0.0,
+				1.0,
+				-8.0
+			],
+			"localRotation": [
+				0.0,
+				0.0,
+				0.0,
+				1.0
+			],
+			"localEulerAnglesHint": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"localScale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"parent": null
+		},
+		{
+			"$type": "MeshRenderer",
+			"$id": 1797281615023794,
+			"enabled": true,
+			"materials": [
+				{
+					"guid": "d2e99a3d6b5a50e5ec739163c854f352"
+				}
+			],
+			"mesh": {
+				"guid": "50426e25bfc61315f46d563914e03841",
+				"sub": "Mesh/Capsule"
+			}
+		},
+		{
+			"$type": "CapsuleCollider",
+			"$id": 5076413365183661,
+			"enabled": true,
+			"isTrigger": false,
+			"material": null,
+			"center": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"radius": 0.5,
+			"height": 2.0,
+			"direction": 1
+		},
+		{
+			"$type": "MonoBehavior",
+			"$id": 8938761249993972,
+			"enabled": true,
+			"script": {
+				"guid": "5da0bfc6ee398618d2a790f6cfa118da"
+			},
+			"moveSpeed": 6.0,
+			"dodgeSpeed": 16.0,
+			"dodgeTime": 0.18,
+			"dodgeCooldown": 0.45,
+			"dodgeInvincible": true,
+			"maxHp": 1,
+			"invincibleTimeAfterHit": 1.0,
+			"hitRadius": 0.35,
+			"aimMarker": {
+				"id": 2918344076506021
+			},
+			"aimMarkerHeight": 0.05,
+			"hp": 1
+		},
+		{
+			"$type": "MonoBehavior",
+			"$id": 4061345760245284,
+			"enabled": true,
+			"script": {
+				"guid": "3d8a338a774deafc80c132d234f6af6a"
+			},
+			"bulletOrder": "Normal, Pierce, Homing, Large, Recall, Split, Devil",
+			"allowSelect": false,
+			"fireCooldown": 0.3,
+			"bulletPrefab": {
+				"guid": "709a09e0dd118339030bb11b9f9a47d5"
+			},
+			"bulletSpeed": 20.0,
+			"bulletLifeTime": 2.5,
+			"bulletRadius": 0.2,
+			"muzzleHeight": 0.8,
+			"muzzleForward": 0.6,
+			"largeRadius": 0.7,
+			"homingTurnSpeed": 220.0,
+			"homingRange": 10.0,
+			"splitAngle": 14.0,
+			"recallSpeed": 24.0,
+			"recallKeepsProperty": false,
+			"devilTurnSpeed": 900.0,
+			"devilHitsShooter": true
+		}
+	]
+}
