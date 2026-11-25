@@ -7,7 +7,31 @@ using namespace ou;
 
 namespace {
 
+constexpr Graphics::Format kSceneColorFormat = Graphics::Format::R11G11B10_FLOAT;
+constexpr Graphics::Format kColorFormat = Graphics::Format::B8G8R8A8_UNORM_SRGB;
+
+// TODO: Camera Component に移す
 constexpr float kClearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
+
+
+void CreateColorTexture(uint32_t width, uint32_t height, Graphics::Format format, const std::string &name, Graphics::Texture *texture) {
+	auto *device = Graphics::GetDevice();
+
+	Graphics::TextureDesc desc{};
+	desc.width = width;
+	desc.height = height;
+	desc.format = format;
+	desc.bindFlags = Graphics::BindFlag::RENDER_TARGET | Graphics::BindFlag::SHADER_RESOURCE;
+	desc.layout = Graphics::ResourceState::SHADER_RESOURCE;
+	for (int i = 0; i < 4; i++) {
+		desc.clear.color[i] = kClearColor[i];
+	}
+
+	if (!device->CreateTexture(&desc, nullptr, texture)) {
+		FatalError(name + " の作成に失敗しました");
+	}
+	device->SetName(texture, name);
+}
 
 } // namespace
 
@@ -19,11 +43,21 @@ ou::SceneRenderTarget::SceneRenderTarget(std::string_view name)
 
 void ou::SceneRenderTarget::BeginScenePass(Graphics::CommandList cmd) const {
 	using Image = Graphics::RenderPassImage;
+
 	const Image images[] = {
-		Image::RenderTarget(&color_, Image::LoadOp::CLEAR),
-		Image::DepthStencil(&depth_, Image::LoadOp::CLEAR, Image::StoreOp::DONTCARE),
+		Image::RenderTarget(&sceneColor_, Image::LoadOp::CLEAR),
+		Image::DepthStencil(&depth_, Image::LoadOp::CLEAR),
 	};
 	Graphics::GetDevice()->RenderPassBegin(images, 2, cmd);
+	BindViewport(cmd);
+}
+
+
+void ou::SceneRenderTarget::BeginPostProcessPass(Graphics::CommandList cmd) const {
+	using Image = Graphics::RenderPassImage;
+
+	const auto image = Image::RenderTarget(&color_, Image::LoadOp::DONTCARE);
+	Graphics::GetDevice()->RenderPassBegin(&image, 1, cmd);
 	BindViewport(cmd);
 }
 
@@ -35,25 +69,26 @@ void ou::SceneRenderTarget::BeginOverlayPass(Graphics::CommandList cmd) const {
 }
 
 
+void ou::SceneRenderTarget::BeginOverlayPassWithDepth(Graphics::CommandList cmd) const {
+	using Image = Graphics::RenderPassImage;
+
+	const Image images[] = {
+		Image::RenderTarget(&color_),
+		Image::DepthStencil(&depth_, Image::LoadOp::LOAD, Image::StoreOp::DONTCARE),
+	};
+	Graphics::GetDevice()->RenderPassBegin(images, 2, cmd);
+	BindViewport(cmd);
+}
+
+
 void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	if (width == 0 || height == 0) { return; }
 	if (width == width_ && height == height_) { return; }
 
 	auto *device = Graphics::GetDevice();
 
-	Graphics::TextureDesc colorDesc{};
-	colorDesc.width = width;
-	colorDesc.height = height;
-	colorDesc.format = Graphics::Format::B8G8R8A8_UNORM_SRGB;
-	colorDesc.bindFlags = Graphics::BindFlag::RENDER_TARGET | Graphics::BindFlag::SHADER_RESOURCE;
-	colorDesc.layout = Graphics::ResourceState::SHADER_RESOURCE;
-	for (int i = 0; i < 4; i++) {
-		colorDesc.clear.color[i] = kClearColor[i];
-	}
-	if (!device->CreateTexture(&colorDesc, nullptr, &color_)) {
-		FatalError(name_ + " の色のテクスチャの作成に失敗しました");
-	}
-	device->SetName(&color_, name_ + "Color");
+	CreateColorTexture(width, height, kSceneColorFormat, name_ + "_SceneColor", &sceneColor_);
+	CreateColorTexture(width, height, kColorFormat, name_ + "_Color", &color_);
 
 	Graphics::TextureDesc depthDesc{};
 	depthDesc.width = width;
@@ -73,10 +108,16 @@ void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 
 
 void ou::SceneRenderTarget::Release() {
+	sceneColor_ = {};
 	color_ = {};
 	depth_ = {};
 	width_ = 0;
 	height_ = 0;
+}
+
+
+const Graphics::Texture &ou::SceneRenderTarget::GetSceneColor() const {
+	return sceneColor_;
 }
 
 

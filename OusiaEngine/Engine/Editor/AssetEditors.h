@@ -111,4 +111,22 @@ public: // メンバ関数
 	void OnInspectorGui() override;
 };
 
+
+
+// 前方宣言
+class VolumeComponent;
+
+// .volumeprofile（Unity の VolumeProfileEditor）。効果ごとに見出しを出し、パラメータは上書きのチェックと値を並べる
+class VolumeProfileEditor final: public SerializedAssetEditor {
+public: // メンバ関数
+
+	void OnInspectorGui() override;
+
+
+private: // メンバ関数
+
+	// 1 つの効果（components の index 番目）。見出しの × を押したら false
+	bool DrawComponent(SerializedObject &so, const VolumeComponent &component, size_t index);
+};
+
 } // namespace ou

@@ -12,12 +12,15 @@
 #include "Platform/Screen.h"
 #include "Render/Asset/Texture.h"
 #include "Render/Gizmos.h"
+#include "Scene/LayerMask.h"
 #include "Script/ScriptBindingsInternal.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <format>
 #include <string>
+#include <vector>
 
 #include <angelscript.h>
 #include <magic_enum/magic_enum.hpp>
@@ -196,6 +199,42 @@ float GetAxis(const std::string &axisName) {
 
 
 
+// ---- LayerMask ----
+
+// ないレイヤーの名前なら -1（Unity と同じ）
+int NameToLayer(const std::string &layerName) {
+	return LayerMask::NameToLayer(layerName);
+}
+
+std::string LayerToName(int layer) {
+	return LayerMask::LayerToName(layer);
+}
+
+// Unity と同じく、ないレイヤーの名前は無視する
+int GetLayerMask(const std::vector<std::string> &layerNames) {
+	uint32_t mask = 0;
+	for (const auto &name : layerNames) {
+		const auto layer = LayerMask::NameToLayer(name);
+		if (0 <= layer && layer < LayerMask::kLayerCount) { mask |= 1u << layer; }
+	}
+	return static_cast<int>(mask);
+}
+
+int GetLayerMaskArray(const CScriptArray *layerNames) {
+	if (!layerNames) { return 0; }
+	std::vector<std::string> names;
+	for (asUINT i = 0; i < layerNames->GetSize(); i++) { names.push_back(*static_cast<const std::string *>(layerNames->At(i))); }
+	return GetLayerMask(names);
+}
+
+// Unity の GetMask(params string[]) の代わりに、4 つまで並べて書けるようにする
+int GetLayerMask1(const std::string &a) { return GetLayerMask({a}); }
+int GetLayerMask2(const std::string &a, const std::string &b) { return GetLayerMask({a, b}); }
+int GetLayerMask3(const std::string &a, const std::string &b, const std::string &c) { return GetLayerMask({a, b, c}); }
+int GetLayerMask4(const std::string &a, const std::string &b, const std::string &c, const std::string &d) { return GetLayerMask({a, b, c, d}); }
+
+
+
 // ---- Gizmos ----
 
 Color GetGizmosColor() { return Gizmos::GetColor(); }
@@ -220,6 +259,7 @@ void ou::ScriptBindings::Register(asIScriptEngine *engine) {
 	RegisterObjectMembers(engine);
 	RegisterPhysicsMembers(engine);
 	RegisterComponentMembers(engine);
+	RegisterRenderMembers(engine);
 	RegisterGetComponent(engine);
 	RegisterSceneManager(engine);
 
@@ -232,6 +272,26 @@ void ou::ScriptBindings::Register(asIScriptEngine *engine) {
 	RegisterCursor(engine);
 	RegisterApplication(engine);
 	RegisterGizmos(engine);
+	RegisterLayerMask(engine);
+}
+
+
+void ou::ScriptBindings::RegisterLayerMask(asIScriptEngine *engine) {
+	// レイヤーの番号とマスクは int で受け渡す（Physics::Raycast の layerMask と同じ）
+	engine->SetDefaultNamespace("LayerMask");
+
+	const auto global = [&](const char *declaration, const asSFuncPtr &function) {
+		Check(engine->RegisterGlobalFunction(declaration, function, asCALL_CDECL), declaration);
+	};
+	global("int NameToLayer(const string &in layerName)", asFUNCTION(NameToLayer));
+	global("string LayerToName(int layer)", asFUNCTION(LayerToName));
+	global("int GetMask(const array<string> &in layerNames)", asFUNCTION(GetLayerMaskArray));
+	global("int GetMask(const string &in layerName)", asFUNCTION(GetLayerMask1));
+	global("int GetMask(const string &in layerName1, const string &in layerName2)", asFUNCTION(GetLayerMask2));
+	global("int GetMask(const string &in layerName1, const string &in layerName2, const string &in layerName3)", asFUNCTION(GetLayerMask3));
+	global("int GetMask(const string &in layerName1, const string &in layerName2, const string &in layerName3, const string &in layerName4)", asFUNCTION(GetLayerMask4));
+
+	engine->SetDefaultNamespace("");
 }
 
 
@@ -407,6 +467,12 @@ void ou::ScriptBindings::RegisterTime(asIScriptEngine *engine) {
 	global("void set_timeScale(float value) property", asFUNCTION(Time::SetTimeScale));
 	global("float get_fixedDeltaTime() property", asFUNCTION(Time::GetFixedDeltaTime));
 	global("void set_fixedDeltaTime(float value) property", asFUNCTION(Time::SetFixedDeltaTime));
+	global("float get_maximumDeltaTime() property", asFUNCTION(Time::GetMaximumDeltaTime));
+	global("void set_maximumDeltaTime(float value) property", asFUNCTION(Time::SetMaximumDeltaTime));
+	global("float get_fixedTime() property", asFUNCTION(Time::GetFixedTime));
+	global("double get_timeAsDouble() property", asFUNCTION(Time::GetTimeAsDouble));
+	global("double get_fixedTimeAsDouble() property", asFUNCTION(Time::GetFixedTimeAsDouble));
+	global("bool get_inFixedTimeStep() property", asFUNCTION(Time::IsInFixedTimeStep));
 
 	engine->SetDefaultNamespace("");
 }

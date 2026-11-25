@@ -1,4 +1,5 @@
 #include "ScriptBindings.h"
+#include "Math/Bounds.h"
 #include "Math/Mathf.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
@@ -7,17 +8,21 @@
 #include "Physics/CharacterController.h"
 #include "Physics/Collider.h"
 #include "Physics/Collision.h"
+#include "Physics/ControllerColliderHit.h"
 #include "Physics/Physics.h"
+#include "Physics/PhysicsMaterial.h"
 #include "Physics/RaycastHit.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
 #include "Scene/GameObject.h"
+#include "Scene/LayerMask.h"
 #include "Scene/Transform.h"
 #include "Script/ScriptBindingsInternal.h"
 
 #include <cstdint>
 #include <format>
 #include <new>
+#include <utility>
 #include <vector>
 
 #include <angelscript.h>
@@ -52,6 +57,15 @@ struct ScriptRaycastHit {
 	Vector3 normal;
 	float distance = 0.0f;
 	uint32_t colliderId = 0;
+};
+
+struct ScriptControllerColliderHit {
+	uint32_t controllerId = 0;
+	uint32_t colliderId = 0;
+	Vector3 point;
+	Vector3 normal;
+	Vector3 moveDirection;
+	float moveLength = 0.0f;
 };
 
 uint32_t IdOf(const Object *object) {
@@ -133,21 +147,146 @@ ObjectHandle *GetHitTransform(const ScriptRaycastHit *self) {
 	return MakeHandle(collider->GetTransform());
 }
 
+ScriptRaycastHit ToScriptHit(const RaycastHit &hit) {
+	return {hit.point, hit.normal, hit.distance, IdOf(hit.collider)};
+}
+
+CScriptArray *ToScriptHits(const std::vector<RaycastHit> &hits) {
+	std::vector<ScriptRaycastHit> scriptHits;
+	scriptHits.reserve(hits.size());
+	for (const auto &hit : hits) { scriptHits.push_back(ToScriptHit(hit)); }
+	return MakeValueArray(scriptHits, "array<RaycastHit>");
+}
+
+
+// ---- ControllerColliderHit（CharacterController が Move で当たった相手。OnControllerColliderHit に渡す） ----
+
+void ConstructControllerColliderHit(void *memory) { new (memory) ScriptControllerColliderHit(); }
+ObjectHandle *GetHitController(const ScriptControllerColliderHit *self) { return HandleById<CharacterController>(self->controllerId); }
+ObjectHandle *GetControllerHitCollider(const ScriptControllerColliderHit *self) { return HandleById<Collider>(self->colliderId); }
+
+ObjectHandle *GetControllerHitRigidbody(const ScriptControllerColliderHit *self) {
+	auto *collider = FindById<Collider>(self->colliderId);
+	return collider ? MakeHandle(collider->GetAttachedRigidbody()) : nullptr;
+}
+
+ObjectHandle *GetControllerHitGameObject(const ScriptControllerColliderHit *self) {
+	auto *collider = FindById<Collider>(self->colliderId);
+	return collider ? MakeHandle(collider->GetGameObject()) : nullptr;
+}
+
+ObjectHandle *GetControllerHitTransform(const ScriptControllerColliderHit *self) {
+	auto *collider = FindById<Collider>(self->colliderId);
+	return collider ? MakeHandle(collider->GetTransform()) : nullptr;
+}
+
 
 // ---- Physics ----
 
 const int kDefaultRaycastLayers = static_cast<int>(Physics::kDefaultRaycastLayers);
 const int kAllLayers = static_cast<int>(Physics::kAllLayers);
 
-bool Raycast(const Vector3 &origin, const Vector3 &direction, float maxDistance, int layerMask) {
-	return Physics::Raycast(origin, direction, nullptr, maxDistance, static_cast<uint32_t>(layerMask));
+// スクリプトの QueryTriggerInteraction（int）を C++ の enum にする。ない値なら UseGlobal
+QueryTriggerInteracation ToQuery(int value) {
+	return CheckEnumValue<QueryTriggerInteracation>(value) ? static_cast<QueryTriggerInteracation>(value) : QueryTriggerInteracation::UseGlobal;
 }
 
-bool RaycastHitInfo(const Vector3 &origin, const Vector3 &direction, ScriptRaycastHit &hitInfo, float maxDistance, int layerMask) {
-	RaycastHit hit;
-	const auto isHit = Physics::Raycast(origin, direction, &hit, maxDistance, static_cast<uint32_t>(layerMask));
-	hitInfo = isHit ? ScriptRaycastHit{hit.point, hit.normal, hit.distance, IdOf(hit.collider)} : ScriptRaycastHit{};
+uint32_t ToMask(int layerMask) {
+	return static_cast<uint32_t>(layerMask);
+}
+
+// 当たったら hitInfo に入れ、外れたら空にする
+bool WriteHit(bool isHit, const RaycastHit &hit, ScriptRaycastHit &hitInfo) {
+	hitInfo = isHit ? ToScriptHit(hit) : ScriptRaycastHit{};
 	return isHit;
+}
+
+bool Raycast(const Vector3 &origin, const Vector3 &direction, float maxDistance, int layerMask, int query) {
+	return Physics::Raycast(origin, direction, nullptr, maxDistance, ToMask(layerMask), ToQuery(query));
+}
+
+bool RaycastHitInfo(const Vector3 &origin, const Vector3 &direction, ScriptRaycastHit &hitInfo, float maxDistance, int layerMask, int query) {
+	RaycastHit hit;
+	return WriteHit(Physics::Raycast(origin, direction, &hit, maxDistance, ToMask(layerMask), ToQuery(query)), hit, hitInfo);
+}
+
+CScriptArray *RaycastAll(const Vector3 &origin, const Vector3 &direction, float maxDistance, int layerMask, int query) {
+	return ToScriptHits(Physics::RaycastAll(origin, direction, maxDistance, ToMask(layerMask), ToQuery(query)));
+}
+
+CScriptArray *OverlapBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, int layerMask, int query) {
+	return MakeHandleArray(Physics::OverlapBox(center, halfExtents, orientation, ToMask(layerMask), ToQuery(query)), "array<Collider@>");
+}
+
+CScriptArray *OverlapSphere(const Vector3 &position, float radius, int layerMask, int query) {
+	return MakeHandleArray(Physics::OverlapSphere(position, radius, ToMask(layerMask), ToQuery(query)), "array<Collider@>");
+}
+
+CScriptArray *OverlapCapsule(const Vector3 &point0, const Vector3 &point1, float radius, int layerMask, int query) {
+	return MakeHandleArray(Physics::OverlapCapsule(point0, point1, radius, ToMask(layerMask), ToQuery(query)), "array<Collider@>");
+}
+
+bool BoxCast(const Vector3 &center, const Vector3 &halfExtents, const Vector3 &direction, const Quaternion &orientation, float maxDistance, int layerMask, int query) {
+	return Physics::BoxCast(center, halfExtents, direction, orientation, nullptr, maxDistance, ToMask(layerMask), ToQuery(query));
+}
+
+// Unity と同じく、hitInfo は orientation より前
+bool BoxCastHitInfo(const Vector3 &center, const Vector3 &halfExtents, const Vector3 &direction, ScriptRaycastHit &hitInfo, const Quaternion &orientation, float maxDistance, int layerMask, int query) {
+	RaycastHit hit;
+	return WriteHit(Physics::BoxCast(center, halfExtents, direction, orientation, &hit, maxDistance, ToMask(layerMask), ToQuery(query)), hit, hitInfo);
+}
+
+CScriptArray *BoxCastAll(const Vector3 &center, const Vector3 &halfExtents, const Vector3 &direction, const Quaternion &orientation, float maxDistance, int layerMask, int query) {
+	return ToScriptHits(Physics::BoxCastAll(center, halfExtents, direction, orientation, maxDistance, ToMask(layerMask), ToQuery(query)));
+}
+
+bool SphereCastHitInfo(const Vector3 &origin, float radius, const Vector3 &direction, ScriptRaycastHit &hitInfo, float maxDistance, int layerMask, int query) {
+	RaycastHit hit;
+	return WriteHit(Physics::SphereCast(origin, radius, direction, &hit, maxDistance, ToMask(layerMask), ToQuery(query)), hit, hitInfo);
+}
+
+CScriptArray *SphereCastAll(const Vector3 &origin, float radius, const Vector3 &direction, float maxDistance, int layerMask, int query) {
+	return ToScriptHits(Physics::SphereCastAll(origin, radius, direction, maxDistance, ToMask(layerMask), ToQuery(query)));
+}
+
+bool CapsuleCast(const Vector3 &point1, const Vector3 &point2, float radius, const Vector3 &direction, float maxDistance, int layerMask, int query) {
+	return Physics::CapsuleCast(point1, point2, radius, direction, nullptr, maxDistance, ToMask(layerMask), ToQuery(query));
+}
+
+bool CapsuleCastHitInfo(const Vector3 &point1, const Vector3 &point2, float radius, const Vector3 &direction, ScriptRaycastHit &hitInfo, float maxDistance, int layerMask, int query) {
+	RaycastHit hit;
+	return WriteHit(Physics::CapsuleCast(point1, point2, radius, direction, &hit, maxDistance, ToMask(layerMask), ToQuery(query)), hit, hitInfo);
+}
+
+CScriptArray *CapsuleCastAll(const Vector3 &point1, const Vector3 &point2, float radius, const Vector3 &direction, float maxDistance, int layerMask, int query) {
+	return ToScriptHits(Physics::CapsuleCastAll(point1, point2, radius, direction, maxDistance, ToMask(layerMask), ToQuery(query)));
+}
+
+bool CheckBox(const Vector3 &center, const Vector3 &halfExtents, const Quaternion &orientation, int layerMask, int query) {
+	return Physics::CheckBox(center, halfExtents, orientation, ToMask(layerMask), ToQuery(query));
+}
+
+bool CheckSphere(const Vector3 &position, float radius, int layerMask, int query) {
+	return Physics::CheckSphere(position, radius, ToMask(layerMask), ToQuery(query));
+}
+
+bool CheckCapsule(const Vector3 &start, const Vector3 &end, float radius, int layerMask, int query) {
+	return Physics::CheckCapsule(start, end, radius, ToMask(layerMask), ToQuery(query));
+}
+
+// レイヤーは 0〜31（Unity と同じく、範囲外は例外）
+bool CheckLayers(int layer1, int layer2) {
+	if (0 <= layer1 && layer1 < LayerMask::kLayerCount && 0 <= layer2 && layer2 < LayerMask::kLayerCount) { return true; }
+	ThrowException(std::format("ArgumentException: レイヤーは 0〜31 にしてください ({}, {})", layer1, layer2));
+	return false;
+}
+
+void IgnoreLayerCollision(int layer1, int layer2, bool ignore) {
+	if (CheckLayers(layer1, layer2)) { Physics::IgnoreLayerCollision(layer1, layer2, ignore); }
+}
+
+bool GetIgnoreLayerCollision(int layer1, int layer2) {
+	return CheckLayers(layer1, layer2) && Physics::GetIgnoreLayerCollision(layer1, layer2);
 }
 
 
@@ -167,6 +306,33 @@ void CallRigidbody(ObjectHandle *self) {
 	if (auto *rigidbody = Resolve<Rigidbody>(self)) { (rigidbody->*Function)(); }
 }
 
+void AddExplosionForce(float explosionForce, const Vector3 &explosionPosition, float explosionRadius, float upwardsModifier, int mode, ObjectHandle *self) {
+	if (auto *rigidbody = Resolve<Rigidbody>(self)) {
+		rigidbody->AddExplosionForce(explosionForce, explosionPosition, explosionRadius, upwardsModifier, static_cast<ForceMode>(mode));
+	}
+}
+
+Vector3 GetPointVelocity(const Vector3 &worldPoint, ObjectHandle *self) {
+	auto *rigidbody = Resolve<Rigidbody>(self);
+	return rigidbody ? rigidbody->GetPointVelocity(worldPoint) : Vector3::Zero;
+}
+
+// RigidbodyConstraints はビットの組み合わせなので、magic_enum ではなくビットで確かめる
+constexpr int kAllConstraints = static_cast<int>(RigidbodyConstraints::FreezeAll);
+
+int GetConstraints(ObjectHandle *self) {
+	auto *rigidbody = Resolve<Rigidbody>(self);
+	return rigidbody ? static_cast<int>(rigidbody->GetConstraints()) : 0;
+}
+
+void SetConstraints(int value, ObjectHandle *self) {
+	if ((value & ~kAllConstraints) != 0) {
+		ThrowException(std::format("ArgumentException: RigidbodyConstraints にないビットです: {}", value));
+		return;
+	}
+	if (auto *rigidbody = Resolve<Rigidbody>(self)) { rigidbody->SetConstraints(static_cast<RigidbodyConstraints>(value)); }
+}
+
 
 // ---- Collider ----
 
@@ -175,12 +341,30 @@ Vector3 ClosestPoint(const Vector3 &position, ObjectHandle *self) {
 	return collider ? collider->ClosestPoint(position) : position;
 }
 
+Vector3 ClosestPointOnBounds(const Vector3 &position, ObjectHandle *self) {
+	auto *collider = Resolve<Collider>(self);
+	return collider ? collider->ClosestPointOnBounds(position) : position;
+}
+
+// Unity の collider.material: 初めて触ったときに複製し、この Collider だけの PhysicsMaterial にする
+ObjectHandle *GetColliderMaterial(ObjectHandle *self) {
+	auto *collider = Resolve<Collider>(self);
+	return collider ? MakeHandle(collider->GetMaterial().get()) : nullptr;
+}
+
 void RegisterColliderMembers(const TypeRegistrar &c) {
 	RegisterBehaviorMembers(c);
 	c.Method("bool get_isTrigger() const property", asFUNCTION((Get<Collider, bool, &Collider::IsTrigger>)));
 	c.Method("void set_isTrigger(bool value) property", asFUNCTION((Set<Collider, bool, &Collider::SetIsTrigger>)));
 	c.Method("Rigidbody@ get_attachedRigidbody() const property", asFUNCTION((GetHandle<Collider, Rigidbody, &Collider::GetAttachedRigidbody>)));
 	c.Method("Vector3 ClosestPoint(const Vector3 &in position) const", asFUNCTION(ClosestPoint));
+	c.Method("Vector3 ClosestPointOnBounds(const Vector3 &in position) const", asFUNCTION(ClosestPointOnBounds));
+	c.Method("Bounds get_bounds() const property", asFUNCTION((Get<Collider, Bounds, &Collider::GetBounds>)));
+	// 入れられるのはアセットかスクリプトで作った PhysicsMaterial だけ（Renderer.material と同じ）
+	c.Method("PhysicsMaterial@ get_sharedMaterial() const property", asFUNCTION((GetAssetHandle<Collider, PhysicsMaterial, &Collider::GetSharedMaterial>)));
+	c.Method("void set_sharedMaterial(PhysicsMaterial@+ value) property", asFUNCTION((SetAssetHandle<Collider, PhysicsMaterial, &Collider::SetSharedMaterial>)));
+	c.Method("PhysicsMaterial@ get_material() property", asFUNCTION(GetColliderMaterial));
+	c.Method("void set_material(PhysicsMaterial@+ value) property", asFUNCTION((SetAssetHandle<Collider, PhysicsMaterial, &Collider::SetSharedMaterial>)));
 }
 
 
@@ -219,6 +403,17 @@ void ou::ScriptBindings::DestroyCollision(void *collision) {
 }
 
 
+void *ou::ScriptBindings::CreateControllerColliderHit(const ControllerColliderHit &hit) {
+	return new ScriptControllerColliderHit{
+		IdOf(hit.GetController()), IdOf(hit.GetCollider()), hit.GetPoint(), hit.GetNormal(), hit.GetMoveDirection(), hit.GetMoveLength()};
+}
+
+
+void ou::ScriptBindings::DestroyControllerColliderHit(void *hit) {
+	delete static_cast<ScriptControllerColliderHit *>(hit);
+}
+
+
 void ou::ScriptBindings::RegisterPhysicsTypes(asIScriptEngine *engine) {
 	Check(engine->RegisterObjectType("ContactPoint", sizeof(ScriptContactPoint), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ScriptContactPoint>()), "ContactPoint");
 	Check(engine->RegisterObjectType("RaycastHit", sizeof(ScriptRaycastHit), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ScriptRaycastHit>()), "RaycastHit");
@@ -237,6 +432,32 @@ void ou::ScriptBindings::RegisterPhysicsTypes(asIScriptEngine *engine) {
 	Check(engine->RegisterEnumValue("CollisionFlags", "Sides", static_cast<int>(CollisionFlags::Sides)), "CollisionFlags::Sides");
 	Check(engine->RegisterEnumValue("CollisionFlags", "Above", static_cast<int>(CollisionFlags::Above)), "CollisionFlags::Above");
 	Check(engine->RegisterEnumValue("CollisionFlags", "Below", static_cast<int>(CollisionFlags::Below)), "CollisionFlags::Below");
+
+	Check(engine->RegisterObjectType("ControllerColliderHit", sizeof(ScriptControllerColliderHit), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ScriptControllerColliderHit>()), "ControllerColliderHit");
+
+	// C++ の名前は QueryTriggerInteracation だが、スクリプトには Unity の名前で出す
+	RegisterEnum<QueryTriggerInteracation>(engine, "QueryTriggerInteraction");
+	RegisterEnum<RigidbodyInterpolation>(engine, "RigidbodyInterpolation");
+	RegisterEnum<CollisionDetectionMode>(engine, "CollisionDetectionMode");
+	RegisterEnum<PhysicsMaterialCombine>(engine, "PhysicsMaterialCombine");
+
+	// ビットの組み合わせ（FreezePosition など）も名前があるので、magic_enum ではなく並べる
+	Check(engine->RegisterEnum("RigidbodyConstraints"), "RigidbodyConstraints");
+	const std::pair<const char *, RigidbodyConstraints> constraints[] = {
+		{"None", RigidbodyConstraints::None},
+		{"FreezePositionX", RigidbodyConstraints::FreezePositionX},
+		{"FreezePositionY", RigidbodyConstraints::FreezePositionY},
+		{"FreezePositionZ", RigidbodyConstraints::FreezePositionZ},
+		{"FreezeRotationX", RigidbodyConstraints::FreezeRotationX},
+		{"FreezeRotationY", RigidbodyConstraints::FreezeRotationY},
+		{"FreezeRotationZ", RigidbodyConstraints::FreezeRotationZ},
+		{"FreezePosition", RigidbodyConstraints::FreezePosition},
+		{"FreezeRotation", RigidbodyConstraints::FreezeRotation},
+		{"FreezeAll", RigidbodyConstraints::FreezeAll},
+	};
+	for (const auto &[name, value] : constraints) {
+		Check(engine->RegisterEnumValue("RigidbodyConstraints", name, static_cast<int>(value)), name);
+	}
 }
 
 
@@ -281,6 +502,33 @@ void ou::ScriptBindings::RegisterPhysicsMembers(asIScriptEngine *engine) {
 	method("RaycastHit", "Collider@ get_collider() const property", asFUNCTION(GetHitCollider));
 	method("RaycastHit", "Rigidbody@ get_rigidbody() const property", asFUNCTION(GetHitRigidbody));
 	method("RaycastHit", "Transform@ get_transform() const property", asFUNCTION(GetHitTransform));
+
+	// ---- ControllerColliderHit ----
+	behaviour("ControllerColliderHit", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructControllerColliderHit));
+	property("ControllerColliderHit", "Vector3 point", asOFFSET(ScriptControllerColliderHit, point));
+	property("ControllerColliderHit", "Vector3 normal", asOFFSET(ScriptControllerColliderHit, normal));
+	property("ControllerColliderHit", "Vector3 moveDirection", asOFFSET(ScriptControllerColliderHit, moveDirection));
+	property("ControllerColliderHit", "float moveLength", asOFFSET(ScriptControllerColliderHit, moveLength));
+	method("ControllerColliderHit", "CharacterController@ get_controller() const property", asFUNCTION(GetHitController));
+	method("ControllerColliderHit", "Collider@ get_collider() const property", asFUNCTION(GetControllerHitCollider));
+	method("ControllerColliderHit", "Rigidbody@ get_rigidbody() const property", asFUNCTION(GetControllerHitRigidbody));
+	method("ControllerColliderHit", "GameObject@ get_gameObject() const property", asFUNCTION(GetControllerHitGameObject));
+	method("ControllerColliderHit", "Transform@ get_transform() const property", asFUNCTION(GetControllerHitTransform));
+
+	// ---- PhysicsMaterial ----
+	{
+		const auto m = RegisterAssetType(engine, "PhysicsMaterial");
+		m.Method("float get_dynamicFriction() const property", asFUNCTION((Get<PhysicsMaterial, float, &PhysicsMaterial::GetDynamicFriction>)));
+		m.Method("void set_dynamicFriction(float value) property", asFUNCTION((Set<PhysicsMaterial, float, &PhysicsMaterial::SetDynamicFriction>)));
+		m.Method("float get_staticFriction() const property", asFUNCTION((Get<PhysicsMaterial, float, &PhysicsMaterial::GetStaticFriction>)));
+		m.Method("void set_staticFriction(float value) property", asFUNCTION((Set<PhysicsMaterial, float, &PhysicsMaterial::SetStaticFriction>)));
+		m.Method("float get_bounciness() const property", asFUNCTION((Get<PhysicsMaterial, float, &PhysicsMaterial::GetBounciness>)));
+		m.Method("void set_bounciness(float value) property", asFUNCTION((Set<PhysicsMaterial, float, &PhysicsMaterial::SetBounciness>)));
+		m.Method("PhysicsMaterialCombine get_frictionCombine() const property", asFUNCTION((GetEnum<PhysicsMaterial, PhysicsMaterialCombine, &PhysicsMaterial::GetFrictionCombine>)));
+		m.Method("void set_frictionCombine(PhysicsMaterialCombine value) property", asFUNCTION((SetEnum<PhysicsMaterial, PhysicsMaterialCombine, &PhysicsMaterial::SetFrictionCombine>)));
+		m.Method("PhysicsMaterialCombine get_bounceCombine() const property", asFUNCTION((GetEnum<PhysicsMaterial, PhysicsMaterialCombine, &PhysicsMaterial::GetBounceCombine>)));
+		m.Method("void set_bounceCombine(PhysicsMaterialCombine value) property", asFUNCTION((SetEnum<PhysicsMaterial, PhysicsMaterialCombine, &PhysicsMaterial::SetBounceCombine>)));
+	}
 
 	// ---- Collider ----
 	{
@@ -340,6 +588,11 @@ void ou::ScriptBindings::RegisterPhysicsMembers(asIScriptEngine *engine) {
 		c.Method("void set_slopeLimit(float value) property", asFUNCTION((Set<CharacterController, float, &CharacterController::SetSlopeLimit>)));
 		c.Method("float get_stepOffset() const property", asFUNCTION((Get<CharacterController, float, &CharacterController::GetStepOffset>)));
 		c.Method("void set_stepOffset(float value) property", asFUNCTION((Set<CharacterController, float, &CharacterController::SetStepOffset>)));
+		c.Method("float get_skinWidth() const property", asFUNCTION((Get<CharacterController, float, &CharacterController::GetSkinWidth>)));
+		c.Method("void set_skinWidth(float value) property", asFUNCTION((Set<CharacterController, float, &CharacterController::SetSkinWidth>)));
+		c.Method("float get_minMoveDistance() const property", asFUNCTION((Get<CharacterController, float, &CharacterController::GetMinMoveDistance>)));
+		c.Method("void set_minMoveDistance(float value) property", asFUNCTION((Set<CharacterController, float, &CharacterController::SetMinMoveDistance>)));
+		c.Method("CollisionFlags get_collisionFlags() const property", asFUNCTION((GetEnum<CharacterController, CollisionFlags, &CharacterController::GetCollisionFlags>)));
 	}
 
 	// ---- Rigidbody ----
@@ -375,6 +628,23 @@ void ou::ScriptBindings::RegisterPhysicsMembers(asIScriptEngine *engine) {
 		r.Method("void Sleep()", asFUNCTION(CallRigidbody<&Rigidbody::Sleep>));
 		r.Method("void WakeUp()", asFUNCTION(CallRigidbody<&Rigidbody::WakeUp>));
 		r.Method("bool IsSleeping() const", asFUNCTION((Get<Rigidbody, bool, &Rigidbody::IsSleeping>)));
+		r.Method("void AddExplosionForce(float explosionForce, const Vector3 &in explosionPosition, float explosionRadius, float upwardsModifier = 0.0f, ForceMode mode = ForceMode::Force)", asFUNCTION(AddExplosionForce));
+		r.Method("Vector3 GetPointVelocity(const Vector3 &in worldPoint) const", asFUNCTION(GetPointVelocity));
+		r.Method("RigidbodyConstraints get_constraints() const property", asFUNCTION(GetConstraints));
+		r.Method("void set_constraints(RigidbodyConstraints value) property", asFUNCTION(SetConstraints));
+		r.Method("RigidbodyInterpolation get_interpolation() const property", asFUNCTION((GetEnum<Rigidbody, RigidbodyInterpolation, &Rigidbody::GetInterpolation>)));
+		r.Method("void set_interpolation(RigidbodyInterpolation value) property", asFUNCTION((SetEnum<Rigidbody, RigidbodyInterpolation, &Rigidbody::SetInterpolation>)));
+		r.Method("CollisionDetectionMode get_collisionDetectionMode() const property", asFUNCTION((GetEnum<Rigidbody, CollisionDetectionMode, &Rigidbody::GetCollisionDetectionMode>)));
+		r.Method("void set_collisionDetectionMode(CollisionDetectionMode value) property", asFUNCTION((SetEnum<Rigidbody, CollisionDetectionMode, &Rigidbody::SetCollisionDetectionMode>)));
+		r.Method("float get_maxLinearVelocity() const property", asFUNCTION((Get<Rigidbody, float, &Rigidbody::GetMaxLinearVelocity>)));
+		r.Method("void set_maxLinearVelocity(float value) property", asFUNCTION((Set<Rigidbody, float, &Rigidbody::SetMaxLinearVelocity>)));
+		r.Method("float get_maxAngularVelocity() const property", asFUNCTION((Get<Rigidbody, float, &Rigidbody::GetMaxAngularVelocity>)));
+		r.Method("void set_maxAngularVelocity(float value) property", asFUNCTION((Set<Rigidbody, float, &Rigidbody::SetMaxAngularVelocity>)));
+		r.Method("float get_sleepThreshold() const property", asFUNCTION((Get<Rigidbody, float, &Rigidbody::GetSleepThreshold>)));
+		r.Method("void set_sleepThreshold(float value) property", asFUNCTION((Set<Rigidbody, float, &Rigidbody::SetSleepThreshold>)));
+		r.Method("Vector3 get_centerOfMass() const property", asFUNCTION((Get<Rigidbody, Vector3, &Rigidbody::GetCenterOfMass>)));
+		r.Method("void set_centerOfMass(const Vector3 &in value) property", asFUNCTION((Set<Rigidbody, const Vector3 &, &Rigidbody::SetCenterOfMass>)));
+		r.Method("void ResetCenterOfMass()", asFUNCTION(CallRigidbody<&Rigidbody::ResetCenterOfMass>));
 	}
 
 	// ---- Physics ----
@@ -386,7 +656,31 @@ void ou::ScriptBindings::RegisterPhysicsMembers(asIScriptEngine *engine) {
 	};
 	global("Vector3 get_gravity() property", asFUNCTION(Physics::GetGravity));
 	global("void set_gravity(const Vector3 &in value) property", asFUNCTION(Physics::SetGravity));
-	global("bool Raycast(const Vector3 &in origin, const Vector3 &in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers)", asFUNCTION(Raycast));
-	global("bool Raycast(const Vector3 &in origin, const Vector3 &in direction, RaycastHit &out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers)", asFUNCTION(RaycastHitInfo));
+	global("bool get_queriesHitTriggers() property", asFUNCTION(Physics::GetQueriesHitTriggers));
+	global("void set_queriesHitTriggers(bool value) property", asFUNCTION(Physics::SetQueriesHitTriggers));
+	global("void IgnoreLayerCollision(int layer1, int layer2, bool ignore = true)", asFUNCTION(IgnoreLayerCollision));
+	global("bool GetIgnoreLayerCollision(int layer1, int layer2)", asFUNCTION(GetIgnoreLayerCollision));
+
+	// 引数の並びと既定の値は Unity と同じ（Raycast・Cast は DefaultRaycastLayers、Overlap は AllLayers）
+	global("bool Raycast(const Vector3 &in origin, const Vector3 &in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(Raycast));
+	global("bool Raycast(const Vector3 &in origin, const Vector3 &in direction, RaycastHit &out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(RaycastHitInfo));
+	global("array<RaycastHit>@ RaycastAll(const Vector3 &in origin, const Vector3 &in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(RaycastAll));
+
+	global("array<Collider@>@ OverlapBox(const Vector3 &in center, const Vector3 &in halfExtents, const Quaternion &in orientation = Quaternion::identity, int layerMask = Physics::AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(OverlapBox));
+	global("array<Collider@>@ OverlapSphere(const Vector3 &in position, float radius, int layerMask = Physics::AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(OverlapSphere));
+	global("array<Collider@>@ OverlapCapsule(const Vector3 &in point0, const Vector3 &in point1, float radius, int layerMask = Physics::AllLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(OverlapCapsule));
+
+	global("bool BoxCast(const Vector3 &in center, const Vector3 &in halfExtents, const Vector3 &in direction, const Quaternion &in orientation = Quaternion::identity, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(BoxCast));
+	global("bool BoxCast(const Vector3 &in center, const Vector3 &in halfExtents, const Vector3 &in direction, RaycastHit &out hitInfo, const Quaternion &in orientation = Quaternion::identity, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(BoxCastHitInfo));
+	global("array<RaycastHit>@ BoxCastAll(const Vector3 &in center, const Vector3 &in halfExtents, const Vector3 &in direction, const Quaternion &in orientation = Quaternion::identity, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(BoxCastAll));
+	global("bool SphereCast(const Vector3 &in origin, float radius, const Vector3 &in direction, RaycastHit &out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(SphereCastHitInfo));
+	global("array<RaycastHit>@ SphereCastAll(const Vector3 &in origin, float radius, const Vector3 &in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(SphereCastAll));
+	global("bool CapsuleCast(const Vector3 &in point1, const Vector3 &in point2, float radius, const Vector3 &in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(CapsuleCast));
+	global("bool CapsuleCast(const Vector3 &in point1, const Vector3 &in point2, float radius, const Vector3 &in direction, RaycastHit &out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(CapsuleCastHitInfo));
+	global("array<RaycastHit>@ CapsuleCastAll(const Vector3 &in point1, const Vector3 &in point2, float radius, const Vector3 &in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(CapsuleCastAll));
+
+	global("bool CheckBox(const Vector3 &in center, const Vector3 &in halfExtents, const Quaternion &in orientation = Quaternion::identity, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(CheckBox));
+	global("bool CheckSphere(const Vector3 &in position, float radius, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(CheckSphere));
+	global("bool CheckCapsule(const Vector3 &in start, const Vector3 &in end, float radius, int layerMask = Physics::DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction::UseGlobal)", asFUNCTION(CheckCapsule));
 	engine->SetDefaultNamespace("");
 }

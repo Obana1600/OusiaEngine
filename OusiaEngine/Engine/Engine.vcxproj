@@ -44,6 +44,7 @@
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
+    <ClInclude Include="PostProcess\Builtin\ColorAdjustments.h" />
     <ClInclude Include="Input\Cursor.h" />
     <ClInclude Include="Editor\CustomEditor.h" />
     <ClInclude Include="Editor\EngineEditors.h" />
@@ -81,6 +82,7 @@
     <ClInclude Include="Editor\SerializedObject.h" />
     <ClInclude Include="Editor\SerializedProperty.h" />
     <ClInclude Include="Asset\Importer\PrefabImporter.h" />
+    <ClInclude Include="PostProcess\PostProcessPass.h" />
     <ClInclude Include="Serialize\PropertySchema.h" />
     <ClInclude Include="Editor\ExternalScriptEditor.h" />
     <ClInclude Include="Editor\ConsoleWindow.h" />
@@ -119,6 +121,7 @@
     <ClInclude Include="Serialize\Serializer.h" />
     <ClInclude Include="Serialize\TypeRegistry.h" />
     <ClInclude Include="Editor\Tools.h" />
+    <ClInclude Include="PostProcess\Builtin\Tonemapping.h" />
     <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\Selectable.h" />
     <ClInclude Include="UI\CanvasUpdateRegistry.h" />
@@ -228,6 +231,14 @@
     <ClInclude Include="Input\Windows\XInput.h" />
     <ClInclude Include="UI\UIVertex.h" />
     <ClInclude Include="UI\VertexHelper.h" />
+    <ClInclude Include="PostProcess\VolumeParameter.h" />
+    <ClInclude Include="PostProcess\VolumeParameterBase.h" />
+    <ClInclude Include="PostProcess\VolumeComponent.h" />
+    <ClInclude Include="PostProcess\VolumeProfile.h" />
+    <ClInclude Include="Asset\Importer\VolumeProfileImporter.h" />
+    <ClInclude Include="PostProcess\VolumeManager.h" />
+    <ClInclude Include="PostProcess\VolumeStack.h" />
+    <ClInclude Include="PostProcess\Volume.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation\Core\AnimationPlayhead.cpp" />
@@ -235,6 +246,7 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="PostProcess\Builtin\ColorAdjustments.cpp" />
     <ClCompile Include="Input\Cursor.cpp" />
     <ClCompile Include="Editor\CustomEditor.cpp" />
     <ClCompile Include="Editor\EngineEditors.cpp" />
@@ -274,6 +286,7 @@
     <ClCompile Include="Editor\LogEntries.cpp" />
     <ClCompile Include="Editor\PreferencesWindow.cpp" />
     <ClCompile Include="Core\TimeManager.cpp" />
+    <ClCompile Include="PostProcess\PostProcessPass.cpp" />
     <ClCompile Include="Scene\TagManager.cpp" />
     <ClCompile Include="Editor\ProjectSettingsWindow.cpp" />
     <ClCompile Include="Core\PlayerSettings.cpp" />
@@ -288,6 +301,7 @@
     <ClCompile Include="Script\ScriptBindingsMath.cpp" />
     <ClCompile Include="Script\ScriptBindingsObject.cpp" />
     <ClCompile Include="Script\ScriptBindingsPhysics.cpp" />
+    <ClCompile Include="Script\ScriptBindingsRender.cpp" />
     <ClCompile Include="Script\ScriptBindingsScene.cpp" />
     <ClCompile Include="Script\ScriptBindingsComponents.cpp" />
     <ClCompile Include="Serialize\EngineTypes.cpp" />
@@ -313,6 +327,7 @@
     <ClCompile Include="Serialize\Serializer.cpp" />
     <ClCompile Include="Serialize\TypeRegistry.cpp" />
     <ClCompile Include="Editor\Tools.cpp" />
+    <ClCompile Include="PostProcess\Builtin\Tonemapping.cpp" />
     <ClCompile Include="UI\Button.cpp" />
     <ClCompile Include="UI\Selectable.cpp" />
     <ClCompile Include="UI\CanvasUpdateRegistry.cpp" />
@@ -406,6 +421,14 @@
     <ClCompile Include="Render\Asset\Texture.cpp" />
     <ClCompile Include="Input\Windows\XInput.cpp" />
     <ClCompile Include="UI\VertexHelper.cpp" />
+    <ClCompile Include="PostProcess\VolumeParameter.cpp" />
+    <ClCompile Include="PostProcess\VolumeParameterBase.cpp" />
+    <ClCompile Include="PostProcess\VolumeComponent.cpp" />
+    <ClCompile Include="PostProcess\VolumeProfile.cpp" />
+    <ClCompile Include="Asset\Importer\VolumeProfileImporter.cpp" />
+    <ClCompile Include="PostProcess\VolumeManager.cpp" />
+    <ClCompile Include="PostProcess\VolumeStack.cpp" />
+    <ClCompile Include="PostProcess\Volume.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli" />
@@ -546,6 +569,17 @@
     <None Include="EngineAssets\Shader\Error.PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\UberPost.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>

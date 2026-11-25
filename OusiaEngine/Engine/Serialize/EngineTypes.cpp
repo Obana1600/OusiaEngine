@@ -9,6 +9,7 @@
 #include "Physics/CharacterController.h"
 #include "Physics/Rigidbody.h"
 #include "Physics/SphereCollider.h"
+#include "PostProcess/Volume.h"
 #include "Render/Camera.h"
 #include "Render/Light.h"
 #include "Render/LineRenderer.h"
@@ -61,6 +62,8 @@ void ou::RegisterEngineTypes() {
 	TypeRegistry::Register<ParticleSystem>("ParticleSystem");
 	TypeRegistry::Register<ParticleSystemRenderer>("ParticleSystemRenderer");
 	TypeRegistry::Register<LineRenderer>("LineRenderer");
+
+	TypeRegistry::Register<Volume>("Volume");
 
 	TypeRegistry::Register<MonoBehavior>("MonoBehavior");
 }

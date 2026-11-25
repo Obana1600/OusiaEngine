@@ -14,8 +14,10 @@ namespace ou {
 
 // 前方宣言
 class Collision;
+class ControllerColliderHit;
 class GameObject;
 class Object;
+class Scene;
 class Serializer;
 
 // AngelScript に Unity の API（Debug・Vector3・Transform など）を見せる
@@ -43,6 +45,7 @@ private: // 静的メンバ関数
 	static void RegisterCursor(asIScriptEngine *engine);
 	static void RegisterApplication(asIScriptEngine *engine);
 	static void RegisterGizmos(asIScriptEngine *engine);
+	static void RegisterLayerMask(asIScriptEngine *engine);
 
 	// ScriptBindingsMath.cpp
 	static void RegisterValueTypes(asIScriptEngine *engine);
@@ -63,6 +66,9 @@ private: // 静的メンバ関数
 	// ScriptBindingsComponents.cpp（AudioSource・Renderer・Material・UI）
 	static void RegisterComponentMembers(asIScriptEngine *engine);
 
+	// ScriptBindingsRender.cpp（Camera・Light・LineRenderer・ParticleSystem・SkeletalAnimator など）
+	static void RegisterRenderMembers(asIScriptEngine *engine);
+
 	// C++ のオブジェクトをスクリプトに渡す持ち手を作る（参照の数を 1 増やして返す。nullptr なら nullptr）
 	static void *CreateObjectHandle(Object *object);
 	static void ReleaseObjectHandle(void *handle);
@@ -70,6 +76,10 @@ private: // 静的メンバ関数
 	// Collision をスクリプトの値の型（Collision）にしたものを作る。使い終わったら DestroyCollision で消す
 	static void *CreateCollision(const Collision &collision);
 	static void DestroyCollision(void *collision);
+
+	// ControllerColliderHit をスクリプトの値の型（ControllerColliderHit）にしたものを作る。使い終わったら DestroyControllerColliderHit で消す
+	static void *CreateControllerColliderHit(const ControllerColliderHit &hit);
+	static void DestroyControllerColliderHit(void *hit);
 
 	// スクリプトの変数 1 つを保存・読み込み・Inspector に通す（扱えない型なら false）
 	static bool SerializeProperty(Serializer &serializer, std::string_view name, int typeId, void *address);
@@ -91,6 +101,9 @@ private: // 静的メンバ関数
 
 	// Unity の GameObject.Find（DontDestroyOnLoad のシーンも見るので SceneManager の friend）
 	static void *FindGameObject(const std::string &name);
+
+	// DontDestroyOnLoad のシーン（Scene.GetRootGameObjects などで、今のシーンと一緒に探す）
+	static Scene *FindDontDestroyOnLoadScene();
 
 	// ---- UnityEvent（スクリプトの関数をつなぐ・外す。UnityEvent の friend） ----
 

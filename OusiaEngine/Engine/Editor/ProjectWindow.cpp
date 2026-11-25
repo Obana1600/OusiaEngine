@@ -5,13 +5,14 @@
 #include "Diagnostics/Log.h"
 #include "Editor/EditorApplication.h"
 #include "Editor/EditorMainWindow.h"
-#include "Editor/EditorSceneManager.h"
 #include "Editor/EditorPayload.h"
+#include "Editor/EditorSceneManager.h"
 #include "Editor/ExternalScriptEditor.h"
 #include "Editor/PrefabUtility.h"
 #include "Editor/Selection.h"
 #include "Physics/PhysicsMaterial.h"
 #include "Platform/Paths.h"
+#include "PostProcess/VolumeProfile.h"
 #include "Render/Asset/Material.h"
 #include "Render/Asset/Shader.h"
 #include "Scene/GameObject.h"
@@ -35,10 +36,10 @@
 #include <vector>
 
 #include <Windows.h>
-#include <shellapi.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h> // BeginDragDropTargetCustom
 #include <imgui/imgui_stdlib.h>
+#include <shellapi.h>
 
 using namespace ou;
 
@@ -266,6 +267,11 @@ std::vector<NewFile> MakeMaterialFiles(const std::string &name, const std::strin
 // 値は PhysicsMaterial の初期値（Unity の Physic Material の初期値と同じ）
 std::vector<NewFile> MakePhysicsMaterialFiles(const std::string &name) {
 	return {{name + ".physicsmaterial", {}, [] { return std::static_pointer_cast<Object>(std::make_shared<PhysicsMaterial>()); }}};
+}
+
+// Unity と同じく、効果のない空の Profile（Inspector の Add Override で足す）
+std::vector<NewFile> MakeVolumeProfileFiles(const std::string &name) {
+	return {{name + ".volumeprofile", {}, [] { return std::static_pointer_cast<Object>(std::make_shared<VolumeProfile>()); }}};
 }
 
 // エクスプローラーで、そのファイルを選んだ状態で開く
@@ -548,6 +554,7 @@ void ou::ProjectWindow::DrawCreateMenu() {
 	if (ImGui::MenuItem("Unlit Shader")) { BeginCreate(CreateKind::Shader); }
 	ImGui::Separator();
 	if (ImGui::MenuItem("Physics Material")) { BeginCreate(CreateKind::PhysicsMaterial); }
+	if (ImGui::MenuItem("Volume Profile")) { BeginCreate(CreateKind::VolumeProfile); }
 	ImGui::EndMenu();
 }
 
@@ -557,11 +564,24 @@ void ou::ProjectWindow::BeginCreate(CreateKind kind) {
 	creatingFolder_ = selectedFolder_.starts_with("Assets") ? selectedFolder_ : "Assets";
 	creatingKind_ = kind;
 	switch (kind) {
-	case CreateKind::Folder: creatingName_ = "New Folder"; break;
-	case CreateKind::Script: creatingName_ = "NewBehavior"; break;
-	case CreateKind::Shader: creatingName_ = "NewUnlitShader"; break;
-	case CreateKind::Material: creatingName_ = "New Material"; break;
-	case CreateKind::PhysicsMaterial: creatingName_ = "New Physics Material"; break;
+		case CreateKind::Folder:
+			creatingName_ = "New Folder";
+			break;
+		case CreateKind::Script:
+			creatingName_ = "NewBehavior";
+			break;
+		case CreateKind::Shader:
+			creatingName_ = "NewUnlitShader";
+			break;
+		case CreateKind::Material:
+			creatingName_ = "New Material";
+			break;
+		case CreateKind::PhysicsMaterial:
+			creatingName_ = "New Physics Material";
+			break;
+		case CreateKind::VolumeProfile:
+			creatingName_ = "New Volume Profile";
+			break;
 	}
 
 	// Unity と同じく、シェーダを選んでいたらそのシェーダのマテリアルにする
@@ -581,11 +601,24 @@ void ou::ProjectWindow::DrawCreatePopup() {
 	const auto isScript = creatingKind_ == CreateKind::Script;
 	const char *kindName = "";
 	switch (creatingKind_) {
-	case CreateKind::Folder: kindName = "フォルダ"; break;
-	case CreateKind::Script: kindName = "スクリプト"; break;
-	case CreateKind::Shader: kindName = "シェーダ"; break;
-	case CreateKind::Material: kindName = "マテリアル"; break;
-	case CreateKind::PhysicsMaterial: kindName = "物理マテリアル"; break;
+		case CreateKind::Folder:
+			kindName = "フォルダ";
+			break;
+		case CreateKind::Script:
+			kindName = "スクリプト";
+			break;
+		case CreateKind::Shader:
+			kindName = "シェーダ";
+			break;
+		case CreateKind::Material:
+			kindName = "マテリアル";
+			break;
+		case CreateKind::PhysicsMaterial:
+			kindName = "物理マテリアル";
+			break;
+		case CreateKind::VolumeProfile:
+			kindName = "Volume Profile";
+			break;
 	}
 	ImGui::Text("%s に%sを作ります", creatingFolder_.c_str(), kindName);
 	if (isScript) {
@@ -605,11 +638,24 @@ void ou::ProjectWindow::DrawCreatePopup() {
 	// 作るファイル（Folder はフォルダ 1 つ）
 	std::vector<NewFile> files;
 	switch (creatingKind_) {
-	case CreateKind::Folder: files = {{creatingName_, {}}}; break;
-	case CreateKind::Script: files = {{creatingName_ + ".as", MakeScriptTemplate(creatingName_)}}; break;
-	case CreateKind::Shader: files = MakeShaderFiles(creatingName_); break;
-	case CreateKind::Material: files = MakeMaterialFiles(creatingName_, creatingShader_); break;
-	case CreateKind::PhysicsMaterial: files = MakePhysicsMaterialFiles(creatingName_); break;
+		case CreateKind::Folder:
+			files = {{creatingName_, {}}};
+			break;
+		case CreateKind::Script:
+			files = {{creatingName_ + ".as", MakeScriptTemplate(creatingName_)}};
+			break;
+		case CreateKind::Shader:
+			files = MakeShaderFiles(creatingName_);
+			break;
+		case CreateKind::Material:
+			files = MakeMaterialFiles(creatingName_, creatingShader_);
+			break;
+		case CreateKind::PhysicsMaterial:
+			files = MakePhysicsMaterialFiles(creatingName_);
+			break;
+		case CreateKind::VolumeProfile:
+			files = MakeVolumeProfileFiles(creatingName_);
+			break;
 	}
 
 	const auto folder = ToFullPath(creatingFolder_);

@@ -15,11 +15,14 @@ public: // メンバ関数
 	explicit SceneRenderTarget(std::string_view name);
 
 	void BeginScenePass(Graphics::CommandList cmd) const;
+	void BeginPostProcessPass(Graphics::CommandList cmd) const;
 	void BeginOverlayPass(Graphics::CommandList cmd) const;
+	void BeginOverlayPassWithDepth(Graphics::CommandList cmd) const;
 
 	void Resize(uint32_t width, uint32_t height);
 	void Release();
 
+	const Graphics::Texture &GetSceneColor() const;
 	const Graphics::Texture &GetColor() const;
 	uint32_t GetWidth() const;
 	uint32_t GetHeight() const;
@@ -29,7 +32,8 @@ public: // メンバ関数
 private: // メンバ変数
 
 	std::string name_;
-	Graphics::Texture color_;
+	Graphics::Texture sceneColor_; // HDR
+	Graphics::Texture color_;	   // LDR
 	Graphics::Texture depth_;
 	uint32_t width_ = 0;
 	uint32_t height_ = 0;
