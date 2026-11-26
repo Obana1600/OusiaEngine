@@ -18,6 +18,7 @@ class Serializer;
 enum class ScriptableRenderPassInput : uint32_t {
 	None = 0,
 	Depth = 1 << 0,
+	Color = 1 << 2,
 };
 
 class FullScreenPassRendererFeature final {

@@ -1,5 +1,6 @@
 #include "Standard.hlsli"
 
+
 VSOutput main(VSInput input, uint vid : SV_VertexID)
 {
     float4 worldPosition;

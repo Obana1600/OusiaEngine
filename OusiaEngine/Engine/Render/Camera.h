@@ -2,8 +2,11 @@
 
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include "Scene/Behavior.h"
 #include "Scene/LayerMask.h"
+
+#include <cstdint>
 
 // TODO: API 名を Unity にそろえる
 
@@ -14,11 +17,16 @@ public: // インナークラス
 
 	// 定数バッファ: b2
 	struct PerCamera {
+		static constexpr uint32_t kNoTexture = 0xFFFFFFFF;
+
 		Matrix4x4 view;
 		Matrix4x4 projection;
 		Matrix4x4 viewProjection;
 		Vector3 worldPosition;
-		float padding;
+		uint32_t depthTextureIndex;
+		Vector4 screenSize; // (幅, 高さ, 1 / 幅, 1 / 高さ)
+		uint32_t opaqueTextureIndex;
+		uint32_t padding[3];
 	};
 
 

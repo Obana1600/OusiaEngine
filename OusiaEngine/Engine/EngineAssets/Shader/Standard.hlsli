@@ -1,3 +1,8 @@
+#pragma once
+
+#include "PerCamera.hlsli"
+
+
 struct VSInput
 {
     float3 position : POSITION0;
@@ -35,14 +40,6 @@ cbuffer PerMaterial : register(b1)
     float4 gColor;
     uint gTextureIndex;
     uint gLightingMode;
-}
-
-cbuffer PerCamera : register(b2)
-{
-    float4x4 gView;
-    float4x4 gProjection;
-    float4x4 gViewProjection;
-    float3 gCameraPosition;
 }
 
 static const uint kLightTypeSpot = 0;

@@ -1,6 +1,7 @@
 #include "Line.hlsli"
 
-SamplerState gLinearWrap : register(s0);
+#include "GlobalSamplers.hlsli"
+
 
 float4 main(VSOutput input) : SV_TARGET
 {

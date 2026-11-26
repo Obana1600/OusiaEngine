@@ -1,5 +1,6 @@
 #include "Bloom.hlsli"
 
+
 float4 main(VSOutput input) : SV_TARGET
 {
     float3 color = SampleSource(input.texcoord);

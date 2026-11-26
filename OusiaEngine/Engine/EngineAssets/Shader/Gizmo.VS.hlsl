@@ -1,5 +1,6 @@
 #include "Gizmo.hlsli"
 
+
 VSOutput main(uint vid : SV_VertexID)
 {
     StructuredBuffer<GizmoVertex> vertices = ResourceDescriptorHeap[gVertexBufferIndex];

@@ -1,6 +1,7 @@
 #include "Particle.hlsli"
 
-SamplerState gLinearClamp : register(s1);
+#include "GlobalSamplers.hlsli"
+
 
 float4 main(VSOutput input) : SV_TARGET
 {

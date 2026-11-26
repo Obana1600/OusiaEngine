@@ -1,4 +1,8 @@
+#pragma once
+
 #include "Blit.hlsli"
+#include "PerCamera.hlsli"
+#include "GlobalSamplers.hlsli"
 
 
 cbuffer FullScreenConstants : register(b0)
@@ -7,9 +11,6 @@ cbuffer FullScreenConstants : register(b0)
     uint3 gFullScreenPadding;
     float4 gScreenSize; // (幅, 高さ, 1 / 幅, 1 / 高さ)
 }
-
-SamplerState gLinearClamp : register(s1);
-SamplerState gPointClamp : register(s3);
 
 
 float4 SampleBlitTexture(float2 uv)

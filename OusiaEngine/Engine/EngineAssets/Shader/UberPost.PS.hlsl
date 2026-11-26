@@ -1,4 +1,6 @@
 #include "Blit.hlsli"
+#include "GlobalSamplers.hlsli"
+
 
 struct BloomConstants
 {
@@ -36,8 +38,6 @@ cbuffer UberPostConstants : register(b0)
     ColorAdjustmentsConstants gColorAdjustments;
     VignetteConstants gVignette;
 }
-
-SamplerState gLinearClamp : register(s1);
 
 
 // ---- 色の変換 ----

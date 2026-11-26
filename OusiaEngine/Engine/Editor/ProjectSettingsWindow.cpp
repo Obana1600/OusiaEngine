@@ -124,6 +124,9 @@ void ou::ProjectSettingsWindow::DrawGraphics() {
 	if (auto property = so.FindProperty("rendererFeatures")) {
 		EditorGuiLayout::PropertyField(*property, GuiContent("Renderer Features", "全部のカメラにかける Full Screen Pass Renderer Feature。上から順に描く"), true);
 	}
+	if (auto property = so.FindProperty("opaqueDownsampling")) {
+		EditorGuiLayout::PropertyField(*property, GuiContent("Opaque Downsampling", "半透明のシェーダーが読む、不透明の後の色の写しの縮め方。_2xBilinear は縦横 1/2"));
+	}
 	if (so.ApplyModifiedProperties()) { GraphicsSettings::Save(); }
 }
 

@@ -1,4 +1,7 @@
+#pragma once
+
 #include "Blit.hlsli"
+#include "GlobalSamplers.hlsli"
 
 
 cbuffer BloomPassConstants : register(b0)
@@ -12,7 +15,6 @@ cbuffer BloomPassConstants : register(b0)
     float gThresholdKnee;
 }
 
-SamplerState gLinearClamp : register(s1);
 
 float3 SampleSource(float2 uv)
 {

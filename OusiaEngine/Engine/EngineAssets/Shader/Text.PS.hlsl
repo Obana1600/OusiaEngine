@@ -1,6 +1,7 @@
 #include "Text.hlsli"
 
-SamplerState gLinearClamp : register(s1);
+#include "GlobalSamplers.hlsli"
+
 
 float ToDistance(float sdf)
 {
@@ -11,6 +12,7 @@ float Coverage(float distance, float edge, float width)
 {
     return smoothstep(edge - width, edge + width, distance);
 }
+
 
 float4 main(VSOutput input) : SV_TARGET
 {

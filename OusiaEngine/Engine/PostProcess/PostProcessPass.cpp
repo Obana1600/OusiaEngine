@@ -262,7 +262,8 @@ const Graphics::PipelineState *FindPipelineState(const FullScreenPassRendererFea
 	return shader->GetPipelineState(0, material->GetRenderStateOverride(), nullptr, Graphics::PrimitiveTopology::TRIANGLELIST);
 }
 
-void RenderFullScreenPass(const FullScreenPassRendererFeature &feature, const Graphics::PipelineState &pso, const Graphics::Texture &color, const Graphics::Texture &copy, Graphics::CommandList cmd) {
+void RenderFullScreenPass(const FullScreenPassRendererFeature &feature, const Graphics::PipelineState &pso, const Graphics::Texture &color,
+						  const Graphics::Texture &copy, const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
 	auto *device = Graphics::GetDevice();
 
 	if (feature.fetchColorBuffer_) {
@@ -273,6 +274,15 @@ void RenderFullScreenPass(const FullScreenPassRendererFeature &feature, const Gr
 
 	BeginFullScreen(color, Graphics::RenderPassImage::LoadOp::LOAD, cmd);
 	device->BindPipelineState(&pso, cmd);
+
+	auto camera = perCamera;
+	if (!HasFlag(feature.requirements_, ScriptableRenderPassInput::Depth)) {
+		camera.depthTextureIndex = Camera::PerCamera::kNoTexture;
+	}
+	if (!HasFlag(feature.requirements_, ScriptableRenderPassInput::Color)) {
+		camera.opaqueTextureIndex = Camera::PerCamera::kNoTexture;
+	}
+	device->BindDynamicConstantBuffer(camera, 2, cmd);
 
 	const auto &desc = color.GetDesc();
 	const auto width = static_cast<float>(desc.width);
@@ -294,11 +304,11 @@ void RenderFullScreenPass(const FullScreenPassRendererFeature &feature, const Gr
 }
 
 void RenderFullScreenPasses(const std::vector<FullScreenPassRendererFeature> &features, FullScreenPassRendererFeature::InjectionPoint injectionPoint,
-							const Graphics::Texture &color, const Graphics::Texture &copy, Graphics::CommandList cmd) {
+							const Graphics::Texture &color, const Graphics::Texture &copy, const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
 	for (const auto &feature : features) {
 		if (!feature.GetIsActive() || feature.injectionPoint_ != injectionPoint) { continue; }
 		if (const auto *pso = FindPipelineState(feature)) {
-			RenderFullScreenPass(feature, *pso, color, copy, cmd);
+			RenderFullScreenPass(feature, *pso, color, copy, perCamera, cmd);
 		}
 	}
 }
@@ -328,13 +338,14 @@ void ou::PostProcessPass::StaticFinalize() {
 }
 
 
-void ou::PostProcessPass::Render(const SceneRenderTarget &target, const VolumeStack *stack, Graphics::CommandList cmd) {
+void ou::PostProcessPass::Render(const SceneRenderTarget &target, const VolumeStack *stack, const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
 	auto *device = Graphics::GetDevice();
 
 	using InjectionPoint = FullScreenPassRendererFeature::InjectionPoint;
 	const auto &features = GraphicsSettings::GetInstance().rendererFeatures_;
 
-	RenderFullScreenPasses(features, InjectionPoint::BeforeRenderingPostProcessing, target.GetSceneColor(), target.GetSceneColorCopy(), cmd);
+	RenderFullScreenPasses(
+		features, InjectionPoint::BeforeRenderingPostProcessing, target.GetSceneColor(), target.GetSceneColorCopy(), perCamera, cmd);
 
 	UberPostConstants constants{};
 	constants.sourceIndex = ToSrvIndex(target.GetSceneColor());
@@ -359,7 +370,9 @@ void ou::PostProcessPass::Render(const SceneRenderTarget &target, const VolumeSt
 	device->BindPipelineState(&sUberPost.pso, cmd);
 	device->BindDynamicConstantBuffer(constants, 0, cmd);
 	device->Draw(3, 0, cmd);
+
 	device->RenderPassEnd(cmd);
 
-	RenderFullScreenPasses(features, InjectionPoint::AfterRenderingPostProcessing, target.GetColor(), target.GetColorCopy(), cmd);
+	RenderFullScreenPasses(
+		features, InjectionPoint::AfterRenderingPostProcessing, target.GetColor(), target.GetColorCopy(), perCamera, cmd);
 }

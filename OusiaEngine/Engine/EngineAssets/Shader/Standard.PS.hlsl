@@ -1,6 +1,7 @@
 #include "Standard.hlsli"
 
-SamplerState gLinearWrap : register(s0);
+#include "GlobalSamplers.hlsli"
+
 
 float Diffuse(float3 normal, float3 toLight)
 {
@@ -25,6 +26,7 @@ float AngleAttenuation(ShaderLight light, float3 toLight)
     const float attenuation = saturate(sDotL * light.spotAngleScale + light.spotAngleOffset);
     return attenuation * attenuation;
 }
+
 
 float4 main(VSOutput input) : SV_TARGET
 {

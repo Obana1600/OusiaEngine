@@ -1,5 +1,6 @@
 #include "Particle.hlsli"
 
+
 VSOutput main(uint vid:SV_VertexID, uint iid:SV_InstanceID)
 {
     StructuredBuffer<ParticleData> particles = ResourceDescriptorHeap[gParticleBufferIndex];

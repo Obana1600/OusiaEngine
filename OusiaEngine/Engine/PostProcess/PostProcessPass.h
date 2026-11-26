@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/GraphicsTypes.h"
+#include "Render/Camera.h"
 
 
 namespace ou {
@@ -17,7 +18,7 @@ public: // メンバ関数
 	static void StaticInitialize();
 	static void StaticFinalize();
 
-	static void Render(const SceneRenderTarget &target, const VolumeStack *stack, Graphics::CommandList cmd);
+	static void Render(const SceneRenderTarget &target, const VolumeStack *stack, const Camera::PerCamera &perCamera, Graphics::CommandList cmd);
 };
 
 } // namespace ou

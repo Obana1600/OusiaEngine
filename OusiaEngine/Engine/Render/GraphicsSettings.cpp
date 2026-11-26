@@ -25,6 +25,7 @@ constexpr const wchar_t *kFileName = L"GraphicsSettings.json";
 constexpr std::string_view kKeys[] = {
 	"defaultVolumeProfile",
 	"rendererFeatures",
+	"opaqueDownsampling",
 };
 
 std::optional<std::filesystem::path> FindPath() {
@@ -42,6 +43,7 @@ void ou::GraphicsSettings::Serialize(Serializer &serializer) {
 	serializer.Array("rendererFeatures", rendererFeatures_, [&](FullScreenPassRendererFeature &feature) {
 		serializer.Struct("", [&] { feature.Serialize(serializer); });
 	});
+	serializer.Enum("opaqueDownsampling", opaqueDownsampling_);
 }
 
 
@@ -87,4 +89,5 @@ void ou::GraphicsSettings::Save() {
 void ou::GraphicsSettings::Unload() {
 	GetInstance().defaultVolumeProfile_.reset();
 	GetInstance().rendererFeatures_.clear();
+	GetInstance().opaqueDownsampling_ = Downsampling::_2xBilinear;
 }

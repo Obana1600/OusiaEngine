@@ -1,11 +1,13 @@
 #include "Blit.hlsli"
 
+#include "GlobalSamplers.hlsli"
+
+
 cbuffer BlitConstants : register(b0)
 {
     uint gSourceIndex;
 }
 
-SamplerState gLinearClamp : register(s1);
 
 float4 main(VSOutput input) : SV_TARGET
 {

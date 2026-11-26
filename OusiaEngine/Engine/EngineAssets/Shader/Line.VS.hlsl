@@ -1,5 +1,6 @@
 #include "Line.hlsli"
 
+
 static const float kMaxMiterScale = 4.0f;
 
 float3 SideOf(float3 direction, float3 toCamera)
@@ -8,6 +9,7 @@ float3 SideOf(float3 direction, float3 toCamera)
     const float len = length(side);
     return len > 1e-6f ? side / len : float3(0.0f, 0.0f, 0.0f);
 }
+
 
 VSOutput main(uint vid:SV_VertexID)
 {

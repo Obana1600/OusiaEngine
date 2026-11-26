@@ -1,5 +1,6 @@
 #include "Blit.hlsli"
 
+
 VSOutput main( uint vid : SV_VertexID )
 {
     VSOutput output;

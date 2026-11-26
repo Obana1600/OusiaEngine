@@ -1,3 +1,8 @@
+#pragma once
+
+#include "PerCamera.hlsli"
+
+
 struct VSOutput
 {
     float4 position : SV_POSITION;
@@ -18,14 +23,6 @@ cbuffer PerParticleSystem : register(b0)
     uint gParticleBufferIndex;
     uint gTextureIndex;
     uint gBlendMode;
-}
-
-cbuffer PerCamera : register(b2)
-{
-    float4x4 gView;
-    float4x4 gProjection;
-    float4x4 gViewProjection;
-    float3 gCameraPosition;
 }
 
 static const uint kBlendModeMultiply = 2;

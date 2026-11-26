@@ -7,6 +7,7 @@
 #include "Graphics/GraphicsTypes.h"
 #include "Platform/Window.h"
 #include "Render/Asset/ShaderModule.h"
+#include "Render/Camera.h"
 
 #include <chrono>
 #include <cstdint>
@@ -70,6 +71,8 @@ private: // メンバ関数
 	bool Update();
 
 	void Render();
+	void FillTargetInfo(Camera::PerCamera &perCamera, const SceneRenderTarget &target) const;
+	void RenderScene(const SceneRenderTarget &target, const Camera::PerCamera &perCamera, Graphics::CommandList cmd);
 	void RenderGame(const SceneRenderTarget &target, Graphics::CommandList cmd);
 	void RenderSceneView(const SceneView &sceneView, Graphics::CommandList cmd);
 	void BlitToSwapChain(const SceneRenderTarget &source, Graphics::CommandList cmd);

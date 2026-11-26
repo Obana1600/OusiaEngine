@@ -1,5 +1,6 @@
 #include "Bloom.hlsli"
 
+
 float4 main(VSOutput input) : SV_TARGET
 {
     Texture2D<float4> low = ResourceDescriptorHeap[gLowIndex];

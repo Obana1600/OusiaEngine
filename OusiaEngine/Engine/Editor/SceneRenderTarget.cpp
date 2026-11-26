@@ -57,6 +57,44 @@ void ou::SceneRenderTarget::BeginScenePass(Graphics::CommandList cmd) const {
 }
 
 
+void ou::SceneRenderTarget::ResumeScenePass(Graphics::CommandList cmd) const {
+	using Image = Graphics::RenderPassImage;
+
+	const Image images[] = {
+		Image::RenderTarget(&sceneColor_),
+		Image::DepthStencil(&depth_),
+	};
+	Graphics::GetDevice()->RenderPassBegin(images, 2, cmd);
+	BindViewport(cmd);
+}
+
+
+void ou::SceneRenderTarget::BeginDepthCopyPass(Graphics::CommandList cmd) const {
+	const auto image = Graphics::RenderPassImage::RenderTarget(&depthCopy_, Graphics::RenderPassImage::LoadOp::DONTCARE);
+	Graphics::GetDevice()->RenderPassBegin(&image, 1, cmd);
+	BindViewport(cmd);
+}
+
+
+void ou::SceneRenderTarget::BeginOpaqueCopyPass(Graphics::CommandList cmd) const {
+	auto *device = Graphics::GetDevice();
+
+	const auto image = Graphics::RenderPassImage::RenderTarget(&opaqueTexture_, Graphics::RenderPassImage::LoadOp::DONTCARE);
+	device->RenderPassBegin(&image, 1, cmd);
+
+	const auto &desc = opaqueTexture_.GetDesc();
+	Graphics::Viewport viewport{};
+	viewport.width = static_cast<float>(desc.width);
+	viewport.height = static_cast<float>(desc.height);
+	device->BindViewports(1, &viewport, cmd);
+
+	Graphics::Scissor scissor{};
+	scissor.right = static_cast<int32_t>(desc.width);
+	scissor.bottom = static_cast<int32_t>(desc.height);
+	device->BindScissorRects(1, &scissor, cmd);
+}
+
+
 void ou::SceneRenderTarget::BeginPostProcessPass(Graphics::CommandList cmd) const {
 	using Image = Graphics::RenderPassImage;
 
@@ -87,7 +125,12 @@ void ou::SceneRenderTarget::BeginOverlayPassWithDepth(Graphics::CommandList cmd)
 
 void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	if (width == 0 || height == 0) { return; }
-	if (width == width_ && height == height_) { return; }
+
+	const auto downsampling = GraphicsSettings::GetInstance().opaqueDownsampling_;
+	if (width == width_ && height == height_) {
+		if (downsampling != opaqueDownsampling_) { CreateOpaqueTexture(downsampling); }
+		return;
+	}
 
 	auto *device = Graphics::GetDevice();
 
@@ -95,6 +138,7 @@ void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	CreateColorTexture(width, height, kColorFormat, name_ + "_Color", &color_);
 	CreateColorTexture(width, height, kSceneColorFormat, name_ + "_SceneColorCopy", &sceneColorCopy_);
 	CreateColorTexture(width, height, kColorFormat, name_ + "_ColorCopy", &colorCopy_);
+	CreateColorTexture(width, height, Graphics::Format::R32_FLOAT, name_ + "_DepthCopy", &depthCopy_);
 
 	Graphics::TextureDesc depthDesc{};
 	depthDesc.width = width;
@@ -127,6 +171,8 @@ void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 
 	width_ = width;
 	height_ = height;
+
+	CreateOpaqueTexture(downsampling);
 }
 
 
@@ -136,6 +182,9 @@ void ou::SceneRenderTarget::Release() {
 	sceneColorCopy_ = {};
 	colorCopy_ = {};
 	depth_ = {};
+	depthCopy_ = {};
+	opaqueTexture_ = {};
+	opaqueDownsampling_ = Downsampling::None;
 	width_ = 0;
 	height_ = 0;
 
@@ -162,6 +211,21 @@ const Graphics::Texture &ou::SceneRenderTarget::GetSceneColorCopy() const {
 
 const Graphics::Texture &ou::SceneRenderTarget::GetColorCopy() const {
 	return colorCopy_;
+}
+
+
+const Graphics::Texture &ou::SceneRenderTarget::GetDepth() const {
+	return depth_;
+}
+
+
+const Graphics::Texture &ou::SceneRenderTarget::GetDepthCopy() const {
+	return depthCopy_;
+}
+
+
+const Graphics::Texture &ou::SceneRenderTarget::GetOpaqueTexture() const {
+	return opaqueTexture_;
 }
 
 
@@ -207,4 +271,14 @@ void ou::SceneRenderTarget::BindViewport(Graphics::CommandList cmd) const {
 	scissor.right = static_cast<int32_t>(width_);
 	scissor.bottom = static_cast<int32_t>(height_);
 	device->BindScissorRects(1, &scissor, cmd);
+}
+
+
+void ou::SceneRenderTarget::CreateOpaqueTexture(Downsampling downsampling) {
+	const auto divisor = (downsampling == Downsampling::_2xBilinear) ? 2u : 1u;
+	const auto width = std::max(width_ / divisor, 1u);
+	const auto height = std::max(height_ / divisor, 1u);
+
+	CreateColorTexture(width, height, kSceneColorFormat, name_ + "_OpaqueTexture", &opaqueTexture_);
+	opaqueDownsampling_ = downsampling;
 }

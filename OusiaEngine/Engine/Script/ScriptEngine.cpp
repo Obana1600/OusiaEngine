@@ -63,6 +63,9 @@ void ou::ScriptEngine::Initialize() {
 	// コンパイルのエラーと警告をログに流す
 	sEngine_->SetMessageCallback(asFUNCTION(MessageCallback), nullptr, asCALL_CDECL);
 
+	// プロパティ
+	sEngine_->SetEngineProperty(asEP_REQUIRE_ENUM_SCOPE, true);
+
 	// アドオン
 	RegisterStdString(sEngine_);
 	RegisterScriptArray(sEngine_, true);

@@ -1,5 +1,6 @@
 #include "Sprite.hlsli"
 
+
 VSOutput main(VSInput input)
 {
     VSOutput output;

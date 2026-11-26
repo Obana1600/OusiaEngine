@@ -4,6 +4,7 @@
 #include "Core/JsonFile.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Render/Camera.h"
+#include "Render/RenderQueueRange.h"
 #include "Scene/Scene.h"
 
 #include <cstdint>
@@ -96,8 +97,7 @@ private: // 静的メンバ関数
 	static void Update();
 	static void Finalize();
 
-	static void Render(Graphics::CommandList cmd);
-	static void RenderWithCamera(const Camera::PerCamera &perCamera, Graphics::CommandList cmd);
+	static void RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd);
 	static void RenderOverlay(Graphics::CommandList cmd);
 
 	static void LoadPendingScene();

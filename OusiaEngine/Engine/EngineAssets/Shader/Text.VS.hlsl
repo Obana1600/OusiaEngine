@@ -1,5 +1,6 @@
 #include "Text.hlsli"
 
+
 VSOutput main(VSInput input)
 {
     VSOutput output;

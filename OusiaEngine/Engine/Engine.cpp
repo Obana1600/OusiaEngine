@@ -17,6 +17,9 @@
 #include "PostProcess/PostProcessPass.h"
 #include "PostProcess/VolumeManager.h"
 #include "Render/Asset/Material.h"
+#include "Render/CopyColorPass.h"
+#include "Render/CopyDepthPass.h"
+#include "Render/GraphicsSettings.h"
 #include "Render/LineRenderer.h"
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
@@ -24,7 +27,6 @@
 #include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
-#include "Render/GraphicsSettings.h"
 #include "UI/Text.h"
 #ifdef WITH_EDITOR
 #include "Editor/EditorApplication.h"
@@ -257,10 +259,11 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	GizmoRenderer::StaticInitialize();
 #endif
 
-	PostProcessPass::StaticInitialize();
-
 	// ポストプロセス
 	GraphicsSettings::Load();
+	PostProcessPass::StaticInitialize();
+	CopyDepthPass::StaticInitialize();
+	CopyColorPass::StaticInitialize();
 
 	// 入力
 	if (!Input::Initialize(window_.get())) {
@@ -299,8 +302,12 @@ void ou::Engine::Finalize() {
 	ParticleSystemRenderer::StaticFinalize();
 	LineRenderer::StaticFinalize();
 
+	// ポストプロセス
 	PostProcessPass::StaticFinalize();
+	CopyDepthPass::StaticFinalize();
+	CopyColorPass::StaticFinalize();
 
+	// オーディオ
 	Audio::Finalize();
 
 	// 入力
@@ -357,6 +364,7 @@ void ou::Engine::OpenFirstScene() {
 	ScriptEngine::InvokeAfterSceneLoadMethods();
 #endif
 }
+
 
 // TODO: ぐちゃぐちゃスギ
 bool ou::Engine::Update() {
@@ -448,20 +456,48 @@ void ou::Engine::Render() {
 }
 
 
+void ou::Engine::FillTargetInfo(Camera::PerCamera &perCamera, const SceneRenderTarget &target) const {
+	const auto width = static_cast<float>(target.GetWidth());
+	const auto height = static_cast<float>(target.GetHeight());
+	perCamera.screenSize = {width, height, 1.0f / width, 1.0f / height};
+	perCamera.depthTextureIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&target.GetDepthCopy(), Graphics::ViewType::SRV));
+	perCamera.opaqueTextureIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&target.GetOpaqueTexture(), Graphics::ViewType::SRV));
+}
+
+
+void ou::Engine::RenderScene(const SceneRenderTarget &target, const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
+	target.BeginScenePass(cmd);
+	SceneManager::RenderWithCamera(perCamera, RenderQueueRange::Opaque, cmd);
+	device_->RenderPassEnd(cmd);
+
+	CopyDepthPass::Render(target, cmd);
+	CopyColorPass::Render(target, cmd);
+
+	target.ResumeScenePass(cmd);
+	SceneManager::RenderWithCamera(perCamera, RenderQueueRange::Transparent, cmd);
+	device_->RenderPassEnd(cmd);
+}
+
+
 void ou::Engine::RenderGame(const SceneRenderTarget &target, Graphics::CommandList cmd) {
 	Screen::SetSize(target.GetWidth(), target.GetHeight());
 
-	target.BeginScenePass(cmd);
-	SceneManager::Render(cmd);
-	device_->RenderPassEnd(cmd);
-
 	const auto *camera = SceneManager::GetMainCamera();
+	auto perCamera = camera ? camera->MakePerCamera() : Camera::PerCamera{};
+	FillTargetInfo(perCamera, target);
+	if (camera) {
+		RenderScene(target, perCamera, cmd);
+	} else {
+		target.BeginScenePass(cmd);
+		device_->RenderPassEnd(cmd);
+	}
+
 	const VolumeStack *stack = nullptr;
 	if (camera && camera->GetRenderPostProcessing()) {
 		VolumeManager::Update(camera->GetTransform()->GetWorldPosition(), camera->GetVolumeLayerMask());
 		stack = &VolumeManager::GetStack();
 	}
-	PostProcessPass::Render(target, stack, cmd);
+	PostProcessPass::Render(target, stack, perCamera, cmd);
 
 	target.BeginOverlayPass(cmd);
 	SceneManager::RenderOverlay(cmd);
@@ -472,14 +508,13 @@ void ou::Engine::RenderGame(const SceneRenderTarget &target, Graphics::CommandLi
 void ou::Engine::RenderSceneView(const SceneView &sceneView, Graphics::CommandList cmd) {
 #ifdef WITH_EDITOR
 	const auto &target = sceneView.GetRenderTarget();
-	target.BeginScenePass(cmd);
-	const auto camera = sceneView.MakePerCamera();
-	SceneManager::RenderWithCamera(camera, cmd);
-	device_->RenderPassEnd(cmd);
+	auto camera = sceneView.MakePerCamera();
+	FillTargetInfo(camera, target);
+	RenderScene(target, camera, cmd);
 
 	const auto *mainCamera = SceneManager::GetMainCamera();
 	VolumeManager::Update(camera.worldPosition, mainCamera ? mainCamera->GetVolumeLayerMask() : LayerMask{~0u});
-	PostProcessPass::Render(target, &VolumeManager::GetStack(), cmd);
+	PostProcessPass::Render(target, &VolumeManager::GetStack(), camera, cmd);
 
 	target.BeginOverlayPassWithDepth(cmd);
 	GizmoRenderer::Render(camera, cmd);

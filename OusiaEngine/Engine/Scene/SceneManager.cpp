@@ -251,15 +251,7 @@ void ou::SceneManager::Finalize() {
 }
 
 
-void ou::SceneManager::Render(Graphics::CommandList cmd) {
-	const auto *camera = GetMainCamera();
-	if (!camera) { return; }
-
-	RenderWithCamera(camera->MakePerCamera(), cmd);
-}
-
-
-void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
+void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd) {
 	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(perCamera, 2, cmd);
 
@@ -281,10 +273,12 @@ void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, Grap
 	}
 	device->BindDynamicConstantBuffer(perFrame, 3, cmd);
 
-	// renderQueue の小さい順に描く
+	// range の中のものを、renderQueue の小さい順に描く
 	auto renderers = sRenderers_;
-	std::erase_if(renderers, [](const auto *r) {
-		return !r->IsActiveAndEnabled();
+	std::erase_if(renderers, [&range](const auto *r) {
+		if (!r->IsActiveAndEnabled()) { return true; }
+		const auto queue = r->GetRenderQueue();
+		return queue < range.lowerBound || queue > range.upperBound;
 	});
 	std::stable_sort(renderers.begin(), renderers.end(), [](const auto *a, const auto *b) {
 		return a->GetRenderQueue() < b->GetRenderQueue();

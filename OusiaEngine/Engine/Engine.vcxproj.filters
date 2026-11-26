@@ -634,6 +634,15 @@
     <ClInclude Include="PostProcess\FullScreenPassRendererFeature.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Render\RenderQueueRange.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\CopyDepthPass.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\CopyColorPass.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Diagnostics\CrashHandler.cpp">
@@ -1212,6 +1221,12 @@
     <ClCompile Include="PostProcess\FullScreenPassRendererFeature.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Render\CopyDepthPass.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\CopyColorPass.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli">
@@ -1306,6 +1321,21 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="EngineAssets\Shader\FullScreen.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\CopyDepth.PS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\DeclareDepthTexture.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\GlobalSamplers.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\PerCamera.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\DeclareOpaqueTexture.hlsli">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>
