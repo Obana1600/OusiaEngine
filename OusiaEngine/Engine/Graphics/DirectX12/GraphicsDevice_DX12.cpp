@@ -557,6 +557,38 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, 
 		device_->CreateShaderResourceView(is->resource.Get(), &srvDesc, GetBindlessCpuHandle(is->srvIndex));
 	}
 
+	// バッファの UAV
+	if (HasFlag(desc->bindFlags, BindFlag::UNORDERED_ACCESS)) {
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		uavDesc.Buffer.FirstElement = 0;
+
+		if (HasFlag(desc->miscFlags, ResourceMiscFlag::BUFFER_RAW)) {
+			uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+			uavDesc.Buffer.NumElements = static_cast<UINT>(desc->size / 4);
+
+		} else if (HasFlag(desc->miscFlags, ResourceMiscFlag::BUFFER_STRUCTURED)) {
+			if (desc->stride == 0) {
+				Log::Error("RWStructuredBuffer の stride が 0 です");
+				return false;
+			}
+			uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+			uavDesc.Buffer.StructureByteStride = desc->stride;
+			uavDesc.Buffer.NumElements = static_cast<UINT>(desc->size / desc->stride);
+
+		} else {
+			Log::Error("型付きバッファの UAV にはまだ対応していません");
+			return false;
+		}
+
+		is->uavIndex = allocationHandler_->AllocateResourceIndex();
+		if (is->uavIndex < 0) {
+			FatalError("バインドレスヒープの空きがありません");
+		}
+		device_->CreateUnorderedAccessView(is->resource.Get(), nullptr, &uavDesc, GetBindlessCpuHandle(is->uavIndex));
+	}
+
 	// マッピング
 	if (desc->heapType == HeapType::UPLOAD) {
 		D3D12_RANGE readRange{0, 0};
@@ -754,11 +786,33 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, c
 		device_->CreateShaderResourceView(is->resource.Get(), &srvDesc, GetBindlessCpuHandle(is->srvIndex));
 	}
 
-	// RTV / DSV
+	// UAV
+	if (HasFlag(desc->bindFlags, BindFlag::UNORDERED_ACCESS)) {
+		if (desc->type != TextureDesc::Type::TEXTURE_2D || desc->arraySize != 1) {
+			// TODO: 1D / 3D / 配列 / ミップごとの UAV
+			Log::Error("この種類のテクスチャの UAV にはまだ対応していません。");
+			return false;
+		}
+
+		is->uavIndex = allocationHandler_->AllocateResourceIndex();
+		if (is->uavIndex < 0) {
+			FatalError("バインドレスヒープの空きがありません。");
+		}
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+		uavDesc.Format = format;
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		uavDesc.Texture2D.MipSlice = 0;
+		device_->CreateUnorderedAccessView(is->resource.Get(), nullptr, &uavDesc, GetBindlessCpuHandle(is->uavIndex));
+	}
+
+	// RTV
 	if (HasFlag(desc->bindFlags, BindFlag::RENDER_TARGET)) {
 		is->rtv = allocationHandler_->descriptorRtv.Allocate();
 		device_->CreateRenderTargetView(is->resource.Get(), nullptr, is->rtv);
 	}
+
+	// DSV
 	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL)) {
 		is->dsv = allocationHandler_->descriptorDsv.Allocate();
 
@@ -786,7 +840,21 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateShader(ShaderStage stage, const vo
 	is->shaderCode.resize(shaderCodeSize);
 	std::memcpy(is->shaderCode.data(), shaderCode, shaderCodeSize);
 
-	// TODO: CS に対応させる
+	// コンピュートシェーダ
+	if (stage == ShaderStage::CS) {
+		is->allocationHandler = allocationHandler_;
+
+		D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
+		desc.pRootSignature = rootSignature_.Get();
+		desc.CS = is->GetByteCode();
+
+		const auto hr = device_->CreateComputePipelineState(&desc, IID_PPV_ARGS(&is->computePipeline));
+		if (FAILED(hr)) {
+			Log::Error("コンピュートの PSO の作成に失敗しました: {}", DescribeHResult(hr));
+			shader->internalState = nullptr;
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -920,11 +988,13 @@ int ou::Graphics::GraphicsDevice_DX12::GetDescriptorIndex(const GpuResource *res
 
 	if (!resource || !resource->IsValid()) { return -1; }
 
-	// TODO: UAV
 	const auto *is = ToInternal(resource);
 	switch (type) {
 		case ViewType::SRV:
 			return is->srvIndex;
+		case ViewType::UAV:
+			return is->uavIndex;
+
 		default:
 			return -1;
 	}
@@ -986,6 +1056,7 @@ CommandList ou::Graphics::GraphicsDevice_DX12::BeginCommandList(QueueType queue)
 		ID3D12DescriptorHeap *heaps[] = {descriptorHeapRes_.Get()};
 		list->SetDescriptorHeaps(_countof(heaps), heaps);
 		list->SetGraphicsRootSignature(rootSignature_.Get());
+		list->SetComputeRootSignature(rootSignature_.Get());
 
 		// Texture をまとめて遷移させる
 		std::scoped_lock lock(initTransitionLocker_);
@@ -1293,8 +1364,10 @@ void ou::Graphics::GraphicsDevice_DX12::BindIndexBuffer(const GpuBuffer *buffer,
 void ou::Graphics::GraphicsDevice_DX12::BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset) {
 	ASSERT(slot < DESCRIPTORBINDER_CBV_COUNT);
 
-	GetCommandList(cmd).GetGraphicsCommandList()->SetGraphicsRootConstantBufferView(
-		ROOT_CBV_BEGIN + slot, ToInternal(buffer)->gpuAddress + offset);
+	auto *list = GetCommandList(cmd).GetGraphicsCommandList();
+	const auto address = ToInternal(buffer)->gpuAddress + offset;
+	list->SetGraphicsRootConstantBufferView(ROOT_CBV_BEGIN + slot, address);
+	list->SetComputeRootConstantBufferView(ROOT_CBV_BEGIN + slot, address);
 }
 
 
@@ -1310,6 +1383,23 @@ void ou::Graphics::GraphicsDevice_DX12::BindSampler(const Sampler *sampler, uint
 	(void)sampler;
 	(void)slot;
 	(void)cmd;
+}
+
+
+void ou::Graphics::GraphicsDevice_DX12::BindComputeShader(const Shader *cs, CommandList cmd) {
+	auto &cmdDX12 = GetCommandList(cmd);
+	if (cmdDX12.activeCs == cs) { return; }
+
+	const auto *is = cs ? ToInternal(cs) : nullptr;
+	if (!is || !is->computePipeline) {
+		Log::Error("CS ではないシェーダを BindComputeShader に渡しました");
+		return;
+	}
+
+	cmdDX12.activeCs = cs;
+	cmdDX12.GetGraphicsCommandList()->SetPipelineState(is->computePipeline.Get());
+
+	cmdDX12.isPsoDirty = true;
 }
 
 
@@ -1346,6 +1436,17 @@ void ou::Graphics::GraphicsDevice_DX12::DrawIndexedInstanced(uint32_t indexCount
 
 	cmdDX12.GetGraphicsCommandList()->DrawIndexedInstanced(
 		indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
+
+void ou::Graphics::GraphicsDevice_DX12::Dispatch(uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ, CommandList cmd) {
+	auto &cmdDX12 = GetCommandList(cmd);
+	if (!cmdDX12.activeCs) {
+		Log::Error("CS を設定せずに Dispatch しようとしました");
+		return;
+	}
+
+	cmdDX12.GetGraphicsCommandList()->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 
@@ -1467,6 +1568,7 @@ bool ou::Graphics::GraphicsDevice_DX12::ValidatePipelineState(CommandList_DX12 &
 	if (!pso) { return false; }
 
 	cmdDX12.GetGraphicsCommandList()->SetPipelineState(pso);
+	cmdDX12.activeCs = nullptr;
 	cmdDX12.isPsoDirty = false;
 	return true;
 }

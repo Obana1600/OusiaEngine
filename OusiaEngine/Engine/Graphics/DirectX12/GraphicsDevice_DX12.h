@@ -42,7 +42,6 @@ public: // メンバ関数
 	CommandList BeginCommandList(QueueType queue = QUEUE_GRAPHICS) override;
 
 	void SubmitCommandLists() override;
-
 	virtual void WaitForGpu() const override;
 
 
@@ -60,11 +59,13 @@ public: // メンバ関数
 	void BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset = 0) override;
 	void BindResource(const GpuResource *resource, uint32_t slot, CommandList cmd, int subresource = -1) override;
 	void BindSampler(const Sampler *sampler, uint32_t slot, CommandList cmd) override;
+	void BindComputeShader(const Shader *cs, CommandList cmd) override;
 
 	void Draw(uint32_t vertexCount, uint32_t startVertexLocation, CommandList cmd) override;
 	void DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation, CommandList cmd) override;
 	void DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation, CommandList cmd) override;
 	void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) override;
+	void Dispatch(uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ, CommandList cmd) override;
 
 	void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) override;
 

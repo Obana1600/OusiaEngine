@@ -15,6 +15,7 @@ void ou::Graphics::CommandList_DX12::Reset(uint32_t newBufferIndex) {
 	renderPassBarriersEnd.clear();
 	frameAllocators[newBufferIndex].Reset();
 	activePso = nullptr;
+	activeCs = nullptr;
 	renderPassInfo = {};
 	isPsoDirty = false;
 }

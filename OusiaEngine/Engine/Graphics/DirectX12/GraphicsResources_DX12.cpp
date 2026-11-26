@@ -48,6 +48,14 @@ ou::Graphics::Texture_DX12::~Texture_DX12() {
 }
 
 
+ou::Graphics::Shader_DX12::~Shader_DX12() {
+	if (!allocationHandler || !computePipeline) { return; }
+
+	std::scoped_lock lock(allocationHandler->destroyLocker);
+	allocationHandler->destroyerPipelines.push_back({computePipeline, allocationHandler->frameCount});
+}
+
+
 ou::Graphics::PipelineState_DX12::~PipelineState_DX12() {
 	if (!allocationHandler) { return; }
 

@@ -38,6 +38,7 @@ struct CommandList_DX12 {
 	std::vector<D3D12_RESOURCE_BARRIER> renderPassBarriersEnd;
 
 	const PipelineState *activePso = nullptr;
+	const Shader *activeCs = nullptr;
 	RenderPassInfo renderPassInfo;
 	bool isPsoDirty = false;
 

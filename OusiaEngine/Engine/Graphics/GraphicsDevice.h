@@ -44,13 +44,10 @@ public: // メンバ関数
 	virtual CommandList BeginCommandList(QueueType queue = QUEUE_GRAPHICS) = 0;
 
 	virtual void SubmitCommandLists() = 0;
-
 	virtual void WaitForGpu() const = 0;
 
 	uint64_t GetFrameCount() const { return frameCount_; }
-
 	uint32_t GetBufferIndex() const { return static_cast<uint32_t>(frameCount_ % BUFFER_COUNT); }
-
 	static constexpr uint32_t GetBufferCount() { return BUFFER_COUNT; }
 
 
@@ -68,11 +65,13 @@ public: // メンバ関数
 	virtual void BindConstantBuffer(const GpuBuffer *buffer, uint32_t slot, CommandList cmd, uint64_t offset = 0) = 0;
 	virtual void BindResource(const GpuResource *resource, uint32_t slot, CommandList cmd, int subresource = -1) = 0;
 	virtual void BindSampler(const Sampler *sampler, uint32_t slot, CommandList cmd) = 0;
+	virtual void BindComputeShader(const Shader *cs, CommandList cmd) = 0;
 
 	virtual void Draw(uint32_t vertexCount, uint32_t startVertexLocation, CommandList cmd) = 0;
 	virtual void DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation, CommandList cmd) = 0;
 	virtual void DrawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation, CommandList cmd) = 0;
 	virtual void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) = 0;
+	virtual void Dispatch(uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ, CommandList cmd) = 0;
 
 	virtual void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) = 0;
 
