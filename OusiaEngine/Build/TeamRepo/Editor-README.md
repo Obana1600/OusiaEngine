@@ -2,11 +2,21 @@
 
 配布版 OusiaEditor で、シーンを編集し、AngelScript で動きを付け、Windows 向けのゲームを書き出すためのガイドです。エディターのバージョンは同じフォルダーの `version.txt` で確認できます。このガイドはエディターの更新時に差し替わります。
 
+ガイドは 4 つあります。
+
+| ガイド | 内容 |
+|---|---|
+| **エディターガイド**（このファイル） | エディターの操作、アセットとチーム作業、ポストプロセスの設定、ゲームの書き出し |
+| [スクリプトの書き方](Scripting.md) | AngelScript で動きを付ける。最初のスクリプト、MonoBehavior、コールバック |
+| [スクリプト API リファレンス](Script-API.md) | スクリプトから使える型と関数の一覧 |
+| [シェーダとポストエフェクトの書き方](Shaders.md) | マテリアルとシェーダ、Volume の効果、Full Screen Pass |
+
+このファイルの目次：
+
 - [最初のシーンを作る](#最初のシーンを作る)
 - [エディターの操作](#エディターの操作)
 - [アセットとチーム作業](#アセットとチーム作業)
-- [スクリプトの書き方](Scripting.md)
-- [スクリプト API リファレンス](Script-API.md)
+- [ポストプロセス](#ポストプロセス)
 - [ゲームを書き出す](#ゲームを書き出す)
 - [困ったとき](#困ったとき)
 
@@ -44,7 +54,38 @@ Play 中のシーンの変更は、停止すると Play 前の状態に戻りま
 | 再生・一時停止・1 フレーム進める | **Ctrl+P** / **Ctrl+Shift+P** / **Ctrl+Alt+P** |
 | Console を開く | **Ctrl+Shift+C** |
 
-**Edit > Project Settings...** では、**Player** で製品名とウィンドウ設定、**Tags and Layers** で分類、**Physics** で物理設定、**Time** で時間設定を編集できます。
+**GameObject** メニュー（Hierarchy の右クリックでも同じ）で作れるもの：
+
+| 項目 | 作られるもの |
+|---|---|
+| **Create Empty** | Transform だけの空の GameObject |
+| **3D Object** | Cube・Sphere・Capsule・Cylinder・Plane・Quad（Quad 以外は形に合った Collider 付き） |
+| **Camera** | Camera |
+| **Light** | Directional Light・Point Light・Spot Light |
+| **UI** | Canvas・Text・Image・Button・Event System（Canvas と Event System がなければ一緒に作る） |
+
+Rigidbody・AudioSource・ParticleSystem・Volume などのコンポーネントは、Inspector の **Add Component** から付けます。
+
+Project の右クリック > **Create** で作れるもの：
+
+| 項目 | 作られるもの | 説明 |
+|---|---|---|
+| **Folder** | フォルダー | |
+| **MonoBehavior Script** | `.as` | [スクリプトの書き方](Scripting.md) |
+| **Material** | `.mat` | [シェーダとポストエフェクトの書き方](Shaders.md#マテリアル) |
+| **Unlit Shader** | `.shader` と HLSL 2 つ | [シェーダとポストエフェクトの書き方](Shaders.md#シェーダを作る) |
+| **Physics Material** | `.physicsmaterial` | Collider の摩擦と跳ね返り |
+| **Volume Profile** | `.volumeprofile` | [ポストプロセス](#ポストプロセス) |
+
+**Edit > Project Settings...** で編集できるもの：
+
+| 項目 | 内容 |
+|---|---|
+| **Graphics** | 全体のポストプロセス（Default Volume Profile）と、Full Screen Pass（Renderer Features） |
+| **Physics** | 物理の設定 |
+| **Player** | 製品名とウィンドウ |
+| **Tags and Layers** | タグとレイヤー |
+| **Time** | 時間の設定 |
 
 ## アセットとチーム作業
 
@@ -57,6 +98,8 @@ Play 中のシーンの変更は、停止すると Play 前の状態に戻りま
 | 音声 | `.wav`、`.mp3` | AudioSource の Clip に割り当てる。 |
 | フォント | `.ttf`、`.otf` | UI の Text に割り当てる。 |
 | マテリアル・物理マテリアル | `.mat`、`.physicsmaterial` | 対応するコンポーネントの参照欄に割り当てる。 |
+| シェーダ | `.shader`、`.hlsl`、`.hlsli` | マテリアルのシェーダの欄に `.shader` を割り当てる。書き換えたらエディターを開き直す。 |
+| Volume Profile | `.volumeprofile` | Volume の `sharedProfile` や Project Settings の Graphics に割り当てる。 |
 | シーン・Prefab・スクリプト | `.scene`、`.prefab`、`.as` | シーンの保存、Prefab の作成、スクリプトの作成で生成する。 |
 
 組み立てた GameObject を使い回すには、Hierarchy から Project のフォルダーへドラッグして **Prefab** を作ります。配置するときは、Project の Prefab を Scene または Hierarchy へドラッグします。スクリプトから複製する場合は、Prefab を `GameObject@` のフィールドに割り当てて `Instantiate` に渡します。
@@ -70,10 +113,19 @@ Play 中のシーンの変更は、停止すると Play 前の状態に戻りま
 
 同じ `.scene` を複数人で同時に編集すると、Git の競合を解消しづらくなります。シーンごとに担当を決め、別々に作れる部品は Prefab にします。
 
-## スクリプトを書く
+## ポストプロセス
 
-- [スクリプトの書き方](Scripting.md) では、最初のスクリプトの作成から、MonoBehavior のプロパティ、メソッド、コールバックまでを用例つきで説明します。
-- [スクリプト API リファレンス](Script-API.md) では、AngelScript から使える API をクラス・名前空間別に引けます。
+画面全体の色や明るさ（Bloom・トーンマップ・色調・周辺減光）は Volume で設定します。手順の概略：
+
+1. Project の **Create > Volume Profile** で Profile を作る
+2. Inspector の **Add Override** で効果を足し、変えたい値のチェックを入れて値を変える
+3. GameObject に **Volume** を付けて Profile を入れる。すべてのシーンにかけるものは **Project Settings > Graphics > Default Volume Profile** に入れる
+
+カメラの Inspector の「ポストプロセス」を外すと、そのカメラには組み込みの効果がかかりません。「Volume の Layer」で、どの Layer の Volume を見るかを選びます。
+
+独自の全画面の効果（白黒など）は、**Project Settings > Graphics > Renderer Features** にマテリアルを並べてかけます。
+
+効果ごとの値、Volume の欄、独自の効果のシェーダの書き方は [シェーダとポストエフェクトの書き方](Shaders.md) にあります。
 
 ## ゲームを書き出す
 
@@ -96,6 +148,7 @@ Play 中のシーンの変更は、停止すると Play 前の状態に戻りま
 | スクリプトを追加できない・動かない | Project の `.as` とクラス名が一致し、`MonoBehavior` を継承しているか確認する。Console のコンパイルエラーは別ファイルに出ているものも直す。 |
 | 素材の参照が消えた | アセットと元の `.meta` が両方あるか確認する。別の GUID で作り直された場合は、元の `.meta` を Git から復元するか、Inspector で割り当て直す。 |
 | 書き出せない | シーンを保存し、Build Settings に有効なシーンを追加する。`Editor/Player/Player.exe` があるか、書き出し先を専用フォルダーにしたか確認する。 |
+| 物がピンクになる・ポストプロセスが効かない | [シェーダとポストエフェクトの書き方の「困ったとき」](Shaders.md#困ったとき)を見る。 |
 | 書き出したゲームで問題が出る | `%LOCALAPPDATA%/OusiaEngine/<Product Name>/Logs/` のログを確認する。 |
 
 チームに不具合を伝えるときは、`Editor/version.txt` の内容、操作手順、使ったシーン名、Console またはログの該当箇所を添えます。

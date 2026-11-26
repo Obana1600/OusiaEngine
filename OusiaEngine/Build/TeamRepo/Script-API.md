@@ -1,19 +1,26 @@
 # スクリプト API リファレンス
 
-[エディターガイド](README.md) · [スクリプトの書き方](Scripting.md)
+[エディターガイド](README.md) · [スクリプトの書き方](Scripting.md) · [シェーダとポストエフェクトの書き方](Shaders.md)
 
-OusiaEditor が AngelScript に公開する API を、型と名前空間ごとに引けます。MonoBehavior 自身のプロパティ・メソッドとエンジンが呼び出すコールバックは [スクリプトの書き方](Scripting.md) を参照してください。
+OusiaEditor が AngelScript に公開する API を、型と名前空間ごとに引けます。名前と使い方は Unity に合わせています。MonoBehavior 自身のプロパティ・メソッドとエンジンが呼び出すコールバックは [スクリプトの書き方](Scripting.md) を参照してください。
 
-表の用例は各 API を示す独立した断片です。たとえば `t` は設定済みの `Transform@`、`body` は `Rigidbody@` です。手元にない参照は Inspector で設定するか、`gameObject.GetComponent<T>()` で取得します。例で指定するタグは Project Settings の Tags and Layers の定義に合わせてください。
+表の用例は各 API を示す独立した断片です。たとえば `t` は設定済みの `Transform@`、`body` は `Rigidbody@` です。手元にない参照は Inspector で設定するか、`gameObject.GetComponent<T>()` で取得します。例で指定するタグやレイヤーは Project Settings の Tags and Layers の定義に合わせてください。
 
-プロパティの読み書きは `t.position` や `Time::timeScale` の構文で行います。`&in` は入力用の参照、`&out` は値を受け取る変数を指定します。上位型に共通する API の用例は該当節にあります。`opAdd` などの宣言には、スクリプトで使う演算子の形を載せています。
+プロパティの読み書きは `t.position` や `Time::timeScale` の構文で行います。`&in` は入力用の参照、`&out` は値を受け取る変数を指定します。「共通メンバー」は親の型から受け継いだもので、説明は親の型の節にあります。`opAdd` などの宣言には、スクリプトで使う演算子の形を載せています。
 
-- **オブジェクトとシーン** — [Object](#object)、[GameObject](#gameobject)、[Component](#component)、[Behavior](#behavior)、[Transform](#transform)、[Scene](#scene)、[SceneManager](#scenemanager)
-- **物理** — [Physics](#physics)、[Collider](#collider)、[BoxCollider](#boxcollider)、[SphereCollider](#spherecollider)、[CapsuleCollider](#capsulecollider)、[Rigidbody](#rigidbody)、[CharacterController](#charactercontroller)、[Collision](#collision)、[ContactPoint](#contactpoint)、[RaycastHit](#raycasthit)
-- **描画・音声・UI** — [Renderer](#renderer)、[MeshRenderer](#meshrenderer)、[Material](#material)、[AudioSource](#audiosource)、[AudioClip](#audioclip)、[Texture2D](#texture2d)、[Graphic](#graphic)、[Text](#text)、[Image](#image)、[Selectable](#selectable)、[Button](#button)、[UnityEvent](#unityevent)
+**ハンドルの型変換**：派生した型のハンドルは、親の型の変数にそのまま代入できます（`Collider@ c = box;`、`Object@ o = go;`）。親の型から派生した型へは `cast<型>(…)` で取り出し、型が合わなければ null になります（`BoxCollider@ box = cast<BoxCollider>(collider);`）。const のハンドルでも同じです。
+
+この一覧は、エディターの起動時に作られる `as.predefined`（スクリプトの補完に使うファイル）をもとにしています。ここにない名前は、エディターの版が古いか、まだ公開されていません。
+
+- **オブジェクトとシーン** — [Object](#object)、[GameObject](#gameobject)、[Component](#component)、[Behavior](#behavior)、[Transform](#transform)、[Scene](#scene)、[SceneManager](#scenemanager)、[LayerMask](#layermask)
+- **物理** — [Physics](#physics)、[Collider](#collider)、[BoxCollider](#boxcollider)、[SphereCollider](#spherecollider)、[CapsuleCollider](#capsulecollider)、[Rigidbody](#rigidbody)、[CharacterController](#charactercontroller)、[PhysicsMaterial](#physicsmaterial)、[Collision](#collision)、[ContactPoint](#contactpoint)、[RaycastHit](#raycasthit)、[ControllerColliderHit](#controllercolliderhit)
+- **カメラ・ライト・描画** — [Camera](#camera)、[Light](#light)、[Renderer](#renderer)、[MeshRenderer](#meshrenderer)、[SkinnedMeshRenderer](#skinnedmeshrenderer)、[LineRenderer](#linerenderer)、[Material](#material)、[Shader](#shader)、[Mesh](#mesh)、[Texture2D](#texture2d)、[Sprite](#sprite)、[VolumeProfile](#volumeprofile)
+- **アニメーション・パーティクル** — [SkeletalAnimator](#skeletalanimator)、[SkeletalAnimationClip](#skeletalanimationclip)、[ParticleSystem](#particlesystem)、[ParticleSystemRenderer](#particlesystemrenderer)
+- **音声** — [AudioSource](#audiosource)、[AudioClip](#audioclip)、[AudioListener](#audiolistener)
+- **UI** — [Canvas](#canvas)、[RectTransform](#recttransform)、[Graphic](#graphic)、[Text](#text)、[Image](#image)、[CanvasRenderer](#canvasrenderer)、[FontAsset](#fontasset)、[Selectable](#selectable)、[Button](#button)、[ColorBlock](#colorblock)、[UnityEvent](#unityevent)
 - **入力・時間・画面・診断** — [Input](#input)、[Time](#time)、[Screen](#screen)、[Cursor](#cursor)、[Application](#application)、[Debug](#debug)、[Gizmos](#gizmos)
-- **値型・文字列・配列** — [Vector2](#vector2)、[Vector3](#vector3)、[Quaternion](#quaternion)、[Color](#color)、[Mathf](#mathf)、[Random](#random)、[string](#string)、[array](#array)、[グローバル関数と関数型](#グローバル関数と関数型)
-- **列挙型** — [Space](#space)、[ForceMode](#forcemode)、[CollisionFlags](#collisionflags)、[FullScreenMode](#fullscreenmode)、[CursorLockMode](#cursorlockmode)、[CursorMode](#cursormode)、[KeyCode](#keycode)
+- **値型・文字列・配列** — [Vector2](#vector2)、[Vector3](#vector3)、[Vector4](#vector4)、[Quaternion](#quaternion)、[Color](#color)、[Matrix4x4](#matrix4x4)、[Rect](#rect)、[Bounds](#bounds)、[Mathf](#mathf)、[Random](#random)、[string](#string)、[array](#array)、[グローバル関数と関数型](#グローバル関数と関数型)
+- **列挙型** — [Space](#space)、[ForceMode](#forcemode)、[CollisionFlags](#collisionflags)、[QueryTriggerInteraction](#querytriggerinteraction)、[RigidbodyConstraints](#rigidbodyconstraints)、[RigidbodyInterpolation](#rigidbodyinterpolation)、[CollisionDetectionMode](#collisiondetectionmode)、[PhysicsMaterialCombine](#physicsmaterialcombine)、[LightType](#lighttype)、[WrapMode](#wrapmode)、[TextAlignmentOptions](#textalignmentoptions)、[ParticleSystemSimulationSpace](#particlesystemsimulationspace)、[ParticleSystemShapeType](#particlesystemshapetype)、[ParticleSystemSortMode](#particlesystemsortmode)、[FullScreenMode](#fullscreenmode)、[CursorLockMode](#cursorlockmode)、[CursorMode](#cursormode)、[KeyCode](#keycode)
 - **自分のクラス** — [スクリプトでプロパティを定義する](#スクリプトでプロパティを定義する)
 
 ## オブジェクトとシーン
@@ -26,31 +33,6 @@ OusiaEditor が AngelScript に公開する API を、型と名前空間ごと�
 | --- | --- | --- |
 | `string name（読み書き）` | `obj.name = "Player"; Debug::Log(obj.name);` | オブジェクトの名前を読み書きする。Component の場合は所属する GameObject の名前。 |
 | `int GetInstanceID() const` | `int id = obj.GetInstanceID();` | 実行中の個体を識別する ID を返す。シーンの保存や次回起動の識別には使わない。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `GameObject@ opCast() / const GameObject@ opCast() const` | `GameObject@ derived = cast<GameObject>(obj); const Object@ original = obj; const GameObject@ view = cast<const GameObject@>(original);` | 実体を GameObject として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Transform@ opCast() / const Transform@ opCast() const` | `Transform@ derived = cast<Transform>(obj); const Object@ original = obj; const Transform@ view = cast<const Transform@>(original);` | 実体を Transform として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `CharacterController@ opCast() / const CharacterController@ opCast() const` | `CharacterController@ derived = cast<CharacterController>(obj); const Object@ original = obj; const CharacterController@ view = cast<const CharacterController@>(original);` | 実体を CharacterController として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `BoxCollider@ opCast() / const BoxCollider@ opCast() const` | `BoxCollider@ derived = cast<BoxCollider>(obj); const Object@ original = obj; const BoxCollider@ view = cast<const BoxCollider@>(original);` | 実体を BoxCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `SphereCollider@ opCast() / const SphereCollider@ opCast() const` | `SphereCollider@ derived = cast<SphereCollider>(obj); const Object@ original = obj; const SphereCollider@ view = cast<const SphereCollider@>(original);` | 実体を SphereCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `CapsuleCollider@ opCast() / const CapsuleCollider@ opCast() const` | `CapsuleCollider@ derived = cast<CapsuleCollider>(obj); const Object@ original = obj; const CapsuleCollider@ view = cast<const CapsuleCollider@>(original);` | 実体を CapsuleCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Collider@ opCast() / const Collider@ opCast() const` | `Collider@ derived = cast<Collider>(obj); const Object@ original = obj; const Collider@ view = cast<const Collider@>(original);` | 実体を Collider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Rigidbody@ opCast() / const Rigidbody@ opCast() const` | `Rigidbody@ derived = cast<Rigidbody>(obj); const Object@ original = obj; const Rigidbody@ view = cast<const Rigidbody@>(original);` | 実体を Rigidbody として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `AudioSource@ opCast() / const AudioSource@ opCast() const` | `AudioSource@ derived = cast<AudioSource>(obj); const Object@ original = obj; const AudioSource@ view = cast<const AudioSource@>(original);` | 実体を AudioSource として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `MeshRenderer@ opCast() / const MeshRenderer@ opCast() const` | `MeshRenderer@ derived = cast<MeshRenderer>(obj); const Object@ original = obj; const MeshRenderer@ view = cast<const MeshRenderer@>(original);` | 実体を MeshRenderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Renderer@ opCast() / const Renderer@ opCast() const` | `Renderer@ derived = cast<Renderer>(obj); const Object@ original = obj; const Renderer@ view = cast<const Renderer@>(original);` | 実体を Renderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Text@ opCast() / const Text@ opCast() const` | `Text@ derived = cast<Text>(obj); const Object@ original = obj; const Text@ view = cast<const Text@>(original);` | 実体を Text として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Image@ opCast() / const Image@ opCast() const` | `Image@ derived = cast<Image>(obj); const Object@ original = obj; const Image@ view = cast<const Image@>(original);` | 実体を Image として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Graphic@ opCast() / const Graphic@ opCast() const` | `Graphic@ derived = cast<Graphic>(obj); const Object@ original = obj; const Graphic@ view = cast<const Graphic@>(original);` | 実体を Graphic として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Button@ opCast() / const Button@ opCast() const` | `Button@ derived = cast<Button>(obj); const Object@ original = obj; const Button@ view = cast<const Button@>(original);` | 実体を Button として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Selectable@ opCast() / const Selectable@ opCast() const` | `Selectable@ derived = cast<Selectable>(obj); const Object@ original = obj; const Selectable@ view = cast<const Selectable@>(original);` | 実体を Selectable として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Behavior@ opCast() / const Behavior@ opCast() const` | `Behavior@ derived = cast<Behavior>(obj); const Object@ original = obj; const Behavior@ view = cast<const Behavior@>(original);` | 実体を Behavior として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Component@ opCast() / const Component@ opCast() const` | `Component@ derived = cast<Component>(obj); const Object@ original = obj; const Component@ view = cast<const Component@>(original);` | 実体を Component として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Material@ opCast() / const Material@ opCast() const` | `Material@ derived = cast<Material>(obj); const Object@ original = obj; const Material@ view = cast<const Material@>(original);` | 実体を Material として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `AudioClip@ opCast() / const AudioClip@ opCast() const` | `AudioClip@ derived = cast<AudioClip>(obj); const Object@ original = obj; const AudioClip@ view = cast<const AudioClip@>(original);` | 実体を AudioClip として取り出す。型が合わなければ null。const の参照からも変換できる。 |
 
 **名前空間 `Object`**
 
@@ -80,15 +62,10 @@ OusiaEditor が AngelScript に公開する API を、型と名前空間ごと�
 | `string tag（読み書き）` | `go.tag = "Player"; string label = go.tag;` | GameObject のタグを読み書きする。タグ名を先に Project Settings で登録する。 |
 | `bool CompareTag(const string&in tag) const` | `bool isPlayer = go.CompareTag("Player");` | この GameObject のタグが登録済みの指定タグと一致するか調べる。 |
 | `Transform@ transform（読み取り）` | `Transform@ t = go.transform;` | この GameObject の Transform を返す。 |
+| `Scene scene（読み取り）` | `string sceneName = go.scene.name;` | この GameObject が属するシーン。 |
 | `bool TryGetComponent(?&out component) const` | `Rigidbody@ body; bool found = go.TryGetComponent(@body);` | 指定型のコンポーネントを探す。見つけた場合は true を返し、渡したハンドルに結果が入る。 |
 | `T@ GetComponent<T>() const` | `Rigidbody@ body = go.GetComponent<Rigidbody>();` | 指定型のコンポーネントを取得する。見つからない場合は null。スクリプトの派生クラスも型として指定できる。 |
 | `T@ AddComponent<T>()` | `AudioSource@ audio = go.AddComponent<AudioSource>();` | 追加可能な Component を付けて返す。ファイル名とクラス名が一致する MonoBehavior 派生型も指定できる。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = go; const GameObject@ original = go; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
 
 **名前空間 `GameObject`**
 
@@ -116,28 +93,6 @@ GameObject に付くコンポーネントに共通するメンバー。
 | `bool TryGetComponent(?&out component) const` | `Rigidbody@ body; bool found = component.TryGetComponent(@body);` | 同じ GameObject から指定型の Component を探し、見つけた参照を出力する。 |
 | `T@ GetComponent<T>() const` | `Rigidbody@ body = component.GetComponent<Rigidbody>();` | 同じ GameObject で指定型の Component を探す。見つからないと null。スクリプトの派生クラスも指定できる。 |
 
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Transform@ opCast() / const Transform@ opCast() const` | `Transform@ derived = cast<Transform>(component); const Component@ original = component; const Transform@ view = cast<const Transform@>(original);` | 実体を Transform として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `CharacterController@ opCast() / const CharacterController@ opCast() const` | `CharacterController@ derived = cast<CharacterController>(component); const Component@ original = component; const CharacterController@ view = cast<const CharacterController@>(original);` | 実体を CharacterController として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `BoxCollider@ opCast() / const BoxCollider@ opCast() const` | `BoxCollider@ derived = cast<BoxCollider>(component); const Component@ original = component; const BoxCollider@ view = cast<const BoxCollider@>(original);` | 実体を BoxCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `SphereCollider@ opCast() / const SphereCollider@ opCast() const` | `SphereCollider@ derived = cast<SphereCollider>(component); const Component@ original = component; const SphereCollider@ view = cast<const SphereCollider@>(original);` | 実体を SphereCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `CapsuleCollider@ opCast() / const CapsuleCollider@ opCast() const` | `CapsuleCollider@ derived = cast<CapsuleCollider>(component); const Component@ original = component; const CapsuleCollider@ view = cast<const CapsuleCollider@>(original);` | 実体を CapsuleCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Collider@ opCast() / const Collider@ opCast() const` | `Collider@ derived = cast<Collider>(component); const Component@ original = component; const Collider@ view = cast<const Collider@>(original);` | 実体を Collider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Rigidbody@ opCast() / const Rigidbody@ opCast() const` | `Rigidbody@ derived = cast<Rigidbody>(component); const Component@ original = component; const Rigidbody@ view = cast<const Rigidbody@>(original);` | 実体を Rigidbody として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `AudioSource@ opCast() / const AudioSource@ opCast() const` | `AudioSource@ derived = cast<AudioSource>(component); const Component@ original = component; const AudioSource@ view = cast<const AudioSource@>(original);` | 実体を AudioSource として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `MeshRenderer@ opCast() / const MeshRenderer@ opCast() const` | `MeshRenderer@ derived = cast<MeshRenderer>(component); const Component@ original = component; const MeshRenderer@ view = cast<const MeshRenderer@>(original);` | 実体を MeshRenderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Renderer@ opCast() / const Renderer@ opCast() const` | `Renderer@ derived = cast<Renderer>(component); const Component@ original = component; const Renderer@ view = cast<const Renderer@>(original);` | 実体を Renderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Text@ opCast() / const Text@ opCast() const` | `Text@ derived = cast<Text>(component); const Component@ original = component; const Text@ view = cast<const Text@>(original);` | 実体を Text として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Image@ opCast() / const Image@ opCast() const` | `Image@ derived = cast<Image>(component); const Component@ original = component; const Image@ view = cast<const Image@>(original);` | 実体を Image として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Graphic@ opCast() / const Graphic@ opCast() const` | `Graphic@ derived = cast<Graphic>(component); const Component@ original = component; const Graphic@ view = cast<const Graphic@>(original);` | 実体を Graphic として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Button@ opCast() / const Button@ opCast() const` | `Button@ derived = cast<Button>(component); const Component@ original = component; const Button@ view = cast<const Button@>(original);` | 実体を Button として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Selectable@ opCast() / const Selectable@ opCast() const` | `Selectable@ derived = cast<Selectable>(component); const Component@ original = component; const Selectable@ view = cast<const Selectable@>(original);` | 実体を Selectable として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Behavior@ opCast() / const Behavior@ opCast() const` | `Behavior@ derived = cast<Behavior>(component); const Component@ original = component; const Behavior@ view = cast<const Behavior@>(original);` | 実体を Behavior として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = component; const Component@ original = component; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
-
 ### Behavior
 
 独自の有効フラグを持つコンポーネント。スクリプトでの型名は Behavior。
@@ -150,25 +105,6 @@ GameObject に付くコンポーネントに共通するメンバー。
 | --- | --- | --- |
 | `bool enabled（読み書き）` | `behavior.enabled = true; bool enabledNow = behavior.enabled;` | このコンポーネント自身の有効フラグを読み書きする。 |
 | `bool isActiveAndEnabled（読み取り）` | `bool active = behavior.isActiveAndEnabled;` | 有効フラグと GameObject の階層のアクティブ状態が両方 true のとき true。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `CharacterController@ opCast() / const CharacterController@ opCast() const` | `CharacterController@ derived = cast<CharacterController>(behavior); const Behavior@ original = behavior; const CharacterController@ view = cast<const CharacterController@>(original);` | 実体を CharacterController として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `BoxCollider@ opCast() / const BoxCollider@ opCast() const` | `BoxCollider@ derived = cast<BoxCollider>(behavior); const Behavior@ original = behavior; const BoxCollider@ view = cast<const BoxCollider@>(original);` | 実体を BoxCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `SphereCollider@ opCast() / const SphereCollider@ opCast() const` | `SphereCollider@ derived = cast<SphereCollider>(behavior); const Behavior@ original = behavior; const SphereCollider@ view = cast<const SphereCollider@>(original);` | 実体を SphereCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `CapsuleCollider@ opCast() / const CapsuleCollider@ opCast() const` | `CapsuleCollider@ derived = cast<CapsuleCollider>(behavior); const Behavior@ original = behavior; const CapsuleCollider@ view = cast<const CapsuleCollider@>(original);` | 実体を CapsuleCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Collider@ opCast() / const Collider@ opCast() const` | `Collider@ derived = cast<Collider>(behavior); const Behavior@ original = behavior; const Collider@ view = cast<const Collider@>(original);` | 実体を Collider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `MeshRenderer@ opCast() / const MeshRenderer@ opCast() const` | `MeshRenderer@ derived = cast<MeshRenderer>(behavior); const Behavior@ original = behavior; const MeshRenderer@ view = cast<const MeshRenderer@>(original);` | 実体を MeshRenderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Renderer@ opCast() / const Renderer@ opCast() const` | `Renderer@ derived = cast<Renderer>(behavior); const Behavior@ original = behavior; const Renderer@ view = cast<const Renderer@>(original);` | 実体を Renderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Text@ opCast() / const Text@ opCast() const` | `Text@ derived = cast<Text>(behavior); const Behavior@ original = behavior; const Text@ view = cast<const Text@>(original);` | 実体を Text として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Image@ opCast() / const Image@ opCast() const` | `Image@ derived = cast<Image>(behavior); const Behavior@ original = behavior; const Image@ view = cast<const Image@>(original);` | 実体を Image として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Graphic@ opCast() / const Graphic@ opCast() const` | `Graphic@ derived = cast<Graphic>(behavior); const Behavior@ original = behavior; const Graphic@ view = cast<const Graphic@>(original);` | 実体を Graphic として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Button@ opCast() / const Button@ opCast() const` | `Button@ derived = cast<Button>(behavior); const Behavior@ original = behavior; const Button@ view = cast<const Button@>(original);` | 実体を Button として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Selectable@ opCast() / const Selectable@ opCast() const` | `Selectable@ derived = cast<Selectable>(behavior); const Behavior@ original = behavior; const Selectable@ view = cast<const Selectable@>(original);` | 実体を Selectable として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = behavior; const Behavior@ original = behavior; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = behavior; const Behavior@ original = behavior; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
 
 ### Transform
 
@@ -200,13 +136,13 @@ GameObject に付くコンポーネントに共通するメンバー。
 | `void Rotate(const Vector3&in eulers, Space relativeTo = Space::Self)` | `t.Rotate(Vector3(0, 45, 0));` | 度単位のオイラー角を渡して現在の回転に加える。既定の基準は Space::Self。 |
 | `void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space::Self)` | `t.Rotate(0.0f, 45.0f, 0.0f, Space::World);` | 軸ごとの角度を個別に渡す。例はワールド Y 軸まわりに 45 度回転する。 |
 | `void LookAt(const Vector3&in worldPosition, const Vector3&in worldUp = Vector3::up)` | `t.LookAt(Vector3(0, 1, 10));` | 前方向を指定ワールド座標へ向ける。必要に応じてワールドの上方向も指定する。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = t; const Transform@ original = t; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = t; const Transform@ original = t; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `void SetParent(Transform@ parent, bool worldPositionStays = true)` | `t.SetParent(socket, false);` | 親を付け替える。第 2 引数が true ならワールドの位置・回転・拡大率を保ち、false なら今のローカルの値のまま新しい親の下に置く。null でルートに戻す。 |
+| `int GetSiblingIndex() const` | `int order = t.GetSiblingIndex();` | 兄弟（同じ親の子どうし）の中での並び順。0 始まり。 |
+| `void SetSiblingIndex(int index)` | `t.SetSiblingIndex(0);` | 兄弟の中での並び順を変える。UI では後ろのものほど手前に描かれる。 |
+| `void SetAsFirstSibling()` | `t.SetAsFirstSibling();` | 兄弟の先頭に移す。 |
+| `void SetAsLastSibling()` | `t.SetAsLastSibling();` | 兄弟の末尾に移す（UI なら一番手前に描かれる）。 |
+| `Matrix4x4 localToWorldMatrix（読み取り）` | `Vector3 world = t.localToWorldMatrix.MultiplyPoint(Vector3(0, 1, 0));` | ローカル座標をワールド座標に変える行列。 |
+| `Matrix4x4 worldToLocalMatrix（読み取り）` | `Vector3 local = t.worldToLocalMatrix.MultiplyPoint(target);` | ワールド座標をローカル座標に変える行列。 |
 
 ### Scene
 
@@ -223,6 +159,9 @@ GameObject に付くコンポーネントに共通するメンバー。
 | `string path（読み取り）` | `string path = scene.path;` | シーンファイルのパスを読む。 |
 | `int buildIndex（読み取り）` | `int index = scene.buildIndex;` | Build Settings の有効なシーン間での番号。番号が付いていない場合は -1。 |
 | `bool IsValid() const` | `bool valid = scene.IsValid();` | Scene 値がシーン情報を表しているか調べる。 |
+| `bool isLoaded（読み取り）` | `bool loaded = scene.isLoaded;` | シーンが読み込まれているか。 |
+| `int rootCount（読み取り）` | `int count = scene.rootCount;` | ルート（親のない）GameObject の数。 |
+| `GameObject@[]@ GetRootGameObjects() const` | `array<GameObject@>@ roots = scene.GetRootGameObjects();` | ルートの GameObject を並び順どおりに配列で返す。 |
 
 ### SceneManager
 
@@ -234,20 +173,60 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 | `void LoadScene(int sceneBuildIndex)` | `SceneManager::LoadScene(0);` | Build Settings の有効なシーンへビルド番号で切り替える。切り替えはフレームの終わりに行われる。 |
 | `Scene GetActiveScene()` | `Scene scene = SceneManager::GetActiveScene();` | 現在のアクティブシーンの情報を値として返す。 |
 | `int sceneCountInBuildSettings（読み取り）` | `int count = SceneManager::sceneCountInBuildSettings;` | Build Settings で有効なシーンの件数を読む。 |
+| `void MoveGameObjectToScene(GameObject@ go, const Scene&in scene)` | `SceneManager::MoveGameObjectToScene(go, SceneManager::GetActiveScene());` | ルートの GameObject を別のシーンへ移す。`DontDestroyOnLoad` したものを今のシーンに戻すときなどに使う。 |
+
+### LayerMask
+
+レイヤーの名前と番号、`Physics` の `layerMask` に渡すビットの組を作る。レイヤーは Project Settings の Tags and Layers で名前を付ける（0〜31）。
+
+**名前空間 `LayerMask`**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `int NameToLayer(const string&in layerName)` | `go.layer = LayerMask::NameToLayer("Enemy");` | レイヤーの名前から番号を返す。ない名前なら -1。 |
+| `string LayerToName(int layer)` | `string layerName = LayerMask::LayerToName(go.layer);` | 番号からレイヤーの名前を返す。名前がなければ空の文字列。 |
+| `int GetMask(const string&in layerName)` | `int mask = LayerMask::GetMask("Ground");` | レイヤーの名前から、そのレイヤーのビットだけを立てたマスクを作る。 |
+| `int GetMask(const string&in layerName1, …)` | `int mask = LayerMask::GetMask("Ground", "Wall");` | 2〜4 個の名前を並べて、まとめたマスクを作る。 |
+| `int GetMask(const string[]&in layerNames)` | `array<string> names = {"Ground", "Wall", "Water"}; int mask = LayerMask::GetMask(names);` | 配列の名前すべてのビットを立てたマスクを作る。 |
 
 ## 物理
 
 ### Physics
 
-物理判定と重力を扱う。レイキャストにはワールド座標の起点と方向を渡す。
+物理判定と重力を扱う。位置と方向はワールド座標で渡す。
+
+問い合わせの関数は、どれも最後の 2 つの引数を省略できる。
+
+- `int layerMask`：対象にするレイヤーのビットの組。`LayerMask::GetMask("Enemy")` で作れる
+- `QueryTriggerInteraction queryTriggerInteraction`：トリガーの Collider に当てるか。既定の `UseGlobal` は `Physics::queriesHitTriggers` に従う
+
+表ではこの 2 つを `…` と書いています。`maxDistance` の既定値は `Mathf::Infinity`、方向は長さ 1 でなくてもかまいません。
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
 | `Vector3 gravity（読み書き）` | `Physics::gravity = Vector3(0, -9.81f, 0); Vector3 g = Physics::gravity;` | シーンで使うワールド重力を読み書きする。 |
-| `bool Raycast(const Vector3&in origin, const Vector3&in direction, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers)` | `bool found = Physics::Raycast(t.position, t.forward, 20.0f);` | 起点から方向にレイを飛ばし、指定距離以内に対象があるかを返す。 |
-| `bool Raycast(const Vector3&in origin, const Vector3&in direction, RaycastHit&out hitInfo, float maxDistance = Mathf::Infinity, int layerMask = Physics::DefaultRaycastLayers)` | `RaycastHit hit; bool found = Physics::Raycast(t.position, t.forward, hit, 20.0f, Physics::AllLayers);` | ヒットの成否とヒット情報を取得する。距離とレイヤーマスクを省略できる。 |
+| `bool queriesHitTriggers（読み書き）` | `Physics::queriesHitTriggers = false;` | `UseGlobal` の問い合わせがトリガーに当たるか。既定は true。 |
+| `void IgnoreLayerCollision(int layer1, int layer2, bool ignore = true)` | `Physics::IgnoreLayerCollision(LayerMask::NameToLayer("Player"), LayerMask::NameToLayer("Bullet"));` | 2 つのレイヤーどうしを衝突させないようにする。false で元に戻す。 |
+| `bool GetIgnoreLayerCollision(int layer1, int layer2)` | `bool ignored = Physics::GetIgnoreLayerCollision(8, 9);` | 2 つのレイヤーの衝突を無視しているか。 |
+| `bool Raycast(origin, direction, float maxDistance, …)` | `bool found = Physics::Raycast(t.position, t.forward, 20.0f);` | 起点から方向にレイを飛ばし、指定距離以内に何かあるかを返す。 |
+| `bool Raycast(origin, direction, RaycastHit&out hitInfo, float maxDistance, …)` | `RaycastHit hit; if (Physics::Raycast(t.position, t.forward, hit, 20.0f)) { Debug::Log(hit.collider.name); }` | いちばん近い当たりを `hitInfo` に入れる。 |
+| `RaycastHit[]@ RaycastAll(origin, direction, float maxDistance, …)` | `array<RaycastHit>@ hits = Physics::RaycastAll(t.position, t.forward, 20.0f);` | レイが当たったものをすべて、近い順に返す。 |
+| `bool SphereCast(origin, float radius, direction, RaycastHit&out hitInfo, float maxDistance, …)` | `RaycastHit hit; bool found = Physics::SphereCast(t.position, 0.5f, t.forward, hit, 10.0f);` | 球を方向へ動かして、最初に当たるものを調べる。太いレイとして使える。 |
+| `RaycastHit[]@ SphereCastAll(origin, float radius, direction, float maxDistance, …)` | `array<RaycastHit>@ hits = Physics::SphereCastAll(t.position, 0.5f, t.forward, 10.0f);` | 球を動かして当たるものをすべて返す。 |
+| `bool BoxCast(center, halfExtents, direction, orientation = Quaternion::identity, float maxDistance, …)` | `bool found = Physics::BoxCast(t.position, Vector3(0.5f, 0.5f, 0.5f), t.forward);` | 箱（大きさは半分の長さで渡す）を方向へ動かして、何かに当たるかを返す。 |
+| `bool BoxCast(center, halfExtents, direction, RaycastHit&out hitInfo, orientation = Quaternion::identity, float maxDistance, …)` | `RaycastHit hit; bool found = Physics::BoxCast(t.position, Vector3(0.5f, 0.5f, 0.5f), t.forward, hit, t.rotation, 5.0f);` | 最初に当たったものを `hitInfo` に入れる。 |
+| `RaycastHit[]@ BoxCastAll(center, halfExtents, direction, orientation = Quaternion::identity, float maxDistance, …)` | `array<RaycastHit>@ hits = Physics::BoxCastAll(t.position, Vector3(1, 1, 1), t.forward);` | 箱を動かして当たるものをすべて返す。 |
+| `bool CapsuleCast(point1, point2, float radius, direction, float maxDistance, …)` | `bool blocked = Physics::CapsuleCast(feet, head, 0.4f, t.forward, 1.0f);` | 2 点を結ぶカプセルを方向へ動かして、何かに当たるかを返す。キャラクターの前が空いているか調べるときなどに使う。 |
+| `bool CapsuleCast(point1, point2, float radius, direction, RaycastHit&out hitInfo, float maxDistance, …)` | `RaycastHit hit; bool blocked = Physics::CapsuleCast(feet, head, 0.4f, t.forward, hit, 1.0f);` | 最初に当たったものを `hitInfo` に入れる。 |
+| `RaycastHit[]@ CapsuleCastAll(point1, point2, float radius, direction, float maxDistance, …)` | `array<RaycastHit>@ hits = Physics::CapsuleCastAll(feet, head, 0.4f, t.forward, 3.0f);` | カプセルを動かして当たるものをすべて返す。 |
+| `Collider@[]@ OverlapSphere(position, float radius, …)` | `array<Collider@>@ near = Physics::OverlapSphere(t.position, 3.0f);` | 球と重なっている Collider をすべて返す。 |
+| `Collider@[]@ OverlapBox(center, halfExtents, orientation = Quaternion::identity, …)` | `array<Collider@>@ inside = Physics::OverlapBox(t.position, Vector3(1, 1, 1), t.rotation);` | 箱と重なっている Collider をすべて返す。 |
+| `Collider@[]@ OverlapCapsule(point0, point1, float radius, …)` | `array<Collider@>@ inside = Physics::OverlapCapsule(feet, head, 0.5f);` | カプセルと重なっている Collider をすべて返す。 |
+| `bool CheckSphere(position, float radius, …)` | `bool occupied = Physics::CheckSphere(spawnPoint, 0.5f);` | 球と重なる Collider が 1 つでもあるか。 |
+| `bool CheckBox(center, halfExtents, orientation = Quaternion::identity, …)` | `bool occupied = Physics::CheckBox(spawnPoint, Vector3(0.5f, 0.5f, 0.5f));` | 箱と重なる Collider が 1 つでもあるか。 |
+| `bool CheckCapsule(start, end, float radius, …)` | `bool grounded = Physics::CheckCapsule(feet, feet + Vector3::down * 0.1f, 0.3f);` | カプセルと重なる Collider が 1 つでもあるか。 |
 | `const int DefaultRaycastLayers` | `int mask = Physics::DefaultRaycastLayers;` | レイの既定マスク。Ignore Raycast レイヤーを除く。 |
-| `const int AllLayers` | `int mask = Physics::AllLayers;` | すべてのレイヤーを対象とするマスク。 |
+| `const int AllLayers` | `int mask = Physics::AllLayers;` | すべてのレイヤーを対象とするマスク。Overlap 系の既定値。 |
 
 ### Collider
 
@@ -262,18 +241,10 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 | `bool isTrigger（読み書き）` | `collider.isTrigger = true; bool trigger = collider.isTrigger;` | トリガーとして扱うかを読み書きする。有効なペアの重なりは OnTrigger 系で受けられる。 |
 | `Rigidbody@ attachedRigidbody（読み取り）` | `Rigidbody@ body = collider.attachedRigidbody;` | この Collider が属する物理ボディを返す。存在しなければ null。 |
 | `Vector3 ClosestPoint(const Vector3&in position) const` | `Vector3 p = collider.ClosestPoint(Vector3(3, 0, 0));` | 指定ワールド位置に最も近いコライダー上の点を求める。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `CharacterController@ opCast() / const CharacterController@ opCast() const` | `CharacterController@ derived = cast<CharacterController>(collider); const Collider@ original = collider; const CharacterController@ view = cast<const CharacterController@>(original);` | 実体を CharacterController として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `BoxCollider@ opCast() / const BoxCollider@ opCast() const` | `BoxCollider@ derived = cast<BoxCollider>(collider); const Collider@ original = collider; const BoxCollider@ view = cast<const BoxCollider@>(original);` | 実体を BoxCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `SphereCollider@ opCast() / const SphereCollider@ opCast() const` | `SphereCollider@ derived = cast<SphereCollider>(collider); const Collider@ original = collider; const SphereCollider@ view = cast<const SphereCollider@>(original);` | 実体を SphereCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `CapsuleCollider@ opCast() / const CapsuleCollider@ opCast() const` | `CapsuleCollider@ derived = cast<CapsuleCollider>(collider); const Collider@ original = collider; const CapsuleCollider@ view = cast<const CapsuleCollider@>(original);` | 実体を CapsuleCollider として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = collider; const Collider@ original = collider; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = collider; const Collider@ original = collider; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = collider; const Collider@ original = collider; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `Vector3 ClosestPointOnBounds(const Vector3&in position) const` | `Vector3 p = collider.ClosestPointOnBounds(target);` | 指定位置にいちばん近い、`bounds`（ワールドの軸にそろえた箱）の上の点。`ClosestPoint` より大まか。 |
+| `Bounds bounds（読み取り）` | `Vector3 size = collider.bounds.size;` | Collider を囲む、ワールドの軸にそろえた箱。 |
+| `PhysicsMaterial@ sharedMaterial（読み書き）` | `@collider.sharedMaterial = icy;` | 摩擦と跳ね返りを決める物理マテリアル（アセットそのもの）。書き換えると、同じものを使うすべての Collider に効く。 |
+| `PhysicsMaterial@ material（読み書き）` | `collider.material.bounciness = 0.8f;` | この Collider だけの物理マテリアル。読んだときに複製されるので、ほかの Collider には影響しない。 |
 
 ### BoxCollider
 
@@ -281,21 +252,12 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 
 **共通メンバー**
 
-- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`TryGetComponent`、`GetComponent`
+- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`ClosestPointOnBounds`、`bounds`、`sharedMaterial`、`material`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
 | `Vector3 center（読み書き）` | `box.center = Vector3(0, 1, 0); Vector3 p = box.center;` | GameObject のローカル座標で箱の中心を読み書きする。 |
 | `Vector3 size（読み書き）` | `box.size = Vector3(2, 1, 3); Vector3 size = box.size;` | 箱のローカル寸法を軸ごとに読み書きする。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Collider@ opImplCast() / const Collider@ opImplCast() const` | `Collider@ base = box; const BoxCollider@ original = box; const Collider@ view = original;` | 代入で Collider として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = box; const BoxCollider@ original = box; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = box; const BoxCollider@ original = box; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = box; const BoxCollider@ original = box; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
 
 ### SphereCollider
 
@@ -303,21 +265,12 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 
 **共通メンバー**
 
-- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`TryGetComponent`、`GetComponent`
+- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`ClosestPointOnBounds`、`bounds`、`sharedMaterial`、`material`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
 | `Vector3 center（読み書き）` | `sphere.center = Vector3(0, 1, 0); Vector3 p = sphere.center;` | GameObject のローカル座標で球の中心を読み書きする。 |
 | `float radius（読み書き）` | `sphere.radius = 0.5f; float radius = sphere.radius;` | 球のローカル半径を読み書きする。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Collider@ opImplCast() / const Collider@ opImplCast() const` | `Collider@ base = sphere; const SphereCollider@ original = sphere; const Collider@ view = original;` | 代入で Collider として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = sphere; const SphereCollider@ original = sphere; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = sphere; const SphereCollider@ original = sphere; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = sphere; const SphereCollider@ original = sphere; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
 
 ### CapsuleCollider
 
@@ -325,7 +278,7 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 
 **共通メンバー**
 
-- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`TryGetComponent`、`GetComponent`
+- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`ClosestPointOnBounds`、`bounds`、`sharedMaterial`、`material`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
@@ -333,15 +286,6 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 | `float radius（読み書き）` | `capsule.radius = 0.5f; float radius = capsule.radius;` | カプセルのローカル半径を読み書きする。 |
 | `float height（読み書き）` | `capsule.height = 2.0f; float height = capsule.height;` | 丸い端を含むカプセルの高さを読み書きする。 |
 | `int direction（読み書き）` | `capsule.direction = 1; int axis = capsule.direction;` | カプセルの長軸を読み書きする。0 は X、1 は Y、2 は Z。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Collider@ opImplCast() / const Collider@ opImplCast() const` | `Collider@ base = capsule; const CapsuleCollider@ original = capsule; const Collider@ view = original;` | 代入で Collider として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = capsule; const CapsuleCollider@ original = capsule; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = capsule; const CapsuleCollider@ original = capsule; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = capsule; const CapsuleCollider@ original = capsule; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
 
 ### Rigidbody
 
@@ -374,13 +318,16 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 | `void Sleep()` | `body.Sleep();` | 物理ボディをスリープさせる。 |
 | `void WakeUp()` | `body.WakeUp();` | スリープ状態の物理ボディを起こす。 |
 | `bool IsSleeping() const` | `bool sleeping = body.IsSleeping();` | ボディがスリープ中かを調べる。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = body; const Rigidbody@ original = body; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = body; const Rigidbody@ original = body; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `void AddExplosionForce(float explosionForce, const Vector3&in explosionPosition, float explosionRadius, float upwardsModifier = 0.0f, ForceMode mode = ForceMode::Force)` | `body.AddExplosionForce(500.0f, bombPosition, 5.0f, 1.0f, ForceMode::Impulse);` | 爆発の中心から外向きに力を加える。半径より遠ければ何もしない。`upwardsModifier` で上向きに持ち上げる。 |
+| `Vector3 GetPointVelocity(const Vector3&in worldPoint) const` | `Vector3 v = body.GetPointVelocity(tip.position);` | ワールドの点の速度（回転による分も含む）。 |
+| `RigidbodyConstraints constraints（読み書き）` | `body.constraints = RigidbodyConstraints::FreezeRotation;` | 軸ごとに位置・回転を止める。`FreezePositionX \| FreezeRotation` のように組み合わせる。 |
+| `RigidbodyInterpolation interpolation（読み書き）` | `body.interpolation = RigidbodyInterpolation::Interpolate;` | 物理の 1 歩のあいだの見た目の位置を補間するか。カメラが追う物体のカクつきを減らす。 |
+| `CollisionDetectionMode collisionDetectionMode（読み書き）` | `body.collisionDetectionMode = CollisionDetectionMode::Continuous;` | 速い物体が薄い壁をすり抜けないように、連続的に当たりを調べるか。 |
+| `float maxLinearVelocity（読み書き）` | `body.maxLinearVelocity = 50.0f;` | 並進速度の上限。 |
+| `float maxAngularVelocity（読み書き）` | `body.maxAngularVelocity = 7.0f;` | 角速度の上限（ラジアン毎秒）。 |
+| `float sleepThreshold（読み書き）` | `body.sleepThreshold = 0.005f;` | これより遅くなったら眠る（計算を止める）目安。 |
+| `Vector3 centerOfMass（読み書き）` | `body.centerOfMass = Vector3(0, -0.5f, 0);` | 重心をローカル座標で読み書きする。下げると倒れにくくなる。 |
+| `void ResetCenterOfMass()` | `body.ResetCenterOfMass();` | 重心を Collider の形から求め直す。 |
 
 ### CharacterController
 
@@ -388,7 +335,7 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 
 **共通メンバー**
 
-- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`TryGetComponent`、`GetComponent`
+- [Collider](#collider) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`isTrigger`、`attachedRigidbody`、`ClosestPoint`、`ClosestPointOnBounds`、`bounds`、`sharedMaterial`、`material`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
@@ -401,15 +348,25 @@ Build Settings のシーンを切り替えたり、現在のシーンを調べ�
 | `float height（読み書き）` | `controller.height = 2.0f; float height = controller.height;` | カプセル全体の高さを読み書きする。 |
 | `float slopeLimit（読み書き）` | `controller.slopeLimit = 45.0f; float limit = controller.slopeLimit;` | 移動で登れる斜面の上限を度で読み書きする。 |
 | `float stepOffset（読み書き）` | `controller.stepOffset = 0.3f; float step = controller.stepOffset;` | 乗り越えられる段差の高さを読み書きする。 |
+| `float skinWidth（読み書き）` | `controller.skinWidth = 0.08f;` | 周りの Collider との間にあける隙間。小さすぎると引っかかりやすい。 |
+| `float minMoveDistance（読み書き）` | `controller.minMoveDistance = 0.001f;` | これより短い `Move` では動かない。 |
+| `CollisionFlags collisionFlags（読み取り）` | `bool hitHead = (controller.collisionFlags & CollisionFlags::Above) != 0;` | 直近の `Move` でどの向きに触れたか（`Move` の戻り値と同じ）。 |
 
-**ハンドルの型変換**
+### PhysicsMaterial
+
+Collider の摩擦と跳ね返りを決めるアセット（`.physicsmaterial`）。Project の Create > Physics Material で作り、Collider の Material の欄に入れる。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Collider@ opImplCast() / const Collider@ opImplCast() const` | `Collider@ base = controller; const CharacterController@ original = controller; const Collider@ view = original;` | 代入で Collider として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = controller; const CharacterController@ original = controller; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = controller; const CharacterController@ original = controller; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = controller; const CharacterController@ original = controller; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `float dynamicFriction（読み書き）` | `ice.dynamicFriction = 0.05f;` | 滑っているときの摩擦（0 以上。0 でつるつる）。 |
+| `float staticFriction（読み書き）` | `ice.staticFriction = 0.05f;` | 止まっているものが動き出すまでの摩擦。 |
+| `float bounciness（読み書き）` | `ball.bounciness = 0.9f;` | 跳ね返りの強さ（0〜1。1 で勢いを失わずに跳ねる）。 |
+| `PhysicsMaterialCombine frictionCombine（読み書き）` | `ice.frictionCombine = PhysicsMaterialCombine::Minimum;` | ぶつかった 2 つの摩擦をどう組み合わせるか。 |
+| `PhysicsMaterialCombine bounceCombine（読み書き）` | `ball.bounceCombine = PhysicsMaterialCombine::Maximum;` | ぶつかった 2 つの跳ね返りをどう組み合わせるか。 |
 
 ### Collision
 
@@ -457,7 +414,62 @@ OnCollisionEnter などで受け取る衝突情報。
 | `Vector3 normal（読み書き）` | `Vector3 n = hit.normal;` | ヒットした位置の面の法線。 |
 | `float distance（読み書き）` | `float length = hit.distance;` | レイの起点からヒット点までの距離。 |
 
-## 描画・音声・UI
+### ControllerColliderHit
+
+`OnControllerColliderHit(ControllerColliderHit hit)` で受け取る、CharacterController の `Move` が触れたものの情報。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `CharacterController@ controller（読み取り）` | `CharacterController@ self = hit.controller;` | 動いた CharacterController。 |
+| `Collider@ collider（読み取り）` | `Debug::Log(hit.collider.name);` | 触れた相手の Collider。 |
+| `Rigidbody@ rigidbody（読み取り）` | `if (hit.rigidbody !is null) { hit.rigidbody.AddForce(hit.moveDirection * 2.0f, ForceMode::Impulse); }` | 相手の Rigidbody。なければ null。押した箱を動かすときに使う。 |
+| `Vector3 point` | `Vector3 p = hit.point;` | 触れた点（ワールド座標）。 |
+| `Vector3 normal` | `bool isFloor = hit.normal.y > 0.7f;` | 触れた面の法線。 |
+| `Vector3 moveDirection` | `Vector3 push = hit.moveDirection;` | `Move` で動こうとした向き。 |
+| `float moveLength` | `float length = hit.moveLength;` | その `Move` で動いた長さ。 |
+
+## カメラ・ライト・描画
+
+### Camera
+
+ゲームの画面を写すカメラ。`MainCamera` のタグを付けたものが Game ビューと書き出したゲームに映る。ポストプロセスのかけ方（Post Processing・Volume Mask）は Inspector で設定する（[エディターガイド](README.md#ポストプロセス)）。
+
+**共通メンバー**
+
+- [Behavior](#behavior) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `float fieldOfView（読み書き）` | `Camera::main.fieldOfView = 40.0f;` | 縦の視野角（度）。小さくするとズームしたように見える。 |
+| `float aspect（読み書き）` | `float ratio = camera.aspect;` | 横 ÷ 縦の比。普段は画面の大きさから自動で決まる。書き込むと、その値に固定する。 |
+| `void ResetAspect()` | `camera.ResetAspect();` | `aspect` を画面の大きさから決める状態に戻す。 |
+| `float nearClipPlane（読み書き）` | `camera.nearClipPlane = 0.1f;` | これより近いものは描かない距離。 |
+| `float farClipPlane（読み書き）` | `camera.farClipPlane = 500.0f;` | これより遠いものは描かない距離。 |
+
+**名前空間 `Camera`**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Camera@ main（読み取り）` | `Transform@ cameraTransform = Camera::main.transform;` | `MainCamera` のタグを付けた有効なカメラ。なければ、有効な最初のカメラ。どちらもなければ null。 |
+
+### Light
+
+シーンを照らすライト。GameObject メニューの Light から作る。
+
+**共通メンバー**
+
+- [Behavior](#behavior) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `LightType type（読み書き）` | `light.type = LightType::Point;` | ライトの種類（Directional・Point・Spot）。 |
+| `Color color（読み書き）` | `light.color = Color(1.0f, 0.9f, 0.7f);` | 光の色。 |
+| `float intensity（読み書き）` | `light.intensity = 2.0f;` | 光の強さ。 |
+| `float range（読み書き）` | `light.range = 10.0f;` | Point と Spot の光が届く距離。 |
+| `float spotAngle（読み書き）` | `light.spotAngle = 45.0f;` | Spot の光の広がり（外側の角度、度）。 |
+| `float innerSpotAngle（読み書き）` | `light.innerSpotAngle = 30.0f;` | Spot の光が弱まり始める内側の角度（度）。 |
+
+一度に効くライトは 16 個までです。Directional の向きは Transform の前方向（`forward`）です。
 
 ### Renderer
 
@@ -471,15 +483,8 @@ OnCollisionEnter などで受け取る衝突情報。
 | --- | --- | --- |
 | `Material@ material（読み書き）` | `Material@ mat = renderer.material; @renderer.material = replacement;` | 描画用の個別マテリアルを取得する。取得時に個別化されるので、色などをその Renderer だけ変えられる。代入で付け替えもできる。 |
 | `Material@ sharedMaterial（読み書き）` | `Material@ mat = renderer.sharedMaterial; @renderer.sharedMaterial = replacement;` | 共有マテリアルを読む、または付け替える。共有マテリアル自体を編集すると、そのマテリアルを使う他の描画にも影響しうる。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `MeshRenderer@ opCast() / const MeshRenderer@ opCast() const` | `MeshRenderer@ derived = cast<MeshRenderer>(renderer); const Renderer@ original = renderer; const MeshRenderer@ view = cast<const MeshRenderer@>(original);` | 実体を MeshRenderer として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = renderer; const Renderer@ original = renderer; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = renderer; const Renderer@ original = renderer; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = renderer; const Renderer@ original = renderer; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `Material@[]@ materials（読み書き）` | `array<Material@>@ mats = renderer.materials; mats[1].color = Color::red;` | サブメッシュごとの個別マテリアルを配列で読み書きする。読んだときに個別化される。 |
+| `Material@[]@ sharedMaterials（読み書き）` | `array<Material@>@ mats = renderer.sharedMaterials;` | サブメッシュごとの共有マテリアルを配列で読み書きする。 |
 
 ### MeshRenderer
 
@@ -487,20 +492,46 @@ OnCollisionEnter などで受け取る衝突情報。
 
 **共通メンバー**
 
-- [Renderer](#renderer) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`material`、`sharedMaterial`、`TryGetComponent`、`GetComponent`
+- [Renderer](#renderer) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`material`、`sharedMaterial`、`materials`、`sharedMaterials`、`TryGetComponent`、`GetComponent`
 
-**ハンドルの型変換**
+### SkinnedMeshRenderer
+
+ボーンで変形するメッシュ（キャラクターなど）を描く。glTF のモデルを置くと付く。
+
+**共通メンバー**
+
+- [Renderer](#renderer) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`material`、`sharedMaterial`、`materials`、`sharedMaterials`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Renderer@ opImplCast() / const Renderer@ opImplCast() const` | `Renderer@ base = meshRenderer; const MeshRenderer@ original = meshRenderer; const Renderer@ view = original;` | 代入で Renderer として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = meshRenderer; const MeshRenderer@ original = meshRenderer; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = meshRenderer; const MeshRenderer@ original = meshRenderer; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = meshRenderer; const MeshRenderer@ original = meshRenderer; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `Mesh@ sharedMesh（読み書き）` | `int vertices = skinned.sharedMesh.vertexCount;` | 描くメッシュ。 |
+
+### LineRenderer
+
+点を結んだ線を描く。軌跡やレーザーなどに使う。
+
+**共通メンバー**
+
+- [Renderer](#renderer) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`material`、`sharedMaterial`、`materials`、`sharedMaterials`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `int positionCount（読み書き）` | `line.positionCount = 2;` | 点の数。増やした点は (0, 0, 0) から始まる。 |
+| `Vector3 GetPosition(int index) const` | `Vector3 p = line.GetPosition(0);` | 指定した点の位置。 |
+| `void SetPosition(int index, const Vector3&in position)` | `line.SetPosition(1, target.position);` | 指定した点の位置を設定する。 |
+| `void SetPositions(Vector3[]@ positions)` | `array<Vector3> points = {Vector3::zero, Vector3::up}; line.positionCount = 2; line.SetPositions(points);` | 配列の先頭から `positionCount` 個まで、まとめて設定する。 |
+| `int GetPositions(Vector3[]@ positions) const` | `array<Vector3> points(line.positionCount); line.GetPositions(points);` | 点を配列に写し、写した数を返す。 |
+| `float startWidth（読み書き）` | `line.startWidth = 0.1f;` | 始点での線の太さ。 |
+| `float endWidth（読み書き）` | `line.endWidth = 0.0f;` | 終点での線の太さ。 |
+| `float widthMultiplier（読み書き）` | `line.widthMultiplier = 2.0f;` | 太さ全体に掛ける倍率。 |
+| `Color startColor（読み書き）` | `line.startColor = Color::red;` | 始点での色。 |
+| `Color endColor（読み書き）` | `line.endColor = Color(1, 0, 0, 0);` | 終点での色。 |
+| `bool useWorldSpace（読み書き）` | `line.useWorldSpace = true;` | true なら点をワールド座標、false なら GameObject のローカル座標として扱う。 |
+| `bool loop（読み書き）` | `line.loop = true;` | 最後の点と最初の点もつなぐか。 |
 
 ### Material
 
-色やテクスチャの UV、シェーダーの名前付きパラメーターを扱う。
+色・テクスチャ・UV と、シェーダの `"properties"` に書いた値を扱う。`GetFloat` などの名前は、`.shader` の `"properties"` の `"name"` と同じにする（[シェーダとポストエフェクトの書き方](Shaders.md#プロパティ)）。名前のプロパティを使うのは今のところ UI と Full Screen Pass のシェーダだけで、3D のメッシュのシェーダでは `color`・`mainTexture` などを使う。
 
 **共通メンバー**
 
@@ -509,19 +540,223 @@ OnCollisionEnter などで受け取る衝突情報。
 | API | 用例 | 解説 |
 | --- | --- | --- |
 | `Color color（読み書き）` | `mat.color = Color::red; Color tint = mat.color;` | マテリアルの基本色を読み書きする。 |
+| `Material(Shader@ shader)` | `Material@ mat = Material(otherMaterial.shader);` | シェーダを指定して新しいマテリアルを作る。 |
+| `Material(Material@ source)` | `Material@ copy = Material(renderer.sharedMaterial);` | ほかのマテリアルの設定を写した新しいマテリアルを作る。 |
+| `Shader@ shader（読み書き）` | `@mat.shader = otherShader;` | 使うシェーダ。替えるとシェーダのプロパティはそのシェーダの初期値に戻る。 |
+| `int renderQueue（読み書き）` | `mat.renderQueue = 3000;` | 描画順。小さいものから描く。-1 ならシェーダの値を使う（Geometry 2000、Transparent 3000 など）。 |
 | `Vector2 mainTextureOffset（読み書き）` | `mat.mainTextureOffset = Vector2(0.25f, 0.0f); Vector2 offset = mat.mainTextureOffset;` | メインテクスチャを参照するときの UV のずれを読み書きする。 |
 | `Vector2 mainTextureScale（読み書き）` | `mat.mainTextureScale = Vector2(2, 2); Vector2 tiling = mat.mainTextureScale;` | メインテクスチャの UV の倍率を読み書きする。 |
-| `Color GetColor(const string&in name) const` | `Color tint = mat.GetColor("baseColor");` | 対応するシェーダーで宣言された名前付きの色を読む。プロパティ名は使うシェーダーに合わせる。 |
-| `void SetColor(const string&in name, const Color&in value)` | `mat.SetColor("baseColor", Color::red);` | シェーダーの名前付きの色に値を設定する。 |
-| `float GetFloat(const string&in name) const` | `float value = mat.GetFloat("roughness");` | シェーダーの名前付きの数値を読む。 |
-| `void SetFloat(const string&in name, float value)` | `mat.SetFloat("roughness", 0.8f);` | シェーダーの名前付きの数値に値を設定する。 |
-| `bool HasProperty(const string&in name) const` | `bool hasValue = mat.HasProperty("roughness");` | 指定した名前のプロパティがあるか調べる。 |
+| `Color GetColor(const string&in name) const` | `Color tint = mat.GetColor("_Tint");` | シェーダの `Color` のプロパティを読む。 |
+| `void SetColor(const string&in name, const Color&in value)` | `mat.SetColor("_Tint", Color::red);` | シェーダの `Color` のプロパティに値を設定する。 |
+| `float GetFloat(const string&in name) const` | `float value = mat.GetFloat("_Intensity");` | シェーダの `Float` のプロパティを読む。 |
+| `void SetFloat(const string&in name, float value)` | `mat.SetFloat("_Intensity", 0.5f);` | シェーダの `Float` のプロパティに値を設定する。 |
+| `Vector4 GetVector(const string&in name) const` | `Vector4 v = mat.GetVector("_Offset");` | シェーダの `Vector` のプロパティを読む。 |
+| `void SetVector(const string&in name, const Vector4&in value)` | `mat.SetVector("_Offset", Vector4(1, 0, 0, 0));` | シェーダの `Vector` のプロパティに値を設定する。 |
+| `bool HasProperty(const string&in name) const` | `bool hasValue = mat.HasProperty("_Intensity");` | 指定した名前のプロパティがあるか調べる。 |
 
-**ハンドルの型変換**
+### Shader
+
+マテリアルが使うシェーダ（`.shader`）。書き方は [シェーダとポストエフェクトの書き方](Shaders.md)。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = mat; const Material@ original = mat; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `int renderQueue（読み取り）` | `int queue = shader.renderQueue;` | `.shader` の `"queue"` の描画順。 |
+| `int passCount（読み取り）` | `int passes = shader.passCount;` | Pass の数。 |
+| `int FindPropertyIndex(const string&in propertyName) const` | `bool has = shader.FindPropertyIndex("_Intensity") >= 0;` | `"properties"` の中での番号。なければ -1。 |
+
+### Mesh
+
+形のデータ。モデルのファイル（`.obj`・`.gltf`・`.glb`）から読み込まれる。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Bounds bounds（読み取り）` | `Vector3 size = mesh.bounds.size;` | メッシュを囲む箱（メッシュのローカル座標）。 |
+| `int vertexCount（読み取り）` | `int count = mesh.vertexCount;` | 頂点の数。 |
+| `int subMeshCount（読み取り）` | `int count = mesh.subMeshCount;` | サブメッシュ（マテリアルを分ける単位）の数。 |
+
+### Texture2D
+
+Project から参照する画像（.png / .jpg）。スクリプトの欄に `Texture2D@` を書くと、Inspector で画像を入れられる。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `int width（読み取り）` | `int w = texture.width;` | 画像の幅をピクセルで返す。 |
+| `int height（読み取り）` | `int h = texture.height;` | 画像の高さをピクセルで返す。 |
+| `bool isReadable（読み取り）` | `bool readable = texture.isReadable;` | CPU 側に画素があるか。画像の Inspector で種類を Cursor にしたものだけ true。 |
+
+### Sprite
+
+テクスチャの中の四角い範囲。UI の Image で描く。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Texture2D@ texture（読み取り）` | `Texture2D@ source = sprite.texture;` | 元のテクスチャ。 |
+| `Rect rect（読み取り）` | `Rect area = sprite.rect;` | テクスチャの中の範囲（ピクセル）。 |
+| `Vector2 pivot（読み取り）` | `Vector2 p = sprite.pivot;` | 中心にする点（範囲の中の 0〜1）。 |
+
+**名前空間 `Sprite`**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Sprite@ Create(Texture2D@ texture, const Rect&in rect, const Vector2&in pivot = Vector2(0.5f, 0.5f))` | `Sprite@ s = Sprite::Create(texture, Rect(0, 0, 64, 64));` | テクスチャの範囲（ピクセル）から Sprite を作る。 |
+
+### VolumeProfile
+
+ポストプロセスの効果と値をまとめたアセット（`.volumeprofile`）。中の値はスクリプトからは変えられない。Volume の Inspector と Project Settings の Graphics で使う。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
+
+## アニメーション・パーティクル
+
+### SkeletalAnimator
+
+ボーンのアニメーション（glTF のアニメーション）を再生する。
+
+**共通メンバー**
+
+- [Behavior](#behavior) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `void Play(SkeletalAnimationClip@ clip)` | `animator.Play(runClip);` | クリップを先頭から再生する。 |
+| `void CrossFade(SkeletalAnimationClip@ clip, float fadeLength = 0.3f)` | `animator.CrossFade(idleClip, 0.2f);` | 今のアニメーションから、指定した秒数で混ぜながら切り替える。 |
+| `void Stop()` | `animator.Stop();` | 再生を止める。 |
+| `bool isPlaying（読み取り）` | `if (!animator.isPlaying) { animator.Play(idleClip); }` | 再生中か。`Once` のクリップが終わると false になる。 |
+| `SkeletalAnimationClip@ clip（読み書き）` | `@animator.clip = idleClip;` | 再生するクリップ。 |
+| `float time（読み書き）` | `animator.time = 0.0f;` | 再生位置（秒）。 |
+| `float speed（読み書き）` | `animator.speed = 1.5f;` | 再生の速さの倍率。 |
+| `WrapMode wrapMode（読み書き）` | `animator.wrapMode = WrapMode::Loop;` | 最後まで再生したときの動き。`Default` ならクリップの設定に従う。 |
+| `bool playAutomatically（読み書き）` | `animator.playAutomatically = false;` | 始まったときに `clip` を自動で再生するか。 |
+
+### SkeletalAnimationClip
+
+ボーンのアニメーションのデータ。glTF のモデルに含まれるもので、Project でモデルを開くと中に見える。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `float length（読み取り）` | `float seconds = clip.length;` | 長さ（秒）。 |
+| `WrapMode wrapMode（読み書き）` | `clip.wrapMode = WrapMode::Loop;` | 最後まで再生したときの動きの既定値。 |
+
+### ParticleSystem
+
+パーティクル（小さな粒）を出す。値はモジュールごとにまとまっている。
+
+**共通メンバー**
+
+- [Component](#component) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `void Play()` | `particles.Play();` | 出し始める。 |
+| `void Stop()` | `particles.Stop();` | 新しく出すのをやめる。出ている粒は寿命まで残る。 |
+| `void Clear()` | `particles.Clear();` | 出ている粒をすべて消す。 |
+| `void Emit(int count)` | `particles.Emit(30);` | 今すぐ粒をまとめて出す（爆発など）。 |
+| `void Simulate(float t)` | `particles.Simulate(1.0f);` | 指定した秒数だけ進めた状態にする。 |
+| `bool isPlaying（読み取り）` | `bool playing = particles.isPlaying;` | 再生中か。 |
+| `float time（読み取り）` | `float t = particles.time;` | 再生を始めてからの時間（秒）。 |
+| `ParticleSystem::MainModule main（読み取り）` | `ParticleSystem::MainModule main = particles.main; main.startSpeed = ParticleSystem::MinMaxCurve(5.0f);` | 寿命・速さ・大きさ・色などの基本の値。 |
+| `ParticleSystem::EmissionModule emission（読み取り）` | `ParticleSystem::EmissionModule emission = particles.emission; emission.rateOverTime = 50.0f;` | 1 秒に出す数。 |
+| `ParticleSystem::ShapeModule shape（読み取り）` | `ParticleSystem::ShapeModule shape = particles.shape; shape.radius = 2.0f;` | 出す場所の形。 |
+| `ParticleSystem::ColorOverLifetimeModule colorOverLifetime（読み取り）` | `ParticleSystem::ColorOverLifetimeModule col = particles.colorOverLifetime; col.enabled = true;` | 寿命に合わせて色を変えるか（変え方は Inspector で設定する）。 |
+| `ParticleSystem::SizeOverLifetimeModule sizeOverLifetime（読み取り）` | `ParticleSystem::SizeOverLifetimeModule size = particles.sizeOverLifetime; size.enabled = false;` | 寿命に合わせて大きさを変えるか（変え方は Inspector で設定する）。 |
+
+モジュールは、ParticleSystem の値を指す小さな値型です。変数に取り出してから値を書き込むと、ParticleSystem に反映されます。
+
+**ParticleSystem::MainModule**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `float duration（読み書き）` | `main.duration = 2.0f;` | 1 回の再生の長さ（秒）。 |
+| `bool loop（読み書き）` | `main.loop = false;` | `duration` が終わったら繰り返すか。 |
+| `bool playOnAwake（読み書き）` | `main.playOnAwake = false;` | 始まったときに自動で再生するか。 |
+| `ParticleSystem::MinMaxCurve startLifetime（読み書き）` | `main.startLifetime = ParticleSystem::MinMaxCurve(0.5f, 1.0f);` | 粒の寿命（秒）。 |
+| `ParticleSystem::MinMaxCurve startSpeed（読み書き）` | `main.startSpeed = ParticleSystem::MinMaxCurve(5.0f);` | 出たときの速さ。 |
+| `ParticleSystem::MinMaxCurve startSize（読み書き）` | `main.startSize = ParticleSystem::MinMaxCurve(0.1f, 0.3f);` | 出たときの大きさ。 |
+| `ParticleSystem::MinMaxGradient startColor（読み書き）` | `main.startColor = ParticleSystem::MinMaxGradient(Color::yellow);` | 出たときの色。 |
+| `float gravityModifier（読み書き）` | `main.gravityModifier = 1.0f;` | 重力（`Physics::gravity`）をどれだけ効かせるか。 |
+| `int maxParticles（読み書き）` | `main.maxParticles = 500;` | 同時に出せる粒の上限。 |
+| `ParticleSystemSimulationSpace simulationSpace（読み書き）` | `main.simulationSpace = ParticleSystemSimulationSpace::World;` | 粒がワールドに残るか（World）、GameObject と一緒に動くか（Local）。 |
+
+**ParticleSystem::EmissionModule**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `bool enabled（読み書き）` | `emission.enabled = false;` | 出すか。 |
+| `float rateOverTime（読み書き）` | `emission.rateOverTime = 20.0f;` | 1 秒に出す数。 |
+
+**ParticleSystem::ShapeModule**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `bool enabled（読み書き）` | `shape.enabled = true;` | 形を使うか。false なら 1 点から出る。 |
+| `ParticleSystemShapeType shapeType（読み書き）` | `shape.shapeType = ParticleSystemShapeType::Cone;` | 形（Sphere・Cone）。 |
+| `float angle（読み書き）` | `shape.angle = 25.0f;` | Cone の広がり（度）。 |
+| `float radius（読み書き）` | `shape.radius = 1.0f;` | 形の半径。 |
+| `float radiusThickness（読み書き）` | `shape.radiusThickness = 0.0f;` | 出す場所の厚み（0 なら表面だけ、1 なら中全体）。 |
+
+**ParticleSystem::ColorOverLifetimeModule / SizeOverLifetimeModule**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `bool enabled（読み書き）` | `col.enabled = true;` | 使うか。 |
+
+**ParticleSystem::MinMaxCurve**
+
+1 つの数か、2 つの数のあいだのランダムな値を表す値型。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `MinMaxCurve(float constant)` | `ParticleSystem::MinMaxCurve(3.0f)` | いつも同じ値。 |
+| `MinMaxCurve(float min, float max)` | `ParticleSystem::MinMaxCurve(1.0f, 3.0f)` | 粒ごとに `min`〜`max` のランダムな値。 |
+| `float constant（読み書き）` | `float value = curve.constant;` | 1 つの数のときの値。 |
+| `float constantMin` / `float constantMax` | `curve.constantMax = 5.0f;` | ランダムの範囲。 |
+
+**ParticleSystem::MinMaxGradient**
+
+1 つの色か、2 つの色のあいだのランダムな色を表す値型。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `MinMaxGradient(const Color&in color)` | `ParticleSystem::MinMaxGradient(Color::white)` | いつも同じ色。 |
+| `MinMaxGradient(const Color&in min, const Color&in max)` | `ParticleSystem::MinMaxGradient(Color::red, Color::yellow)` | 粒ごとに 2 つの色のあいだのランダムな色。 |
+| `Color color（読み書き）` | `Color c = gradient.color;` | 1 つの色のときの色。 |
+| `Color colorMin` / `Color colorMax` | `gradient.colorMax = Color::white;` | ランダムの範囲。 |
+
+### ParticleSystemRenderer
+
+ParticleSystem の粒を描く。ParticleSystem を付けると一緒に付く。
+
+**共通メンバー**
+
+- [Renderer](#renderer) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`material`、`sharedMaterial`、`materials`、`sharedMaterials`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `ParticleSystemSortMode sortMode（読み書き）` | `renderer.sortMode = ParticleSystemSortMode::Distance;` | 粒を描く順番。半透明の粒の重なりを正しく見せたいときに変える。 |
+
+## 音声
 
 ### AudioSource
 
@@ -546,13 +781,6 @@ GameObject に付けて AudioClip を再生するコンポーネント。
 | `bool mute（読み書き）` | `source.mute = true; bool muted = source.mute;` | 消音するかを読み書きする。 |
 | `bool playOnAwake（読み書き）` | `source.playOnAwake = true; bool autoplay = source.playOnAwake;` | 初期化時に clip を自動再生する設定。開始時に鳴らす場合は Inspector であらかじめ設定する。 |
 
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = source; const AudioSource@ original = source; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = source; const AudioSource@ original = source; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
-
 ### AudioClip
 
 Project から参照する音声データ。
@@ -567,35 +795,57 @@ Project から参照する音声データ。
 | `int frequency（読み取り）` | `int hz = clip.frequency;` | サンプリング周波数を Hz で返す。 |
 | `int channels（読み取り）` | `int count = clip.channels;` | モノラルなら 1、ステレオなら 2 など、チャンネル数を返す。 |
 
-**ハンドルの型変換**
+### AudioListener
 
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = clip; const AudioClip@ original = clip; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
-
-### Texture2D
-
-Project から参照する画像（.png / .jpg）。スクリプトの欄に `Texture2D@` を書くと、Inspector で画像を入れられる。
+音を聞く位置。ふつうはメインカメラに付ける。
 
 **共通メンバー**
 
-- [Object](#object) の `name`、`GetInstanceID`
+- [Component](#component) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`TryGetComponent`、`GetComponent`
+
+**名前空間 `AudioListener`**
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `int width（読み取り）` | `int w = texture.width;` | 画像の幅をピクセルで返す。 |
-| `int height（読み取り）` | `int h = texture.height;` | 画像の高さをピクセルで返す。 |
-| `bool isReadable（読み取り）` | `bool readable = texture.isReadable;` | CPU 側に画素があるか。画像の Inspector で種類を Cursor にしたものだけ true。 |
+| `float volume（読み書き）` | `AudioListener::volume = 0.5f;` | ゲーム全体の音量（0〜1）。 |
 
-**ハンドルの型変換**
+## UI
+
+### Canvas
+
+UI のいちばん上に置く GameObject に付ける。子の RectTransform を画面の大きさに合わせて並べ、Graphic を画面に重ねて描く。GameObject メニューの UI から作る。
+
+**共通メンバー**
+
+- [Behavior](#behavior) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`TryGetComponent`、`GetComponent`
+
+### RectTransform
+
+UI の GameObject の位置と大きさ。親の四角に対する「アンカー」と「ピボット」で置き場所を決める。`transform` は `Transform@` なので、`cast<RectTransform>(transform)` で取り出す。
+
+**共通メンバー**
+
+- [Transform](#transform) のすべてのメンバー
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = texture;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `Vector2 anchorMin（読み書き）` | `rt.anchorMin = Vector2(0, 0);` | 親の四角の中で、左下の角を合わせる点（0〜1）。 |
+| `Vector2 anchorMax（読み書き）` | `rt.anchorMax = Vector2(1, 1);` | 親の四角の中で、右上の角を合わせる点（0〜1）。`anchorMin` と同じなら大きさは固定、違えば親に合わせて伸びる。 |
+| `Vector2 anchoredPosition（読み書き）` | `rt.anchoredPosition = Vector2(0, -40);` | アンカーから見たピボットの位置（ピクセル）。 |
+| `Vector2 sizeDelta（読み書き）` | `rt.sizeDelta = Vector2(200, 50);` | アンカーが 1 点のときは大きさ。伸びるときは、親に合わせた大きさとの差。 |
+| `Vector2 pivot（読み書き）` | `rt.pivot = Vector2(0.5f, 0.5f);` | 自分の四角の中で、位置と回転の中心にする点（0〜1）。 |
+| `Rect rect（読み取り）` | `float width = rt.rect.width;` | 計算された自分の四角（ローカル座標）。 |
+
+```angelscript
+RectTransform@ rt = cast<RectTransform>(transform);
+if (rt !is null) {
+    rt.anchoredPosition = Vector2(0, 100);
+}
+```
 
 ### Graphic
 
-UI の描画とポインター判定に関わる共通コンポーネント。
+UI の描画とポインター判定に関わる共通コンポーネント。Canvas の子（RectTransform を持つ GameObject）に付ける。
 
 **共通メンバー**
 
@@ -605,99 +855,124 @@ UI の描画とポインター判定に関わる共通コンポーネント。
 | --- | --- | --- |
 | `Color color（読み書き）` | `graphic.color = Color::yellow; Color tint = graphic.color;` | UI の描画色を読み書きする。 |
 | `bool raycastTarget（読み書き）` | `graphic.raycastTarget = false; bool receivesPointer = graphic.raycastTarget;` | UI のポインター判定にこの Graphic を含めるかを読み書きする。 |
+| `Material@ material（読み書き）` | `@graphic.material = glowMaterial;` | 描くときのマテリアル。null なら既定のもの（Image は Sprite、Text は Text のシェーダ）。 |
+| `CanvasRenderer@ canvasRenderer（読み取り）` | `graphic.canvasRenderer.SetAlpha(0.5f);` | 実際に描く [CanvasRenderer](#canvasrenderer)。 |
 | `void CrossFadeColor(const Color&in targetColor, float duration, bool ignoreTimeScale, bool useAlpha)` | `graphic.CrossFadeColor(Color::white, 0.25f, true, true);` | 第 2 引数の秒数で色を補間する。第 3 引数は timeScale を無視するか、第 4 引数はアルファも変えるか。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Text@ opCast() / const Text@ opCast() const` | `Text@ derived = cast<Text>(graphic); const Graphic@ original = graphic; const Text@ view = cast<const Text@>(original);` | 実体を Text として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Image@ opCast() / const Image@ opCast() const` | `Image@ derived = cast<Image>(graphic); const Graphic@ original = graphic; const Image@ view = cast<const Image@>(original);` | 実体を Image として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = graphic; const Graphic@ original = graphic; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = graphic; const Graphic@ original = graphic; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = graphic; const Graphic@ original = graphic; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `void SetAllDirty()` | `graphic.SetAllDirty();` | 形とマテリアルを次の描画で作り直させる。プロパティを変えたときは自動で呼ばれるので、普段は使わない。 |
+| `void SetVerticesDirty()` | `graphic.SetVerticesDirty();` | 形（頂点）だけを作り直させる。 |
+| `void SetMaterialDirty()` | `graphic.SetMaterialDirty();` | マテリアルだけを設定し直させる。 |
 
 ### Text
 
-文字列と文字サイズなどを扱う UI コンポーネント。
+文字列を描く UI コンポーネント（TextMeshPro に近いもの）。
 
 **共通メンバー**
 
-- [Graphic](#graphic) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`color`、`raycastTarget`、`CrossFadeColor`、`TryGetComponent`、`GetComponent`
+- [Graphic](#graphic) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`color`、`raycastTarget`、`material`、`canvasRenderer`、`CrossFadeColor`、`SetAllDirty`、`SetVerticesDirty`、`SetMaterialDirty`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `string text（読み書き）` | `label.text = "Ready"; string caption = label.text;` | 画面に表示する文字列を読み書きする。 |
+| `string text（読み書き）` | `label.text = "Score: " + score;` | 画面に表示する文字列を読み書きする。 |
+| `FontAsset@ font（読み書き）` | `@label.font = titleFont;` | 使うフォント。Project の `.ttf`・`.otf` を Inspector の欄に入れるか、`FontAsset@` のフィールドから代入する。 |
 | `float fontSize（読み書き）` | `label.fontSize = 24.0f; float size = label.fontSize;` | フォントの大きさを読み書きする。 |
+| `TextAlignmentOptions alignment（読み書き）` | `label.alignment = TextAlignmentOptions::Center;` | 枠の中での文字の寄せ方。 |
+| `bool enableWordWrapping（読み書き）` | `label.enableWordWrapping = false;` | 枠の幅で折り返すか。 |
 | `float lineSpacing（読み書き）` | `label.lineSpacing = 1.2f; float spacing = label.lineSpacing;` | 複数行を描くときの行間を読み書きする。 |
-
-**ハンドルの型変換**
-
-| API | 用例 | 解説 |
-| --- | --- | --- |
-| `Graphic@ opImplCast() / const Graphic@ opImplCast() const` | `Graphic@ base = label; const Text@ original = label; const Graphic@ view = original;` | 代入で Graphic として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = label; const Text@ original = label; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = label; const Text@ original = label; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = label; const Text@ original = label; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `float characterSpacing（読み書き）` | `label.characterSpacing = 2.0f;` | 文字と文字の間を広げる量。 |
+| `Color outlineColor（読み書き）` | `label.outlineColor = Color::black;` | 縁取りの色。 |
+| `float outlineWidth（読み書き）` | `label.outlineWidth = 0.2f;` | 縁取りの太さ。0 で縁取りなし。 |
 
 ### Image
 
-画像の表示に使う UI コンポーネント。スクリプトからは Graphic と共通の描画色や入力判定を扱える。
+画像を描く UI コンポーネント。
 
 **共通メンバー**
 
-- [Graphic](#graphic) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`color`、`raycastTarget`、`CrossFadeColor`、`TryGetComponent`、`GetComponent`
-
-**ハンドルの型変換**
+- [Graphic](#graphic) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`color`、`raycastTarget`、`material`、`canvasRenderer`、`CrossFadeColor`、`SetAllDirty`、`SetVerticesDirty`、`SetMaterialDirty`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Graphic@ opImplCast() / const Graphic@ opImplCast() const` | `Graphic@ base = image; const Image@ original = image; const Graphic@ view = original;` | 代入で Graphic として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = image; const Image@ original = image; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = image; const Image@ original = image; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = image; const Image@ original = image; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `Sprite@ sprite（読み書き）` | `@icon.sprite = Sprite::Create(texture, Rect(0, 0, texture.width, texture.height));` | 描く画像。null なら白い四角を `color` で描く。 |
+| `void SetNativeSize()` | `icon.SetNativeSize();` | RectTransform の大きさを、画像のピクセルの大きさに合わせる。 |
+
+### CanvasRenderer
+
+Graphic（Text・Image）を実際に描く部分。Graphic を付けると一緒に付く。
+
+**共通メンバー**
+
+- [Component](#component) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`TryGetComponent`、`GetComponent`
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Color GetColor() const` / `void SetColor(const Color&in color)` | `cr.SetColor(Color(1, 1, 1, 0.5f));` | Graphic の色に掛ける色。 |
+| `float GetAlpha() const` / `void SetAlpha(float alpha)` | `cr.SetAlpha(0.0f);` | 透明度だけを掛ける。フェードに使う。 |
+| `void Clear()` | `cr.Clear();` | 描く内容を消す。 |
+| `int materialCount（読み書き）` | `int count = cr.materialCount;` | マテリアルの数。 |
+| `void SetMaterial(Material@ material, int index)` / `Material@ GetMaterial(int index = 0) const` | `Material@ m = cr.GetMaterial();` | 描くときのマテリアル。 |
+| `void SetTexture(Texture2D@ texture)` | `cr.SetTexture(texture);` | 描くテクスチャ。 |
+
+普段は Graphic の `color` や `material` を使い、CanvasRenderer は直接さわりません。
+
+### FontAsset
+
+Text が使うフォント。Project の `.ttf`・`.otf` から作られる。
+
+**共通メンバー**
+
+- [Object](#object) の `name`、`GetInstanceID`
 
 ### Selectable
 
-操作の可否を持つ UI コンポーネント。有効状態は Behavior 型として参照できる。
+選んだり押したりできる UI の共通部分。キーボードやゲームパッドでの移動先もここで調べる。
 
 **共通メンバー**
 
-- [Behavior](#behavior) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`TryGetComponent`、`GetComponent`
+- [Behavior](#behavior) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `bool interactable（読み書き）` | `selectable.interactable = false; bool canPress = selectable.interactable;` | ボタンなどの UI を操作可能にするかを読み書きする。 |
+| `bool interactable（読み書き）` | `selectable.interactable = false; bool canPress = selectable.interactable;` | ボタンなどの UI を操作可能にするかを読み書きする。false の間は `colors.disabledColor` で描かれる。 |
+| `Graphic@ targetGraphic（読み書き）` | `@button.targetGraphic = background;` | 状態（通常・ハイライト・押下など）に合わせて色を変える Graphic。 |
+| `ColorBlock colors（読み書き）` | `ColorBlock c = button.colors; c.pressedColor = Color::red; button.colors = c;` | 状態ごとの色。値型なので、取り出して書き換えてから戻す。 |
+| `Selectable@ FindSelectable(const Vector3&in dir) const` | `Selectable@ next = button.FindSelectable(Vector3::right);` | 指定した向きにある、いちばん近い Selectable。なければ null。 |
+| `Selectable@ FindSelectableOnLeft() const` | `Selectable@ left = button.FindSelectableOnLeft();` | 左の Selectable。 |
+| `Selectable@ FindSelectableOnRight() const` | `Selectable@ right = button.FindSelectableOnRight();` | 右の Selectable。 |
+| `Selectable@ FindSelectableOnUp() const` | `Selectable@ up = button.FindSelectableOnUp();` | 上の Selectable。 |
+| `Selectable@ FindSelectableOnDown() const` | `Selectable@ down = button.FindSelectableOnDown();` | 下の Selectable。 |
 
-**ハンドルの型変換**
+**名前空間 `Selectable`**
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Button@ opCast() / const Button@ opCast() const` | `Button@ derived = cast<Button>(selectable); const Selectable@ original = selectable; const Button@ view = cast<const Button@>(original);` | 実体を Button として取り出す。型が合わなければ null。const の参照からも変換できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = selectable; const Selectable@ original = selectable; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = selectable; const Selectable@ original = selectable; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = selectable; const Selectable@ original = selectable; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `Selectable@[]@ allSelectablesArray（読み取り）` | `array<Selectable@>@ all = Selectable::allSelectablesArray;` | 今有効な Selectable をすべて返す。 |
 
 ### Button
 
-押したときのイベントを持つ UI コンポーネント。有効状態をスクリプトから扱う場合は Behavior 型として参照できる。
+押したときのイベントを持つ UI コンポーネント。
 
 **共通メンバー**
 
-- [Selectable](#selectable) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`interactable`、`TryGetComponent`、`GetComponent`
+- [Selectable](#selectable) の `name`、`GetInstanceID`、`gameObject`、`transform`、`tag`、`CompareTag`、`enabled`、`isActiveAndEnabled`、`interactable`、`targetGraphic`、`colors`、`FindSelectable`、`FindSelectableOnLeft`、`FindSelectableOnRight`、`FindSelectableOnUp`、`FindSelectableOnDown`、`TryGetComponent`、`GetComponent`
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
 | `UnityEvent@ onClick（読み取り）` | `UnityEvent@ clicked = button.onClick;` | クリック時に発火するイベントを返す。Inspector の On Click の登録と、スクリプトからのリスナーを扱える。 |
 
-**ハンドルの型変換**
+### ColorBlock
+
+[Selectable](#selectable) の状態ごとの色をまとめた値型。
 
 | API | 用例 | 解説 |
 | --- | --- | --- |
-| `Selectable@ opImplCast() / const Selectable@ opImplCast() const` | `Selectable@ base = button; const Button@ original = button; const Selectable@ view = original;` | 代入で Selectable として参照する。const の参照も代入できる。 |
-| `Behavior@ opImplCast() / const Behavior@ opImplCast() const` | `Behavior@ base = button; const Button@ original = button; const Behavior@ view = original;` | 代入で Behavior として参照する。const の参照も代入できる。 |
-| `Component@ opImplCast() / const Component@ opImplCast() const` | `Component@ base = button; const Button@ original = button; const Component@ view = original;` | 代入で Component として参照する。const の参照も代入できる。 |
-| `Object@ opImplCast() / const Object@ opImplCast() const` | `Object@ base = button; const Button@ original = button; const Object@ view = original;` | 代入で Object として参照する。const の参照も代入できる。 |
+| `ColorBlock()` | `ColorBlock c;` | 既定の色で作る。 |
+| `Color normalColor` | `c.normalColor = Color::white;` | 通常の色。 |
+| `Color highlightedColor` | `c.highlightedColor = Color(0.9f, 0.9f, 0.9f);` | マウスが乗っているときの色。 |
+| `Color pressedColor` | `c.pressedColor = Color::gray;` | 押しているときの色。 |
+| `Color selectedColor` | `c.selectedColor = Color::cyan;` | キーボードなどで選ばれているときの色。 |
+| `Color disabledColor` | `c.disabledColor = Color(1, 1, 1, 0.5f);` | `interactable` が false のときの色。 |
+| `float colorMultiplier` | `c.colorMultiplier = 1.0f;` | 状態の色に掛ける倍率。 |
+| `float fadeDuration` | `c.fadeDuration = 0.1f;` | 色を切り替えるときにかける秒数。 |
 
 ### UnityEvent
 
@@ -743,6 +1018,11 @@ Inspector とスクリプトから関数を登録できるイベント。例の 
 | `int frameCount（読み取り）` | `int frames = Time::frameCount;` | 進んだゲームフレームの数。 |
 | `float timeScale（読み書き）` | `Time::timeScale = 0.5f; float scale = Time::timeScale;` | ゲーム時間の倍率を読み書きする。1 で等速、0 でゲーム時間が止まる。 |
 | `float fixedDeltaTime（読み書き）` | `Time::fixedDeltaTime = 0.02f; float step = Time::fixedDeltaTime;` | 物理と固定更新の時間間隔を秒で読み書きする。 |
+| `float maximumDeltaTime（読み書き）` | `Time::maximumDeltaTime = 0.1f;` | 1 フレームで進める時間の上限。重いフレームのあとに物理が何歩も進みすぎないようにする。 |
+| `float fixedTime（読み取り）` | `float t = Time::fixedTime;` | 最後の `FixedUpdate` の時刻（秒）。 |
+| `double timeAsDouble（読み取り）` | `double t = Time::timeAsDouble;` | `time` を double で返す。長く遊んでも精度が落ちにくい。 |
+| `double fixedTimeAsDouble（読み取り）` | `double t = Time::fixedTimeAsDouble;` | `fixedTime` を double で返す。 |
+| `bool inFixedTimeStep（読み取り）` | `if (Time::inFixedTimeStep) { … }` | 今 `FixedUpdate` の中か。 |
 
 ### Screen
 
@@ -901,6 +1181,27 @@ X・Y・Z の 3 成分を持つ値型。位置や方向、速度などに使う�
 | `const Vector3 forward` | `Vector3 value = Vector3::forward;` | 前、Z が +1 の単位ベクトル。 |
 | `const Vector3 back` | `Vector3 value = Vector3::back;` | 後ろ、Z が -1 の単位ベクトル。 |
 
+### Vector4
+
+4 つの成分を持つ値型。シェーダの `Vector` のプロパティ（`Material.SetVector`）などに使う。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Vector4()` / `Vector4(float x, float y, float z, float w)` | `Vector4 v(1, 2, 3, 4);` | 成分を指定して作る。省略すると 0。 |
+| `Vector4(float x, float y, float z)` / `Vector4(float x, float y)` | `Vector4 v(1, 2, 3);` | 足りない成分は 0。 |
+| `+` `-` `*` `/`（`float` との掛け算・割り算）、`+=` など、単項の `-` | `Vector4 r = (a + b) * 0.5f;` | 成分ごとの計算。 |
+| `float magnitude` / `float sqrMagnitude` / `Vector4 normalized`（読み取り） | `Vector4 n = v.normalized;` | 長さ、長さの二乗、長さを 1 にしたもの。 |
+| `Vector3` / `Vector2` への変換 | `Vector3 p = v;` | 先頭の成分を取り出して代入できる。 |
+| `float x` `y` `z` `w` | `v.w = 1.0f;` | 各成分。 |
+| `string ToString() const` | `Debug::Log(v.ToString());` | 成分を文字列にする。 |
+
+**名前空間 `Vector4`**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Dot` / `Distance` / `Lerp` / `LerpUnclamped` / `MoveTowards` / `Normalize` / `Scale` / `Min` / `Max` | `Vector4 p = Vector4::Lerp(a, b, 0.5f);` | Vector3 の同名の関数と同じ。 |
+| `const Vector4 zero` / `one` / `positiveInfinity` / `negativeInfinity` | `Vector4 v = Vector4::zero;` | よく使う値。 |
+
 ### Quaternion
 
 回転を表す四元数。角度から作る場合は Euler や AngleAxis を使う。
@@ -915,6 +1216,8 @@ X・Y・Z の 3 成分を持つ値型。位置や方向、速度などに使う�
 | `string ToString() const` | `Debug::Log(q.ToString());` | 成分をデバッグ表示しやすい文字列にする。 |
 | `Vector3 eulerAngles（読み書き）` | `q.eulerAngles = Vector3(0, 90, 0); Vector3 degrees = q.eulerAngles;` | 度単位のオイラー角として回転を読み書きする。 |
 | `Quaternion normalized（読み取り）` | `Quaternion unit = q.normalized;` | 四元数の長さを 1 にそろえた値を返す。 |
+| `void SetFromToRotation(const Vector3&in fromDirection, const Vector3&in toDirection)` | `q.SetFromToRotation(Vector3::up, normal);` | `fromDirection` を `toDirection` に向ける回転にする。 |
+| `void ToAngleAxis(float&out angle, Vector3&out axis) const` | `float angle; Vector3 axis; q.ToAngleAxis(angle, axis);` | 回転を「軸のまわりに何度回すか」に分ける。 |
 | `float x（読み書き）` | `q.x = 0.0f; float x = q.x;` | 四元数の X 成分。角度で指定するときは Euler を使う。 |
 | `float y（読み書き）` | `q.y = 0.0f; float y = q.y;` | 四元数の Y 成分。 |
 | `float z（読み書き）` | `q.z = 0.0f; float z = q.z;` | 四元数の Z 成分。 |
@@ -932,6 +1235,9 @@ X・Y・Z の 3 成分を持つ値型。位置や方向、速度などに使う�
 | `Quaternion Inverse(const Quaternion&in rotation)` | `Quaternion undo = Quaternion::Inverse(q);` | 指定した回転を打ち消す逆回転を求める。 |
 | `Quaternion Lerp(const Quaternion&in a, const Quaternion&in b, float t)` | `Quaternion halfway = Quaternion::Lerp(Quaternion::identity, q, 0.5f);` | 回転間を線形補間し、結果を正規化する。 |
 | `Quaternion Slerp(const Quaternion&in a, const Quaternion&in b, float t)` | `Quaternion halfway = Quaternion::Slerp(Quaternion::identity, q, 0.5f);` | 回転間を球面線形補間する。 |
+| `Quaternion SlerpUnclamped(const Quaternion&in a, const Quaternion&in b, float t)` | `Quaternion q = Quaternion::SlerpUnclamped(a, b, 1.2f);` | `t` を 0〜1 に収めない `Slerp`。 |
+| `Quaternion LerpUnclamped(const Quaternion&in a, const Quaternion&in b, float t)` | `Quaternion q = Quaternion::LerpUnclamped(a, b, 1.2f);` | `t` を 0〜1 に収めない `Lerp`。 |
+| `Quaternion Normalize(const Quaternion&in q)` | `Quaternion unit = Quaternion::Normalize(q);` | 長さを 1 にした四元数を返す。 |
 | `Quaternion FromToRotation(const Vector3&in fromDirection, const Vector3&in toDirection)` | `Quaternion q = Quaternion::FromToRotation(Vector3::forward, Vector3::right);` | 最初の方向から次の方向へ向きを変える回転を作る。 |
 | `Quaternion LookRotation(const Vector3&in forward, const Vector3&in upwards = Vector3::up)` | `Quaternion q = Quaternion::LookRotation(Vector3::right, Vector3::up);` | 指定した前方向と上方向から姿勢を作る。上方向の既定は Vector3::up。 |
 | `const Quaternion identity` | `Quaternion q = Quaternion::identity;` | 回転なしを表す定数。 |
@@ -961,6 +1267,10 @@ X・Y・Z の 3 成分を持つ値型。位置や方向、速度などに使う�
 | `float g（読み書き）` | `tint.g = 0.5f; float green = tint.g;` | 緑の成分。 |
 | `float b（読み書き）` | `tint.b = 0.25f; float blue = tint.b;` | 青の成分。 |
 | `float a（読み書き）` | `tint.a = 0.5f; float opacity = tint.a;` | アルファ成分。通常 0 は透明、1 は不透明。 |
+| `Color linear（読み取り）` | `Color l = tint.linear;` | ガンマ（sRGB）の色を線形の色に直したもの。シェーダに渡す値の計算などに使う。 |
+| `Color gamma（読み取り）` | `Color g = l.gamma;` | 線形の色をガンマ（sRGB）の色に直したもの。 |
+| `float grayscale（読み取り）` | `float gray = tint.grayscale;` | 明るさ（灰色にしたときの値）。 |
+| `float maxColorComponent（読み取り）` | `float m = tint.maxColorComponent;` | r・g・b のうちいちばん大きい値。 |
 
 **名前空間 `Color`**
 
@@ -969,6 +1279,7 @@ X・Y・Z の 3 成分を持つ値型。位置や方向、速度などに使う�
 | `Color Lerp(const Color&in a, const Color&in b, float t)` | `Color tint = Color::Lerp(Color::red, Color::blue, 0.5f);` | 色同士を 0～1 に制限した割合で線形補間する。 |
 | `Color LerpUnclamped(const Color&in a, const Color&in b, float t)` | `Color tint = Color::LerpUnclamped(Color::red, Color::blue, 1.25f);` | 0～1 の範囲外も使える色の線形補間。 |
 | `Color HSVToRGB(float h, float s, float v)` | `Color tint = Color::HSVToRGB(0.33f, 1.0f, 1.0f);` | 色相・彩度・明度をそれぞれ 0～1 の値で渡し、RGB の色を得る。 |
+| `void RGBToHSV(const Color&in rgbColor, float&out H, float&out S, float&out V)` | `float h, s, v; Color::RGBToHSV(tint, h, s, v);` | 色を色相・彩度・明度（どれも 0〜1）に分ける。 |
 | `const Color white` | `Color value = Color::white;` | 白。 |
 | `const Color black` | `Color value = Color::black;` | 黒。 |
 | `const Color clear` | `Color value = Color::clear;` | RGBA がすべて 0 の透明色。 |
@@ -979,6 +1290,77 @@ X・Y・Z の 3 成分を持つ値型。位置や方向、速度などに使う�
 | `const Color cyan` | `Color value = Color::cyan;` | シアン。 |
 | `const Color magenta` | `Color value = Color::magenta;` | マゼンタ。 |
 | `const Color gray` | `Color value = Color::gray;` | 灰色。 |
+
+### Matrix4x4
+
+4×4 の行列。座標の変換に使う。普段は Transform の `localToWorldMatrix` などから受け取る。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Matrix4x4()` / `Matrix4x4(column0, column1, column2, column3)` | `Matrix4x4 m(c0, c1, c2, c3);` | 列（`Vector4`）を 4 つ並べて作る。 |
+| `Vector4 GetColumn(int index) const` / `void SetColumn(int index, const Vector4&in column)` | `Vector4 c = m.GetColumn(3);` | 列を読み書きする。 |
+| `Vector4 GetRow(int index) const` / `void SetRow(int index, const Vector4&in row)` | `Vector4 r = m.GetRow(0);` | 行を読み書きする。 |
+| `Matrix4x4 * Matrix4x4`、`Matrix4x4 * Vector4` | `Matrix4x4 combined = parent * child;` | 行列どうし、行列とベクトルの掛け算。 |
+| `Vector3 MultiplyPoint(const Vector3&in point) const` | `Vector3 world = m.MultiplyPoint(local);` | 点を変換する（移動も含む）。 |
+| `Vector3 MultiplyPoint3x4(const Vector3&in point) const` | `Vector3 world = m.MultiplyPoint3x4(local);` | 射影のない行列での点の変換。`MultiplyPoint` より速い。 |
+| `Vector3 MultiplyVector(const Vector3&in vector) const` | `Vector3 dir = m.MultiplyVector(Vector3::forward);` | 向きを変換する（移動は含まない）。 |
+| `Vector3 GetPosition() const` | `Vector3 p = m.GetPosition();` | 移動の成分。 |
+| `Quaternion rotation` / `Vector3 lossyScale`（読み取り） | `Quaternion q = m.rotation;` | 回転と拡大率の成分。 |
+| `Matrix4x4 inverse` / `Matrix4x4 transpose`（読み取り） | `Matrix4x4 back = m.inverse;` | 逆行列、転置行列。 |
+| `float determinant` / `bool isIdentity`（読み取り） | `bool none = m.isIdentity;` | 行列式、単位行列か。 |
+| `float m00` 〜 `m33` | `float x = m.m03;` | 各要素（`m行列` の順）。 |
+| `string ToString() const` | `Debug::Log(m.ToString());` | 要素を文字列にする。 |
+
+**名前空間 `Matrix4x4`**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Matrix4x4 TRS(const Vector3&in pos, const Quaternion&in q, const Vector3&in s)` | `Matrix4x4 m = Matrix4x4::TRS(p, q, Vector3::one);` | 移動・回転・拡大率から行列を作る。 |
+| `Translate` / `Rotate` / `Scale` | `Matrix4x4 m = Matrix4x4::Translate(Vector3(0, 1, 0));` | 移動だけ・回転だけ・拡大率だけの行列。 |
+| `Inverse` / `Transpose` | `Matrix4x4 inv = Matrix4x4::Inverse(m);` | 逆行列、転置行列。 |
+| `const Matrix4x4 identity` / `zero` | `Matrix4x4 m = Matrix4x4::identity;` | 単位行列、すべて 0 の行列。 |
+
+### Rect
+
+2 次元の四角（位置と大きさ）。UI や Sprite の範囲に使う。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Rect()` / `Rect(float x, float y, float width, float height)` | `Rect r(0, 0, 100, 50);` | 左下（最小の角）と大きさで作る。 |
+| `Rect(const Vector2&in position, const Vector2&in size)` | `Rect r(Vector2(10, 10), Vector2(64, 64));` | 位置と大きさのベクトルで作る。 |
+| `float x` `y` `width` `height` | `r.width = 200;` | 各値。 |
+| `Vector2 position` / `size` / `center` / `min` / `max`（読み書き） | `Vector2 c = r.center;` | 位置、大きさ、真ん中、最小の角、最大の角。 |
+| `float xMin` / `yMin` / `xMax` / `yMax`（読み書き） | `r.xMax = 300;` | 辺の位置。書くと反対の辺はそのままで大きさが変わる。 |
+| `bool Contains(const Vector2&in point) const` | `bool inside = r.Contains(Vector2(5, 5));` | 点が中にあるか（`Vector3` も渡せる。z は無視）。 |
+| `bool Overlaps(const Rect&in other) const` | `bool hit = a.Overlaps(b);` | 2 つの四角が重なるか。 |
+| `string ToString() const` | `Debug::Log(r.ToString());` | 値を文字列にする。 |
+
+**名前空間 `Rect`**
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Rect MinMaxRect(float xmin, float ymin, float xmax, float ymax)` | `Rect r = Rect::MinMaxRect(0, 0, 10, 5);` | 辺の位置から作る。 |
+| `Vector2 NormalizedToPoint(const Rect&in rectangle, const Vector2&in normalizedRectCoordinates)` | `Vector2 p = Rect::NormalizedToPoint(r, Vector2(0.5f, 0.5f));` | 四角の中の割合（0〜1）を位置に直す。 |
+| `Vector2 PointToNormalized(const Rect&in rectangle, const Vector2&in point)` | `Vector2 t = Rect::PointToNormalized(r, p);` | 位置を四角の中の割合（0〜1）に直す。 |
+| `const Rect zero` | `Rect r = Rect::zero;` | すべて 0 の四角。 |
+
+### Bounds
+
+ワールドの軸にそろえた箱（中心と大きさ）。`Collider.bounds` や `Mesh.bounds` で受け取る。
+
+| API | 用例 | 解説 |
+| --- | --- | --- |
+| `Bounds()` / `Bounds(const Vector3&in center, const Vector3&in size)` | `Bounds b(Vector3::zero, Vector3(2, 2, 2));` | 中心と大きさで作る。 |
+| `Vector3 center` / `Vector3 extents` | `Vector3 half = b.extents;` | 中心、大きさの半分。 |
+| `Vector3 size` / `min` / `max`（読み書き） | `Vector3 top = b.max;` | 大きさ、最小の角、最大の角。 |
+| `void SetMinMax(const Vector3&in min, const Vector3&in max)` | `b.SetMinMax(Vector3::zero, Vector3::one);` | 角の位置で設定する。 |
+| `bool Contains(const Vector3&in point) const` | `bool inside = b.Contains(p);` | 点が中にあるか。 |
+| `bool Intersects(const Bounds&in bounds) const` | `bool hit = a.Intersects(b);` | 2 つの箱が重なるか。 |
+| `Vector3 ClosestPoint(const Vector3&in point) const` | `Vector3 q = b.ClosestPoint(p);` | 箱の上で点にいちばん近い点。 |
+| `float SqrDistance(const Vector3&in point) const` | `float d2 = b.SqrDistance(p);` | 点までの距離の二乗（中なら 0）。 |
+| `void Encapsulate(const Vector3&in point)` / `void Encapsulate(const Bounds&in bounds)` | `b.Encapsulate(other.bounds);` | 点や箱を含むように広げる。 |
+| `void Expand(float amount)` | `b.Expand(0.5f);` | 各辺を広げる（大きさに `amount` を足す）。 |
+| `string ToString() const` | `Debug::Log(b.ToString());` | 値を文字列にする。 |
 
 ### Mathf
 
@@ -1179,6 +1561,108 @@ CharacterController.Move が返す衝突方向。複数方向を同時に表せ�
 | `CollisionFlags::Sides = 1` | `bool contact = (int(flags) & int(CollisionFlags::Sides)) != 0;` | 側面に接触した。 |
 | `CollisionFlags::Above = 2` | `bool contact = (int(flags) & int(CollisionFlags::Above)) != 0;` | 上側に接触した。 |
 | `CollisionFlags::Below = 4` | `bool contact = (int(flags) & int(CollisionFlags::Below)) != 0;` | 下側に接触した。 |
+
+### QueryTriggerInteraction
+
+`Physics` の問い合わせがトリガーの Collider に当たるか。
+
+| 値 | 解説 |
+| --- | --- |
+| `UseGlobal = 0` | `Physics::queriesHitTriggers` に従う（既定）。 |
+| `Ignore = 1` | トリガーには当てない。 |
+| `Collide = 2` | トリガーにも当てる。 |
+
+### RigidbodyConstraints
+
+Rigidbody の動きを軸ごとに止める。`|` で組み合わせる。
+
+| 値 | 解説 |
+| --- | --- |
+| `None = 0` | 止めない。 |
+| `FreezePositionX = 2` / `FreezePositionY = 4` / `FreezePositionZ = 8` | その軸の移動を止める。 |
+| `FreezeRotationX = 16` / `FreezeRotationY = 32` / `FreezeRotationZ = 64` | その軸まわりの回転を止める。 |
+| `FreezePosition = 14` | 移動をすべて止める。 |
+| `FreezeRotation = 112` | 回転をすべて止める（転ばないキャラクターなど）。 |
+| `FreezeAll = 126` | すべて止める。 |
+
+### RigidbodyInterpolation
+
+| 値 | 解説 |
+| --- | --- |
+| `None = 0` | 補間しない。 |
+| `Interpolate = 1` | 前の物理の 1 歩との間を補間して描く。動きがなめらかになり、少し遅れて見える。 |
+| `Extrapolate = 2` | 速度から次の位置を予想して描く。 |
+
+### CollisionDetectionMode
+
+| 値 | 解説 |
+| --- | --- |
+| `Discrete = 0` | 物理の 1 歩ごとの位置だけで当たりを調べる（既定、軽い）。 |
+| `Continuous = 1` / `ContinuousDynamic = 2` / `ContinuousSpeculative = 3` | 1 歩のあいだの動きも調べて、速い物体のすり抜けを防ぐ。 |
+
+### PhysicsMaterialCombine
+
+ぶつかった 2 つの PhysicsMaterial の値の組み合わせ方。
+
+| 値 | 解説 |
+| --- | --- |
+| `Average = 0` | 平均（既定）。 |
+| `Minimum = 1` | 小さいほう。 |
+| `Multiply = 2` | 掛け算。 |
+| `Maximum = 3` | 大きいほう。 |
+
+### LightType
+
+| 値 | 解説 |
+| --- | --- |
+| `Spot = 0` | 1 点から円すい形に照らす。 |
+| `Directional = 1` | 太陽のように、一定の向きから全体を照らす。 |
+| `Point = 2` | 1 点から全方向に照らす。 |
+
+### WrapMode
+
+アニメーションが最後まで行ったときの動き。
+
+| 値 | 解説 |
+| --- | --- |
+| `Default = 0` | クリップの設定に従う。 |
+| `Once = 1` | 1 回で止まる。 |
+| `Loop = 2` | 先頭から繰り返す。 |
+| `PingPong = 3` | 行ったり来たりする。 |
+| `ClampForever = 4` | 最後の形のまま止まる（再生中のまま）。 |
+
+### TextAlignmentOptions
+
+Text の寄せ方。
+
+| 値 | 解説 |
+| --- | --- |
+| `TopLeft = 0` / `Top = 1` / `TopRight = 2` | 上の左・中央・右。 |
+| `Left = 3` / `Center = 4` / `Right = 5` | 真ん中の高さの左・中央・右。 |
+| `BottomLeft = 6` / `Bottom = 7` / `BottomRight = 8` | 下の左・中央・右。 |
+
+### ParticleSystemSimulationSpace
+
+| 値 | 解説 |
+| --- | --- |
+| `Local = 0` | 粒が GameObject と一緒に動く。 |
+| `World = 1` | 出たあとの粒はワールドに残る（煙の軌跡など）。 |
+
+### ParticleSystemShapeType
+
+| 値 | 解説 |
+| --- | --- |
+| `Sphere = 0` | 球から外向きに出す。 |
+| `Cone = 1` | 円すいの向き（GameObject の前方向）に出す。 |
+
+### ParticleSystemSortMode
+
+| 値 | 解説 |
+| --- | --- |
+| `None = 0` | 並べ替えない。 |
+| `Distance = 1` | カメラから遠い粒から描く。 |
+| `OldestInFront = 2` | 古い粒を手前に描く。 |
+| `YoungestInFront = 3` | 新しい粒を手前に描く。 |
 
 ### FullScreenMode
 

@@ -16,6 +16,10 @@ DXGI_FORMAT ConvertFormat(Format format);
 //
 DXGI_FORMAT ConvertFormatNonSrgb(DXGI_FORMAT format);
 
+DXGI_FORMAT ConvertFormatToTypeless(DXGI_FORMAT format);
+
+DXGI_FORMAT ConvertFormatDepthToSrv(DXGI_FORMAT format);
+
 D3D12_FILL_MODE ConvertFillMode(FillMode value);
 
 D3D12_CULL_MODE ConvertCullMode(CullMode value);

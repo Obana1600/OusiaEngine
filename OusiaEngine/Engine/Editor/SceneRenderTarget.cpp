@@ -100,7 +100,7 @@ void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	depthDesc.width = width;
 	depthDesc.height = height;
 	depthDesc.format = Graphics::Format::D32_FLOAT;
-	depthDesc.bindFlags = Graphics::BindFlag::DEPTH_STENCIL;
+	depthDesc.bindFlags = Graphics::BindFlag::DEPTH_STENCIL | Graphics::BindFlag::SHADER_RESOURCE;
 	depthDesc.layout = Graphics::ResourceState::DEPTHSTENCIL;
 	depthDesc.clear.depthStencil.depth = 1.0f;
 	if (!device->CreateTexture(&depthDesc, nullptr, &depth_)) {

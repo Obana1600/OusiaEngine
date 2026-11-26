@@ -59,6 +59,32 @@ DXGI_FORMAT ou::Graphics::ConvertFormatNonSrgb(DXGI_FORMAT format) {
 }
 
 
+DXGI_FORMAT ou::Graphics::ConvertFormatToTypeless(DXGI_FORMAT format) {
+	switch (format) {
+		case DXGI_FORMAT_D32_FLOAT:
+			return DXGI_FORMAT_R32_TYPELESS;
+		case DXGI_FORMAT_D24_UNORM_S8_UINT:
+			return DXGI_FORMAT_R24G8_TYPELESS;
+
+		default:
+			return format;
+	}
+}
+
+
+DXGI_FORMAT ou::Graphics::ConvertFormatDepthToSrv(DXGI_FORMAT format) {
+	switch (format) {
+		case DXGI_FORMAT_D32_FLOAT:
+			return DXGI_FORMAT_R32_FLOAT;
+		case DXGI_FORMAT_D24_UNORM_S8_UINT:
+			return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+
+		default:
+			return format;
+	}
+}
+
+
 D3D12_FILL_MODE ou::Graphics::ConvertFillMode(FillMode value) {
 	switch (value) {
 		case FillMode::WIREFRAME:

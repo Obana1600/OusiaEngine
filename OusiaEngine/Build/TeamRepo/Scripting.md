@@ -1,6 +1,6 @@
 # スクリプトの書き方
 
-[エディターガイド](README.md) · [スクリプト API リファレンス](Script-API.md)
+[エディターガイド](README.md) · [スクリプト API リファレンス](Script-API.md) · [シェーダとポストエフェクトの書き方](Shaders.md)
 
 ゲーム内の GameObject に処理を追加するときは、AngelScript の `MonoBehavior` を継承します。たとえば同じ Cube を、入力に反応して動く Cube にできます。
 
@@ -202,9 +202,9 @@ class JumpOnSpace : MonoBehavior {
 
 | 保存できるフィールド | 割り当て方 |
 | --- | --- |
-| `bool`、`int`、`uint`、`float`、`string`、`Vector2`、`Vector3`、`Quaternion`、`Color` | Inspector で直接編集する。 |
-| `GameObject@`、`Transform@`、`Rigidbody@` など公開済み Component の型 | Hierarchy から対象の GameObject をドラッグする。`GameObject@` には Project から Prefab も渡せる。 |
-| `Material@`、`AudioClip@` | Project から対応するアセットをドラッグする。 |
+| `bool`、`int`、`uint`、`float`、`string`、`Vector2`、`Vector3`、`Vector4`、`Quaternion`、`Color`、`Rect` | Inspector で直接編集する。 |
+| `GameObject@`、`Transform@`、`Rigidbody@`、`Camera@` など、API リファレンスにある Component の型 | Hierarchy から対象の GameObject をドラッグする。`GameObject@` には Project から Prefab も渡せる。 |
+| `Material@`、`AudioClip@`、`Texture2D@`、`Sprite@`、`FontAsset@`、`Mesh@`、`Shader@`、`PhysicsMaterial@`、`SkeletalAnimationClip@`、`VolumeProfile@` | Project から対応するアセットをドラッグする。 |
 
 `array<T>`、列挙型、ユーザーが定義したスクリプトクラスの参照は、スクリプトの処理内で扱えます。Inspector から保存できる型は上の表のとおりです。
 
@@ -229,6 +229,7 @@ class JumpOnSpace : MonoBehavior {
 | `OnTriggerEnter(Collider@ other)` | `void OnTriggerEnter(Collider@ other) { Debug::Log(other.name); }` | トリガーとの重なりが始まったとき。相手の Collider を受け取る。 |
 | `OnTriggerStay(Collider@ other)` | `void OnTriggerStay(Collider@ other) { Debug::Log(other.name); }` | 重なりが続いているとき。ログは動作確認用で、頻繁に出る。 |
 | `OnTriggerExit(Collider@ other)` | `void OnTriggerExit(Collider@ other) { Debug::Log("left trigger"); }` | 重なりが終わったとき。 |
+| `OnControllerColliderHit(ControllerColliderHit hit)` | `void OnControllerColliderHit(ControllerColliderHit hit) { if (hit.rigidbody !is null) { hit.rigidbody.AddForce(hit.moveDirection, ForceMode::Impulse); } }` | CharacterController の `Move` で何かに触れたとき。CharacterController と同じ GameObject のスクリプトに、触れた Collider ごとに 1 回呼ばれる。例は押した箱を動かす。 |
 | `OnValidate()` | `void OnValidate() { radius = Mathf::Max(0.0f, radius); }` | Inspector などで保存対象の値を検証するとき。例の `radius` は `float` フィールド。 |
 | `OnDrawGizmos()` | `void OnDrawGizmos() { Gizmos::DrawRay(transform.position, transform.forward); }` | エディターで補助線を描くとき。例では前方向を描く。 |
 | `OnDrawGizmosSelected()` | `void OnDrawGizmosSelected() { Gizmos::DrawWireSphere(transform.position, 2.0f); }` | 選択中だけ補助表示を描くとき。例では半径 2 の目安を描く。 |

@@ -593,11 +593,6 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateBuffer(const GpuBufferDesc *desc, 
 bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, const SubresourceData *initialData, Texture *texture) {
 	HRESULT hr{};
 
-	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL) && HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE)) {
-		Log::Error("深度テクスチャの SRV にはまだ対応していません。");
-		return false;
-	}
-
 	auto is = std::make_shared<Texture_DX12>();
 	is->allocationHandler = allocationHandler_;
 	texture->internalState = is;
@@ -605,6 +600,10 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, c
 	texture->mappedData = nullptr;
 	texture->mappedSize = 0;
 	texture->desc = *desc;
+
+	// フォーマット
+	const auto format = ConvertFormat(desc->format);
+	const bool isDepthSrv = HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL) && HasFlag(desc->bindFlags, BindFlag::SHADER_RESOURCE);
 
 	// リソースの設定
 	D3D12_RESOURCE_DESC resDesc{};
@@ -622,10 +621,9 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, c
 	resDesc.Alignment = 0;
 	resDesc.Width = desc->width;
 	resDesc.Height = desc->height;
-	resDesc.DepthOrArraySize = static_cast<UINT16>(
-		desc->type == TextureDesc::Type::TEXTURE_3D ? desc->depth : desc->arraySize);
+	resDesc.DepthOrArraySize = static_cast<UINT16>(desc->type == TextureDesc::Type::TEXTURE_3D ? desc->depth : desc->arraySize);
 	resDesc.MipLevels = static_cast<UINT16>(desc->mipLevels);
-	resDesc.Format = ConvertFormat(desc->format);
+	resDesc.Format = isDepthSrv ? ConvertFormatToTypeless(format) : format;
 	resDesc.SampleDesc = {desc->sampleCount, 0};
 	resDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN; // GPU に任せる
 	resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
@@ -644,7 +642,7 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, c
 
 	// クリア値
 	D3D12_CLEAR_VALUE optimizedClear{};
-	optimizedClear.Format = resDesc.Format;
+	optimizedClear.Format = format;
 	const D3D12_CLEAR_VALUE *pOptimizedClear = nullptr;
 	if (HasFlag(desc->bindFlags, BindFlag::RENDER_TARGET)) {
 		std::memcpy(optimizedClear.Color, desc->clear.color, sizeof(optimizedClear.Color));
@@ -740,7 +738,7 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, c
 		}
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-		srvDesc.Format = resDesc.Format;
+		srvDesc.Format = HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL) ? ConvertFormatDepthToSrv(format) : format;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		if (desc->type == TextureDesc::Type::TEXTURE_2D && desc->arraySize == 1) {
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -763,7 +761,12 @@ bool ou::Graphics::GraphicsDevice_DX12::CreateTexture(const TextureDesc *desc, c
 	}
 	if (HasFlag(desc->bindFlags, BindFlag::DEPTH_STENCIL)) {
 		is->dsv = allocationHandler_->descriptorDsv.Allocate();
-		device_->CreateDepthStencilView(is->resource.Get(), nullptr, is->dsv);
+
+		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+		dsvDesc.Format = format;
+		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		dsvDesc.Texture2D.MipSlice = 0;
+		device_->CreateDepthStencilView(is->resource.Get(), &dsvDesc, is->dsv);
 	}
 
 	return true;
