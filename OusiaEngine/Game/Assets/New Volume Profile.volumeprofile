@@ -5,12 +5,12 @@
 			"active": true,
 			"mode": {
 				"overrideState": true,
-				"value": "Neutral"
+				"value": "ACES"
 			}
 		},
 		{
 			"$type": "Vignette",
-			"active": true,
+			"active": false,
 			"color": {
 				"overrideState": true,
 				"value": [
@@ -49,7 +49,7 @@
 			},
 			"intensity": {
 				"overrideState": true,
-				"value": 100.0
+				"value": 10.0
 			},
 			"scatter": {
 				"overrideState": true,
@@ -114,7 +114,7 @@
 		},
 		{
 			"$type": "ColorAdjustments",
-			"active": true,
+			"active": false,
 			"postExposure": {
 				"overrideState": true,
 				"value": 0.0

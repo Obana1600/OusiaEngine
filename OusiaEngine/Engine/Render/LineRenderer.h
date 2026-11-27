@@ -50,7 +50,7 @@ public: // メンバ関数
 	void LateUpdate() override;
 	void Serialize(Serializer &serializer) override;
 
-	void Draw(Graphics::CommandList cmd) const override;
+	void Draw(std::string_view lightMode, Graphics::CommandList cmd) const override;
 
 	void SetPositionCount(uint32_t count);
 	uint32_t GetPositionCount() const;

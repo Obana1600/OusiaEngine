@@ -42,6 +42,8 @@
 					"sub": "Material/Default"
 				}
 			],
+			"shadowCastingMode": "On",
+			"receiveShadows": true,
 			"mesh": {
 				"guid": "a911f1e376e4444db998df7550f8ff74",
 				"sub": "Mesh/Cylinder"

@@ -60,7 +60,9 @@ Scene *ou::EditorSceneManager::NewScene(NewSceneSetup setup) {
 		camera->SetTag(TagManager::kMainCamera);
 
 		auto *light = scene->CreateGameObject("Directional Light");
-		light->AddComponent<Light>()->SetType(LightType::Directional);
+		auto *lightComponent = light->AddComponent<Light>();
+		lightComponent->SetType(LightType::Directional);
+		lightComponent->SetShadows(LightShadows::Soft);
 		light->GetTransform()->SetLocalPosition({0.0f, 3.0f, 0.0f});
 		light->GetTransform()->SetLocalEulerAngles(Vector3(50.0f, -30.0f, 0.0f) * Mathf::Deg2Rad);
 	}

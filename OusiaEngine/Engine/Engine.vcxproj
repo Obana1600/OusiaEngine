@@ -44,6 +44,7 @@
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
+    <ClInclude Include="Render\MainLightShadowCasterPass.h" />
     <ClInclude Include="PostProcess\Builtin\Exposure.h" />
     <ClInclude Include="Render\Asset\ComputeShader.h" />
     <ClInclude Include="Asset\Importer\ComputeShaderImporter.h" />
@@ -260,6 +261,7 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="Render\MainLightShadowCasterPass.cpp" />
     <ClCompile Include="PostProcess\Builtin\Exposure.cpp" />
     <ClCompile Include="Render\Asset\ComputeShader.cpp" />
     <ClCompile Include="Asset\Importer\ComputeShaderImporter.cpp" />
@@ -474,6 +476,7 @@
     <None Include="EngineAssets\Shader\Particle.hlsli" />
     <None Include="EngineAssets\Shader\PerCamera.hlsli" />
     <None Include="EngineAssets\Shader\PerFrame.hlsli" />
+    <None Include="EngineAssets\Shader\Shadows.hlsli" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
     <None Include="EngineAssets\Shader\Standard.hlsli" />
     <None Include="EngineAssets\Shader\Text.hlsli" />
@@ -688,6 +691,17 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\ShadowCaster.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <FileType>Document</FileType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
     </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">

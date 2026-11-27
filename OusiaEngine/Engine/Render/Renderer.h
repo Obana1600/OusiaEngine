@@ -5,6 +5,7 @@
 #include "Scene/Behavior.h"
 
 #include <memory>
+#include <string_view>
 #include <vector>
 
 
@@ -13,6 +14,15 @@ namespace ou {
 // 前方宣言
 class Mesh;
 class Material;
+
+
+enum class ShadowCastingMode : uint32_t {
+	Off,
+	On,
+	TwoSided,	 // 影を描くときだけ裏面も描く
+	ShadowsOnly, // 影だけを落とし、物そのものは描かない
+};
+
 
 class Renderer: public Behavior {
 public: // 定数
@@ -29,7 +39,8 @@ public: // インナークラス
 
 		uint32_t boneMatrixBufferIndex = kNoSkinning;
 		uint32_t boneWeightBufferIndex = kNoSkinning;
-		uint32_t padding[2];
+		uint32_t receiveShadows;
+		uint32_t padding;
 	};
 
 
@@ -39,9 +50,10 @@ public: // メンバ関数
 	void OnDestroy() override;
 	void Serialize(Serializer &serializer) override;
 
-	virtual void Draw(Graphics::CommandList cmd) const = 0;
+	virtual void Draw(std::string_view lightMode, Graphics::CommandList cmd) const = 0;
 
 	virtual int GetRenderQueue() const;
+
 
 	void SetSharedMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> &GetSharedMaterial() const;
@@ -53,10 +65,17 @@ public: // メンバ関数
 	const std::vector<std::shared_ptr<Material>> &GetMaterials();
 
 
+	void SetShadowCastingMode(ShadowCastingMode shadowCastingMode);
+	ShadowCastingMode GetShadowCastingMode() const;
+
+	void SetReceiveShadows(bool receiveShadows);
+	bool GetReceiveShadows() const;
+
+
 protected: // メンバ関数
 
 	PerDraw MakePerDraw() const;
-	void DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::CommandList cmd) const;
+	void DrawMesh(Mesh &mesh, const PerDraw &perDraw, std::string_view lightMode, Graphics::CommandList cmd) const;
 
 	Material *FindMaterialForSubMesh(uint32_t subMeshIndex) const;
 
@@ -66,9 +85,11 @@ protected: // メンバ関数
 private: // メンバ変数
 
 	std::vector<std::shared_ptr<Material>> materials_;
+	std::vector<std::shared_ptr<Material>> serializedMaterials_;
 	std::vector<bool> isInstanced_;
 
-	std::vector<std::shared_ptr<Material>> serializedMaterials_; // 保存する形（複製は None）。読んだものは AwakeFromLoad で付け替える
+	ShadowCastingMode shadowCastingMode_ = ShadowCastingMode::On;
+	bool receiveShadows_ = true;
 
 
 private: // メンバ関数

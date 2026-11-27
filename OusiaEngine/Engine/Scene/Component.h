@@ -25,7 +25,6 @@ public: // メンバ関数
 	virtual void LateUpdate() {};
 	virtual void OnDestroy() {};
 
-	// Unity の OnApplicationQuit。ゲームを閉じるとき（エディタでは Play を止めるとき）に、OnDisable・OnDestroy より先に呼ぶ
 	virtual void OnApplicationQuit() {};
 
 	virtual void OnTriggerEnter(Collider *) {};
@@ -37,12 +36,8 @@ public: // メンバ関数
 	virtual void OnCollisionExit(const Collision &) {};
 	virtual void OnControllerColliderHit(const ControllerColliderHit &) {};
 
-	// Unity の OnValidate。エディタだけで、Inspector で値を変えたときと、シーンを読んだときに呼ぶ
-	// Awake より先に呼ばれることもあるので、ほかのコンポーネントがまだ準備できていなくても落ちないように書く
 	virtual void OnValidate() {};
 
-	// Unity の OnDrawGizmos / OnDrawGizmosSelected。エディタの Scene ビューを描くたびに呼ぶ（Play 中でも）
-	// この中でだけ Gizmos で描ける。Selected は、この GameObject か親を選んでいるときだけ呼ぶ
 	virtual void OnDrawGizmos() {};
 	virtual void OnDrawGizmosSelected() {};
 

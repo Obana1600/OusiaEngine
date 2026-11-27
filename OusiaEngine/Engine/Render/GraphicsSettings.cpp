@@ -26,6 +26,8 @@ constexpr std::string_view kKeys[] = {
 	"defaultVolumeProfile",
 	"rendererFeatures",
 	"opaqueDownsampling",
+	"mainLightShadowmapResolution",
+	"shadowDistance",
 };
 
 std::optional<std::filesystem::path> FindPath() {
@@ -43,7 +45,10 @@ void ou::GraphicsSettings::Serialize(Serializer &serializer) {
 	serializer.Array("rendererFeatures", rendererFeatures_, [&](FullScreenPassRendererFeature &feature) {
 		serializer.Struct("", [&] { feature.Serialize(serializer); });
 	});
+
 	serializer.Enum("opaqueDownsampling", opaqueDownsampling_);
+	serializer.Enum("mainLightShadowmapResolution", mainLightShadowmapResolution_);
+	serializer.Field("shadowDistance", shadowDistance_);
 }
 
 

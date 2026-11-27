@@ -1,9 +1,9 @@
 #include "Light.h"
 #include "Math/Mathf.h"
+#include "Render/Gizmos.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
-#include "Render/Gizmos.h"
 
 using namespace ou;
 
@@ -27,6 +27,53 @@ void ou::Light::Serialize(Serializer &serializer) {
 	serializer.Field("range", range_);
 	serializer.Field("spotAngle", spotAngle_);
 	serializer.Field("innerSpotAngle", innerSpotAngle_);
+
+	serializer.Enum("shadows", shadows_);
+	serializer.Field("shadowStrength", shadowStrength_);
+	serializer.Field("shadowBias", shadowBias_);
+	serializer.Field("shadowNormalBias", shadowNormalBias_);
+}
+
+
+void ou::Light::OnDrawGizmos() {
+	Gizmos::DrawIcon(GetTransform()->GetWorldPosition(), "Light", true, Color(color_.r, color_.g, color_.b, 1.0f));
+}
+
+
+void ou::Light::OnDrawGizmosSelected() {
+	const auto *transform = GetTransform();
+	Gizmos::SetColor(Color(1.0f, 1.0f, 0.53f, 0.7f));
+	Gizmos::SetMatrix(Matrix4x4::SRT(Vector3::One, transform->GetWorldRotation(), transform->GetWorldPosition()));
+
+	switch (type_) {
+		case LightType::Directional: {
+			constexpr float kRadius = 0.5f;
+			constexpr float kLength = 2.0f;
+			Gizmos::DrawWireDisc(Vector3::Zero, Vector3::Forward, kRadius);
+			for (int i = 0; i < 8; i++) {
+				const auto angle = static_cast<float>(i) * 45.0f * Mathf::Deg2Rad;
+				const Vector3 start{Mathf::Cos(angle) * kRadius, Mathf::Sin(angle) * kRadius, 0.0f};
+				Gizmos::DrawRay(start, Vector3::Forward * kLength);
+			}
+			Gizmos::DrawRay(Vector3::Zero, Vector3::Forward * kLength);
+			break;
+		}
+
+		case LightType::Point:
+			Gizmos::DrawWireSphere(Vector3::Zero, range_);
+			break;
+
+		case LightType::Spot: {
+			const auto radius = range_ * Mathf::Tan(spotAngle_ * 0.5f * Mathf::Deg2Rad);
+			const auto end = Vector3::Forward * range_;
+			Gizmos::DrawWireDisc(end, Vector3::Forward, radius);
+			for (const auto &side : {Vector3::Right, Vector3::Left, Vector3::Up, Vector3::Down}) {
+				Gizmos::DrawLine(Vector3::Zero, end + side * radius);
+			}
+			Gizmos::DrawLine(Vector3::Zero, end);
+			break;
+		}
+	}
 }
 
 
@@ -112,45 +159,41 @@ float ou::Light::GetInnerSpotAngle() const {
 }
 
 
-void ou::Light::OnDrawGizmos() {
-	// Unity と同じく、アイコンをライトの色で染める
-	Gizmos::DrawIcon(GetTransform()->GetWorldPosition(), "Light", true, Color(color_.r, color_.g, color_.b, 1.0f));
+void ou::Light::SetShadows(LightShadows shadows) {
+	shadows_ = shadows;
 }
 
 
-void ou::Light::OnDrawGizmosSelected() {
-	const auto *transform = GetTransform();
-	Gizmos::SetColor(Color(1.0f, 1.0f, 0.53f, 0.7f));
-	// 位置と向きだけ使う（大きさは掛けない）
-	Gizmos::SetMatrix(Matrix4x4::SRT(Vector3::One, transform->GetWorldRotation(), transform->GetWorldPosition()));
+LightShadows ou::Light::GetShadows() const {
+	return shadows_;
+}
 
-	switch (type_) {
-		case LightType::Directional: {
-			// 光の向き（+Z）に伸びる、円筒に並んだ線
-			constexpr float kRadius = 0.5f;
-			constexpr float kLength = 2.0f;
-			Gizmos::DrawWireDisc(Vector3::Zero, Vector3::Forward, kRadius);
-			for (int i = 0; i < 8; i++) {
-				const auto angle = static_cast<float>(i) * 45.0f * Mathf::Deg2Rad;
-				const Vector3 start{Mathf::Cos(angle) * kRadius, Mathf::Sin(angle) * kRadius, 0.0f};
-				Gizmos::DrawRay(start, Vector3::Forward * kLength);
-			}
-			Gizmos::DrawRay(Vector3::Zero, Vector3::Forward * kLength);
-			break;
-		}
-		case LightType::Point:
-			Gizmos::DrawWireSphere(Vector3::Zero, range_);
-			break;
-		case LightType::Spot: {
-			// 先端から range の先の円まで 4 本の線
-			const auto radius = range_ * Mathf::Tan(spotAngle_ * 0.5f * Mathf::Deg2Rad);
-			const auto end = Vector3::Forward * range_;
-			Gizmos::DrawWireDisc(end, Vector3::Forward, radius);
-			for (const auto &side : {Vector3::Right, Vector3::Left, Vector3::Up, Vector3::Down}) {
-				Gizmos::DrawLine(Vector3::Zero, end + side * radius);
-			}
-			Gizmos::DrawLine(Vector3::Zero, end);
-			break;
-		}
-	}
+
+void ou::Light::SetShadowStrength(float shadowStrength) {
+	shadowStrength_ = shadowStrength;
+}
+
+
+float ou::Light::GetShadowStrength() const {
+	return shadowStrength_;
+}
+
+
+void ou::Light::SetShadowBias(float shadowBias) {
+	shadowBias_ = shadowBias;
+}
+
+
+float ou::Light::GetShadowBias() const {
+	return shadowBias_;
+}
+
+
+void ou::Light::SetShadowNormalBias(float shadowNormalBias) {
+	shadowNormalBias_ = shadowNormalBias;
+}
+
+
+float ou::Light::GetShadowNormalBias() const {
+	return shadowNormalBias_;
 }

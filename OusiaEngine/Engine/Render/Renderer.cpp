@@ -26,18 +26,18 @@ void ou::Renderer::OnDestroy() {
 void ou::Renderer::Serialize(Serializer &serializer) {
 	Behavior::Serialize(serializer);
 
-	// 複製したマテリアルは保存できないので None にして運ぶ。読んだものは AwakeFromLoad で付け替える
 	serializedMaterials_ = MakeAssetMaterials();
 	serializer.Array("materials", serializedMaterials_, [&](std::shared_ptr<Material> &material) {
 		serializer.Asset("", material);
 	});
+	serializer.Enum("shadowCastingMode", shadowCastingMode_);
+	serializer.Field("receiveShadows", receiveShadows_);
 }
 
 
 void ou::Renderer::AwakeFromLoad() {
 	Behavior::AwakeFromLoad();
 
-	// 変わっていなければ、複製したマテリアルをそのまま使い続ける
 	if (serializedMaterials_ != MakeAssetMaterials()) {
 		SetSharedMaterials(serializedMaterials_);
 	}
@@ -97,16 +97,37 @@ const std::vector<std::shared_ptr<Material>> &ou::Renderer::GetMaterials() {
 }
 
 
+void ou::Renderer::SetShadowCastingMode(ShadowCastingMode shadowCastingMode) {
+	shadowCastingMode_ = shadowCastingMode;
+}
+
+
+ShadowCastingMode ou::Renderer::GetShadowCastingMode() const {
+	return shadowCastingMode_;
+}
+
+
+void ou::Renderer::SetReceiveShadows(bool receiveShadows) {
+	receiveShadows_ = receiveShadows;
+}
+
+
+bool ou::Renderer::GetReceiveShadows() const {
+	return receiveShadows_;
+}
+
+
 Renderer::PerDraw ou::Renderer::MakePerDraw() const {
 	PerDraw constants{};
 	constants.world = GetTransform()->GetLocalToWorldMatrix();
 	constants.worldInverseTranspose = constants.world.Inverse().Transpose();
+	constants.receiveShadows = receiveShadows_ ? 1u : 0u;
 
 	return constants;
 }
 
 
-void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::CommandList cmd) const {
+void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, std::string_view lightMode, Graphics::CommandList cmd) const {
 	if (materials_.empty()) { return; }
 
 	auto *device = Graphics::GetDevice();
@@ -118,6 +139,7 @@ void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::Comman
 		const auto *material = FindMaterialForSubMesh(i);
 		if (!material || !material->GetShader()) { material = Material::sErrorMaterial_.get(); }
 
+		// マテリアルの適用
 		const auto &shader = material->GetShader();
 		if (const auto size = shader->GetPropertyBufferSize(); size > 0) {
 			const auto properties = device->AllocateGpu(size, cmd);
@@ -126,10 +148,18 @@ void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::Comman
 		} else {
 			device->BindDynamicConstantBuffer(material->MakePerMaterial(), 1, cmd);
 		}
+		auto renderStateOverride = material->GetRenderStateOverride();
+		if (lightMode == "ShadowCaster" && shadowCastingMode_ == ShadowCastingMode::TwoSided) {
+			renderStateOverride.cull = Graphics::CullMode::NONE;
+		}
 
-		for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
+		// パスごとに描画する
+		const auto &passes = shader->GetPasses();
+		for (size_t pass = 0; pass < passes.size(); pass++) {
+			if (passes[pass].lightMode != lightMode) { continue; }
+
 			const auto *pso = shader->GetPipelineState(
-				pass, material->GetRenderStateOverride(), &Mesh::GetInputLayout(), Graphics::PrimitiveTopology::TRIANGLELIST);
+				pass, renderStateOverride, &Mesh::GetInputLayout(), Graphics::PrimitiveTopology::TRIANGLELIST);
 			if (!pso) { continue; }
 
 			device->BindPipelineState(pso, cmd);

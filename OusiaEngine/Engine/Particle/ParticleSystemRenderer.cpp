@@ -159,7 +159,7 @@ void ou::ParticleSystemRenderer::AwakeFromLoad() {
 }
 
 
-void ou::ParticleSystemRenderer::Draw(Graphics::CommandList cmd) const {
+void ou::ParticleSystemRenderer::Draw(std::string_view lightMode, Graphics::CommandList cmd) const {
 	if (particleCount_ == 0) { return; }
 
 	const auto &material = GetSharedMaterial();
@@ -179,7 +179,10 @@ void ou::ParticleSystemRenderer::Draw(Graphics::CommandList cmd) const {
 
 	// Pass だけ順に描く
 	const auto &shader = material->GetShader();
-	for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
+	const auto &passes = shader->GetPasses();
+	for (size_t pass = 0; pass < passes.size(); pass++) {
+		if (passes[pass].lightMode != lightMode) { continue; }
+
 		const auto *pso = shader->GetPipelineState(
 			pass, material->GetRenderStateOverride(), nullptr, Graphics::PrimitiveTopology::TRIANGLESTRIP);
 		if (!pso) { continue; }

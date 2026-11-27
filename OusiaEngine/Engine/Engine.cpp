@@ -20,12 +20,13 @@
 #include "Render/CopyColorPass.h"
 #include "Render/CopyDepthPass.h"
 #include "Render/GraphicsSettings.h"
+#include "Render/ImmediateCommands.h"
 #include "Render/LineRenderer.h"
+#include "Render/MainLightShadowCasterPass.h"
+#include "Render/PerFrame.h"
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
 #include "Scene/TagManager.h"
-#include "Render/ImmediateCommands.h"
-#include "Render/PerFrame.h"
 #include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
@@ -264,6 +265,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	// ポストプロセス
 	GraphicsSettings::Load();
 	PostProcessPass::StaticInitialize();
+	MainLightShadowCasterPass::StaticInitialize();
 	CopyDepthPass::StaticInitialize();
 	CopyColorPass::StaticInitialize();
 
@@ -306,6 +308,7 @@ void ou::Engine::Finalize() {
 
 	// ポストプロセス
 	PostProcessPass::StaticFinalize();
+	MainLightShadowCasterPass::StaticFinalize();
 	CopyDepthPass::StaticFinalize();
 	CopyColorPass::StaticFinalize();
 
@@ -462,13 +465,13 @@ void ou::Engine::Render() {
 
 
 void ou::Engine::BindPerFrame(Graphics::CommandList cmd) {
-	PerFrame perFrame{};
+	perFrame_ = {};
 
 	const auto time = Time::GetTime();
-	perFrame.time = {time / 20.0f, time, time * 2.0f, time * 3.0f};
+	perFrame_.time = {time / 20.0f, time, time * 2.0f, time * 3.0f};
 
-	SceneManager::CollectLights(perFrame);
-	device_->BindDynamicConstantBuffer(perFrame, 3, cmd);
+	SceneManager::CollectLights(perFrame_);
+	device_->BindDynamicConstantBuffer(perFrame_, 3, cmd);
 }
 
 
@@ -483,6 +486,9 @@ void ou::Engine::FillTargetInfo(Camera::PerCamera &perCamera, const SceneRenderT
 
 
 void ou::Engine::RenderScene(const SceneRenderTarget &target, const Camera::PerCamera &perCamera, Graphics::CommandList cmd) {
+	auto perFrame = perFrame_;
+	MainLightShadowCasterPass::Render(perCamera, perFrame, cmd);
+
 	target.BeginScenePass(cmd);
 	SceneManager::RenderWithCamera(perCamera, RenderQueueRange::Opaque, cmd);
 	device_->RenderPassEnd(cmd);

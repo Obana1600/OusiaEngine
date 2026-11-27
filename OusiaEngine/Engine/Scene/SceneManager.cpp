@@ -253,6 +253,8 @@ void ou::SceneManager::Finalize() {
 
 
 void ou::SceneManager::CollectLights(PerFrame &perFrame) {
+	const auto *mainLight = FindMainLight();
+
 	perFrame.lightCount = 0;
 	for (const auto *light : sLights_) {
 		if (!light->IsActiveAndEnabled()) { continue; }
@@ -266,7 +268,38 @@ void ou::SceneManager::CollectLights(PerFrame &perFrame) {
 			break;
 		}
 
+		if (light == mainLight) { perFrame.shadowLightIndex = perFrame.lightCount; }
 		perFrame.lights[perFrame.lightCount++] = light->MakeShaderLight();
+	}
+}
+
+
+const Light *ou::SceneManager::FindMainLight() {
+	const Light *mainLight = nullptr;
+
+	// 影を落とす、最も intensity の高い Directional なライトを探す
+	for (const auto *light : sLights_) {
+		if (!light->IsActiveAndEnabled()) { continue; }
+		if (light->GetType() != LightType::Directional) { continue; }
+		if (light->GetShadows() == LightShadows::None) { continue; }
+
+		if (!mainLight || light->GetIntensity() > mainLight->GetIntensity()) {
+			mainLight = light;
+		}
+	}
+	return mainLight;
+}
+
+
+void ou::SceneManager::RenderShadowCasters(const Camera::PerCamera &lightCamera, Graphics::CommandList cmd) {
+	auto *device = Graphics::GetDevice();
+	device->BindDynamicConstantBuffer(lightCamera, 2, cmd);
+
+	for (const auto *renderer : sRenderers_) {
+		if (!renderer->IsActiveAndEnabled()) { continue; }
+		if (renderer->GetShadowCastingMode() == ShadowCastingMode::Off) { continue; }
+
+		renderer->Draw("ShadowCaster", cmd);
 	}
 }
 
@@ -279,6 +312,7 @@ void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, cons
 	auto renderers = sRenderers_;
 	std::erase_if(renderers, [&range](const auto *r) {
 		if (!r->IsActiveAndEnabled()) { return true; }
+		if (r->GetShadowCastingMode() == ShadowCastingMode::ShadowsOnly) { return true; }
 		const auto queue = r->GetRenderQueue();
 		return queue < range.lowerBound || queue > range.upperBound;
 	});
@@ -286,7 +320,7 @@ void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, cons
 		return a->GetRenderQueue() < b->GetRenderQueue();
 	});
 	for (const auto *renderer : renderers) {
-		renderer->Draw(cmd);
+		renderer->Draw({}, cmd);
 	}
 }
 

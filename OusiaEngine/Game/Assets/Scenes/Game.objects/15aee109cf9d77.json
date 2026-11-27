@@ -43,10 +43,14 @@
 				1.0,
 				1.0
 			],
-			"intensity": 1.0,
+			"intensity": 6.25,
 			"range": 10.0,
 			"spotAngle": 30.0,
-			"innerSpotAngle": 21.80208
+			"innerSpotAngle": 21.80208,
+			"shadows": "Soft",
+			"shadowStrength": 1.0,
+			"shadowBias": 1.0,
+			"shadowNormalBias": 1.0
 		}
 	]
 }

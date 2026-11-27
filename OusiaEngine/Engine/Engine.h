@@ -8,6 +8,7 @@
 #include "Platform/Window.h"
 #include "Render/Asset/ShaderModule.h"
 #include "Render/Camera.h"
+#include "Render/PerFrame.h"
 
 #include <chrono>
 #include <cstdint>
@@ -59,7 +60,9 @@ private: // メンバ変数
 	std::shared_ptr<ShaderModule> blitPs_;
 	Graphics::PipelineState blitPso_;
 
-	// フレーム
+	PerFrame perFrame_{};
+
+	// TODO: 別のクラスに責務を分けたい
 	std::chrono::steady_clock::time_point lastUpdateTime_;
 	std::chrono::steady_clock::time_point reference_;
 

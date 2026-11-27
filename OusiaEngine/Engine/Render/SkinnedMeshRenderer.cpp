@@ -36,7 +36,7 @@ void ou::SkinnedMeshRenderer::AwakeFromLoad() {
 }
 
 
-void ou::SkinnedMeshRenderer::Draw(Graphics::CommandList cmd) const {
+void ou::SkinnedMeshRenderer::Draw(std::string_view lightMode, Graphics::CommandList cmd) const {
 	if (!mesh_ || mesh_->GetBoneWeights().empty() || bones_.empty()) { return; }
 	if (mesh_->GetBindPoses().size() != bones_.size()) { return; }
 
@@ -50,7 +50,7 @@ void ou::SkinnedMeshRenderer::Draw(Graphics::CommandList cmd) const {
 	auto perDraw = MakePerDraw();
 	perDraw.boneMatrixBufferIndex = static_cast<uint32_t>(device->GetDescriptorIndex(&buffer, Graphics::ViewType::SRV));
 	perDraw.boneWeightBufferIndex = mesh_->GetBoneWeightBufferIndex();
-	DrawMesh(*mesh_, perDraw, cmd);
+	DrawMesh(*mesh_, perDraw, lightMode, cmd);
 }
 
 

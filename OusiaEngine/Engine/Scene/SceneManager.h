@@ -26,14 +26,14 @@ struct PerFrame;
 
 class SceneManager final {
 	friend class Object;
+	friend class GameObject;
 	friend class Engine;
+	friend class MainLightShadowCasterPass;
+	friend class Undo;
 	friend class EditorApplication;
 	friend class EditorSceneManager;
-	friend class Undo;
 	friend class EditorBuildSettings;
 	friend class ScriptBindings;
-	friend class GameObject; // FindWithTag で DontDestroyOnLoad のシーンも探す
-
 
 public: // 静的メンバ変数
 
@@ -99,6 +99,8 @@ private: // 静的メンバ関数
 	static void Finalize();
 
 	static void CollectLights(PerFrame &perFrame);
+	static const Light *FindMainLight();
+	static void RenderShadowCasters(const Camera::PerCamera &lightCamera, Graphics::CommandList cmd);
 	static void RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd);
 	static void RenderOverlay(Graphics::CommandList cmd);
 

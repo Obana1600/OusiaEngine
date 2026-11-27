@@ -9,6 +9,14 @@
 			"zWrite": true,
 			"zTest": "Less",
 			"cull": "Back"
+		},
+		{
+			"name": "ShadowCaster",
+			"tags": { "LightMode": "ShadowCaster" },
+			"vertex": "ShadowCaster.VS.hlsl",
+			"zWrite": true,
+			"zTest": "LEqual",
+			"cull": "Back"
 		}
 	]
 }

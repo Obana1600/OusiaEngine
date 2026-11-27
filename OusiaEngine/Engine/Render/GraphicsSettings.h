@@ -19,12 +19,22 @@ enum class Downsampling : uint32_t {
 	_2xBilinear, // 縦横 1/2
 };
 
+enum class ShadowResolution : uint32_t {
+	_256,
+	_512,
+	_1024,
+	_2048,
+	_4096,
+};
+
+
 class GraphicsSettings final: public Object {
 	friend class Engine;
-	friend class VolumeManager;
-	friend class ProjectSettingsWindow;
-	friend class PostProcessPass;
 	friend class SceneRenderTarget;
+	friend class ProjectSettingsWindow;
+	friend class VolumeManager;
+	friend class PostProcessPass;
+	friend class MainLightShadowCasterPass;
 
 public: // メンバ関数
 
@@ -37,6 +47,8 @@ private: // メンバ変数
 	std::vector<FullScreenPassRendererFeature> rendererFeatures_;
 
 	Downsampling opaqueDownsampling_ = Downsampling::_2xBilinear;
+	ShadowResolution mainLightShadowmapResolution_ = ShadowResolution::_2048;
+	float shadowDistance_ = 50.0f;
 
 
 private: // 静的メンバ関数

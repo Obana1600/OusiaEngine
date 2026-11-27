@@ -15,7 +15,7 @@ public: // メンバ関数
 
 	void Serialize(Serializer &serializer) override;
 
-	void Draw(Graphics::CommandList cmd) const override;
+	void Draw(std::string_view lightMode, Graphics::CommandList cmd) const override;
 
 	void SetMesh(std::shared_ptr<Mesh> mesh);
 	const std::shared_ptr<Mesh> &GetMesh() const;

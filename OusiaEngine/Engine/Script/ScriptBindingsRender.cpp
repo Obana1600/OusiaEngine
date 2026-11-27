@@ -296,6 +296,7 @@ void RegisterModuleEnabled(asIScriptEngine *engine, const char *type) {
 void ou::ScriptBindings::RegisterRenderMembers(asIScriptEngine *engine) {
 	// ---- enum ----
 	RegisterEnum<LightType>(engine, "LightType");
+	RegisterEnum<LightShadows>(engine, "LightShadows");
 	RegisterEnum<WrapMode>(engine, "WrapMode");
 	RegisterEnum<ParticleSystem::SimulationSpace>(engine, "ParticleSystemSimulationSpace");
 	RegisterEnum<ParticleSystem::ShapeType>(engine, "ParticleSystemShapeType");
@@ -337,6 +338,14 @@ void ou::ScriptBindings::RegisterRenderMembers(asIScriptEngine *engine) {
 		l.Method("void set_spotAngle(float value) property", asFUNCTION((Set<Light, float, &Light::SetSpotAngle>)));
 		l.Method("float get_innerSpotAngle() const property", asFUNCTION((Get<Light, float, &Light::GetInnerSpotAngle>)));
 		l.Method("void set_innerSpotAngle(float value) property", asFUNCTION((Set<Light, float, &Light::SetInnerSpotAngle>)));
+		l.Method("LightShadows get_shadows() const property", asFUNCTION((GetEnum<Light, LightShadows, &Light::GetShadows>)));
+		l.Method("void set_shadows(LightShadows value) property", asFUNCTION((SetEnum<Light, LightShadows, &Light::SetShadows>)));
+		l.Method("float get_shadowStrength() const property", asFUNCTION((Get<Light, float, &Light::GetShadowStrength>)));
+		l.Method("void set_shadowStrength(float value) property", asFUNCTION((Set<Light, float, &Light::SetShadowStrength>)));
+		l.Method("float get_shadowBias() const property", asFUNCTION((Get<Light, float, &Light::GetShadowBias>)));
+		l.Method("void set_shadowBias(float value) property", asFUNCTION((Set<Light, float, &Light::SetShadowBias>)));
+		l.Method("float get_shadowNormalBias() const property", asFUNCTION((Get<Light, float, &Light::GetShadowNormalBias>)));
+		l.Method("void set_shadowNormalBias(float value) property", asFUNCTION((Set<Light, float, &Light::SetShadowNormalBias>)));
 	}
 
 	// ---- Mesh・Shader・SkeletalAnimationClip・VolumeProfile（アセット） ----

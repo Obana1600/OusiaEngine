@@ -60,6 +60,12 @@ enum TextAlignmentOptions {
 	Bottom = 7,
 	BottomRight = 8
 }
+enum ShadowCastingMode {
+	Off = 0,
+	On = 1,
+	TwoSided = 2,
+	ShadowsOnly = 3
+}
 enum RenderTextureFormat {
 	ARGB32 = 0,
 	ARGBHalf = 2,
@@ -76,6 +82,11 @@ enum LightType {
 	Spot = 0,
 	Directional = 1,
 	Point = 2
+}
+enum LightShadows {
+	None = 0,
+	Hard = 1,
+	Soft = 2
 }
 enum WrapMode {
 	Default = 0,
@@ -1108,6 +1119,14 @@ class Light {
 	void set_spotAngle(float value) property;
 	float get_innerSpotAngle() const property;
 	void set_innerSpotAngle(float value) property;
+	LightShadows get_shadows() const property;
+	void set_shadows(LightShadows value) property;
+	float get_shadowStrength() const property;
+	void set_shadowStrength(float value) property;
+	float get_shadowBias() const property;
+	void set_shadowBias(float value) property;
+	float get_shadowNormalBias() const property;
+	void set_shadowNormalBias(float value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -1202,6 +1221,10 @@ class MeshRenderer {
 	void set_materials(Material@[]@ value) property;
 	Material@[]@ get_sharedMaterials() const property;
 	void set_sharedMaterials(Material@[]@ value) property;
+	ShadowCastingMode get_shadowCastingMode() const property;
+	void set_shadowCastingMode(ShadowCastingMode value) property;
+	bool get_receiveShadows() const property;
+	void set_receiveShadows(bool value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }
@@ -1233,6 +1256,10 @@ class SkinnedMeshRenderer {
 	void set_materials(Material@[]@ value) property;
 	Material@[]@ get_sharedMaterials() const property;
 	void set_sharedMaterials(Material@[]@ value) property;
+	ShadowCastingMode get_shadowCastingMode() const property;
+	void set_shadowCastingMode(ShadowCastingMode value) property;
+	bool get_receiveShadows() const property;
+	void set_receiveShadows(bool value) property;
 	Mesh@ get_sharedMesh() const property;
 	void set_sharedMesh(Mesh@ value) property;
 	bool TryGetComponent(?&out component) const;
@@ -1266,6 +1293,10 @@ class LineRenderer {
 	void set_materials(Material@[]@ value) property;
 	Material@[]@ get_sharedMaterials() const property;
 	void set_sharedMaterials(Material@[]@ value) property;
+	ShadowCastingMode get_shadowCastingMode() const property;
+	void set_shadowCastingMode(ShadowCastingMode value) property;
+	bool get_receiveShadows() const property;
+	void set_receiveShadows(bool value) property;
 	int get_positionCount() const property;
 	void set_positionCount(int value) property;
 	Vector3 GetPosition(int index) const;
@@ -1317,6 +1348,10 @@ class ParticleSystemRenderer {
 	void set_materials(Material@[]@ value) property;
 	Material@[]@ get_sharedMaterials() const property;
 	void set_sharedMaterials(Material@[]@ value) property;
+	ShadowCastingMode get_shadowCastingMode() const property;
+	void set_shadowCastingMode(ShadowCastingMode value) property;
+	bool get_receiveShadows() const property;
+	void set_receiveShadows(bool value) property;
 	ParticleSystemSortMode get_sortMode() const property;
 	void set_sortMode(ParticleSystemSortMode value) property;
 	bool TryGetComponent(?&out component) const;
@@ -1356,6 +1391,10 @@ class Renderer {
 	void set_materials(Material@[]@ value) property;
 	Material@[]@ get_sharedMaterials() const property;
 	void set_sharedMaterials(Material@[]@ value) property;
+	ShadowCastingMode get_shadowCastingMode() const property;
+	void set_shadowCastingMode(ShadowCastingMode value) property;
+	bool get_receiveShadows() const property;
+	void set_receiveShadows(bool value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }

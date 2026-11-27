@@ -157,6 +157,7 @@ GameObject *CreateLight(Scene *scene, GameObject *parent, LightType type) {
 	// Unity と同じ向き（Directional は斜め上から、Spot は真下を向く）
 	auto *transform = gameObject->GetTransform();
 	if (type == LightType::Directional) {
+		gameObject->GetComponent<Light>()->SetShadows(LightShadows::Soft);
 		transform->SetLocalPosition({0.0f, 3.0f, 0.0f});
 		transform->SetLocalEulerAngles(Vector3(50.0f, -30.0f, 0.0f) * Mathf::Deg2Rad);
 	} else if (type == LightType::Spot) {

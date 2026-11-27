@@ -14,8 +14,8 @@ void ou::MeshRenderer::Serialize(Serializer &serializer) {
 }
 
 
-void ou::MeshRenderer::Draw(Graphics::CommandList cmd) const {
-	if (mesh_) { DrawMesh(*mesh_, MakePerDraw(), cmd); }
+void ou::MeshRenderer::Draw(std::string_view lightMode, Graphics::CommandList cmd) const {
+	if (mesh_) { DrawMesh(*mesh_, MakePerDraw(), lightMode, cmd); }
 }
 
 

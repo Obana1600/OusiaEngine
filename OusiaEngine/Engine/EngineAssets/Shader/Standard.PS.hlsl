@@ -1,6 +1,7 @@
 #include "Standard.hlsli"
 
 #include "GlobalSamplers.hlsli"
+#include "Shadows.hlsli"
 
 
 float Diffuse(float3 normal, float3 toLight)
@@ -48,7 +49,12 @@ float4 main(VSOutput input) : SV_TARGET
         // 平行光源
         if (light.type == kLightTypeDirectional)
         {
-            lighting += light.color * Diffuse(normal, -light.direction);
+            float shadow = 1.0f;
+            if (i == gShadowLightIndex && gReceiveShadows != 0)
+            {
+                shadow = MainLightShadow(input.worldPosition);
+            }
+            lighting += light.color * Diffuse(normal, -light.direction) * shadow;
             continue;
         }
         

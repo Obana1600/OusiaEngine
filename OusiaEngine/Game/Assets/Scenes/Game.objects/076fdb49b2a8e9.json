@@ -41,6 +41,8 @@
 					"guid": "d2e99a3d6b5a50e5ec739163c854f352"
 				}
 			],
+			"shadowCastingMode": "TwoSided",
+			"receiveShadows": true,
 			"mesh": {
 				"guid": "50426e25bfc61315f46d563914e03841",
 				"sub": "Mesh/Capsule"

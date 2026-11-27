@@ -41,6 +41,8 @@
 					"guid": "a613bec17cccd6ffb2453cc5d23a6112"
 				}
 			],
+			"shadowCastingMode": "On",
+			"receiveShadows": true,
 			"mesh": {
 				"guid": "b03441b5e7af55c1b87b155c3691763e",
 				"sub": "Mesh/Plane"

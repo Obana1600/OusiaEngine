@@ -155,8 +155,8 @@ void CheckRequiredFeatures(ID3D12Device *device) {
 	}
 }
 
-D3D12_STATIC_SAMPLER_DESC MakeStaticSampler(
-	UINT shaderRegister, D3D12_FILTER filter, D3D12_TEXTURE_ADDRESS_MODE address) {
+D3D12_STATIC_SAMPLER_DESC MakeStaticSampler(UINT shaderRegister, D3D12_FILTER filter, D3D12_TEXTURE_ADDRESS_MODE address,
+											D3D12_COMPARISON_FUNC comparison = D3D12_COMPARISON_FUNC_NEVER) {
 	D3D12_STATIC_SAMPLER_DESC desc{};
 	desc.Filter = filter;
 	desc.AddressU = address;
@@ -164,7 +164,7 @@ D3D12_STATIC_SAMPLER_DESC MakeStaticSampler(
 	desc.AddressW = address;
 	desc.MipLODBias = 0.0f;
 	desc.MaxAnisotropy = 0;
-	desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	desc.ComparisonFunc = comparison;
 	desc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
 	desc.MinLOD = 0;
 	desc.MaxLOD = D3D12_FLOAT32_MAX;
@@ -186,12 +186,13 @@ ComPtr<ID3D12RootSignature> CreateGlobalRootSignature(ID3D12Device *device) {
 		param.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 	}
 
-	// s0 ~ s3: サンプラー
+	// s0 ~ s4: サンプラー
 	const D3D12_STATIC_SAMPLER_DESC staticSamplers[] = {
 		MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
 		MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 		MakeStaticSampler(2, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
 		MakeStaticSampler(3, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+		MakeStaticSampler(4, D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_COMPARISON_FUNC_LESS_EQUAL),
 	};
 
 	// ルートシグネチャ

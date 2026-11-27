@@ -489,6 +489,10 @@ void ou::ScriptBindingsInternal::RegisterRendererMembers(const TypeRegistrar &r)
 	r.Method("void set_materials(array<Material@>@+ value) property", asFUNCTION(SetSharedMaterials));
 	r.Method("array<Material@>@ get_sharedMaterials() const property", asFUNCTION(GetSharedMaterials));
 	r.Method("void set_sharedMaterials(array<Material@>@+ value) property", asFUNCTION(SetSharedMaterials));
+	r.Method("ShadowCastingMode get_shadowCastingMode() const property", asFUNCTION((GetEnum<Renderer, ShadowCastingMode, &Renderer::GetShadowCastingMode>)));
+	r.Method("void set_shadowCastingMode(ShadowCastingMode value) property", asFUNCTION((SetEnum<Renderer, ShadowCastingMode, &Renderer::SetShadowCastingMode>)));
+	r.Method("bool get_receiveShadows() const property", asFUNCTION((Get<Renderer, bool, &Renderer::GetReceiveShadows>)));
+	r.Method("void set_receiveShadows(bool value) property", asFUNCTION((Set<Renderer, bool, &Renderer::SetReceiveShadows>)));
 }
 
 
@@ -506,6 +510,7 @@ void ou::ScriptBindings::RegisterComponentMembers(asIScriptEngine *engine) {
 	Check(engine->RegisterObjectProperty("ColorBlock", "float fadeDuration", asOFFSET(ColorBlock, fadeDuration)), "ColorBlock::fadeDuration");
 	// Text は TextMeshPro に合わせた作りなので、TextMeshPro の名前で出す（TextAlignmentOptions::Center）
 	RegisterEnum<TextAlignment>(engine, "TextAlignmentOptions");
+	RegisterEnum<ShadowCastingMode>(engine, "ShadowCastingMode");
 
 	// ---- AudioClip ----
 	{

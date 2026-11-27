@@ -28,6 +28,7 @@ public: // インナークラス
 
 	struct Pass {
 		std::string name;
+		std::string lightMode;
 
 		Graphics::Shader vertexShader;
 		Graphics::Shader pixelShader;

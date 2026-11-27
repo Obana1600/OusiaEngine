@@ -159,6 +159,12 @@ void ColliderFields(SerializedObject &so) {
 void RendererFields(SerializedObject &so) {
 	BehaviorFields(so);
 	Field(so, "materials", "マテリアル");
+	EnumField(so, "shadowCastingMode", "影を落とす",
+			  {{"Off", "影を落とさない"},
+			   {"On", "影を落とす"},
+			   {"TwoSided", "影を描くときだけ裏面も描く（平面の両側から光が当たるとき）"},
+			   {"ShadowsOnly", "影だけを落とし、物そのものは見えない"}});
+	Field(so, "receiveShadows", "影を受ける");
 }
 
 void GraphicFields(SerializedObject &so) {
@@ -222,11 +228,10 @@ void ou::LightEditor::OnInspectorGui() {
 	auto &so = *GetSerializedObject();
 	so.Update();
 	BehaviorFields(so);
-	EnumField(so, "type", "種類", {
-									  {"Spot", "スポットライト。向いている方向の円錐の中を照らす"},
-									  {"Directional", "太陽のような平行な光。位置は関係なく、向きだけで照らす"},
-									  {"Point", "電球のように、位置から全方向を照らす"},
-								  });
+	EnumField(so, "type", "種類",
+			  {{"Spot", "スポットライト。向いている方向の円錐の中を照らす"},
+			   {"Directional", "太陽のような平行な光。位置は関係なく、向きだけで照らす"},
+			   {"Point", "電球のように、位置から全方向を照らす"}});
 	Field(so, "color", "色");
 	Field(so, "intensity", "強さ");
 
@@ -237,6 +242,16 @@ void ou::LightEditor::OnInspectorGui() {
 		Field(so, "spotAngle", "スポットの角度（度）");
 		Field(so, "innerSpotAngle", "内側の角度（度）");
 	}
+	EnumField(so, "shadows", "影",
+			  {{"None", "影を落とさない"},
+			   {"Hard", "縁のくっきりした影"},
+			   {"Soft", "縁をぼかした影"}});
+	if (EnumName(so, "shadows") != "None") {
+		Field(so, "shadowStrength", "影の濃さ（0〜1）");
+		Field(so, "shadowBias", "Depth Bias（テクセル）");
+		Field(so, "shadowNormalBias", "Normal Bias（テクセル）");
+	}
+
 	so.ApplyModifiedProperties();
 }
 
@@ -283,13 +298,14 @@ void ou::SkeletalAnimatorEditor::OnInspectorGui() {
 	BehaviorFields(so);
 	Field(so, "clip", "クリップ");
 	Field(so, "playAutomatically", "自動で再生");
-	EnumField(so, "wrapMode", "終わったとき", {
-												  {"Default", "クリップの設定に従う"},
-												  {"Once", "1 回再生して止まり、最初のポーズに戻る"},
-												  {"Loop", "最初から繰り返す"},
-												  {"PingPong", "最後まで行ったら逆に再生し、往復を繰り返す"},
-												  {"ClampForever", "1 回再生して、最後のポーズのまま止まる"},
-											  });
+	EnumField(so, "wrapMode", "終わったとき",
+			  {{"Default", "クリップの設定に従う"},
+			   {"Once", "1 回再生して止まり、最初のポーズに戻る"},
+			   {"Loop", "最初から繰り返す"},
+			   {"PingPong", "最後まで行ったら逆に再生し、往復を繰り返す"},
+			   {"ClampForever", "1 回再生して、最後のポーズのまま止まる"}
+
+			  });
 	Field(so, "speed", "速さ");
 	so.ApplyModifiedProperties();
 }
@@ -356,17 +372,20 @@ void ou::RigidbodyEditor::OnInspectorGui() {
 	Field(so, "maxLinearVelocity", "最大の速さ");
 	Field(so, "maxAngularVelocity", "最大の回転の速さ");
 	Field(so, "sleepThreshold", "止まったとみなす速さ");
-	EnumField(so, "collisionDetectionMode", "衝突の判定", {
-															  {"Discrete", "1 ステップごとの位置だけで判定する。いちばん軽いが、速い物体は薄い壁をすり抜けることがある"},
-															  {"Continuous", "動かない物体に対して、すり抜けを防ぐ"},
-															  {"ContinuousDynamic", "動く物体どうしでも、すり抜けを防ぐ。いちばん重い"},
-															  {"ContinuousSpeculative", "先を読んで、すり抜けを防ぐ。回転にも効くが、当たる前に止まって見えることがある"},
-														  });
-	EnumField(so, "interpolation", "補間", {
-											   {"None", "補間しない。物理の更新が描画より少ないと、カクついて見えることがある"},
-											   {"Interpolate", "前の物理の更新との間をなめらかにつなぐ。少し遅れて見える"},
-											   {"Extrapolate", "速度から先を予測してなめらかにする。ぶつかったときに行き過ぎて見えることがある"},
-										   });
+	EnumField(so, "collisionDetectionMode", "衝突の判定",
+			  {
+				  {"Discrete", "1 ステップごとの位置だけで判定する。いちばん軽いが、速い物体は薄い壁をすり抜けることがある"},
+				  {"Continuous", "動かない物体に対して、すり抜けを防ぐ"},
+				  {"ContinuousDynamic", "動く物体どうしでも、すり抜けを防ぐ。いちばん重い"},
+				  {"ContinuousSpeculative", "先を読んで、すり抜けを防ぐ。回転にも効くが、当たる前に止まって見えることがある"},
+
+			  });
+	EnumField(so, "interpolation", "補間",
+			  {{"None", "補間しない。物理の更新が描画より少ないと、カクついて見えることがある"},
+			   {"Interpolate", "前の物理の更新との間をなめらかにつなぐ。少し遅れて見える"},
+			   {"Extrapolate", "速度から先を予測してなめらかにする。ぶつかったときに行き過ぎて見えることがある"}
+
+			  });
 	Field(so, "constraints", "固定する軸");
 	so.ApplyModifiedProperties();
 }
@@ -378,10 +397,9 @@ void ou::AudioSourceEditor::OnInspectorGui() {
 	auto &so = *GetSerializedObject();
 	so.Update();
 	Field(so, "clip", "音");
-	EnumField(so, "submixType", "音量の分類", {
-												  {"SoundEffect", "効果音。効果音の音量の設定が効く"},
-												  {"Music", "BGM。BGM の音量の設定が効く"},
-											  });
+	EnumField(so, "submixType", "音量の分類",
+			  {{"SoundEffect", "効果音。効果音の音量の設定が効く"},
+			   {"Music", "BGM。BGM の音量の設定が効く"}});
 	Field(so, "mute", "ミュート");
 	Field(so, "playOnAwake", "始まったら再生");
 	Field(so, "loop", "繰り返す");
@@ -446,17 +464,16 @@ void ou::TextEditor::OnInspectorGui() {
 	Field(so, "text", "文字");
 	Field(so, "font", "フォント");
 	Field(so, "fontSize", "文字の大きさ");
-	EnumField(so, "alignment", "揃え", {
-										   {"TopLeft", "左上"},
-										   {"Top", "上・左右の中央"},
-										   {"TopRight", "右上"},
-										   {"Left", "左・上下の中央"},
-										   {"Center", "真ん中"},
-										   {"Right", "右・上下の中央"},
-										   {"BottomLeft", "左下"},
-										   {"Bottom", "下・左右の中央"},
-										   {"BottomRight", "右下"},
-									   });
+	EnumField(so, "alignment", "揃え",
+			  {{"TopLeft", "左上"},
+			   {"Top", "上・左右の中央"},
+			   {"TopRight", "右上"},
+			   {"Left", "左・上下の中央"},
+			   {"Center", "真ん中"},
+			   {"Right", "右・上下の中央"},
+			   {"BottomLeft", "左下"},
+			   {"Bottom", "下・左右の中央"},
+			   {"BottomRight", "右下"}});
 	Field(so, "wordWrappingEnabled", "折り返す");
 	Field(so, "lineSpacing", "行の間隔");
 	Field(so, "characterSpacing", "文字の間隔");
@@ -535,10 +552,9 @@ void ou::ParticleSystemEditor::OnInspectorGui() {
 		RangeField(so, "main/startColor", "初めの色");
 		Field(so, "main/gravityModifier", "重力の倍率");
 		Field(so, "main/maxParticles", "最大の数");
-		EnumField(so, "main/simulationSpace", "動かす座標", {
-																{"Local", "出たあとも Transform に付いて動く"},
-																{"World", "出たあとは、Transform が動いてもその場に残る"},
-															});
+		EnumField(so, "main/simulationSpace", "動かす座標",
+				  {{"Local", "出たあとも Transform に付いて動く"},
+				   {"World", "出たあとは、Transform が動いてもその場に残る"}});
 		EndFoldout();
 	}
 
@@ -564,10 +580,9 @@ void ou::ParticleSystemEditor::OnInspectorGui() {
 
 	if (BeginFoldout(so, "shape", "形")) {
 		Field(so, "shape/enabled", "有効");
-		EnumField(so, "shape/shapeType", "形", {
-												   {"Sphere", "球の中から、全方向へ出す"},
-												   {"Cone", "円錐の向きへ出す"},
-											   });
+		EnumField(so, "shape/shapeType", "形",
+				  {{"Sphere", "球の中から、全方向へ出す"},
+				   {"Cone", "円錐の向きへ出す"}});
 		if (EnumName(so, "shape/shapeType") == "Cone") { Field(so, "shape/angle", "広がる角度（度）"); }
 		Field(so, "shape/radius", "半径");
 		Field(so, "shape/radiusThickness", "出す厚さ（0 で表面だけ、1 で中まで）");
@@ -596,17 +611,15 @@ void ou::ParticleSystemRendererEditor::OnInspectorGui() {
 	auto &so = *GetSerializedObject();
 	so.Update();
 	RendererFields(so);
-	EnumField(so, "blendMode", "重ね方", {
-											 {"Additive", "色を足して明るくする。光や炎に向く"},
-											 {"Subtract", "色を引いて暗くする"},
-											 {"Multiply", "色を掛ける。煙や影に向く"},
-											 {"Alpha", "透明度で重ねる。ふつうの半透明"},
-										 });
-	EnumField(so, "sortMode", "描く順番", {
-											  {"None", "並べ替えない。いちばん軽い"},
-											  {"Distance", "カメラから遠いものから描く"},
-											  {"OldestInFront", "古いものを手前に描く"},
-											  {"YoungestInFront", "新しいものを手前に描く"},
-										  });
+	EnumField(so, "blendMode", "重ね方",
+			  {{"Additive", "色を足して明るくする。光や炎に向く"},
+			   {"Subtract", "色を引いて暗くする"},
+			   {"Multiply", "色を掛ける。煙や影に向く"},
+			   {"Alpha", "透明度で重ねる。ふつうの半透明"}});
+	EnumField(so, "sortMode", "描く順番",
+			  {{"None", "並べ替えない。いちばん軽い"},
+			   {"Distance", "カメラから遠いものから描く"},
+			   {"OldestInFront", "古いものを手前に描く"},
+			   {"YoungestInFront", "新しいものを手前に描く"}});
 	so.ApplyModifiedProperties();
 }

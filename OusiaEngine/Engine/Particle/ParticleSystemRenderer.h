@@ -65,7 +65,7 @@ public: // メンバ関数
 	void LateUpdate() override;
 	void Serialize(Serializer &serializer) override;
 
-	void Draw(Graphics::CommandList cmd) const override;
+	void Draw(std::string_view lightMode, Graphics::CommandList cmd) const override;
 
 	void SetBlendMode(BlendMode blendMode);
 	BlendMode GetBlendMode() const;

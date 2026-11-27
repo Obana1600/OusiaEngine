@@ -26,6 +26,7 @@ cbuffer PerDraw : register(b0)
     float4x4 gWorldInverseTranspose;
     uint gBoneMatrixBufferIndex;
     uint gBoneWeightBufferIndex;
+    uint gReceiveShadows;
 }
 
 static const uint kNoSkinning = 0xFFFFFFFF;
@@ -47,5 +48,30 @@ cbuffer PerMaterial : register(b1)
 static const uint kLightingNone = 0;
 static const uint kLightingLambert = 1;
 static const uint kLightingHalfLambert = 2;
+
+
+void ComputeWorldPositionAndNormal(VSInput input, uint vid, out float3 worldPosition, out float3 worldNormal)
+{
+    if (gBoneMatrixBufferIndex != kNoSkinning)
+    {
+        StructuredBuffer<float4x4> boneMatrices = ResourceDescriptorHeap[gBoneMatrixBufferIndex];
+        StructuredBuffer<BoneWeight> boneWeights = ResourceDescriptorHeap[gBoneWeightBufferIndex];
+        const BoneWeight boneWeight = boneWeights[vid];
+
+        const float4x4 skinMatrix =
+            boneMatrices[boneWeight.boneIndices.x] * boneWeight.weights.x +
+            boneMatrices[boneWeight.boneIndices.y] * boneWeight.weights.y +
+            boneMatrices[boneWeight.boneIndices.z] * boneWeight.weights.z +
+            boneMatrices[boneWeight.boneIndices.w] * boneWeight.weights.w;
+
+        worldPosition = mul(float4(input.position, 1.0f), skinMatrix).xyz;
+        worldNormal = normalize(mul(input.normal, (float3x3) skinMatrix));
+    }
+    else
+    {
+        worldPosition = mul(float4(input.position, 1.0f), gWorld).xyz;
+        worldNormal = normalize(mul(input.normal, (float3x3) gWorldInverseTranspose));
+    }
+}
 
 #endif // STANDARD_INCLUDED

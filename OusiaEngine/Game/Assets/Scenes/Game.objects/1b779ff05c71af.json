@@ -39,7 +39,9 @@
 			"fieldOfView": 60.0,
 			"aspect": 0.0,
 			"nearClipPlane": 0.3,
-			"farClipPlane": 1000.0
+			"farClipPlane": 1000.0,
+			"renderPostProcessing": true,
+			"volumeLayerMask": 1
 		},
 		{
 			"$type": "MonoBehavior",

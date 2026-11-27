@@ -44,6 +44,8 @@
 					"sub": "Material/Default"
 				}
 			],
+			"shadowCastingMode": "On",
+			"receiveShadows": true,
 			"mesh": {
 				"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
 				"sub": "Mesh/Sphere"

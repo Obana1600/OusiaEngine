@@ -96,7 +96,7 @@ void ou::LineRenderer::Serialize(Serializer &serializer) {
 }
 
 
-void ou::LineRenderer::Draw(Graphics::CommandList cmd) const {
+void ou::LineRenderer::Draw(std::string_view lightMode, Graphics::CommandList cmd) const {
 	if (pointCount_ < 2) { return; }
 
 	const auto &material = GetSharedMaterial();
@@ -114,7 +114,10 @@ void ou::LineRenderer::Draw(Graphics::CommandList cmd) const {
 	device->BindDynamicConstantBuffer(constants, 0, cmd);
 
 	const auto &shader = material->GetShader();
-	for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
+	const auto &passes = shader->GetPasses();
+	for (size_t pass = 0; pass < passes.size(); pass++) {
+		if (passes[pass].lightMode != lightMode) { continue; }
+
 		const auto *pso = shader->GetPipelineState(
 			pass, material->GetRenderStateOverride(), nullptr, Graphics::PrimitiveTopology::TRIANGLESTRIP);
 		if (!pso) { continue; }

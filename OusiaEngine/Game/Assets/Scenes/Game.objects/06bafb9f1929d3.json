@@ -43,6 +43,8 @@
 					"guid": "59ad7052a77be4e7b5bdcec987fa462e"
 				}
 			],
+			"shadowCastingMode": "On",
+			"receiveShadows": true,
 			"mesh": {
 				"guid": "2a1c58485f6282fc8f8c5372c3f77d5c",
 				"sub": "Mesh/Sphere"

@@ -9,12 +9,18 @@
 
 namespace ou {
 
-// TODO: Area も追加したい
 enum class LightType : uint32_t {
 	Spot,
 	Directional,
 	Point,
 };
+
+enum class LightShadows : uint32_t {
+	None,
+	Hard,
+	Soft,
+};
+
 
 class Light: public Behavior {
 public: // 定数
@@ -65,6 +71,19 @@ public: // メンバ関数
 	float GetInnerSpotAngle() const;
 
 
+	void SetShadows(LightShadows shadows);
+	LightShadows GetShadows() const;
+
+	void SetShadowStrength(float shadowStrength);
+	float GetShadowStrength() const;
+
+	void SetShadowBias(float shadowBias);
+	float GetShadowBias() const;
+
+	void SetShadowNormalBias(float shadowNormalBias);
+	float GetShadowNormalBias() const;
+
+
 private: // メンバ変数
 
 	LightType type_ = LightType::Point;
@@ -73,6 +92,11 @@ private: // メンバ変数
 	float range_ = 10.0f;
 	float spotAngle_ = 30.0f;
 	float innerSpotAngle_ = 21.80208f;
+
+	LightShadows shadows_ = LightShadows::None;
+	float shadowStrength_ = 1.0f;
+	float shadowBias_ = 1.0f;
+	float shadowNormalBias_ = 1.0f;
 };
 
 } // namespace ou

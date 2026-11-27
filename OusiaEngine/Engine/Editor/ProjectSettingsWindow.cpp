@@ -127,6 +127,13 @@ void ou::ProjectSettingsWindow::DrawGraphics() {
 	if (auto property = so.FindProperty("opaqueDownsampling")) {
 		EditorGuiLayout::PropertyField(*property, GuiContent("Opaque Downsampling", "半透明のシェーダーが読む、不透明の後の色の写しの縮め方。_2xBilinear は縦横 1/2"));
 	}
+	ImGui::SeparatorText("Shadows");
+	if (auto property = so.FindProperty("mainLightShadowmapResolution")) {
+		EditorGuiLayout::PropertyField(*property, GuiContent("Main Light Resolution", "メインライト（一番明るい Directional）のシャドウマップの縦横の大きさ"));
+	}
+	if (auto property = so.FindProperty("shadowDistance")) {
+		EditorGuiLayout::PropertyField(*property, GuiContent("Max Distance", "カメラからこの距離までに影を描く。短いほど影がくっきりする"));
+	}
 	if (so.ApplyModifiedProperties()) { GraphicsSettings::Save(); }
 }
 

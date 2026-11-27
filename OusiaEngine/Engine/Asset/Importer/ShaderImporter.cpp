@@ -25,6 +25,7 @@ constexpr std::string_view kShaderKeys[] = {
 
 constexpr std::string_view kPassKeys[] = {
 	"name",
+	"tags",
 	"vertex",
 	"pixel",
 	"hull",
@@ -36,6 +37,10 @@ constexpr std::string_view kPassKeys[] = {
 	"zWrite",
 	"zTest",
 	"cull",
+};
+
+constexpr std::string_view kPassTagKeys[] = {
+	"LightMode",
 };
 
 constexpr std::string_view kPropertyKeys[] = {
@@ -79,9 +84,22 @@ Shader::Pass ParsePass(const AssetImporter &importer, const Json &json) {
 	Shader::Pass pass{};
 	pass.name = json.value("name", std::string());
 
+	// タグ
+	if (const auto it = json.find("tags"); it != json.end()) {
+		if (!it->is_object()) {
+			throw JsonFile::FormatError("\"tags\" は {\"LightMode\": \"...\"} のように書いてください");
+		}
+		if (const auto lightMode = it->find("LightMode"); lightMode != it->end()) {
+			if (!lightMode->is_string()) {
+				throw JsonFile::FormatError("\"LightMode\" は文字列で書いてください");
+			}
+			pass.lightMode = lightMode->get<std::string>();
+		}
+	}
+
 	// シェーダー
 	pass.vertexShader = ImportStage(importer, json, "vertex", Graphics::ShaderStage::VS, true);
-	pass.pixelShader = ImportStage(importer, json, "pixel", Graphics::ShaderStage::PS, true);
+	pass.pixelShader = ImportStage(importer, json, "pixel", Graphics::ShaderStage::PS, false);
 	pass.hullShader = ImportStage(importer, json, "hull", Graphics::ShaderStage::HS, false);
 	pass.domainShader = ImportStage(importer, json, "domain", Graphics::ShaderStage::DS, false);
 	pass.geometryShader = ImportStage(importer, json, "geometry", Graphics::ShaderStage::GS, false);
@@ -186,6 +204,9 @@ std::shared_ptr<Shader> ou::ShaderImporter::ImportShader() {
 				throw JsonFile::FormatError("\"passes\" の中身は {...} と書いてください");
 			}
 			JsonFile::WarnUnknownKeys(passJson, kPassKeys, pathUtf8);
+			if (const auto it = passJson.find("tags"); it != passJson.end() && it->is_object()) {
+				JsonFile::WarnUnknownKeys(*it, kPassTagKeys, pathUtf8);
+			}
 			passes.push_back(ParsePass(*this, passJson));
 		}
 
