@@ -92,13 +92,13 @@ std::shared_ptr<Material> ou::Material::Create(const Material &source) {
 	material->color_ = source.color_;
 	material->lightingMode_ = source.lightingMode_;
 	material->propertyValues_ = source.propertyValues_;
+	material->propertyTextures_ = source.propertyTextures_;
 
 	return material;
 }
 
 
 void ou::Material::Serialize(Serializer &serializer) {
-	// シェーダを替えたら、プロパティはそのシェーダの初期値に戻す（このあと "properties" があれば読む）
 	auto shader = shader_;
 	serializer.Asset("shader", shader);
 	if (serializer.IsReading() && shader != shader_) { SetShader(std::move(shader)); }
@@ -109,7 +109,6 @@ void ou::Material::Serialize(Serializer &serializer) {
 	serializer.Field("uvOffset", uvOffset_);
 	serializer.Field("uvScale", uvScale_);
 
-	// 中はラジアン、ファイルとエディタは度
 	auto uvRotationDegrees = uvRotation_ * Mathf::Rad2Deg;
 	serializer.Field("uvRotation", uvRotationDegrees);
 	if (serializer.IsReading()) { uvRotation_ = uvRotationDegrees * Mathf::Deg2Rad; }
@@ -143,6 +142,9 @@ void ou::Material::Serialize(Serializer &serializer) {
 					if (serializer.IsReading()) { value = color; }
 					break;
 				}
+				case Shader::PropertyType::Texture:
+					serializer.Asset(property.name, propertyTextures_[i]);
+					break;
 			}
 		}
 	});
@@ -174,6 +176,7 @@ void ou::Material::SetShader(std::shared_ptr<Shader> shader) {
 			propertyValues_.push_back(property.defaultValue);
 		}
 	}
+	propertyTextures_.assign(propertyValues_.size(), nullptr);
 }
 
 
@@ -310,6 +313,20 @@ Color ou::Material::GetColor(std::string_view name) const {
 }
 
 
+void ou::Material::SetTexture(std::string_view name, std::shared_ptr<Texture> value) {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Texture);
+	if (index < 0) { return; }
+	propertyTextures_[index] = std::move(value);
+}
+
+
+std::shared_ptr<Texture> ou::Material::GetTexture(std::string_view name) const {
+	const auto index = FindPropertyIndex(name, Shader::PropertyType::Texture);
+	return (index < 0) ? nullptr
+					   : propertyTextures_[index];
+}
+
+
 void ou::Material::WritePropertyBuffer(void *dst) const {
 	if (!shader_) { return; }
 
@@ -327,9 +344,14 @@ void ou::Material::WritePropertyBuffer(void *dst) const {
 				std::memcpy(bytes + property.offset, &value, sizeof(Vector4));
 				break;
 			case Shader::PropertyType::Color: {
-
 				const Vector4 linear = Color(value).Linear();
 				std::memcpy(bytes + property.offset, &linear, sizeof(Vector4));
+				break;
+			}
+			case Shader::PropertyType::Texture: {
+				const auto &texture = propertyTextures_[i] ? propertyTextures_[i] : sWhiteTexture_;
+				const uint32_t index = texture->GetDescriptorIndex();
+				std::memcpy(bytes + property.offset, &index, sizeof(index));
 				break;
 			}
 		}

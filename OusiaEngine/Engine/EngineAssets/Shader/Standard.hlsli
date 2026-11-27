@@ -1,6 +1,8 @@
-#pragma once
+#ifndef STANDARD_INCLUDED
+#define STANDARD_INCLUDED
 
 #include "PerCamera.hlsli"
+#include "PerFrame.hlsli"
 
 
 struct VSInput
@@ -42,30 +44,8 @@ cbuffer PerMaterial : register(b1)
     uint gLightingMode;
 }
 
-static const uint kLightTypeSpot = 0;
-static const uint kLightTypeDirectional = 1;
-static const uint kLightTypePoint = 2;
-static const uint kMaxLights = 16;
-
 static const uint kLightingNone = 0;
 static const uint kLightingLambert = 1;
 static const uint kLightingHalfLambert = 2;
 
-struct ShaderLight
-{
-    float3 position;
-    uint type;
-    float3 direction;
-    float range;
-    float3 color;
-    float spotAngleScale;
-    float spotAngleOffset;
-    float3 padding;
-};
-
-cbuffer PerFrame : register(b3)
-{
-    uint gLightCount;
-    uint3 gPadding;
-    ShaderLight gLights[kMaxLights];
-}
+#endif // STANDARD_INCLUDED

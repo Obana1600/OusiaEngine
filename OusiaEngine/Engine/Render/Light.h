@@ -35,13 +35,6 @@ public: // インナークラス
 		float padding[3];
 	};
 
-	// 定数バッファ: b3
-	struct PerFrame {
-		uint32_t lightCount;
-		uint32_t padding[3];
-		ShaderLight lights[kMaxLights];
-	};
-
 
 public: // メンバ関数
 

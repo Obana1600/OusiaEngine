@@ -1,0 +1,12 @@
+{
+	"$id": 9000,
+	"$order": "5000009",
+	"name": "Pillar",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{ "$type": "Transform", "$id": 9001, "localPosition": [-1.5, -1.0, -3.5], "localRotation": [0.0, 0.0, 0.0, 1.0], "localEulerAnglesHint": [0.0, 0.0, 0.0], "localScale": [0.6, 2.0, 0.6], "parent": null },
+		{ "$type": "MeshRenderer", "$id": 9002, "enabled": true, "materials": [{"guid": "f46b597fed2713ec7e17e626087efdc8"}], "mesh": {"guid": "a911f1e376e4444db998df7550f8ff74", "sub": "Mesh/Cylinder"} }
+	]
+}

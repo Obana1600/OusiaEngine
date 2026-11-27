@@ -1,0 +1,15 @@
+{
+	"components": [
+		{
+			"$type": "Tonemapping",
+			"active": true,
+			"mode": { "overrideState": true, "value": "ACES" }
+		},
+		{
+			"$type": "Bloom",
+			"active": true,
+			"threshold": { "overrideState": true, "value": 1.0 },
+			"intensity": { "overrideState": true, "value": 0.4 }
+		}
+	]
+}

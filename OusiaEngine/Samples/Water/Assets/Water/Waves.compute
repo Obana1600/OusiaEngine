@@ -1,0 +1,58 @@
+// Gerstner 波を足し合わせて、水面の変位と法線をテクスチャに書く（WaterWaves.as が毎フレーム Dispatch する）
+// テクスチャの 1 画素が、グリッドの上の 1 点（uv = (位置 + Size / 2) / Size）にあたる
+#pragma kernel CSMain
+
+static const uint kMaxWaves = 8;
+static const float kGravity = 9.8;
+static const float kTwoPi = 6.28318530718;
+
+uint DisplacementIndex; // RWTexture2D<float4>: xyz = 変位（m、オブジェクトの空間）
+uint NormalIndex;       // RWTexture2D<float4>: xyz = 法線、w = 波の頂の印（小さいほど尖っている。泡に使う）
+uint Resolution;
+uint WaveCount;
+float Time;
+float Size;      // グリッドの大きさ（m）
+float Steepness; // 0〜1。1 に近いほど頂が尖る（全部の波で合わせて 1 を超えると、面が裏返る）
+float4 Waves[kMaxWaves]; // xy = 進む向き、z = 振幅（m）、w = 波長（m）
+
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id.xy >= Resolution))
+    {
+        return;
+    }
+
+    const float2 uv = (id.xy + 0.5) / Resolution;
+    const float2 position = (uv - 0.5) * Size;
+    const uint count = min(WaveCount, kMaxWaves);
+
+    float3 offset = 0.0;
+    float3 normal = float3(0.0, 1.0, 0.0);
+    for (uint i = 0; i < count; i++)
+    {
+        const float4 wave = Waves[i];
+        const float2 direction = normalize(wave.xy);
+        const float amplitude = wave.z;
+        const float k = kTwoPi / wave.w;        // 波数
+        const float speed = sqrt(kGravity / k); // 深い水の波の速さ
+        const float q = (amplitude > 0.0) ? Steepness / (k * amplitude * count) : 0.0;
+
+        float s, c;
+        sincos(k * (dot(direction, position) - speed * Time), s, c);
+
+        // Gerstner 波: 頂に向かって水平に寄る（GPU Gems 1 の 1 章）
+        offset.xz += direction * (q * amplitude * c);
+        offset.y += amplitude * s;
+
+        const float ka = k * amplitude;
+        normal.xz -= direction * (ka * c);
+        normal.y -= q * ka * s;
+    }
+
+    RWTexture2D<float4> displacementMap = ResourceDescriptorHeap[DisplacementIndex];
+    RWTexture2D<float4> normalMap = ResourceDescriptorHeap[NormalIndex];
+    displacementMap[id.xy] = float4(offset, 0.0);
+    normalMap[id.xy] = float4(normalize(normal), normal.y);
+}

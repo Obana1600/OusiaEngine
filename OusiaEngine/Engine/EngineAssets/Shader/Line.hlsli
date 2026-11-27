@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINE_INCLUDED
+#define LINE_INCLUDED
 
 #include "PerCamera.hlsli"
 
@@ -26,3 +27,5 @@ cbuffer PerLineRenderer : register(b0)
     uint gTextureIndex;
     uint gLoop;
 }
+
+#endif // LINE_INCLUDED

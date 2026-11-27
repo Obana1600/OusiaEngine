@@ -1,0 +1,12 @@
+{
+	"$id": 5000,
+	"$order": "5000005",
+	"name": "Beach",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{ "$type": "Transform", "$id": 5001, "localPosition": [0.0, -0.6, 9.0], "localRotation": [-0.087156, 0.0, 0.0, 0.996195], "localEulerAnglesHint": [-10.0, 0.0, 0.0], "localScale": [20.0, 1.0, 8.0], "parent": null },
+		{ "$type": "MeshRenderer", "$id": 5002, "enabled": true, "materials": [{"guid": "2711cb6e11649a1ec18a367702412349"}], "mesh": {"guid": "f5042389d0626924889e9c311a90f839", "sub": "Mesh/Cube"} }
+	]
+}

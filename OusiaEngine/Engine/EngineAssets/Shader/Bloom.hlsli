@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLOOM_INCLUDED
+#define BLOOM_INCLUDED
 
 #include "Blit.hlsli"
 #include "GlobalSamplers.hlsli"
@@ -21,3 +22,5 @@ float3 SampleSource(float2 uv)
     Texture2D<float4> source = ResourceDescriptorHeap[gSourceIndex];
     return source.SampleLevel(gLinearClamp, uv, 0).rgb;
 }
+
+#endif // BLOOM_INCLUDED

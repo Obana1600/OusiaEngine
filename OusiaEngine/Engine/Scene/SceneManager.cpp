@@ -1,11 +1,10 @@
 #include "SceneManager.h"
-#include "Scene/TagManager.h"
-#include "Core/JsonFile.h"
 #include "Animation/Skeletal/SkeletalAnimator.h"
 #include "Animation/Tween/TweenManager.h"
 #include "Asset/AssetDatabase.h"
 #include "Core/Application.h"
 #include "Core/Guid.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
@@ -14,8 +13,10 @@
 #include "Platform/Paths.h"
 #include "Render/Camera.h"
 #include "Render/Light.h"
+#include "Render/PerFrame.h"
 #include "Render/Renderer.h"
 #include "Scene/GameObject.h"
+#include "Scene/TagManager.h"
 #include "Scene/Transform.h"
 #include "Serialize/SceneSerializer.h"
 #include "UI/Canvas.h"
@@ -251,12 +252,8 @@ void ou::SceneManager::Finalize() {
 }
 
 
-void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd) {
-	auto *device = Graphics::GetDevice();
-	device->BindDynamicConstantBuffer(perCamera, 2, cmd);
-
-	// ライトのセット
-	Light::PerFrame perFrame{};
+void ou::SceneManager::CollectLights(PerFrame &perFrame) {
+	perFrame.lightCount = 0;
 	for (const auto *light : sLights_) {
 		if (!light->IsActiveAndEnabled()) { continue; }
 
@@ -271,7 +268,12 @@ void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, cons
 
 		perFrame.lights[perFrame.lightCount++] = light->MakeShaderLight();
 	}
-	device->BindDynamicConstantBuffer(perFrame, 3, cmd);
+}
+
+
+void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd) {
+	auto *device = Graphics::GetDevice();
+	device->BindDynamicConstantBuffer(perCamera, 2, cmd);
 
 	// range の中のものを、renderQueue の小さい順に描く
 	auto renderers = sRenderers_;

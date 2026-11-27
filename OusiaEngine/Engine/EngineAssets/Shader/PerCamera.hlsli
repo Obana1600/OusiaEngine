@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PER_CAMERA_INCLUDED
+#define PER_CAMERA_INCLUDED
 
 
 cbuffer PerCamera : register(b2)
@@ -20,3 +21,5 @@ float2 GetNormalizedScreenSpaceUV(float2 positionCS)
 {
     return positionCS * gCameraScreenSize.zw;
 }
+
+#endif // PER_CAMERA_INCLUDED

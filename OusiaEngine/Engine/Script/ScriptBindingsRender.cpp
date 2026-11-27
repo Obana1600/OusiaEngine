@@ -15,6 +15,8 @@
 #include "Render/SkinnedMeshRenderer.h"
 #include "Scene/SceneManager.h"
 #include "Script/ScriptBindingsInternal.h"
+#include "Render/Asset/ComputeShader.h"
+#include "Render/Asset/Texture.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -60,6 +62,66 @@ int GetPassCount(ObjectHandle *self) {
 int FindPropertyIndex(const std::string &propertyName, ObjectHandle *self) {
 	auto *shader = Resolve<Shader>(self);
 	return shader ? static_cast<int>(shader->FindPropertyIndex(propertyName)) : -1;
+}
+
+
+// ---- ComputeShader ----
+
+// Unity と同じく、ないカーネルは例外にする
+int FindKernel(const std::string &name, ObjectHandle *self) {
+	auto *shader = Resolve<ComputeShader>(self);
+	if (!shader) { return -1; }
+	if (!shader->HasKernel(name)) {
+		ThrowException(std::format("ArgumentException: ComputeShader \"{}\" にカーネル \"{}\" はありません", shader->GetName(), name));
+		return -1;
+	}
+	return shader->FindKernel(name);
+}
+
+bool HasKernel(const std::string &name, ObjectHandle *self) {
+	auto *shader = Resolve<ComputeShader>(self);
+	return shader && shader->HasKernel(name);
+}
+
+void GetKernelThreadGroupSizes(int kernelIndex, uint32_t &x, uint32_t &y, uint32_t &z, ObjectHandle *self) {
+	x = y = z = 0;
+	if (auto *shader = Resolve<ComputeShader>(self)) { shader->GetKernelThreadGroupSizes(kernelIndex, x, y, z); }
+}
+
+// SetFloat・SetInt・SetBool・SetVector・SetMatrix
+template <typename V, void (ComputeShader::*Setter)(std::string_view, V)>
+void SetComputeValue(const std::string &name, V value, ObjectHandle *self) {
+	if (auto *shader = Resolve<ComputeShader>(self)) { (shader->*Setter)(name, value); }
+}
+
+void SetComputeVectorArray(const std::string &name, CScriptArray *values, ObjectHandle *self) {
+	auto *shader = Resolve<ComputeShader>(self);
+	if (!shader) { return; }
+	if (!values) {
+		ThrowException("ArgumentNullException: values が null です");
+		return;
+	}
+
+	std::vector<Vector4> vectors(values->GetSize());
+	for (asUINT i = 0; i < values->GetSize(); i++) {
+		vectors[i] = *static_cast<const Vector4 *>(values->At(i));
+	}
+	shader->SetVectorArray(name, vectors);
+}
+
+// ComputeShader は Texture をポインタで覚える。RenderTexture を手放したら、Dispatch の前に SetTexture し直す
+void SetComputeTexture(int kernelIndex, const std::string &name, ObjectHandle *texture, ObjectHandle *self) {
+	auto *shader = Resolve<ComputeShader>(self);
+	if (!shader) { return; }
+	if (!texture) {
+		ThrowException("ArgumentNullException: texture が null です");
+		return;
+	}
+	if (auto *resolved = Resolve<Texture>(texture)) { shader->SetTexture(kernelIndex, name, resolved); }
+}
+
+void DispatchCompute(int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ, ObjectHandle *self) {
+	if (auto *shader = Resolve<ComputeShader>(self)) { shader->Dispatch(kernelIndex, threadGroupsX, threadGroupsY, threadGroupsZ); }
 }
 
 
@@ -289,6 +351,20 @@ void ou::ScriptBindings::RegisterRenderMembers(asIScriptEngine *engine) {
 		s.Method("int get_renderQueue() const property", asFUNCTION((Get<Shader, int, &Shader::GetRenderQueue>)));
 		s.Method("int get_passCount() const property", asFUNCTION(GetPassCount));
 		s.Method("int FindPropertyIndex(const string &in propertyName) const", asFUNCTION(FindPropertyIndex));
+	}
+	{
+		const auto c = RegisterAssetType(engine, "ComputeShader");
+		c.Method("int FindKernel(const string &in name) const", asFUNCTION(FindKernel));
+		c.Method("bool HasKernel(const string &in name) const", asFUNCTION(HasKernel));
+		c.Method("void GetKernelThreadGroupSizes(int kernelIndex, uint &out x, uint &out y, uint &out z) const", asFUNCTION(GetKernelThreadGroupSizes));
+		c.Method("void SetFloat(const string &in name, float value)", asFUNCTION((SetComputeValue<float, &ComputeShader::SetFloat>)));
+		c.Method("void SetInt(const string &in name, int value)", asFUNCTION((SetComputeValue<int, &ComputeShader::SetInt>)));
+		c.Method("void SetBool(const string &in name, bool value)", asFUNCTION((SetComputeValue<bool, &ComputeShader::SetBool>)));
+		c.Method("void SetVector(const string &in name, const Vector4 &in value)", asFUNCTION((SetComputeValue<const Vector4 &, &ComputeShader::SetVector>)));
+		c.Method("void SetVectorArray(const string &in name, array<Vector4>@+ values)", asFUNCTION(SetComputeVectorArray));
+		c.Method("void SetMatrix(const string &in name, const Matrix4x4 &in value)", asFUNCTION((SetComputeValue<const Matrix4x4 &, &ComputeShader::SetMatrix>)));
+		c.Method("void SetTexture(int kernelIndex, const string &in name, Texture@+ texture)", asFUNCTION(SetComputeTexture));
+		c.Method("void Dispatch(int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ)", asFUNCTION(DispatchCompute));
 	}
 	{
 		const auto a = RegisterAssetType(engine, "SkeletalAnimationClip");

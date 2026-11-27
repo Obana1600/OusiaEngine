@@ -60,6 +60,18 @@ enum TextAlignmentOptions {
 	Bottom = 7,
 	BottomRight = 8
 }
+enum RenderTextureFormat {
+	ARGB32 = 0,
+	ARGBHalf = 2,
+	Default = 7,
+	DefaultHDR = 9,
+	ARGBFloat = 11,
+	RGFloat = 12,
+	RFloat = 14,
+	R8 = 16,
+	BGRA32 = 20,
+	RGB111110Float = 22
+}
 enum LightType {
 	Spot = 0,
 	Directional = 1,
@@ -1742,6 +1754,8 @@ class Material {
 	float GetFloat(const string&in name) const;
 	void SetFloat(const string&in name, float value);
 	bool HasProperty(const string&in name) const;
+	Texture@ GetTexture(const string&in name) const;
+	void SetTexture(const string&in name, Texture@ value);
 }
 class AudioClip {
 	Object@ opImplCast();
@@ -1753,7 +1767,27 @@ class AudioClip {
 	int get_frequency() const property;
 	int get_channels() const property;
 }
+class RenderTexture {
+	RenderTexture(int width, int height, int depth, RenderTextureFormat format = RenderTextureFormat::Default);
+	Texture@ opImplCast();
+	const Texture@ opImplCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	int get_width() const property;
+	int get_height() const property;
+	RenderTextureFormat get_format() const property;
+	bool get_enableRandomWrite() const property;
+	void set_enableRandomWrite(bool value) property;
+	bool Create();
+	void Release();
+	bool IsCreated() const;
+}
 class Texture2D {
+	Texture@ opImplCast();
+	const Texture@ opImplCast() const;
 	Object@ opImplCast();
 	const Object@ opImplCast() const;
 	string get_name() const property;
@@ -1762,6 +1796,19 @@ class Texture2D {
 	int get_width() const property;
 	int get_height() const property;
 	bool get_isReadable() const property;
+}
+class Texture {
+	RenderTexture@ opCast();
+	const RenderTexture@ opCast() const;
+	Texture2D@ opCast();
+	const Texture2D@ opCast() const;
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	int get_width() const property;
+	int get_height() const property;
 }
 class Sprite {
 	Object@ opImplCast();
@@ -1799,6 +1846,24 @@ class Shader {
 	int get_renderQueue() const property;
 	int get_passCount() const property;
 	int FindPropertyIndex(const string&in propertyName) const;
+}
+class ComputeShader {
+	Object@ opImplCast();
+	const Object@ opImplCast() const;
+	string get_name() const property;
+	void set_name(const string&in value) property;
+	int GetInstanceID() const;
+	int FindKernel(const string&in name) const;
+	bool HasKernel(const string&in name) const;
+	void GetKernelThreadGroupSizes(int kernelIndex, uint&out x, uint&out y, uint&out z) const;
+	void SetFloat(const string&in name, float value);
+	void SetInt(const string&in name, int value);
+	void SetBool(const string&in name, bool value);
+	void SetVector(const string&in name, const Vector4&in value);
+	void SetVectorArray(const string&in name, Vector4[]@ values);
+	void SetMatrix(const string&in name, const Matrix4x4&in value);
+	void SetTexture(int kernelIndex, const string&in name, Texture@ texture);
+	void Dispatch(int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ);
 }
 class PhysicsMaterial {
 	Object@ opImplCast();
@@ -1897,8 +1962,12 @@ class Object {
 	const Material@ opCast() const;
 	AudioClip@ opCast();
 	const AudioClip@ opCast() const;
+	RenderTexture@ opCast();
+	const RenderTexture@ opCast() const;
 	Texture2D@ opCast();
 	const Texture2D@ opCast() const;
+	Texture@ opCast();
+	const Texture@ opCast() const;
 	Sprite@ opCast();
 	const Sprite@ opCast() const;
 	FontAsset@ opCast();
@@ -1907,6 +1976,8 @@ class Object {
 	const Mesh@ opCast() const;
 	Shader@ opCast();
 	const Shader@ opCast() const;
+	ComputeShader@ opCast();
+	const ComputeShader@ opCast() const;
 	PhysicsMaterial@ opCast();
 	const PhysicsMaterial@ opCast() const;
 	SkeletalAnimationClip@ opCast();

@@ -45,7 +45,7 @@ ou::Shader::Shader(std::vector<Pass> passes, int renderQueue, std::vector<Proper
 	  pipelineCaches_(passes_.size()) {
 	uint32_t offset = 0;
 	for (auto &property : properties_) {
-		const uint32_t size = (property.type == PropertyType::Float) ? 4 : 16;
+		const uint32_t size = (property.type == PropertyType::Float || property.type == PropertyType::Texture) ? 4u : 16u;
 		if (offset % 16 + size > 16) {
 			offset = Graphics::AlignTo(offset, 16u);
 		}

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DECLARE_DEPTH_TEXTURE_INCLUDED
+#define DECLARE_DEPTH_TEXTURE_INCLUDED
 
 #include "PerCamera.hlsli"
 
@@ -39,3 +40,5 @@ float LinearEyeDepth(float depth)
     }
     return (depth - gProjection._m32) / gProjection._m22;
 }
+
+#endif // DECLARE_DEPTH_TEXTURE_INCLUDED

@@ -94,6 +94,7 @@
     <ClInclude Include="Editor\SerializedProperty.h" />
     <ClInclude Include="Asset\Importer\PrefabImporter.h" />
     <ClInclude Include="PostProcess\PostProcessPass.h" />
+    <ClInclude Include="Render\PerFrame.h" />
     <ClInclude Include="Render\RenderQueueRange.h" />
     <ClInclude Include="Serialize\PropertySchema.h" />
     <ClInclude Include="Editor\ExternalScriptEditor.h" />
@@ -472,6 +473,7 @@
     <None Include="EngineAssets\Shader\Gizmo.shader" />
     <None Include="EngineAssets\Shader\Particle.hlsli" />
     <None Include="EngineAssets\Shader\PerCamera.hlsli" />
+    <None Include="EngineAssets\Shader\PerFrame.hlsli" />
     <None Include="EngineAssets\Shader\Sprite.hlsli" />
     <None Include="EngineAssets\Shader\Standard.hlsli" />
     <None Include="EngineAssets\Shader\Text.hlsli" />

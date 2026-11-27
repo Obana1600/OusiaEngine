@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SPRITE_INCLUDED
+#define SPRITE_INCLUDED
 
 
 struct VSInput
@@ -22,3 +23,5 @@ cbuffer PerCanvasRenderer : register(b0)
     float4 gColor;
     uint gTextureIndex;
 }
+
+#endif // SPRITE_INCLUDED

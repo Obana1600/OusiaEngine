@@ -1,0 +1,13 @@
+{
+	"$id": 3000,
+	"$order": "5000003",
+	"name": "Water",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{ "$type": "Transform", "$id": 3001, "localPosition": [0.0, 0.0, 0.0], "localRotation": [0.0, 0.0, 0.0, 1.0], "localEulerAnglesHint": [0.0, 0.0, 0.0], "localScale": [1.0, 1.0, 1.0], "parent": null },
+		{ "$type": "MeshRenderer", "$id": 3002, "enabled": true, "materials": [{"guid": "87cc2d5e1eef8497bdd7cd9d0855265d"}], "mesh": {"guid": "d5a9a2ae38c78ce09066d82a1dcd7f01", "sub": "Mesh/WaterGrid"} },
+		{ "$type": "MonoBehavior", "$id": 3003, "enabled": true, "script": {"guid": "3fe1ea367ee04fe10fff95e7866b8c67"}, "waveShader": {"guid": "aaa7bcf81177854f721ca75f9a450f63"} }
+	]
+}

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GIZMO_INCLUDED
+#define GIZMO_INCLUDED
 
 #include "PerCamera.hlsli"
 
@@ -22,3 +23,5 @@ cbuffer PerGizmo : register(b0)
     float gAlphaScale;
     float2 gPadding;
 }
+
+#endif // GIZMO_INCLUDED

@@ -57,6 +57,11 @@ void ou::ComputeShader::SetVector(std::string_view name, const Vector4 &value) {
 }
 
 
+void ou::ComputeShader::SetVectorArray(std::string_view name, std::span<const Vector4> values) {
+	WriteGlobal(name, values.data(), static_cast<uint32_t>(values.size_bytes()));
+}
+
+
 void ou::ComputeShader::SetMatrix(std::string_view name, const Matrix4x4 &value) {
 	WriteGlobal(name, &value, sizeof(value));
 }

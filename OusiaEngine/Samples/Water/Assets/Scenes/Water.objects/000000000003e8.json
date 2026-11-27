@@ -1,0 +1,12 @@
+{
+	"$id": 1000,
+	"$order": "5000001",
+	"name": "Main Camera",
+	"active": true,
+	"layer": 0,
+	"tag": "MainCamera",
+	"components": [
+		{ "$type": "Transform", "$id": 1001, "localPosition": [0.0, 3.2, -9.5], "localRotation": [0.156434, 0.0, 0.0, 0.987688], "localEulerAnglesHint": [18.0, 0.0, 0.0], "localScale": [1.0, 1.0, 1.0], "parent": null },
+		{ "$type": "Camera", "$id": 1002, "enabled": true, "fieldOfView": 60.0, "aspect": 0.0, "nearClipPlane": 0.3, "farClipPlane": 1000.0 }
+	]
+}

@@ -92,6 +92,9 @@ public: // メンバ関数
 	void SetColor(std::string_view name, const Color &value);
 	Color GetColor(std::string_view name) const;
 
+	void SetTexture(std::string_view name, std::shared_ptr<Texture> value);
+	std::shared_ptr<Texture> GetTexture(std::string_view name) const;
+
 	void WritePropertyBuffer(void *dst) const;
 
 
@@ -117,6 +120,7 @@ private: // メンバ変数
 	LightingMode lightingMode_ = LightingMode::HalfLambert;
 
 	std::vector<Vector4> propertyValues_;
+	std::vector<std::shared_ptr<Texture>> propertyTextures_;
 
 
 private: // メンバ関数

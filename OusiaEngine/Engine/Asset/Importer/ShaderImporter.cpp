@@ -1,7 +1,7 @@
 #include "ShaderImporter.h"
-#include "Core/JsonFile.h"
 #include "Asset/AssetDatabase.h"
 #include "Asset/Format/AssetJson.h"
+#include "Core/JsonFile.h"
 #include "Core/StringUtil.h"
 #include "Diagnostics/Log.h"
 #include "Render/Asset/Shader.h"
@@ -111,10 +111,16 @@ Shader::PropertyType ToPropertyType(const std::string &name) {
 	if (name == "Color") { return Shader::PropertyType::Color; }
 	if (name == "Vector") { return Shader::PropertyType::Vector; }
 	if (name == "Float") { return Shader::PropertyType::Float; }
-	throw JsonFile::FormatError(std::format("\"type\" に \"{}\" は使えません (使えるもの: Color, Vector, Float)", name));
+	if (name == "Texture") { return Shader::PropertyType::Texture; }
+
+	throw JsonFile::FormatError(std::format("\"type\" に \"{}\" は使えません (使えるもの: Color, Vector, Float, Texture)", name));
 }
 
 Vector4 ToDefaultValue(const Json &value, Shader::PropertyType type) {
+	if (type == Shader::PropertyType::Texture) {
+		throw JsonFile::FormatError("\"Texture\" には \"default\" を書けません");
+	}
+
 	if (type == Shader::PropertyType::Float) {
 		if (!value.is_number()) {
 			throw JsonFile::FormatError("\"Float\" の \"default\" は数で書いてください");
@@ -125,6 +131,7 @@ Vector4 ToDefaultValue(const Json &value, Shader::PropertyType type) {
 	if (!value.is_array() || value.size() != 4) {
 		throw JsonFile::FormatError("\"Color\" と \"Vector\" の \"default\" は [x, y, z, w] と書いてください");
 	}
+
 	return {value[0].get<float>(), value[1].get<float>(), value[2].get<float>(), value[3].get<float>()};
 }
 

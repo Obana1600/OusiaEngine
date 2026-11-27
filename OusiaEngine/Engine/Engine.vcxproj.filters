@@ -661,6 +661,9 @@
     <ClInclude Include="PostProcess\Builtin\Exposure.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Render\PerFrame.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Diagnostics\CrashHandler.cpp">
@@ -1381,6 +1384,9 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="EngineAssets\Shader\ExposureAverage.CS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\PerFrame.hlsli">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>

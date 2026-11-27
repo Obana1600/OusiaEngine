@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -32,6 +33,7 @@ public: // メンバ関数
 	void SetInt(std::string_view name, int value);
 	void SetBool(std::string_view name, bool value);
 	void SetVector(std::string_view name, const Vector4 &value);
+	void SetVectorArray(std::string_view name, std::span<const Vector4> values);
 	void SetMatrix(std::string_view name, const Matrix4x4 &value);
 
 	void SetTexture(int kernelIndex, std::string_view name, Texture *texture);

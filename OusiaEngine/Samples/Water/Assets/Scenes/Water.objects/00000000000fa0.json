@@ -1,0 +1,12 @@
+{
+	"$id": 4000,
+	"$order": "5000004",
+	"name": "Seabed",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{ "$type": "Transform", "$id": 4001, "localPosition": [0.0, -1.8, 0.0], "localRotation": [0.0, 0.0, 0.0, 1.0], "localEulerAnglesHint": [0.0, 0.0, 0.0], "localScale": [2.0, 1.0, 2.0], "parent": null },
+		{ "$type": "MeshRenderer", "$id": 4002, "enabled": true, "materials": [{"guid": "2711cb6e11649a1ec18a367702412349"}], "mesh": {"guid": "b03441b5e7af55c1b87b155c3691763e", "sub": "Mesh/Plane"} }
+	]
+}

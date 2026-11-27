@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FULL_SCREEN_INCLUDED
+#define FULL_SCREEN_INCLUDED
 
 #include "Blit.hlsli"
 #include "PerCamera.hlsli"
@@ -24,3 +25,5 @@ float4 LoadBlitTexture(uint2 pixel)
     Texture2D<float4> blitTexture = ResourceDescriptorHeap[gBlitTextureIndex];
     return blitTexture.Load(int3(pixel, 0));
 }
+
+#endif // FULL_SCREEN_INCLUDED

@@ -71,6 +71,7 @@ private: // メンバ関数
 	bool Update();
 
 	void Render();
+	void BindPerFrame(Graphics::CommandList cmd);
 	void FillTargetInfo(Camera::PerCamera &perCamera, const SceneRenderTarget &target) const;
 	void RenderScene(const SceneRenderTarget &target, const Camera::PerCamera &perCamera, Graphics::CommandList cmd);
 	void RenderGame(const SceneRenderTarget &target, Graphics::CommandList cmd);

@@ -1,4 +1,3 @@
-#include "ScriptBindings.h"
 #include "Asset/AssetDatabase.h"
 #include "Audio/AudioClip.h"
 #include "Audio/AudioListener.h"
@@ -8,11 +7,13 @@
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
 #include "Render/Asset/Material.h"
+#include "Render/Asset/RenderTexture.h"
 #include "Render/Asset/Shader.h"
 #include "Render/Asset/Texture.h"
 #include "Render/Renderer.h"
 #include "Script/ScriptBindingsInternal.h"
 #include "Script/ScriptEngine.h"
+#include "ScriptBindings.h"
 #include "UI/Asset/FontAsset.h"
 #include "UI/Asset/Sprite.h"
 #include "UI/Button.h"
@@ -88,6 +89,24 @@ int GetTextureHeight(ObjectHandle *self) {
 bool IsTextureReadable(ObjectHandle *self) {
 	auto *texture = Resolve<Texture>(self);
 	return texture && texture->IsReadable();
+}
+
+
+// ---- RenderTexture ----
+
+// Unity の new RenderTexture(width, height, depth, format)。アセットではないので保存されない。GPU の画像は Create か、初めて使うときに作る
+ObjectHandle *CreateRenderTexture(int width, int height, int depth, int format) {
+	if (width <= 0 || height <= 0) {
+		ThrowException(std::format("ArgumentException: RenderTexture の大きさは 1 以上にしてください ({} x {})", width, height));
+		return nullptr;
+	}
+	if (!CheckEnumValue<RenderTextureFormat>(format)) { return nullptr; }
+	return MakeOwningHandle(std::make_shared<RenderTexture>(width, height, depth, static_cast<RenderTextureFormat>(format)));
+}
+
+bool CreateTextureResource(ObjectHandle *self) {
+	auto *texture = Resolve<RenderTexture>(self);
+	return texture && texture->Create();
 }
 
 
@@ -187,6 +206,20 @@ void SetVector(const std::string &name, const Vector4 &value, ObjectHandle *self
 	if (auto *material = Resolve<Material>(self)) { material->SetVector(name, value); }
 }
 
+ObjectHandle *GetNamedTexture(const std::string &name, ObjectHandle *self) {
+	auto *material = Resolve<Material>(self);
+	return material ? MakeHandle(material->GetTexture(name).get()) : nullptr;
+}
+
+// 入れられるのは、アセットかスクリプトで作ったもの（new RenderTexture など）だけ
+void SetNamedTexture(const std::string &name, ObjectHandle *texture, ObjectHandle *self) {
+	auto *material = Resolve<Material>(self);
+	if (!material) { return; }
+
+	std::shared_ptr<Texture> shared;
+	if (ResolveSharedAsset(texture, shared)) { material->SetTexture(name, std::move(shared)); }
+}
+
 // Unity の new Material(shader)・new Material(source)。アセットではないので保存されない
 ObjectHandle *CreateMaterialFromShader(ObjectHandle *shader) {
 	std::shared_ptr<Shader> shared;
@@ -208,7 +241,9 @@ ObjectHandle *CreateMaterialFromSource(ObjectHandle *source) {
 
 CScriptArray *MakeMaterialArray(const std::vector<std::shared_ptr<Material>> &shared) {
 	std::vector<Material *> materials;
-	for (const auto &material : shared) { materials.push_back(material.get()); }
+	for (const auto &material : shared) {
+		materials.push_back(material.get());
+	}
 	return MakeHandleArray(materials, "array<Material@>");
 }
 
@@ -480,12 +515,34 @@ void ou::ScriptBindings::RegisterComponentMembers(asIScriptEngine *engine) {
 		a.Method("int get_channels() const property", asFUNCTION(GetClipChannels));
 	}
 
+	// ---- Texture（Unity と同じく、Texture2D・RenderTexture の親） ----
+	{
+		const auto t = RegisterAssetType(engine, "Texture");
+		t.Method("int get_width() const property", asFUNCTION(GetTextureWidth));
+		t.Method("int get_height() const property", asFUNCTION(GetTextureHeight));
+	}
+
 	// ---- Texture2D ----
 	{
 		const auto t = RegisterAssetType(engine, "Texture2D");
 		t.Method("int get_width() const property", asFUNCTION(GetTextureWidth));
 		t.Method("int get_height() const property", asFUNCTION(GetTextureHeight));
 		t.Method("bool get_isReadable() const property", asFUNCTION(IsTextureReadable));
+	}
+
+	// ---- RenderTexture ----
+	RegisterEnum<RenderTextureFormat>(engine, "RenderTextureFormat");
+	{
+		const auto r = RegisterAssetType(engine, "RenderTexture");
+		Check(engine->RegisterObjectBehaviour("RenderTexture", asBEHAVE_FACTORY, "RenderTexture@ f(int width, int height, int depth, RenderTextureFormat format = RenderTextureFormat::Default)", asFUNCTION(CreateRenderTexture), asCALL_CDECL), "RenderTexture factory");
+		r.Method("int get_width() const property", asFUNCTION(GetTextureWidth));
+		r.Method("int get_height() const property", asFUNCTION(GetTextureHeight));
+		r.Method("RenderTextureFormat get_format() const property", asFUNCTION((GetEnum<RenderTexture, RenderTextureFormat, &RenderTexture::GetFormat>)));
+		r.Method("bool get_enableRandomWrite() const property", asFUNCTION((Get<RenderTexture, bool, &RenderTexture::GetEnableRandomWrite>)));
+		r.Method("void set_enableRandomWrite(bool value) property", asFUNCTION((Set<RenderTexture, bool, &RenderTexture::SetEnableRandomWrite>)));
+		r.Method("bool Create()", asFUNCTION(CreateTextureResource));
+		r.Method("void Release()", asFUNCTION((Call<RenderTexture, &RenderTexture::Release>)));
+		r.Method("bool IsCreated() const", asFUNCTION((Get<RenderTexture, bool, &RenderTexture::IsCreated>)));
 	}
 
 	// ---- AudioSource ----
@@ -542,6 +599,8 @@ void ou::ScriptBindings::RegisterComponentMembers(asIScriptEngine *engine) {
 		m.Method("float GetFloat(const string &in name) const", asFUNCTION(GetFloat));
 		m.Method("void SetFloat(const string &in name, float value)", asFUNCTION(SetFloat));
 		m.Method("bool HasProperty(const string &in name) const", asFUNCTION(HasProperty));
+		m.Method("Texture@ GetTexture(const string &in name) const", asFUNCTION(GetNamedTexture));
+		m.Method("void SetTexture(const string &in name, Texture@+ value)", asFUNCTION(SetNamedTexture));
 	}
 
 	// ---- Renderer・MeshRenderer（ほかの派生は ScriptBindingsRender.cpp） ----

@@ -118,9 +118,15 @@ void ou::Renderer::DrawMesh(Mesh &mesh, const PerDraw &perDraw, Graphics::Comman
 		const auto *material = FindMaterialForSubMesh(i);
 		if (!material || !material->GetShader()) { material = Material::sErrorMaterial_.get(); }
 
-		device->BindDynamicConstantBuffer(material->MakePerMaterial(), 1, cmd);
-
 		const auto &shader = material->GetShader();
+		if (const auto size = shader->GetPropertyBufferSize(); size > 0) {
+			const auto properties = device->AllocateGpu(size, cmd);
+			material->WritePropertyBuffer(properties.data);
+			device->BindConstantBuffer(&properties.buffer, 1, cmd, properties.offset);
+		} else {
+			device->BindDynamicConstantBuffer(material->MakePerMaterial(), 1, cmd);
+		}
+
 		for (size_t pass = 0; pass < shader->GetPassCount(); pass++) {
 			const auto *pso = shader->GetPipelineState(
 				pass, material->GetRenderStateOverride(), &Mesh::GetInputLayout(), Graphics::PrimitiveTopology::TRIANGLELIST);

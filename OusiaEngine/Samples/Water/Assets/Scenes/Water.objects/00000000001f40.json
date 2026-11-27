@@ -1,0 +1,12 @@
+{
+	"$id": 8000,
+	"$order": "5000008",
+	"name": "Rock_3",
+	"active": true,
+	"layer": 0,
+	"tag": "Untagged",
+	"components": [
+		{ "$type": "Transform", "$id": 8001, "localPosition": [5.0, 0.1, 4.0], "localRotation": [0.0, 0.0, 0.0, 1.0], "localEulerAnglesHint": [0.0, 0.0, 0.0], "localScale": [1.0, 1.0, 1.0], "parent": null },
+		{ "$type": "MeshRenderer", "$id": 8002, "enabled": true, "materials": [{"guid": "f46b597fed2713ec7e17e626087efdc8"}], "mesh": {"guid": "2a1c58485f6282fc8f8c5372c3f77d5c", "sub": "Mesh/Sphere"} }
+	]
+}

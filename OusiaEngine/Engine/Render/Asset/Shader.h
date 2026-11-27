@@ -50,10 +50,11 @@ public: // インナークラス
 		bool operator==(const RenderStateOverride &) const = default;
 	};
 
-	enum class PropertyType: uint8_t {
+		enum class PropertyType : uint8_t {
 		Color,
 		Vector,
 		Float,
+		Texture,
 	};
 
 	struct Property {

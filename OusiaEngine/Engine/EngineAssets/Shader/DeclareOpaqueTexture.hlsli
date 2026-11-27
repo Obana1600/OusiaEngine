@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DECLARE_OPAQUE_TEXTURE_INCLUDED
+#define DECLARE_OPAQUE_TEXTURE_INCLUDED
 
 #include "GlobalSamplers.hlsli"
 #include "PerCamera.hlsli"
@@ -26,3 +27,5 @@ float3 LoadSceneColor(uint2 pixel)
     Texture2D<float4> opaqueTexture = ResourceDescriptorHeap[gCameraOpaqueTextureIndex];
     return opaqueTexture.Load(int3(pixel, 0)).rgb;
 }
+
+#endif // DECLARE_OPAQUE_TEXTURE_INCLUDED

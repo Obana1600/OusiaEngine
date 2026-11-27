@@ -55,6 +55,8 @@
 #include "UI/Image.h"
 #include "UI/RectTransform.h"
 #include "UI/Text.h"
+#include "Render/Asset/ComputeShader.h"
+#include "Render/Asset/RenderTexture.h"
 
 #include <cstdint>
 #include <format>
@@ -492,6 +494,24 @@ std::shared_ptr<MonoScript> FindMonoScript(const std::string &className) {
 	return nullptr;
 }
 
+// C++ には Texture2D の型がない（Texture の派生は RenderTexture だけ）。RenderTexture でない Texture を Texture2D として出す
+bool IsTexture2D(const Object *object) {
+	return dynamic_cast<const Texture *>(object) && !dynamic_cast<const RenderTexture *>(object);
+}
+
+ObjectHandle *DowncastTexture2D(ObjectHandle *self) {
+	if (!IsTexture2D(Object::FindObjectFromInstanceId(self->instanceId))) { return nullptr; }
+	AddRef(self);
+	return self;
+}
+
+NativeType MakeTexture2DType() {
+	auto type = MakeNativeType<Texture>("Texture2D", "Texture");
+	type.isInstance = &IsTexture2D;
+	type.downcast = asFUNCTION(DowncastTexture2D);
+	return type;
+}
+
 } // namespace
 
 
@@ -562,11 +582,14 @@ std::vector<NativeType> &ou::ScriptBindingsInternal::NativeTypes() {
 		MakeNativeType<Component>("Component", "Object"),
 		MakeNativeType<Material>("Material", "Object"),
 		MakeNativeType<AudioClip>("AudioClip", "Object"),
-		MakeNativeType<Texture>("Texture2D", "Object"), // C++ の Texture は今 2D しかないので、Unity の名前で出す
+		MakeNativeType<RenderTexture>("RenderTexture", "Texture"),
+		MakeTexture2DType(),
+		MakeNativeType<Texture>("Texture", "Object"),
 		MakeNativeType<Sprite>("Sprite", "Object"),
 		MakeNativeType<FontAsset>("FontAsset", "Object"),
 		MakeNativeType<Mesh>("Mesh", "Object"),
 		MakeNativeType<Shader>("Shader", "Object"),
+		MakeNativeType<ComputeShader>("ComputeShader", "Object"),
 		MakeNativeType<PhysicsMaterial>("PhysicsMaterial", "Object"),
 		MakeNativeType<SkeletalAnimationClip>("SkeletalAnimationClip", "Object"),
 		MakeNativeType<VolumeProfile>("VolumeProfile", "Object"),

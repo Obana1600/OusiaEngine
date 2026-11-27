@@ -209,6 +209,8 @@ const char *PropertyTypeText(Shader::PropertyType type) {
 			return "Vector";
 		case Shader::PropertyType::Float:
 			return "Float";
+		case Shader::PropertyType::Texture:
+			return "Texture";
 	}
 	return "";
 }
@@ -591,9 +593,18 @@ void ou::ShaderEditor::OnInspectorGui() {
 	ImGui::SeparatorText("プロパティ");
 	for (const auto &property : properties) {
 		const auto &value = property.defaultValue;
-		const auto defaultText = property.type == Shader::PropertyType::Float
-									 ? std::format("{:g}", value.x)
-									 : std::format("({:g}, {:g}, {:g}, {:g})", value.x, value.y, value.z, value.w);
+		std::string defaultText;
+		switch (property.type) {
+			case Shader::PropertyType::Float:
+				defaultText = std::format("{:g}", value.x);
+				break;
+			case Shader::PropertyType::Texture:
+				defaultText = "白";
+				break;
+			default:
+				defaultText = std::format("({:g}, {:g}, {:g}, {:g})", value.x, value.y, value.z, value.w);
+				break;
+		}
 		InfoField(property.name, std::format("{}  初期値 {}", PropertyTypeText(property.type), defaultText));
 	}
 }

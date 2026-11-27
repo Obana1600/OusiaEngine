@@ -1,0 +1,9 @@
+{
+	"gravity": [
+		0.0,
+		-9.8100004196167,
+		0.0
+	],
+	"queriesHitTriggers": true,
+	"ignoreLayerCollisions": []
+}

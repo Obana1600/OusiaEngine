@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TEXT_INCLUDED
+#define TEXT_INCLUDED
 
 
 struct VSInput
@@ -34,3 +35,5 @@ cbuffer TextMaterial : register(b1)
     float _UnderlayDilate;
     float _UnderlaySoftness;
 }
+
+#endif // TEXT_INCLUDED

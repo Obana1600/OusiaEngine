@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PARTICLE_INCLUDED
+#define PARTICLE_INCLUDED
 
 #include "PerCamera.hlsli"
 
@@ -26,3 +27,5 @@ cbuffer PerParticleSystem : register(b0)
 }
 
 static const uint kBlendModeMultiply = 2;
+
+#endif // PARTICLE_INCLUDED

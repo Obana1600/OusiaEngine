@@ -1,4 +1,5 @@
-#pragma once
+#ifndef EXPOSURE_INCLUDED
+#define EXPOSURE_INCLUDED
 
 
 static const uint kExposureBinCount = 256;
@@ -30,3 +31,5 @@ cbuffer ExposurePassConstants : register(b0)
     uint gAdaptationProgressive; // 0: Fixed、1: Progressive
     uint gPadding;
 }
+
+#endif // EXPOSURE_INCLUDED

@@ -25,6 +25,7 @@
 #include "Scene/SceneManager.h"
 #include "Scene/TagManager.h"
 #include "Render/ImmediateCommands.h"
+#include "Render/PerFrame.h"
 #include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
@@ -429,6 +430,7 @@ void ou::Engine::Render() {
 	ResizeIfNeeded();
 
 	auto cmd = device_->BeginCommandList();
+	BindPerFrame(cmd);
 
 #ifdef WITH_EDITOR
 	// エディタではゲームを Game ビューに、エディタのカメラで Scene ビューに描き、スワップチェーンには ImGui だけを描く
@@ -459,10 +461,22 @@ void ou::Engine::Render() {
 }
 
 
+void ou::Engine::BindPerFrame(Graphics::CommandList cmd) {
+	PerFrame perFrame{};
+
+	const auto time = Time::GetTime();
+	perFrame.time = {time / 20.0f, time, time * 2.0f, time * 3.0f};
+
+	SceneManager::CollectLights(perFrame);
+	device_->BindDynamicConstantBuffer(perFrame, 3, cmd);
+}
+
+
 void ou::Engine::FillTargetInfo(Camera::PerCamera &perCamera, const SceneRenderTarget &target) const {
 	const auto width = static_cast<float>(target.GetWidth());
 	const auto height = static_cast<float>(target.GetHeight());
 	perCamera.screenSize = {width, height, 1.0f / width, 1.0f / height};
+
 	perCamera.depthTextureIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&target.GetDepthCopy(), Graphics::ViewType::SRV));
 	perCamera.opaqueTextureIndex = static_cast<uint32_t>(device_->GetDescriptorIndex(&target.GetOpaqueTexture(), Graphics::ViewType::SRV));
 }
