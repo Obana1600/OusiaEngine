@@ -643,6 +643,24 @@
     <ClInclude Include="Render\CopyColorPass.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Render\ImmediateCommands.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\GraphicsBuffer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Asset\RenderTexture.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Asset\ComputeShader.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\Importer\ComputeShaderImporter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Builtin\Exposure.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Diagnostics\CrashHandler.cpp">
@@ -1227,6 +1245,24 @@
     <ClCompile Include="Render\CopyColorPass.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Render\ImmediateCommands.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\GraphicsBuffer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Asset\RenderTexture.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Asset\ComputeShader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Importer\ComputeShaderImporter.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Builtin\Exposure.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineAssets\Shader\Blit.hlsli">
@@ -1336,6 +1372,15 @@
       <Filter>リソース ファイル</Filter>
     </None>
     <None Include="EngineAssets\Shader\DeclareOpaqueTexture.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\Exposure.hlsli">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\ExposureHistogram.CS.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="EngineAssets\Shader\ExposureAverage.CS.hlsl">
       <Filter>リソース ファイル</Filter>
     </None>
   </ItemGroup>

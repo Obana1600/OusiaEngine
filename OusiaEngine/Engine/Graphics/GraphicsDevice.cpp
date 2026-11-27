@@ -1,5 +1,8 @@
 #include "GraphicsDevice.h"
 
+#include <algorithm>
+#include <cstring>
+
 using namespace ou;
 using namespace ou::Graphics;
 
@@ -30,4 +33,17 @@ GraphicsDevice::GpuAllocation ou::Graphics::GraphicsDevice::AllocateGpu(uint64_t
 	allocator.offset += alignedSize;
 
 	return allocation;
+}
+
+
+void ou::Graphics::GraphicsDevice::UpdateBuffer(const GpuBuffer *buffer, const void *data, CommandList cmd, uint64_t size, uint64_t offset) {
+	if (!buffer || !buffer->IsValid() || !data) { return; }
+	if (offset >= buffer->desc.size) { return; }
+
+	size = std::min(size, buffer->desc.size - offset);
+	auto allocation = AllocateGpu(size, cmd);
+	if (!allocation.IsValid()) { return; }
+
+	std::memcpy(allocation.data, data, size);
+	CopyBuffer(buffer, offset, &allocation.buffer, allocation.offset, size, cmd);
 }

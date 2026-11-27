@@ -3,10 +3,13 @@
 #include "Diagnostics/Log.h"
 #include "Platform/Paths.h"
 
+#include <string_view>
+
 // clang-format off
 #include <Windows.h>
 #include <wrl/client.h>
 #include <dxcapi.h> // wrl/client.h より後ろに置く
+#include <d3d12shader.h>
 // clang-format on
 
 #pragma comment(lib, "dxcompiler.lib")
@@ -26,13 +29,10 @@ struct InternalState_DXC {
 };
 
 InternalState_DXC::InternalState_DXC() {
-	// dxcompiler.dll・dxil.dll は exe の隣の Runtime/ にある（Build/Common.props）。dxcompiler.dll は遅延読み込みなので、
-	// 最初の DxcCreateInstance より前に探す場所へ足しておけば読める。dxcompiler.dll が読む dxil.dll もここから見つかる
 	SetDllDirectoryW((ExecutableDirectory() / L"Runtime").c_str());
 
-	// 遅延読み込みは DLL がないと構造化例外を投げて固まるので、先に読めるかを確かめる。読めなければ compiler は null のまま
 	if (!LoadLibraryW(L"dxcompiler.dll")) {
-		Log::Error("dxcompiler.dll を読めません。exe の隣の Runtime/ に dxcompiler.dll と dxil.dll があるかを確かめてください");
+		Log::Error("dxcompiler.dll の読み込みに失敗しました。.exe の隣の Runtime/ に dxcompiler.dll と dxil.dll があるかを確かめてください");
 		return;
 	}
 
@@ -105,6 +105,46 @@ std::wstring MakeProfile(Graphics::ShaderStage stage, Graphics::ShaderModel mode
 	}
 
 	return std::wstring(stageName) + L"_" + modelName;
+}
+
+ShaderCompiler::ShaderReflection ReadReflection(IDxcUtils *utils, IDxcResult *result, Graphics::ShaderStage stage) {
+	ShaderCompiler::ShaderReflection reflection;
+
+	ComPtr<IDxcBlob> reflectionBlob;
+	result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&reflectionBlob), nullptr);
+	if (!reflectionBlob) { return reflection; }
+
+	DxcBuffer buffer{};
+	buffer.Ptr = reflectionBlob->GetBufferPointer();
+	buffer.Size = reflectionBlob->GetBufferSize();
+	buffer.Encoding = DXC_CP_ACP;
+
+	ComPtr<ID3D12ShaderReflection> shaderReflection;
+	if (FAILED(utils->CreateReflection(&buffer, IID_PPV_ARGS(&shaderReflection)))) { return reflection; }
+
+	if (stage == Graphics::ShaderStage::CS) {
+		shaderReflection->GetThreadGroupSize(
+			&reflection.threadGroupSize[0], &reflection.threadGroupSize[1], &reflection.threadGroupSize[2]);
+	}
+
+	D3D12_SHADER_DESC shaderDesc{};
+	shaderReflection->GetDesc(&shaderDesc);
+	for (UINT i = 0; i < shaderDesc.ConstantBuffers; i++) {
+		auto *constantBuffer = shaderReflection->GetConstantBufferByIndex(i);
+		D3D12_SHADER_BUFFER_DESC bufferDesc{};
+		constantBuffer->GetDesc(&bufferDesc);
+		if (std::string_view(bufferDesc.Name) != "$Globals") { continue; }
+
+		reflection.globalsSize = bufferDesc.Size;
+		for (UINT v = 0; v < bufferDesc.Variables; v++) {
+			D3D12_SHADER_VARIABLE_DESC variableDesc{};
+			constantBuffer->GetVariableByIndex(v)->GetDesc(&variableDesc);
+			reflection.globals.push_back({variableDesc.Name, variableDesc.StartOffset, variableDesc.Size});
+		}
+		break;
+	}
+
+	return reflection;
 }
 
 } // namespace
@@ -204,8 +244,9 @@ ShaderCompiler::CompilerOutput ou::ShaderCompiler::Compile(const CompilerInput &
 
 	auto is = std::make_shared<CompilerOutput_DXC>();
 	is->blob = blob;
+	output.internalState = is;
 	output.shaderData = static_cast<const uint8_t *>(blob->GetBufferPointer());
 	output.shaderSize = blob->GetBufferSize();
-	output.internalState = is;
+	output.reflection = ReadReflection(dxc.utils.Get(), result.Get(), input.stage);
 	return output;
 }

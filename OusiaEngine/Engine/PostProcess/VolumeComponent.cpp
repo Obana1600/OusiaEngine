@@ -1,8 +1,9 @@
 #include "VolumeComponent.h"
+#include "PostProcess/Builtin/Bloom.h"
 #include "PostProcess/Builtin/ColorAdjustments.h"
+#include "PostProcess/Builtin/Exposure.h"
 #include "PostProcess/Builtin/Tonemapping.h"
 #include "PostProcess/Builtin/Vignette.h"
-#include "PostProcess/Builtin/Bloom.h"
 
 #include <typeindex>
 
@@ -30,6 +31,7 @@ const std::vector<ComponentType> &GetComponentTypes() {
 		MakeComponentType<ColorAdjustments>("ColorAdjustments"),
 		MakeComponentType<Vignette>("Vignette"),
 		MakeComponentType<Bloom>("Bloom"),
+		MakeComponentType<Exposure>("Exposure"),
 	};
 	return kTypes;
 }

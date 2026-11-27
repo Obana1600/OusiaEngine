@@ -44,6 +44,12 @@
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
+    <ClInclude Include="PostProcess\Builtin\Exposure.h" />
+    <ClInclude Include="Render\Asset\ComputeShader.h" />
+    <ClInclude Include="Asset\Importer\ComputeShaderImporter.h" />
+    <ClInclude Include="Render\Asset\RenderTexture.h" />
+    <ClInclude Include="Render\GraphicsBuffer.h" />
+    <ClInclude Include="Render\ImmediateCommands.h" />
     <ClInclude Include="Render\CopyColorPass.h" />
     <ClInclude Include="Render\CopyDepthPass.h" />
     <ClInclude Include="PostProcess\FullScreenPassRendererFeature.h" />
@@ -253,6 +259,12 @@
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
+    <ClCompile Include="PostProcess\Builtin\Exposure.cpp" />
+    <ClCompile Include="Render\Asset\ComputeShader.cpp" />
+    <ClCompile Include="Asset\Importer\ComputeShaderImporter.cpp" />
+    <ClCompile Include="Render\Asset\RenderTexture.cpp" />
+    <ClCompile Include="Render\GraphicsBuffer.cpp" />
+    <ClCompile Include="Render\ImmediateCommands.cpp" />
     <ClCompile Include="Render\CopyColorPass.cpp" />
     <ClCompile Include="Render\CopyDepthPass.cpp" />
     <ClCompile Include="PostProcess\FullScreenPassRendererFeature.cpp" />
@@ -451,6 +463,7 @@
     <None Include="EngineAssets\Shader\DeclareDepthTexture.hlsli" />
     <None Include="EngineAssets\Shader\DeclareOpaqueTexture.hlsli" />
     <None Include="EngineAssets\Shader\Error.shader" />
+    <None Include="EngineAssets\Shader\Exposure.hlsli" />
     <None Include="EngineAssets\Shader\FullScreen.hlsli" />
     <None Include="EngineAssets\Shader\GlobalSamplers.hlsli" />
     <None Include="EngineAssets\Shader\Line.hlsli" />
@@ -651,6 +664,26 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineAssets\Shader\ExposureAverage.CS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="EngineAssets\Shader\ExposureHistogram.CS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">6.6</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <FileType>Document</FileType>
     </None>

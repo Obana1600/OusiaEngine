@@ -10,11 +10,6 @@ ou::Texture::Texture(Graphics::Texture graphicsTexture)
 	: graphicsTexture_(std::move(graphicsTexture)) {}
 
 
-const Graphics::Texture &ou::Texture::GetGraphicsTexture() const {
-	return graphicsTexture_;
-}
-
-
 uint32_t ou::Texture::GetWidth() const {
 	return graphicsTexture_.desc.width;
 }
@@ -22,6 +17,11 @@ uint32_t ou::Texture::GetWidth() const {
 
 uint32_t ou::Texture::GetHeight() const {
 	return graphicsTexture_.desc.height;
+}
+
+
+const Graphics::Texture &ou::Texture::GetGraphicsTexture() const {
+	return graphicsTexture_;
 }
 
 

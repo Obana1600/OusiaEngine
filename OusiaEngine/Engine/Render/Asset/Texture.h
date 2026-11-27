@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 
-// TODO: Unity のように Texture2D / RenderTexture / CubeMap... と派生させる
+// TODO: Texture2D / CubeMap も作る
 
 namespace ou {
 
@@ -18,17 +18,26 @@ public: // メンバ関数
 
 	explicit Texture(Graphics::Texture graphicsTexture);
 
-	const Graphics::Texture &GetGraphicsTexture() const;
+	virtual uint32_t GetWidth() const;
+	virtual uint32_t GetHeight() const;
 
-	uint32_t GetWidth() const;
-	uint32_t GetHeight() const;
+	const Graphics::Texture &GetGraphicsTexture() const;
 	uint32_t GetDescriptorIndex() const;
 	bool IsReadable() const;
 
 
-private: // メンバ変数
+protected: // メンバ関数
+
+	Texture() = default;
+
+
+protected: // メンバ変数
 
 	Graphics::Texture graphicsTexture_;
+
+
+private: // メンバ変数
+
 	std::vector<uint8_t> pixels_;
 };
 

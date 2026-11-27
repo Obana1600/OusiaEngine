@@ -67,6 +67,7 @@ public: // メンバ関数
 	void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) override;
 	void Dispatch(uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ, CommandList cmd) override;
 
+	void CopyBuffer(const GpuBuffer *dst, uint64_t dstOffset, const GpuBuffer *src, uint64_t srcOffset, uint64_t size, CommandList cmd) override;
 	void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) override;
 
 

@@ -47,6 +47,7 @@ public: // メンバ関数
 	uint32_t GetBloomMipCount() const;
 	const Graphics::Texture &GetBloomMipDown(uint32_t index) const;
 	const Graphics::Texture &GetBloomMipUp(uint32_t index) const;
+	const Graphics::GpuBuffer &GetExposureBuffer() const;
 
 
 private: // メンバ変数
@@ -63,9 +64,11 @@ private: // メンバ変数
 	uint32_t width_ = 0;
 	uint32_t height_ = 0;
 
+	// ポストプロセス
 	uint32_t bloomMipCount_ = 0;
 	std::array<Graphics::Texture, kMaxBloomMipCount> bloomMipDown_;
 	std::array<Graphics::Texture, kMaxBloomMipCount> bloomMipUp_;
+	Graphics::GpuBuffer exposureBuffer_;
 
 
 private: // メンバ関数
@@ -73,6 +76,7 @@ private: // メンバ関数
 	void BindViewport(Graphics::CommandList cmd) const;
 
 	void CreateOpaqueTexture(Downsampling downsampling);
+	void CreateExposureBuffer();
 };
 
 } // namespace ou

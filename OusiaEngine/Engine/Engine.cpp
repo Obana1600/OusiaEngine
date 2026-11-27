@@ -24,6 +24,7 @@
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
 #include "Scene/TagManager.h"
+#include "Render/ImmediateCommands.h"
 #include "Script/ScriptEngine.h"
 #include "Serialize/EngineTypes.h"
 #include "UI/Graphic.h"
@@ -451,6 +452,8 @@ void ou::Engine::Render() {
 	device_->RenderPassEnd(cmd);
 
 	device_->SubmitCommandLists();
+
+	ImmediateCommands::OnSubmitted();
 
 	WaitForFixedFrameRate();
 }

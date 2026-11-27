@@ -10,6 +10,16 @@ struct BloomConstants
     uint3 padding;
 };
 
+struct ExposureConstants
+{
+    float exposure;
+    uint bufferIndex;
+    uint2 padding;
+};
+
+static const uint kNoExposureBuffer = 0xFFFFFFFF;
+static const uint kExposureValueOffset = 256 * 4;
+
 struct ColorAdjustmentsConstants
 {
     float postExposure;
@@ -35,6 +45,7 @@ cbuffer UberPostConstants : register(b0)
     uint gTonemappingMode; // 0: None, 1: Neutral, 2: ACES
     uint2 gPadding;
     BloomConstants gBloom;
+    ExposureConstants gExposure;
     ColorAdjustmentsConstants gColorAdjustments;
     VignetteConstants gVignette;
 }
@@ -186,6 +197,15 @@ float4 main(VSOutput input) : SV_TARGET
         Texture2D<float4> bloom = ResourceDescriptorHeap[gBloom.textureIndex];
         color += bloom.SampleLevel(gLinearClamp, input.texcoord, 0).rgb * gBloom.tint;
     }
+    
+    // 露出
+    float exposure = gExposure.exposure;
+    if (gExposure.bufferIndex != kNoExposureBuffer)
+    {
+        ByteAddressBuffer exposureBuffer = ResourceDescriptorHeap[gExposure.bufferIndex];
+        exposure = asfloat(exposureBuffer.Load(kExposureValueOffset));
+    }
+    color *= exposure;
     
     // ビネット
     if (gVignette.intensity > 0.0)

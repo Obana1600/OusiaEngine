@@ -1,5 +1,6 @@
 #include "PostProcessPass.h"
 #include "Asset/AssetDatabase.h"
+#include "Core/Time.h"
 #include "Diagnostics/Fatal.h"
 #include "Diagnostics/Log.h"
 #include "Editor/SceneRenderTarget.h"
@@ -11,6 +12,7 @@
 #include "Math/Vector4.h"
 #include "PostProcess/Builtin/Bloom.h"
 #include "PostProcess/Builtin/ColorAdjustments.h"
+#include "PostProcess/Builtin/Exposure.h"
 #include "PostProcess/Builtin/Tonemapping.h"
 #include "PostProcess/Builtin/Vignette.h"
 #include "PostProcess/VolumeStack.h"
@@ -19,6 +21,7 @@
 #include "Render/Asset/ShaderModule.h"
 #include "Render/GraphicsSettings.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <format>
 #include <memory>
@@ -55,6 +58,15 @@ struct BloomConstants {
 };
 static_assert(sizeof(BloomConstants) % 16 == 0);
 
+struct ExposureConstants {
+	float exposure;
+	uint32_t bufferIndex;
+	uint32_t padding[2];
+};
+static_assert(sizeof(ExposureConstants) % 16 == 0);
+
+constexpr uint32_t kNoExposureBuffer = 0xFFFFFFFF;
+
 struct ColorAdjustmentsConstants {
 	float postExposure;
 	float contrast;
@@ -79,10 +91,11 @@ struct UberPostConstants {
 	uint32_t tonemappingMode;
 	uint32_t padding[2];
 	BloomConstants bloom;
+	ExposureConstants exposure;
 	ColorAdjustmentsConstants colorAdjustments;
 	VignetteConstants vignette;
 };
-static_assert(sizeof(UberPostConstants) == 112);
+static_assert(sizeof(UberPostConstants) == 128);
 
 
 // ----- Bloom Pass -----
@@ -97,6 +110,34 @@ struct BloomPassConstants {
 	float thresholdKnee;
 };
 static_assert(sizeof(BloomPassConstants) == 32);
+
+
+// ----- Exposure Pass -----
+
+struct ExposurePassConstants {
+	uint32_t sourceIndex;
+	uint32_t bufferIndex;
+	uint32_t width;
+	uint32_t height;
+	float histogramMinLog2;
+	float histogramLog2Range;
+	float percentMin;
+	float percentMax;
+	float limitMin;
+	float limitMax;
+	float compensation;
+	float deltaTime;
+	float speedDarkToLight;
+	float speedLightToDark;
+	uint32_t adaptationProgressive;
+	uint32_t padding;
+};
+static_assert(sizeof(ExposurePassConstants) == 64);
+
+constexpr float kLog2LuminanceToEV100 = 3.0f;
+
+std::shared_ptr<ShaderModule> sExposureHistogram;
+std::shared_ptr<ShaderModule> sExposureAverage;
 
 
 // ----- Full Screen Pass -----
@@ -240,6 +281,62 @@ VignetteConstants MakeVignetteConstants(const Vignette &vignette, float aspectRa
 	return constants;
 }
 
+float ConvertEV100ToExposure(float ev100) {
+	return 1.0f / (1.2f * Mathf::Pow(2.0f, ev100));
+}
+
+ExposureConstants MakeFixedExposureConstants(const Exposure &exposure) {
+	ExposureConstants constants{};
+	constants.exposure = ConvertEV100ToExposure(exposure.fixedExposure_.GetValue() - exposure.compensation_.GetValue());
+	constants.bufferIndex = kNoExposureBuffer;
+	return constants;
+}
+
+void RenderAutomaticExposure(const SceneRenderTarget &target, const Exposure &exposure, Graphics::CommandList cmd) {
+	auto *device = Graphics::GetDevice();
+	const auto &buffer = target.GetExposureBuffer();
+
+	ExposurePassConstants constants{};
+	constants.sourceIndex = ToSrvIndex(target.GetSceneColor());
+	constants.bufferIndex = static_cast<uint32_t>(device->GetDescriptorIndex(&buffer, Graphics::ViewType::UAV));
+	constants.width = target.GetWidth();
+	constants.height = target.GetHeight();
+
+	const auto limitMin = exposure.limitMin_.GetValue();
+	const auto limitMax = std::max(exposure.limitMax_.GetValue(), limitMin + 0.01f);
+	constants.histogramMinLog2 = limitMin - kLog2LuminanceToEV100;
+	constants.histogramLog2Range = limitMax - limitMin;
+	constants.limitMin = limitMin;
+	constants.limitMax = limitMax;
+	constants.compensation = exposure.compensation_.GetValue();
+
+	const auto &percentages = exposure.histogramPercentages_.GetValue();
+	constants.percentMin = std::clamp(percentages.x, 0.0f, 100.0f);
+	constants.percentMax = std::clamp(percentages.y, constants.percentMin, 100.0f);
+
+	constants.deltaTime = Time::GetUnscaledDeltaTime();
+	constants.speedDarkToLight = exposure.adaptationSpeedDarkToLight_.GetValue();
+	constants.speedLightToDark = exposure.adaptationSpeedLightToDark_.GetValue();
+	constants.adaptationProgressive = (exposure.adaptationMode_.GetValue() == AdaptationMode::Progressive) ? 1u : 0u;
+
+	using State = Graphics::ResourceState;
+	const auto toUav = Graphics::GpuBarrier::Buffer(&buffer, State::UNDEFINED, State::UNORDERED_ACCESS);
+	device->Barrier(&toUav, 1, cmd);
+
+	device->BindComputeShader(&sExposureHistogram->GetGraphicsShader(), cmd);
+	device->BindDynamicConstantBuffer(constants, 0, cmd);
+	device->Dispatch((constants.width + 15) / 16, (constants.height + 15) / 16, 1, cmd);
+
+	const auto histogramDone = Graphics::GpuBarrier::Memory(&buffer);
+	device->Barrier(&histogramDone, 1, cmd);
+
+	device->BindComputeShader(&sExposureAverage->GetGraphicsShader(), cmd);
+	device->BindDynamicConstantBuffer(constants, 0, cmd);
+	device->Dispatch(1, 1, 1, cmd);
+
+	const auto toCommon = Graphics::GpuBarrier::Buffer(&buffer, State::UNORDERED_ACCESS, State::UNDEFINED);
+	device->Barrier(&toCommon, 1, cmd);
+}
 
 void WarnOnce(const std::string &message) {
 	static std::unordered_set<std::string> sWarned;
@@ -327,6 +424,10 @@ void ou::PostProcessPass::StaticInitialize() {
 	CreateFullScreenPass("EngineAssets/Shader/BloomBlurV.PS.hlsl", sBloomBlurV);
 	CreateFullScreenPass("EngineAssets/Shader/BloomUpsample.PS.hlsl", sBloomUpsample);
 	CreateFullScreenPass("EngineAssets/Shader/Blit.PS.hlsl", sBlit);
+
+	sExposureHistogram = AssetDatabase::LoadAssetAtPath<ShaderModule>("EngineAssets/Shader/ExposureHistogram.CS.hlsl");
+	sExposureAverage = AssetDatabase::LoadAssetAtPath<ShaderModule>("EngineAssets/Shader/ExposureAverage.CS.hlsl");
+	if (!sExposureHistogram || !sExposureAverage) { FatalError("自動露出のシェーダの作成に失敗しました"); }
 }
 
 
@@ -335,6 +436,8 @@ void ou::PostProcessPass::StaticFinalize() {
 		*pass = {};
 	}
 	sFullScreenVs.reset();
+	sExposureAverage.reset();
+	sExposureHistogram.reset();
 }
 
 
@@ -349,6 +452,7 @@ void ou::PostProcessPass::Render(const SceneRenderTarget &target, const VolumeSt
 
 	UberPostConstants constants{};
 	constants.sourceIndex = ToSrvIndex(target.GetSceneColor());
+	constants.exposure = {1.0f, kNoExposureBuffer, {}};
 	if (stack) {
 		if (const auto *bloom = stack->GetComponent<Bloom>(); bloom && bloom->IsActive()) {
 			const auto &bloomTexture = RenderBloom(target, *bloom, cmd);
@@ -363,6 +467,15 @@ void ou::PostProcessPass::Render(const SceneRenderTarget &target, const VolumeSt
 		if (const auto *vignette = stack->GetComponent<Vignette>(); vignette && vignette->IsActive()) {
 			const auto aspectRatio = static_cast<float>(target.GetWidth()) / static_cast<float>(target.GetHeight());
 			constants.vignette = MakeVignetteConstants(*vignette, aspectRatio);
+		}
+		if (const auto *exposure = stack->GetComponent<Exposure>(); exposure && exposure->IsActive()) {
+			if (exposure->mode_.GetValue() == ExposureMode::AutomaticHistogram) {
+				RenderAutomaticExposure(target, *exposure, cmd);
+				constants.exposure.exposure = 1.0f;
+				constants.exposure.bufferIndex = static_cast<uint32_t>(device->GetDescriptorIndex(&target.GetExposureBuffer(), Graphics::ViewType::SRV));
+			} else {
+				constants.exposure = MakeFixedExposureConstants(*exposure);
+			}
 		}
 	}
 

@@ -4,7 +4,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <string>
+#include <vector>
 
 using namespace ou;
 
@@ -16,6 +18,9 @@ constexpr Graphics::Format kColorFormat = Graphics::Format::B8G8R8A8_UNORM_SRGB;
 
 // TODO: Camera Component に移す
 constexpr float kClearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
+
+constexpr uint32_t kExposureBinCount = 256;
+constexpr uint32_t kExposureBufferSize = kExposureBinCount * 4 + 16;
 
 
 void CreateColorTexture(uint32_t width, uint32_t height, Graphics::Format format, const std::string &name, Graphics::Texture *texture) {
@@ -126,11 +131,15 @@ void ou::SceneRenderTarget::BeginOverlayPassWithDepth(Graphics::CommandList cmd)
 void ou::SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	if (width == 0 || height == 0) { return; }
 
+	// 不透明テクスチャ
 	const auto downsampling = GraphicsSettings::GetInstance().opaqueDownsampling_;
 	if (width == width_ && height == height_) {
 		if (downsampling != opaqueDownsampling_) { CreateOpaqueTexture(downsampling); }
 		return;
 	}
+
+	// 露出のバッファ
+	if (!exposureBuffer_.IsValid()) { CreateExposureBuffer(); }
 
 	auto *device = Graphics::GetDevice();
 
@@ -191,6 +200,7 @@ void ou::SceneRenderTarget::Release() {
 	bloomMipCount_ = 0;
 	bloomMipDown_.fill({});
 	bloomMipUp_.fill({});
+	exposureBuffer_ = {};
 }
 
 
@@ -259,6 +269,11 @@ const Graphics::Texture &ou::SceneRenderTarget::GetBloomMipUp(uint32_t index) co
 }
 
 
+const Graphics::GpuBuffer &ou::SceneRenderTarget::GetExposureBuffer() const {
+	return exposureBuffer_;
+}
+
+
 void ou::SceneRenderTarget::BindViewport(Graphics::CommandList cmd) const {
 	auto *device = Graphics::GetDevice();
 
@@ -281,4 +296,22 @@ void ou::SceneRenderTarget::CreateOpaqueTexture(Downsampling downsampling) {
 
 	CreateColorTexture(width, height, kSceneColorFormat, name_ + "_OpaqueTexture", &opaqueTexture_);
 	opaqueDownsampling_ = downsampling;
+}
+
+
+void ou::SceneRenderTarget::CreateExposureBuffer() {
+	std::vector<uint32_t> initialData(kExposureBufferSize / 4, 0);
+	const float exposure = 1.0f;
+	std::memcpy(&initialData[kExposureBinCount], &exposure, sizeof(exposure));
+
+	Graphics::GpuBufferDesc desc{};
+	desc.size = kExposureBufferSize;
+	desc.bindFlags = Graphics::BindFlag::SHADER_RESOURCE | Graphics::BindFlag::UNORDERED_ACCESS;
+	desc.miscFlags = Graphics::ResourceMiscFlag::BUFFER_RAW;
+
+	auto *device = Graphics::GetDevice();
+	if (!device->CreateBuffer(&desc, initialData.data(), &exposureBuffer_)) {
+		FatalError(name_ + " の露出のバッファの作成に失敗しました");
+	}
+	device->SetName(&exposureBuffer_, name_ + "_Exposure");
 }

@@ -1450,6 +1450,12 @@ void ou::Graphics::GraphicsDevice_DX12::Dispatch(uint32_t threadGroupCountX, uin
 }
 
 
+void ou::Graphics::GraphicsDevice_DX12::CopyBuffer(const GpuBuffer *dst, uint64_t dstOffset, const GpuBuffer *src, uint64_t srcOffset, uint64_t size, CommandList cmd) {
+	GetCommandList(cmd).GetGraphicsCommandList()->CopyBufferRegion(
+		ToInternal(dst)->resource.Get(), dstOffset, ToInternal(src)->resource.Get(), srcOffset, size);
+}
+
+
 void ou::Graphics::GraphicsDevice_DX12::Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) {
 	std::vector<D3D12_RESOURCE_BARRIER> d3dBarriers;
 	d3dBarriers.reserve(numBarriers);

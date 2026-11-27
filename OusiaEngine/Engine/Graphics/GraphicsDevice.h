@@ -73,6 +73,7 @@ public: // メンバ関数
 	virtual void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation, CommandList cmd) = 0;
 	virtual void Dispatch(uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ, CommandList cmd) = 0;
 
+	virtual void CopyBuffer(const GpuBuffer *dst, uint64_t dstOffset, const GpuBuffer *src, uint64_t srcOffset, uint64_t size, CommandList cmd) = 0;
 	virtual void Barrier(const GpuBarrier *barriers, uint32_t numBarriers, CommandList cmd) = 0;
 
 
@@ -99,6 +100,8 @@ public: // インナークラス
 public: // フレームごとの確保
 
 	GpuAllocation AllocateGpu(uint64_t dataSize, CommandList cmd);
+
+	void UpdateBuffer(const GpuBuffer *buffer, const void *data, CommandList cmd, uint64_t size = ~0ull, uint64_t offset = 0);
 
 	template <typename T>
 	void BindDynamicConstantBuffer(const T &data, uint32_t slot, CommandList cmd);

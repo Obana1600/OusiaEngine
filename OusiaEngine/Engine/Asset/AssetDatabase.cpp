@@ -1,6 +1,7 @@
 #include "AssetDatabase.h"
 #include "Asset/AssetImporter.h"
 #include "Asset/Importer/AudioImporter.h"
+#include "Asset/Importer/ComputeShaderImporter.h"
 #include "Asset/Importer/FontImporter.h"
 #include "Asset/Importer/MaterialImporter.h"
 #include "Asset/Importer/ModelImporter.h"
@@ -92,6 +93,7 @@ std::unique_ptr<AssetImporter> CreateImporter(const std::string &assetPath, cons
 		{L".wav", &MakeImporter<AudioImporter>},
 		{L".mp3", &MakeImporter<AudioImporter>},
 		{L".shader", &MakeImporter<ShaderImporter>},
+		{L".compute", &MakeImporter<ComputeShaderImporter>},
 		{L".mat", &MakeImporter<MaterialImporter>},
 		{L".obj", &MakeImporter<ModelImporter>},
 		{L".gltf", &MakeImporter<ModelImporter>},

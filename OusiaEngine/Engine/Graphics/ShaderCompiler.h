@@ -16,6 +16,18 @@ enum class Flags : uint32_t {
 	EMBED_DEBUG_INFO = 1 << 1,	   // -Zi -Qembed_debug
 };
 
+struct GlobalVariable {
+	std::string name;
+	uint32_t offset = 0;
+	uint32_t size = 0;
+};
+
+struct ShaderReflection {
+	std::vector<GlobalVariable> globals;
+	uint32_t globalsSize = 0;
+	uint32_t threadGroupSize[3] = {};
+};
+
 struct CompilerInput {
 	Flags flags = Flags::NONE;
 	Graphics::ShaderStage stage = Graphics::ShaderStage::Count;
@@ -31,6 +43,7 @@ struct CompilerOutput {
 	const uint8_t *shaderData = nullptr;
 	size_t shaderSize = 0;
 	std::string errorMessage;
+	ShaderReflection reflection;
 
 	bool IsValid() const {
 		return internalState != nullptr;
