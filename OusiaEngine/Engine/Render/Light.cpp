@@ -32,6 +32,8 @@ void ou::Light::Serialize(Serializer &serializer) {
 	serializer.Field("shadowStrength", shadowStrength_);
 	serializer.Field("shadowBias", shadowBias_);
 	serializer.Field("shadowNormalBias", shadowNormalBias_);
+	serializer.Enum("shadowResolution", shadowResolution_);
+	serializer.Field("shadowNearPlane", shadowNearPlane_);
 }
 
 
@@ -196,4 +198,24 @@ void ou::Light::SetShadowNormalBias(float shadowNormalBias) {
 
 float ou::Light::GetShadowNormalBias() const {
 	return shadowNormalBias_;
+}
+
+
+void ou::Light::SetShadowResolution(LightShadowResolution shadowResolution) {
+	shadowResolution_ = shadowResolution;
+}
+
+
+LightShadowResolution ou::Light::GetShadowResolution() const {
+	return shadowResolution_;
+}
+
+
+void ou::Light::SetShadowNearPlane(float shadowNearPlane) {
+	shadowNearPlane_ = shadowNearPlane;
+}
+
+
+float ou::Light::GetShadowNearPlane() const {
+	return shadowNearPlane_;
 }

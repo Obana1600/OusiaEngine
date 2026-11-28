@@ -88,6 +88,11 @@ enum LightShadows {
 	Hard = 1,
 	Soft = 2
 }
+enum LightShadowResolution {
+	Low = 0,
+	Medium = 1,
+	High = 2
+}
 enum WrapMode {
 	Default = 0,
 	Once = 1,
@@ -1127,6 +1132,10 @@ class Light {
 	void set_shadowBias(float value) property;
 	float get_shadowNormalBias() const property;
 	void set_shadowNormalBias(float value) property;
+	LightShadowResolution get_shadowResolution() const property;
+	void set_shadowResolution(LightShadowResolution value) property;
+	float get_shadowNearPlane() const property;
+	void set_shadowNearPlane(float value) property;
 	bool TryGetComponent(?&out component) const;
 	T@ GetComponent<T>() const;
 }

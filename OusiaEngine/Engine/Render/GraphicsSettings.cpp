@@ -28,6 +28,7 @@ constexpr std::string_view kKeys[] = {
 	"opaqueDownsampling",
 	"mainLightShadowmapResolution",
 	"shadowDistance",
+	"additionalLightsShadowmapResolution",
 };
 
 std::optional<std::filesystem::path> FindPath() {
@@ -49,6 +50,7 @@ void ou::GraphicsSettings::Serialize(Serializer &serializer) {
 	serializer.Enum("opaqueDownsampling", opaqueDownsampling_);
 	serializer.Enum("mainLightShadowmapResolution", mainLightShadowmapResolution_);
 	serializer.Field("shadowDistance", shadowDistance_);
+	serializer.Enum("additionalLightsShadowmapResolution", additionalLightsShadowmapResolution_);
 }
 
 

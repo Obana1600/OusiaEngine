@@ -17,8 +17,10 @@ float4 main(VSInput input, uint vid : SV_VertexID) : SV_POSITION
     float3 worldPosition;
     float3 worldNormal;
     ComputeWorldPositionAndNormal(input, vid, worldPosition, worldNormal);
-
-    worldPosition = ApplyShadowBias(worldPosition, worldNormal, gShadowLightDirection);
+    
+    const float3 lightDirection = (gShadowBias.z != 0.0f) ? normalize(gShadowLightPosition - worldPosition)
+                                                          : gShadowLightDirection;
+    worldPosition = ApplyShadowBias(worldPosition, worldNormal, lightDirection);
     return mul(float4(worldPosition, 1.0f), gViewProjection);
 }
 

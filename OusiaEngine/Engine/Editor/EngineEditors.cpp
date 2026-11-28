@@ -250,6 +250,13 @@ void ou::LightEditor::OnInspectorGui() {
 		Field(so, "shadowStrength", "影の濃さ（0〜1）");
 		Field(so, "shadowBias", "Depth Bias（テクセル）");
 		Field(so, "shadowNormalBias", "Normal Bias（テクセル）");
+		if (type != "Directional") {
+			EnumField(so, "shadowResolution", "影の解像度",
+					  {{"Low", "256 × 256（Point は 6 面ぶん）"},
+					   {"Medium", "512 × 512（Point は 6 面ぶん）"},
+					   {"High", "1024 × 1024（Point は 6 面ぶん）"}});
+			Field(so, "shadowNearPlane", "影の Near Plane");
+		}
 	}
 
 	so.ApplyModifiedProperties();

@@ -29,6 +29,7 @@ class SceneManager final {
 	friend class GameObject;
 	friend class Engine;
 	friend class MainLightShadowCasterPass;
+	friend class AdditionalLightsShadowCasterPass;
 	friend class Undo;
 	friend class EditorApplication;
 	friend class EditorSceneManager;
@@ -98,7 +99,7 @@ private: // 静的メンバ関数
 	static void Update();
 	static void Finalize();
 
-	static void CollectLights(PerFrame &perFrame);
+	static std::vector<const Light *> CollectLights(PerFrame &perFrame);
 	static const Light *FindMainLight();
 	static void RenderShadowCasters(const Camera::PerCamera &lightCamera, Graphics::CommandList cmd);
 	static void RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd);

@@ -37,6 +37,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Render\Shadow\AdditionalLightsShadowCasterPass.h" />
     <ClInclude Include="Animation\Core\AnimationPlayhead.h" />
     <ClInclude Include="Animation\Core\AnimationCurve.h" />
     <ClInclude Include="Animation\Core\Keyframe.h" />
@@ -44,7 +45,7 @@
     <ClInclude Include="Animation\Core\WrapMode.h" />
     <ClInclude Include="Animation\Skeletal\BoneAnimationTrack.h" />
     <ClInclude Include="Asset\Importer\TextureImporter.h" />
-    <ClInclude Include="Render\MainLightShadowCasterPass.h" />
+    <ClInclude Include="Render\Shadow\MainLightShadowCasterPass.h" />
     <ClInclude Include="PostProcess\Builtin\Exposure.h" />
     <ClInclude Include="Render\Asset\ComputeShader.h" />
     <ClInclude Include="Asset\Importer\ComputeShaderImporter.h" />
@@ -136,6 +137,7 @@
     <ClInclude Include="Serialize\TypeRegistry.h" />
     <ClInclude Include="Editor\Tools.h" />
     <ClInclude Include="PostProcess\Builtin\Tonemapping.h" />
+    <ClInclude Include="Render\Shadow\ShadowUtils.h" />
     <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\Selectable.h" />
     <ClInclude Include="UI\CanvasUpdateRegistry.h" />
@@ -256,12 +258,13 @@
     <ClInclude Include="PostProcess\Builtin\Vignette.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Render\Shadow\AdditionalLightsShadowCasterPass.cpp" />
     <ClCompile Include="Animation\Core\AnimationPlayhead.cpp" />
     <ClCompile Include="Animation\Core\AnimationCurve.cpp" />
     <ClCompile Include="Animation\Core\Keyframe.cpp" />
     <ClCompile Include="Animation\Core\Easing.cpp" />
     <ClCompile Include="Animation\Skeletal\BoneAnimationTrack.cpp" />
-    <ClCompile Include="Render\MainLightShadowCasterPass.cpp" />
+    <ClCompile Include="Render\Shadow\MainLightShadowCasterPass.cpp" />
     <ClCompile Include="PostProcess\Builtin\Exposure.cpp" />
     <ClCompile Include="Render\Asset\ComputeShader.cpp" />
     <ClCompile Include="Asset\Importer\ComputeShaderImporter.cpp" />
@@ -355,6 +358,7 @@
     <ClCompile Include="Serialize\TypeRegistry.cpp" />
     <ClCompile Include="Editor\Tools.cpp" />
     <ClCompile Include="PostProcess\Builtin\Tonemapping.cpp" />
+    <ClCompile Include="Render\Shadow\ShadowUtils.cpp" />
     <ClCompile Include="UI\Button.cpp" />
     <ClCompile Include="UI\Selectable.cpp" />
     <ClCompile Include="UI\CanvasUpdateRegistry.cpp" />

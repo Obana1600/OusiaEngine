@@ -252,9 +252,10 @@ void ou::SceneManager::Finalize() {
 }
 
 
-void ou::SceneManager::CollectLights(PerFrame &perFrame) {
+std::vector<const Light *> ou::SceneManager::CollectLights(PerFrame &perFrame) {
 	const auto *mainLight = FindMainLight();
 
+	std::vector<const Light *> visibleLights;
 	perFrame.lightCount = 0;
 	for (const auto *light : sLights_) {
 		if (!light->IsActiveAndEnabled()) { continue; }
@@ -270,7 +271,9 @@ void ou::SceneManager::CollectLights(PerFrame &perFrame) {
 
 		if (light == mainLight) { perFrame.shadowLightIndex = perFrame.lightCount; }
 		perFrame.lights[perFrame.lightCount++] = light->MakeShaderLight();
+		visibleLights.push_back(light);
 	}
+	return visibleLights;
 }
 
 

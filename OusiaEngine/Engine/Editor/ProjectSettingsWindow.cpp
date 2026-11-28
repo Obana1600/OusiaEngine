@@ -134,6 +134,9 @@ void ou::ProjectSettingsWindow::DrawGraphics() {
 	if (auto property = so.FindProperty("shadowDistance")) {
 		EditorGuiLayout::PropertyField(*property, GuiContent("Max Distance", "カメラからこの距離までに影を描く。短いほど影がくっきりする"));
 	}
+	if (auto property = so.FindProperty("additionalLightsShadowmapResolution")) {
+		EditorGuiLayout::PropertyField(*property, GuiContent("Additional Lights Resolution", "Spot / Point の影をまとめて置くアトラスの縦横の大きさ"));
+	}
 	if (so.ApplyModifiedProperties()) { GraphicsSettings::Save(); }
 }
 

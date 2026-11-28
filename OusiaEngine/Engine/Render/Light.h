@@ -10,15 +10,21 @@
 namespace ou {
 
 enum class LightType : uint32_t {
-	Spot,
-	Directional,
-	Point,
+	Spot,		 // スポットライト
+	Directional, // 平行光源
+	Point,		 // 点光源
 };
 
 enum class LightShadows : uint32_t {
 	None,
-	Hard,
-	Soft,
+	Hard, // ぼかしなし
+	Soft, // ぼかしあり
+};
+
+enum class LightShadowResolution : uint32_t {
+	Low,	// 256
+	Medium, // 512
+	High,	// 1024
 };
 
 
@@ -36,9 +42,13 @@ public: // インナークラス
 		Vector3 direction;
 		float range;
 		Vector3 color;
+
 		float spotAngleScale;
 		float spotAngleOffset;
-		float padding[3];
+
+		float shadowStrength;
+		uint32_t shadowSoft;		   // Soft なら 1
+		int32_t shadowSliceIndex = -1; // アトラスの最初の区画の番号。-1 なら影なし
 	};
 
 
@@ -83,6 +93,12 @@ public: // メンバ関数
 	void SetShadowNormalBias(float shadowNormalBias);
 	float GetShadowNormalBias() const;
 
+	void SetShadowResolution(LightShadowResolution shadowResolution);
+	LightShadowResolution GetShadowResolution() const;
+
+	void SetShadowNearPlane(float shadowNearPlane);
+	float GetShadowNearPlane() const;
+
 
 private: // メンバ変数
 
@@ -97,6 +113,8 @@ private: // メンバ変数
 	float shadowStrength_ = 1.0f;
 	float shadowBias_ = 1.0f;
 	float shadowNormalBias_ = 1.0f;
+	LightShadowResolution shadowResolution_ = LightShadowResolution::Medium;
+	float shadowNearPlane_ = 0.2f;
 };
 
 } // namespace ou

@@ -35,6 +35,7 @@ class GraphicsSettings final: public Object {
 	friend class VolumeManager;
 	friend class PostProcessPass;
 	friend class MainLightShadowCasterPass;
+	friend class AdditionalLightsShadowCasterPass;
 
 public: // メンバ関数
 
@@ -49,6 +50,7 @@ private: // メンバ変数
 	Downsampling opaqueDownsampling_ = Downsampling::_2xBilinear;
 	ShadowResolution mainLightShadowmapResolution_ = ShadowResolution::_2048;
 	float shadowDistance_ = 50.0f;
+	ShadowResolution additionalLightsShadowmapResolution_ = ShadowResolution::_2048;
 
 
 private: // 静的メンバ関数

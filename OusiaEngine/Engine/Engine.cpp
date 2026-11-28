@@ -22,8 +22,9 @@
 #include "Render/GraphicsSettings.h"
 #include "Render/ImmediateCommands.h"
 #include "Render/LineRenderer.h"
-#include "Render/MainLightShadowCasterPass.h"
 #include "Render/PerFrame.h"
+#include "Render/Shadow/AdditionalLightsShadowCasterPass.h"
+#include "Render/Shadow/MainLightShadowCasterPass.h"
 #include "Scene/LayerMask.h"
 #include "Scene/SceneManager.h"
 #include "Scene/TagManager.h"
@@ -266,6 +267,7 @@ void ou::Engine::Initialize(const EngineDesc &desc) {
 	GraphicsSettings::Load();
 	PostProcessPass::StaticInitialize();
 	MainLightShadowCasterPass::StaticInitialize();
+	AdditionalLightsShadowCasterPass::StaticInitialize();
 	CopyDepthPass::StaticInitialize();
 	CopyColorPass::StaticInitialize();
 
@@ -309,6 +311,7 @@ void ou::Engine::Finalize() {
 	// ポストプロセス
 	PostProcessPass::StaticFinalize();
 	MainLightShadowCasterPass::StaticFinalize();
+	AdditionalLightsShadowCasterPass::StaticFinalize();
 	CopyDepthPass::StaticFinalize();
 	CopyColorPass::StaticFinalize();
 
@@ -470,7 +473,8 @@ void ou::Engine::BindPerFrame(Graphics::CommandList cmd) {
 	const auto time = Time::GetTime();
 	perFrame_.time = {time / 20.0f, time, time * 2.0f, time * 3.0f};
 
-	SceneManager::CollectLights(perFrame_);
+	const auto lights = SceneManager::CollectLights(perFrame_);
+	AdditionalLightsShadowCasterPass::Render(lights, perFrame_, cmd);
 	device_->BindDynamicConstantBuffer(perFrame_, 3, cmd);
 }
 

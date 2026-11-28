@@ -67,6 +67,10 @@ float4 main(VSOutput input) : SV_TARGET
         {
             attenuation *= AngleAttenuation(light, toLight);
         }
+        if (gReceiveShadows != 0)
+        {
+            attenuation *= AdditionalLightShadow(light, input.worldPosition, toLight);
+        }
 
         lighting += light.color * Diffuse(normal, toLight) * attenuation;
     }

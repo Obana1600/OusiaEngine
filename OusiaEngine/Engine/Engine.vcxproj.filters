@@ -664,7 +664,13 @@
     <ClInclude Include="Render\PerFrame.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Render\MainLightShadowCasterPass.h">
+    <ClInclude Include="Render\Shadow\MainLightShadowCasterPass.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Shadow\AdditionalLightsShadowCasterPass.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Shadow\ShadowUtils.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1269,7 +1275,13 @@
     <ClCompile Include="PostProcess\Builtin\Exposure.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Render\MainLightShadowCasterPass.cpp">
+    <ClCompile Include="Render\Shadow\MainLightShadowCasterPass.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Shadow\AdditionalLightsShadowCasterPass.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Shadow\ShadowUtils.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

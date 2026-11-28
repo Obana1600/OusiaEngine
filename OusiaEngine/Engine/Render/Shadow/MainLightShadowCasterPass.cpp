@@ -5,6 +5,7 @@
 #include "Render/GraphicsSettings.h"
 #include "Render/Light.h"
 #include "Render/PerFrame.h"
+#include "Render/Shadow/ShadowUtils.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 
@@ -15,9 +16,6 @@ using namespace ou;
 
 
 namespace {
-
-constexpr float kSoftShadowBiasScale = 2.5f;
-constexpr float kShadowFadeBorder = 0.2f;
 
 const Matrix4x4 kNdcToUv(0.5f, 0.0f, 0.0f, 0.0f,
 						 0.0f, -0.5f, 0.0f, 0.0f,
@@ -54,15 +52,6 @@ float CalculateNdcDepth(const Matrix4x4 &projection, float distance) {
 	const auto z = distance * projection.m33 + projection.m43;
 	const auto w = distance * projection.m34 + projection.m44;
 	return z / w;
-}
-
-Vector2 CalculateShadowFadeParams(float shadowDistance) {
-	const auto distanceSq = shadowDistance * shadowDistance;
-	const auto border = (1.0f - kShadowFadeBorder) * (1.0f - kShadowFadeBorder);
-	const auto fadeStartSq = border * distanceSq;
-
-	const auto scale = 1.0f / (distanceSq - fadeStartSq);
-	return Vector2(scale, -fadeStartSq * scale);
 }
 
 
@@ -153,11 +142,11 @@ void ou::MainLightShadowCasterPass::Render(const Camera::PerCamera &camera, PerF
 	// バイアス
 	const auto soft = light->GetShadows() == LightShadows::Soft;
 	auto biasScale = texelSize;
-	if (soft) { biasScale *= kSoftShadowBiasScale; }
+	if (soft) { biasScale *= ShadowUtils::kSoftShadowBiasScale; }
 
 	// バッファに詰める
 	const auto resolution = static_cast<float>(sResolution);
-	const auto fade = CalculateShadowFadeParams(settings.shadowDistance_);
+	const auto fade = ShadowUtils::CalculateShadowFadeParams(settings.shadowDistance_);
 	perFrame.worldToShadow = lightCamera.viewProjection * kNdcToUv;
 	perFrame.shadowBias = {-light->GetShadowBias() * biasScale, -light->GetShadowNormalBias() * biasScale, 0.0f, 0.0f};
 	perFrame.shadowLightDirection = -forward;

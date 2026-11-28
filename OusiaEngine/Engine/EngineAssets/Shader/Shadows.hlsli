@@ -43,9 +43,9 @@ void SampleShadow_GetTexelWeights_Tent_5x5(float offset, out float3 texelsWeight
     texelsWeightsB.z = 0.16f * computedArea.w;
 }
 
-float SampleShadow_Tent_5x5(Texture2D<float> shadowmap, float3 shadowCoord)
+float SampleShadow_Tent_5x5(Texture2D<float> shadowmap, float3 shadowCoord, float4 shadowmapSize)
 {
-    const float2 tentCenterInTexelSpace = shadowCoord.xy * gShadowmapSize.zw;
+    const float2 tentCenterInTexelSpace = shadowCoord.xy * shadowmapSize.zw;
     const float2 centerOfFetchesInTexelSpace = floor(tentCenterInTexelSpace + 0.5f);
     const float2 offsetFromTentCenterToCenterOfFetches = tentCenterInTexelSpace - centerOfFetchesInTexelSpace;
 
@@ -60,7 +60,7 @@ float SampleShadow_Tent_5x5(Texture2D<float> shadowmap, float3 shadowCoord)
     // 補間の割合が重みの比になるように、読む位置をずらす
     const float3 fetchesOffsetsU = (float3(texelsWeightsU_A.y, texelsWeightsU_B.xz) / fetchesWeightsU + float3(-2.5f, -0.5f, 1.5f)) * gShadowmapSize.x;
     const float3 fetchesOffsetsV = (float3(texelsWeightsV_A.y, texelsWeightsV_B.xz) / fetchesWeightsV + float3(-2.5f, -0.5f, 1.5f)) * gShadowmapSize.y;
-    const float2 bilinearFetchOrigin = centerOfFetchesInTexelSpace * gShadowmapSize.xy;
+    const float2 bilinearFetchOrigin = centerOfFetchesInTexelSpace * shadowmapSize.xy;
 
     float attenuation = 0.0f;
     [unroll]
@@ -92,7 +92,7 @@ float MainLightRealtimeShadow(float3 positionWS)
     float attenuation;
     if (gShadowParams.y != 0.0f)
     {
-        attenuation = SampleShadow_Tent_5x5(shadowmap, shadowCoord);
+        attenuation = SampleShadow_Tent_5x5(shadowmap, shadowCoord, gShadowmapSize);
     }
     else
     {
@@ -101,17 +101,67 @@ float MainLightRealtimeShadow(float3 positionWS)
     return lerp(1.0f, attenuation, gShadowParams.x);
 }
 
-float GetMainLightShadowFade(float3 positionWS)
+float GetShadowFade(float3 positionWS, float2 fadeParams)
 {
     const float3 cameraToPixel = positionWS - gCameraPosition;
     const float distanceSq = dot(cameraToPixel, cameraToPixel);
-    return saturate(distanceSq * gShadowParams.z + gShadowParams.w);
+    return saturate(distanceSq * fadeParams.x + fadeParams.y);
 }
 
 float MainLightShadow(float3 positionWS)
 {
     const float realtimeShadow = MainLightRealtimeShadow(positionWS);
-    return lerp(realtimeShadow, 1.0f, GetMainLightShadowFade(positionWS));
+    return lerp(realtimeShadow, 1.0f, GetShadowFade(positionWS, gShadowParams.zw));
+}
+
+
+uint CubeMapFaceID(float3 direction)
+{
+    const float3 a = abs(direction);
+    if (a.z >= a.x && a.z >= a.y)
+    {
+        return direction.z < 0.0f ? 5 : 4;
+    }
+    if (a.y >= a.x)
+    {
+        return direction.y < 0.0f ? 3 : 2;
+    }
+    return direction.x < 0.0f ? 1 : 0;
+}
+
+float AdditionalLightRealtimeShadow(ShaderLight light, float3 positionWS, float3 toLight)
+{
+    if (light.shadowSliceIndex < 0)
+    {
+        return 1.0f;
+    }
+    
+    uint sliceIndex = (uint) light.shadowSliceIndex;
+    if (light.type == kLightTypePoint)
+    {
+        sliceIndex += CubeMapFaceID(-toLight);
+    }
+    
+    float4 shadowCoord = mul(float4(positionWS, 1.0f), gAdditionalLightsWorldToShadow[sliceIndex]);
+    shadowCoord.xyz /= shadowCoord.w;
+
+    Texture2D<float> shadowmap = ResourceDescriptorHeap[gAdditionalShadowmapIndex];
+    float attenuation;
+    if (light.shadowSoft != 0)
+    {
+        attenuation = SampleShadow_Tent_5x5(shadowmap, shadowCoord.xyz, gAdditionalShadowmapSize);
+    }
+    else
+    {
+        attenuation = shadowmap.SampleCmpLevelZero(gLinearClampCompare, shadowCoord.xy, shadowCoord.z);
+    }
+    return lerp(1.0f, attenuation, light.shadowStrength);
+}
+
+float AdditionalLightShadow(ShaderLight light, float3 positionWS, float3 toLight)
+{
+    const float realtimeShadow = AdditionalLightRealtimeShadow(light, positionWS, toLight);
+    return lerp(realtimeShadow, 1.0f, GetShadowFade(positionWS, gAdditionalShadowFadeParams));
 }
 
 #endif // SHADOWS_INCLUDED

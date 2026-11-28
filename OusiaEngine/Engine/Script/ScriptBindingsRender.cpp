@@ -297,6 +297,7 @@ void ou::ScriptBindings::RegisterRenderMembers(asIScriptEngine *engine) {
 	// ---- enum ----
 	RegisterEnum<LightType>(engine, "LightType");
 	RegisterEnum<LightShadows>(engine, "LightShadows");
+	RegisterEnum<LightShadowResolution>(engine, "LightShadowResolution");
 	RegisterEnum<WrapMode>(engine, "WrapMode");
 	RegisterEnum<ParticleSystem::SimulationSpace>(engine, "ParticleSystemSimulationSpace");
 	RegisterEnum<ParticleSystem::ShapeType>(engine, "ParticleSystemShapeType");
@@ -346,6 +347,10 @@ void ou::ScriptBindings::RegisterRenderMembers(asIScriptEngine *engine) {
 		l.Method("void set_shadowBias(float value) property", asFUNCTION((Set<Light, float, &Light::SetShadowBias>)));
 		l.Method("float get_shadowNormalBias() const property", asFUNCTION((Get<Light, float, &Light::GetShadowNormalBias>)));
 		l.Method("void set_shadowNormalBias(float value) property", asFUNCTION((Set<Light, float, &Light::SetShadowNormalBias>)));
+		l.Method("LightShadowResolution get_shadowResolution() const property", asFUNCTION((GetEnum<Light, LightShadowResolution, &Light::GetShadowResolution>)));
+		l.Method("void set_shadowResolution(LightShadowResolution value) property", asFUNCTION((SetEnum<Light, LightShadowResolution, &Light::SetShadowResolution>)));
+		l.Method("float get_shadowNearPlane() const property", asFUNCTION((Get<Light, float, &Light::GetShadowNearPlane>)));
+		l.Method("void set_shadowNearPlane(float value) property", asFUNCTION((Set<Light, float, &Light::SetShadowNearPlane>)));
 	}
 
 	// ---- Mesh・Shader・SkeletalAnimationClip・VolumeProfile（アセット） ----
