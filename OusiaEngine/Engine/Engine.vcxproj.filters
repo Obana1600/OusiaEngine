@@ -673,6 +673,12 @@
     <ClInclude Include="Render\Shadow\ShadowUtils.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Math\Plane.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\GeometryUtility.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Diagnostics\CrashHandler.cpp">
@@ -1282,6 +1288,12 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Render\Shadow\ShadowUtils.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Plane.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\GeometryUtility.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

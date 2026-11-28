@@ -7,7 +7,9 @@
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
 #include "Serialize/Serializer.h"
+#include "Math/GeometryUtility.h"
 
+#include <array>
 #include <utility>
 
 using namespace ou;
@@ -35,12 +37,8 @@ void ou::Renderer::Serialize(Serializer &serializer) {
 }
 
 
-void ou::Renderer::AwakeFromLoad() {
-	Behavior::AwakeFromLoad();
-
-	if (serializedMaterials_ != MakeAssetMaterials()) {
-		SetSharedMaterials(serializedMaterials_);
-	}
+Bounds ou::Renderer::GetLocalBounds() const {
+	return Bounds();
 }
 
 
@@ -49,6 +47,25 @@ int ou::Renderer::GetRenderQueue() const {
 		return Shader::RenderQueue::Geometry;
 	}
 	return materials_.front()->GetRenderQueue();
+}
+
+
+Bounds ou::Renderer::GetBounds() const {
+	const auto localBounds = GetLocalBounds();
+	const auto min = localBounds.GetMin();
+	const auto max = localBounds.GetMax();
+
+	const std::array<Vector3, 8> corners = {
+		Vector3(min.x, min.y, min.z),
+		Vector3(max.x, min.y, min.z),
+		Vector3(min.x, max.y, min.z),
+		Vector3(max.x, max.y, min.z),
+		Vector3(min.x, min.y, max.z),
+		Vector3(max.x, min.y, max.z),
+		Vector3(min.x, max.y, max.z),
+		Vector3(max.x, max.y, max.z),
+	};
+	return GeometryUtility::CalculateBounds(corners, GetTransform()->GetLocalToWorldMatrix());
 }
 
 
@@ -179,6 +196,15 @@ Material *ou::Renderer::FindMaterialForSubMesh(uint32_t subMeshIndex) const {
 }
 
 
+void ou::Renderer::AwakeFromLoad() {
+	Behavior::AwakeFromLoad();
+
+	if (serializedMaterials_ != MakeAssetMaterials()) {
+		SetSharedMaterials(serializedMaterials_);
+	}
+}
+
+
 std::vector<std::shared_ptr<Material>> ou::Renderer::MakeAssetMaterials() const {
 	auto materials = materials_;
 	for (auto &material : materials) {
@@ -197,4 +223,9 @@ void ou::Renderer::InstantiateMaterial(size_t index) {
 	instance->SetName(materials_[index]->GetName() + " (Instance)");
 	materials_[index] = std::move(instance);
 	isInstanced_[index] = true;
+}
+
+
+bool ou::Renderer::CanCullWithBounds() const {
+	return false;
 }

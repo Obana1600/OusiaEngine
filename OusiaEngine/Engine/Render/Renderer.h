@@ -3,6 +3,7 @@
 #include "Graphics/GraphicsTypes.h"
 #include "Math/Matrix4x4.h"
 #include "Scene/Behavior.h"
+#include "Math/Bounds.h"
 
 #include <memory>
 #include <string_view>
@@ -25,6 +26,8 @@ enum class ShadowCastingMode : uint32_t {
 
 
 class Renderer: public Behavior {
+	friend class SceneManager;
+
 public: // 定数
 
 	static constexpr uint32_t kNoSkinning = 0xFFFFFFFF;
@@ -51,9 +54,10 @@ public: // メンバ関数
 	void Serialize(Serializer &serializer) override;
 
 	virtual void Draw(std::string_view lightMode, Graphics::CommandList cmd) const = 0;
-
+	virtual Bounds GetLocalBounds() const;
 	virtual int GetRenderQueue() const;
 
+	Bounds GetBounds() const;
 
 	void SetSharedMaterial(std::shared_ptr<Material> material);
 	const std::shared_ptr<Material> &GetSharedMaterial() const;
@@ -63,7 +67,6 @@ public: // メンバ関数
 
 	const std::shared_ptr<Material> &GetMaterial();
 	const std::vector<std::shared_ptr<Material>> &GetMaterials();
-
 
 	void SetShadowCastingMode(ShadowCastingMode shadowCastingMode);
 	ShadowCastingMode GetShadowCastingMode() const;
@@ -98,6 +101,8 @@ private: // メンバ関数
 	std::vector<std::shared_ptr<Material>> MakeAssetMaterials() const;
 
 	void InstantiateMaterial(size_t index);
+
+	virtual bool CanCullWithBounds() const;
 };
 
 } // namespace ou

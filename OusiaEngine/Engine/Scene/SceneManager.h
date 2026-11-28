@@ -6,12 +6,14 @@
 #include "Render/Camera.h"
 #include "Render/RenderQueueRange.h"
 #include "Scene/Scene.h"
+#include "Math/Plane.h"
 
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <span>
 
 
 namespace ou {
@@ -101,7 +103,7 @@ private: // 静的メンバ関数
 
 	static std::vector<const Light *> CollectLights(PerFrame &perFrame);
 	static const Light *FindMainLight();
-	static void RenderShadowCasters(const Camera::PerCamera &lightCamera, Graphics::CommandList cmd);
+	static void RenderShadowCasters(const Camera::PerCamera &lightCamera, std::span<const Plane> cullingPlanes, Graphics::CommandList cmd);
 	static void RenderWithCamera(const Camera::PerCamera &perCamera, const RenderQueueRange &range, Graphics::CommandList cmd);
 	static void RenderOverlay(Graphics::CommandList cmd);
 

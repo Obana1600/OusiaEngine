@@ -19,6 +19,11 @@ void ou::MeshRenderer::Draw(std::string_view lightMode, Graphics::CommandList cm
 }
 
 
+Bounds ou::MeshRenderer::GetLocalBounds() const {
+	return mesh_ ? mesh_->GetBounds() : Bounds();
+}
+
+
 void ou::MeshRenderer::SetMesh(std::shared_ptr<Mesh> mesh) {
 	mesh_ = std::move(mesh);
 }
@@ -26,4 +31,9 @@ void ou::MeshRenderer::SetMesh(std::shared_ptr<Mesh> mesh) {
 
 const std::shared_ptr<Mesh> &ou::MeshRenderer::GetMesh() const {
 	return mesh_;
+}
+
+
+bool ou::MeshRenderer::CanCullWithBounds() const {
+	return true;
 }

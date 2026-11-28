@@ -9,6 +9,7 @@
 #include "Core/Time.h"
 #include "Diagnostics/Log.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Math/GeometryUtility.h"
 #include "Physics/Physics.h"
 #include "Platform/Paths.h"
 #include "Render/Camera.h"
@@ -294,13 +295,14 @@ const Light *ou::SceneManager::FindMainLight() {
 }
 
 
-void ou::SceneManager::RenderShadowCasters(const Camera::PerCamera &lightCamera, Graphics::CommandList cmd) {
+void ou::SceneManager::RenderShadowCasters(const Camera::PerCamera &lightCamera, std::span<const Plane> cullingPlanes, Graphics::CommandList cmd) {
 	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(lightCamera, 2, cmd);
 
 	for (const auto *renderer : sRenderers_) {
 		if (!renderer->IsActiveAndEnabled()) { continue; }
 		if (renderer->GetShadowCastingMode() == ShadowCastingMode::Off) { continue; }
+		if (renderer->CanCullWithBounds() && !GeometryUtility::TestPlanesAABB(cullingPlanes, renderer->GetBounds())) { continue; }
 
 		renderer->Draw("ShadowCaster", cmd);
 	}
@@ -311,17 +313,23 @@ void ou::SceneManager::RenderWithCamera(const Camera::PerCamera &perCamera, cons
 	auto *device = Graphics::GetDevice();
 	device->BindDynamicConstantBuffer(perCamera, 2, cmd);
 
+	const auto cullingPlanes = GeometryUtility::CalculateFrustumPlanes(perCamera.viewProjection);
+
 	// range の中のものを、renderQueue の小さい順に描く
 	auto renderers = sRenderers_;
-	std::erase_if(renderers, [&range](const auto *r) {
+	std::erase_if(renderers, [&range, &cullingPlanes](const auto *r) {
 		if (!r->IsActiveAndEnabled()) { return true; }
 		if (r->GetShadowCastingMode() == ShadowCastingMode::ShadowsOnly) { return true; }
+
 		const auto queue = r->GetRenderQueue();
-		return queue < range.lowerBound || queue > range.upperBound;
+		if (queue < range.lowerBound || queue > range.upperBound) { return true; }
+		return r->CanCullWithBounds() && !GeometryUtility::TestPlanesAABB(cullingPlanes, r->GetBounds());
 	});
+
 	std::stable_sort(renderers.begin(), renderers.end(), [](const auto *a, const auto *b) {
 		return a->GetRenderQueue() < b->GetRenderQueue();
 	});
+
 	for (const auto *renderer : renderers) {
 		renderer->Draw({}, cmd);
 	}

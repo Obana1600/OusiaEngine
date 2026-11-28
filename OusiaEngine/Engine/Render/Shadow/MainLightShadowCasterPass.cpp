@@ -7,6 +7,7 @@
 #include "Render/PerFrame.h"
 #include "Render/Shadow/ShadowUtils.h"
 #include "Scene/SceneManager.h"
+#include "Math/GeometryUtility.h"
 #include "Scene/Transform.h"
 
 #include <array>
@@ -173,6 +174,9 @@ void ou::MainLightShadowCasterPass::Render(const Camera::PerCamera &camera, PerF
 	scissor.bottom = static_cast<int32_t>(sResolution);
 	device->BindScissorRects(1, &scissor, cmd);
 
-	SceneManager::RenderShadowCasters(lightCamera, cmd);
+	const auto frustumPlanes = GeometryUtility::CalculateFrustumPlanes(lightCamera.viewProjection);
+	const auto cullingPlanes = {frustumPlanes[0], frustumPlanes[1], frustumPlanes[2], frustumPlanes[3], frustumPlanes[5]};
+	SceneManager::RenderShadowCasters(lightCamera, cullingPlanes, cmd);
+
 	device->RenderPassEnd(cmd);
 }

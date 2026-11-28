@@ -54,6 +54,11 @@ void ou::SkinnedMeshRenderer::Draw(std::string_view lightMode, Graphics::Command
 }
 
 
+Bounds ou::SkinnedMeshRenderer::GetLocalBounds() const {
+	return mesh_ ? mesh_->GetBounds() : Bounds();
+}
+
+
 void ou::SkinnedMeshRenderer::SetMesh(std::shared_ptr<Mesh> mesh) {
 	mesh_ = std::move(mesh);
 }

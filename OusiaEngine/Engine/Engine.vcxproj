@@ -37,6 +37,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Math\GeometryUtility.h" />
+    <ClInclude Include="Math\Plane.h" />
     <ClInclude Include="Render\Shadow\AdditionalLightsShadowCasterPass.h" />
     <ClInclude Include="Animation\Core\AnimationPlayhead.h" />
     <ClInclude Include="Animation\Core\AnimationCurve.h" />
@@ -258,6 +260,8 @@
     <ClInclude Include="PostProcess\Builtin\Vignette.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Math\GeometryUtility.cpp" />
+    <ClCompile Include="Math\Plane.cpp" />
     <ClCompile Include="Render\Shadow\AdditionalLightsShadowCasterPass.cpp" />
     <ClCompile Include="Animation\Core\AnimationPlayhead.cpp" />
     <ClCompile Include="Animation\Core\AnimationCurve.cpp" />

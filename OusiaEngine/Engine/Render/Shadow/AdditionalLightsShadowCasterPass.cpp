@@ -9,6 +9,7 @@
 #include "Render/Shadow/ShadowUtils.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Transform.h"
+#include "Math/GeometryUtility.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -304,7 +305,8 @@ void ou::AdditionalLightsShadowCasterPass::Render(const std::vector<const Light 
 		scissor.bottom = static_cast<int32_t>(slice.offsetY + slice.resolution);
 		device->BindScissorRects(1, &scissor, cmd);
 
-		SceneManager::RenderShadowCasters(slice.camera, cmd);
+		const auto cullingPlanes = GeometryUtility::CalculateFrustumPlanes(slice.camera.viewProjection);
+		SceneManager::RenderShadowCasters(slice.camera, cullingPlanes, cmd);
 	}
 	device->RenderPassEnd(cmd);
 }
